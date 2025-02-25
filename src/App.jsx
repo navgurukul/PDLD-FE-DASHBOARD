@@ -6,6 +6,7 @@ import Layout from "./components/Layout";
 import CreateTest from "./pages/CreateTest";
 import Users from "./pages/Users";
 import Reports from "./pages/Reports";
+import NewTest from "./NewTest/components/NewTest"
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="/users" element={<Users />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="*" element={<CreateTest />} />
+            <Route path="newtest" element={<NewTest/>}/>
           </Routes>
         </Layout>
       </Router>
