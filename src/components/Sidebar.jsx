@@ -16,12 +16,13 @@ const Sidebar = () => {
 
   return ( 
     <div
-      className={`bg-[#2F4F4F] text-white   ${
+      className={`bg-[#2F4F4F] text-white overflow-x-hidden   ${
         isOpen ? "w-60" : "w-16"
       } transition-all duration-300 overflow-y-auto`}
       style={{
         marginTop: "0px",
         height: "calc(100vh - 72px)",
+        borderRadius: "0px 8px 8px 0px",
       }}
     >
       {/* Toggle Button */}

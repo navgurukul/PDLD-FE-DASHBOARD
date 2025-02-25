@@ -1,11 +1,10 @@
-import "./App.css";
-// import Header from "./components/Headers";
-// import Sidebar from "./components/Sidebar";
+import "./App.css"; 
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import CreateTest from "./pages/CreateTest";
 import Users from "./pages/Users";
 import Reports from "./pages/Reports";
+import HelpAndSupport from "./pages/HelpAndSupport";
 
 function App() {
   return (
@@ -16,7 +15,8 @@ function App() {
             <Route path="/createTest" element={<CreateTest />} />
             <Route path="/users" element={<Users />} />
             <Route path="/reports" element={<Reports />} />
-            <Route path="*" element={<CreateTest />} />
+            <Route path="/help" element={<HelpAndSupport />} />
+            <Route path="*" element={<Users />} />
           </Routes>
         </Layout>
       </Router>

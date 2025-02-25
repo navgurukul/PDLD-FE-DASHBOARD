@@ -1,9 +1,10 @@
+import TestListTable from "../components/TestListTable";
+
  
 const Users = () => {
     return (
       <div>
-        <h2 className="text-2xl font-semibold">Users</h2>
-        <p>Welcome to the Users.</p>
+        <TestListTable />
       </div>
     );
   };
