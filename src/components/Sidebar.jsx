@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import chevronLeftIcon from "../assets/chevron_left.svg"
+import {
+  HideSidebar,
+  CloseSidebarIcon,
+  ExamMultiple,
+  UserGroup,
+  BrandGoogleAnalytics,
+} from "../utils/imagePath";
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -8,20 +14,18 @@ const Sidebar = () => {
 
   // Menu data (path + label)
   const menuItems = [
-    { to: "/createTest", label: "Test" },
-    { to: "/users", label: "Users" },
-    { to: "/reports", label: "Reports" },
-    { to: "/help", label: "Help and Support" },
+    { to: "/createTest", label: "Test", sidebarImage: ExamMultiple },
+    { to: "/users", label: "Users", sidebarImage: UserGroup },
+    { to: "/reports", label: "Reports", sidebarImage: BrandGoogleAnalytics },
   ];
 
-  return ( 
+  return (
     <div
       className={`bg-[#2F4F4F] text-white overflow-x-hidden   ${
-        isOpen ? "w-60" : "w-16"
+        isOpen ? "w-[236px]" : "w-16"
       } transition-all duration-300 overflow-y-auto`}
       style={{
-        marginTop: "0px",
-        height: "calc(100vh - 72px)",
+        // height: "calc(100vh - 36px)",
         borderRadius: "0px 8px 8px 0px",
       }}
     >
@@ -29,11 +33,14 @@ const Sidebar = () => {
       <button className="p-2 m-2" onClick={() => setIsOpen(!isOpen)}>
         {isOpen ? (
           <div className="flex items-center">
-            <img src={chevronLeftIcon} alt="Hide" className="w-4 h-4 mr-1" />
+            <img src={HideSidebar} alt="Hide" className="w-4 h-4 mr-4" />
             <span>Hide</span>
           </div>
         ) : (
-          <span className="text-xl">▶</span>
+          <div className="flex items-center">
+            <img src={CloseSidebarIcon} alt="Hide" className="w-4 h-4 mr-4" />
+            <span> </span>
+          </div>
         )}
       </button>
 
@@ -55,9 +62,9 @@ const Sidebar = () => {
                 `}
               >
                 {/* Circle Icon (Always Visible) */}
-                <span className="w-6 h-6 bg-gray-300 rounded-full mr-2"></span>
-
+                {/* <span className="w-6 h-6 bg-gray-300 rounded-full mr-2"></span> */}
                 {/* Text (Visible only when isOpen is true) */}
+                <img src={item.sidebarImage} alt="" className="mr-2" />
                 {isOpen && <span className="font-medium">{item.label}</span>}
               </li>
             </Link>

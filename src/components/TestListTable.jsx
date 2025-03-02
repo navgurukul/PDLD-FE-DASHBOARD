@@ -4,7 +4,8 @@ import editPencil from "../assets/edit.svg";
 import viewReports from "../assets/document_scanner.svg";
 import { Button, TextField, MenuItem } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import apiInstance from "../../api"; // Import API instance
+import apiInstance from "../../api";
+import { CLASS_OPTIONS, SUBJECT_OPTIONS } from "../data/testData";
 
 const theme = createTheme({
   typography: {
@@ -26,37 +27,52 @@ export default function TestListTable() {
   const [tests, setTests] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Default API payload
-  const payload = {
-    startDate: "2021-12-13",
-    endDate: "12-03-2025",
-    page: 1,
-    pageSize: 20,
-  };
+  // Track dropdown selections
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  // Keeping this for placeholder only; no changes to date-range logic
+  const [selectedDateRange, setSelectedDateRange] = useState("");
 
   // Fetch data from API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await apiInstance.post("/dev/test/filter", payload);
-        if (response.data && response.data.data) {
-          setTests(response.data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
+  const fetchData = async () => {
+    try {
+      // Build payload for the API
+      const filterPayload = {
+        startDate: "2021-12-13",
+        endDate: "12-03-2025",
+        page: 1,
+        pageSize: 20,
+        testClass: selectedClass, // picks up class from dropdown
+        subject: selectedSubject, // picks up subject from dropdown
+        // status: selectedStatus,
+      };
+
+      const response = await apiInstance.post(
+        "/dev/test/filter",
+        filterPayload
+      );
+      if (response.data && response.data.data) {
+        setTests(response.data.data.data); // Populate table with API response
       }
-    };
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
 
+  // Re-fetch data whenever class, subject, or status changes
+  useEffect(() => {
     fetchData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClass, selectedSubject]);
 
-  // Filter tests based on search query
-  const filteredTests = tests.filter((test) =>
+  // Filter tests based on search query (local filter for "testName")
+  const filteredTests = tests?.filter((test) =>
     test.testName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Map API data to match UI structure
-  const tableData = filteredTests.map((test) => ({
+  const tableData = filteredTests?.map((test) => ({
     testName: test.testName,
     subject: test.subject || "N/A",
     class: `Class ${test.testClass || "N/A"}`,
@@ -77,7 +93,7 @@ export default function TestListTable() {
     return deadlineDate < currentDate ? "Deadline Missed" : "Submitted";
   }
 
-  // Columns for mui-datatables
+  // MUI DataTable columns
   const columns = [
     {
       name: "testName",
@@ -116,7 +132,8 @@ export default function TestListTable() {
               padding: "4px 8px",
               borderRadius: "6px",
               color: value === "Deadline Missed" ? "#D9534F" : "#28A745",
-              backgroundColor: value === "Deadline Missed" ? "#FADBD8" : "#D4EDDA",
+              backgroundColor:
+                value === "Deadline Missed" ? "#FADBD8" : "#D4EDDA",
               fontWeight: "bold",
             }}
           >
@@ -142,7 +159,11 @@ export default function TestListTable() {
                 "&:hover": { borderColor: "transparent" },
               }}
             >
-              <img src={editPencil} alt="Edit" style={{ width: "20px", height: "20px" }} />
+              <img
+                src={editPencil}
+                alt="Edit"
+                style={{ width: "20px", height: "20px" }}
+              />
               &nbsp;
             </Button>
             <Button
@@ -154,7 +175,11 @@ export default function TestListTable() {
                 "&:hover": { borderColor: "transparent" },
               }}
             >
-              <img src={viewReports} alt="View Report" style={{ width: "20px", height: "20px" }} />
+              <img
+                src={viewReports}
+                alt="View Report"
+                style={{ width: "20px", height: "20px" }}
+              />
               &nbsp; View Report
             </Button>
           </div>
@@ -163,7 +188,7 @@ export default function TestListTable() {
     },
   ];
 
-  // Datatable options
+  // MUI DataTable options
   const options = {
     filterType: "dropdown",
     responsive: "standard",
@@ -178,7 +203,7 @@ export default function TestListTable() {
 
   return (
     <ThemeProvider theme={theme}>
-      <div style={{ padding: "16px" }}>
+      <div className="main-page-wrapper">
         <h5 className="text-lg font-bold text-[#2F4F4F]">All Tests</h5>
 
         {/* Search Bar */}
@@ -189,52 +214,133 @@ export default function TestListTable() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
-            style: { backgroundColor: "#fff", borderRadius: "8px", width: "250px" },
+            style: {
+              backgroundColor: "#fff",
+              borderRadius: "8px",
+              width: "420px",
+              height: "48px",
+            },
           }}
           sx={{ marginBottom: "10px" }}
         />
 
         {/* Filters */}
         <div className="flex gap-2 my-[10px] mx-0">
-          {["Class", "Subject", "Status", "Date Range"].map((label) => (
-            <TextField
-              key={label}
-              select
-              size="small"
-              variant="outlined"
-              defaultValue=""
-              InputProps={{
-                style: { backgroundColor: "#fff", borderRadius: "8px" },
-              }}
-              sx={{ width: 120 }}
-            >
-              <MenuItem value="">{label}</MenuItem>
-              <MenuItem value="Option1">Option 1</MenuItem>
-              <MenuItem value="Option2">Option 2</MenuItem>
-            </TextField>
-          ))}
+          {/* Class Dropdown */}
+          <TextField
+            select
+            size="small"
+            variant="outlined"
+            label="Class"
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            sx={{
+              width: 150,
+              "& .MuiSelect-select": {
+                color: "#2F4F4F",
+                fontWeight: "600",
+                // height: "40px",
+                padding: "12px 16px",
+              },
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "8px",
+                backgroundColor: "#fff",
+              },
+            }}
+          >
+            <MenuItem value="">Class</MenuItem>
+            {CLASS_OPTIONS.map((option) => (
+              <MenuItem key={option} value={option}>
+                {option}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          {/* Subject Dropdown */}
+          <TextField
+            select
+            size="small"
+            variant="outlined"
+            label="Subject"
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            sx={{
+              width: 150,
+              "& .MuiSelect-select": {
+                color: "#2F4F4F",
+                fontWeight: "600", 
+                padding: "12px 16px",
+              },
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "8px",
+                backgroundColor: "#fff",
+              },
+            }}
+          >
+            <MenuItem value="">Subject</MenuItem>
+            {SUBJECT_OPTIONS.map((subject) => (
+              <MenuItem key={subject} value={subject}>
+                {subject}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          {/* Status Dropdown */}
+          <TextField
+            select
+            size="small"
+            variant="outlined"
+            label="Status"
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            sx={{
+              width: 150,
+              "& .MuiSelect-select": {
+                color: "#2F4F4F",
+                fontWeight: "600",
+                padding: "12px 16px",
+              },
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "8px",
+                backgroundColor: "#fff",
+              },
+            }}
+          >
+            <MenuItem value="">Status</MenuItem>
+            <MenuItem value="Submitted">Submitted</MenuItem>
+            <MenuItem value="Deadline Missed">Deadline Missed</MenuItem>
+          </TextField>
+
+          {/* Date Range Dropdown (placeholder) */}
+          <TextField
+            select
+            size="small"
+            variant="outlined"
+            label="Date Range"
+            value={selectedDateRange}
+            onChange={(e) => setSelectedDateRange(e.target.value)}
+            sx={{
+              width: 150,
+              "& .MuiSelect-select": {
+                color: "#2F4F4F",
+                fontWeight: "600",
+                padding: "12px 16px",
+              },
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "8px",
+                backgroundColor: "#fff",
+              },
+            }}
+          >
+            <MenuItem value="">Date Range</MenuItem>
+            <MenuItem value="Option1">Option 1</MenuItem>
+            <MenuItem value="Option2">Option 2</MenuItem>
+          </TextField>
         </div>
 
         {/* Data Table */}
-        {/* <Button
-        variant="contained"
-        sx={{
-          backgroundColor: "#FFD700", // Yellow color
-          color: "#000",
-          borderRadius: "8px",
-          textTransform: "none",
-          fontWeight: "600",
-          "&:hover": {
-            backgroundColor: "#FFC107",
-          },
-        }}
-        // startIcon={<AddIcon />}
-      >
-        Create Test
-      </Button> */}
         <div style={{ borderRadius: "8px" }}>
           <MUIDataTable
-            //title={"Test List"}
             data={tableData}
             columns={columns}
             options={options}
