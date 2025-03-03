@@ -106,13 +106,12 @@ const SubjectsSelector = () => {
         <div className="relative">
           <select
             className="w-full bg-white flex-col justify-start items-center gap-12 inline-flex overflow-hidden p-2 
-               border border-[#bdbdbd] !important rounded-lg text-[#bdbdbd] appearance-none cursor-pointer 
-               focus:border-[#bdbdbd] focus:outline-none"
+       border border-[#bdbdbd] rounded-lg text-[#bdbdbd] appearance-none cursor-pointer 
+       focus:border-[#bdbdbd] focus:outline-none"
             value=""
             onChange={(e) => handleGradeSelection(Number(e.target.value))}
           >
-            <option value="" disabled>Choose class           
-            </option>
+            <option value="" disabled>Choose class</option>
             {Array.from({ length: 12 }, (_, i) => i + 1)
               .filter(grade => !selectedGrades.includes(grade))
               .map(grade => (
@@ -121,15 +120,19 @@ const SubjectsSelector = () => {
                 </option>
               ))
             }
-            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-
           </select>
-          <div className="text-[#483d8b] text-sm font-normal font-['Work Sans'] leading-normal">Relevant subjects will appear for each selected class</div>
+          {/* Custom dropdown icon */}
+          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z" fill="#BDBDBD" />
+            </svg>
+          </div>
+
+          <div className="text-[#483d8b] text-sm font-normal font-['Work Sans'] leading-normal">
+            Relevant subjects will appear for each selected class
+          </div>
         </div>
+
 
         <div className="flex flex-wrap gap-2">
           {selectedGrades.map(grade => (
@@ -163,10 +166,14 @@ const SubjectsSelector = () => {
                   >
                     <div className="text-gray-500">
                       {!selectedSubjects[grade] || selectedSubjects[grade].length === 0
-                        ? "Select subjects..."
+                        ? "Choose subjects"
                         : `${selectedSubjects[grade].length} subject${selectedSubjects[grade].length !== 1 ? 's' : ''} selected`}
                     </div>
-
+                    <div className="flex items-center">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z" fill="#BDBDBD" />
+                      </svg>
+                    </div>
                   </div>
                   {dropdownOpen[grade] && (
                     <div className="p-4 rounded-lg shadow-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
@@ -190,7 +197,6 @@ const SubjectsSelector = () => {
                       </div>
                     </div>
                   )}
-
                 </div>
               )}
 
@@ -202,8 +208,13 @@ const SubjectsSelector = () => {
                   >
                     <div className="text-gray-500">
                       {!selectedSubjects[grade] || selectedSubjects[grade].length === 0
-                        ? "Select subjects..."
+                        ? "Choose subjects"
                         : `${selectedSubjects[grade].length} subject${selectedSubjects[grade].length !== 1 ? 's' : ''} selected`}
+                    </div>
+                    <div className="flex items-center">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z" fill="#BDBDBD" />
+                      </svg>
                     </div>
                   </div>
 
@@ -243,8 +254,8 @@ const SubjectsSelector = () => {
                             {subjects
                               .filter(subject =>
                                 testType === 'remedial'
-                                  ? ['Maths', 'Hindi'].includes(subject)  
-                                  : SUBJECTS_BY_GRADE[grade].includes(subject) 
+                                  ? ['Maths', 'Hindi'].includes(subject)
+                                  : SUBJECTS_BY_GRADE[grade].includes(subject)
                               )
                               .map(subject => (
                                 <div
@@ -278,7 +289,9 @@ const SubjectsSelector = () => {
               )}
               {selectedSubjects[grade]?.length > 0 && (
                 <div className="space-y-2 mt-4">
-                  <h4 className="text-md font-medium">Set Test Date and Max Score</h4>
+                  <h4 className="text-[#2f4f4f] text-lg font-semibold font-['Work Sans'] leading-[30.60px]">
+                    Set Test Date and Max Score
+                  </h4>
                   {selectedSubjects[grade].map(subject => (
                     <div key={`${grade}-${subject}`} className="flex items-center space-x-4 p-2 bg-white rounded-lg">
                       <span className="w-48 text-gray-700">{subject}</span>
