@@ -111,16 +111,15 @@ const SubjectsSelector = () => {
             value=""
             onChange={(e) => handleGradeSelection(Number(e.target.value))}
           >
-            <option value="" disabled>Choose class</option>
+            <option value="" disabled>Choose class           
+            </option>
             {Array.from({ length: 12 }, (_, i) => i + 1)
               .filter(grade => !selectedGrades.includes(grade))
               .map(grade => (
                 <option key={grade} value={grade}>
                   Class {grade}
                 </option>
-
               ))
-
             }
             <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +150,6 @@ const SubjectsSelector = () => {
           ))}
         </div>
       </div>
-
       {selectedGrades.length > 0 && (
         <div className="space-y-4">
           {selectedGrades.map(grade => (
