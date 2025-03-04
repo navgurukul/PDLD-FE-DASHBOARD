@@ -5,7 +5,11 @@ import viewReports from "../assets/document_scanner.svg";
 import { Button, TextField, MenuItem } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import apiInstance from "../../api";
-import { CLASS_OPTIONS, SUBJECT_OPTIONS } from "../data/testData";
+import {
+  CLASS_OPTIONS,
+  SUBJECT_OPTIONS,
+  STATUS_LABELS,
+} from "../data/testData";
 
 const theme = createTheme({
   typography: {
@@ -37,23 +41,20 @@ export default function TestListTable() {
   // Fetch data from API
   const fetchData = async () => {
     try {
-      // Build payload for the API
-      const filterPayload = {
-        startDate: "2021-12-13",
-        endDate: "12-03-2025",
-        page: 1,
-        pageSize: 20,
-        testClass: selectedClass, // picks up class from dropdown
-        subject: selectedSubject, // picks up subject from dropdown
-        // status: selectedStatus,
-      };
+      let url = "/dev/test/filter?startDate=01-02-2020&endDate=01-02-2026";
+      if (selectedClass) {
+        url += `&testClass=${selectedClass}`;
+      }
+      if (selectedSubject) {
+        url += `&subject=${selectedSubject}`;
+      }
+      if (selectedStatus) { 
+        url += `&status=${selectedStatus}`;
+      }
 
-      const response = await apiInstance.post(
-        "/dev/test/filter",
-        filterPayload
-      );
+      const response = await apiInstance.get(url);
       if (response.data && response.data.data) {
-        setTests(response.data.data.data); // Populate table with API response
+        setTests(response.data.data.data);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -64,7 +65,7 @@ export default function TestListTable() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClass, selectedSubject]);
+  }, [selectedClass, selectedSubject, selectedStatus]);
 
   // Filter tests based on search query (local filter for "testName")
   const filteredTests = tests?.filter((test) =>
@@ -239,7 +240,6 @@ export default function TestListTable() {
               "& .MuiSelect-select": {
                 color: "#2F4F4F",
                 fontWeight: "600",
-                // height: "40px",
                 padding: "12px 16px",
               },
               "& .MuiOutlinedInput-root": {
@@ -250,7 +250,10 @@ export default function TestListTable() {
           >
             <MenuItem value="">Class</MenuItem>
             {CLASS_OPTIONS.map((option) => (
-              <MenuItem key={option} value={option}>
+              <MenuItem
+                key={option}
+                value={parseInt(option.replace("Class ", ""), 10)}
+              >
                 {option}
               </MenuItem>
             ))}
@@ -268,7 +271,7 @@ export default function TestListTable() {
               width: 150,
               "& .MuiSelect-select": {
                 color: "#2F4F4F",
-                fontWeight: "600", 
+                fontWeight: "600",
                 padding: "12px 16px",
               },
               "& .MuiOutlinedInput-root": {
@@ -307,8 +310,11 @@ export default function TestListTable() {
             }}
           >
             <MenuItem value="">Status</MenuItem>
-            <MenuItem value="Submitted">Submitted</MenuItem>
-            <MenuItem value="Deadline Missed">Deadline Missed</MenuItem>
+            {Object.keys(STATUS_LABELS).map((status) => (
+              <MenuItem key={status} value={status}>
+                {STATUS_LABELS[status]}
+              </MenuItem>
+            ))}
           </TextField>
 
           {/* Date Range Dropdown (placeholder) */}
