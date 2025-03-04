@@ -20,7 +20,7 @@ const Header = () => {
       </Link>
       <div className="flex items-center">
         <button>
-          <img src={notificationsIcon} alt="notifications" />
+          <img src={notificationsIcon} alt="notifications" style={{marginRight:"16px"}} />
         </button>
         <img
           src={userAvatar}
