@@ -4,11 +4,9 @@ import Layout from "./layout/index";
 import CreateTest from "./pages/CreateTest";
 import Users from "./pages/Users";
 import Reports from "./pages/Reports";
-<<<<<<< HEAD
-import NewTest from "./NewTest/components/NewTest"
-=======
 import HelpAndSupport from "./pages/HelpAndSupport";
->>>>>>> 52d50c77b0a24084894a82eef2583ede10752d75
+import NewTest from "./NewTest/components/NewTest"
+
 
 function App() {
   return (
@@ -24,19 +22,13 @@ function App() {
             <Route path="/createTest" element={<CreateTest />} />
             <Route path="/users" element={<Users />} />
             <Route path="/reports" element={<Reports />} />
-<<<<<<< HEAD
-            <Route path="*" element={<CreateTest />} />
-            <Route path="newtest" element={<NewTest/>}/>
-          </Routes>
-        </Layout>
-=======
             <Route path="/help" element={<HelpAndSupport />} />
+            <Route path="newtest" element={<NewTest/>}/>
 
             {/* Fallback Route */}
             <Route path="*" element={<Users />} />
           </Route>
         </Routes>
->>>>>>> 52d50c77b0a24084894a82eef2583ede10752d75
       </Router>
     </>
   );

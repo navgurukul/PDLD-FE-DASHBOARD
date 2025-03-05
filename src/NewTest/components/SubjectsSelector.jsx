@@ -5,12 +5,11 @@ import { useState } from 'react';
 
 const SubjectsSelector = () => {
   const [testDates, setTestDates] = useState({});
-  const [description, setDescription] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [selectedGrades, setSelectedGrades] = useState([]);
   const [selectedSubjects, setSelectedSubjects] = useState({});
   const [testType, setTestType] = useState('regular');
-
+  const [number, setNumber] = useState(90);
 
   const getAvailableSubjects = () => {
     const subjects = new Set();
@@ -59,6 +58,10 @@ const SubjectsSelector = () => {
 
   const subjectInCategory = (subject, category) => {
     return SUBJECT_CATEGORIES[category]?.includes(subject);
+  };
+
+  const handleChange = (e) => {
+    setNumber(e.target.value);
   };
 
   return (
@@ -121,7 +124,6 @@ const SubjectsSelector = () => {
               ))
             }
           </select>
-          {/* Custom dropdown icon */}
           <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z" fill="#BDBDBD" />
@@ -164,11 +166,29 @@ const SubjectsSelector = () => {
                     className="rounded-md p-2 flex justify-between items-center cursor-pointer bg-white border border-gray-300"
                     onClick={() => toggleDropdown(grade)}
                   >
-                    <div className="text-gray-500">
+
+                    <div className="text-gray-500 flex flex-wrap gap-2">
                       {!selectedSubjects[grade] || selectedSubjects[grade].length === 0
                         ? "Choose subjects"
-                        : `${selectedSubjects[grade].length} subject${selectedSubjects[grade].length !== 1 ? 's' : ''} selected`}
+                        : selectedSubjects[grade].map(subject => (
+                          <span
+                            key={subject}
+                            className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm flex items-center"
+                          >
+                            {subject}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubjectSelection(grade, subject);
+                              }}
+                              className="ml-1 text-gray-500"
+                            >
+                              ✖
+                            </button>
+                          </span>
+                        ))}
                     </div>
+
                     <div className="flex items-center">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z" fill="#BDBDBD" />
@@ -201,15 +221,31 @@ const SubjectsSelector = () => {
               )}
 
               {(grade === 11 || grade === 12) && (
-                <div className="w-full">
+                <div className="w-full ">
                   <div
-                    className="rounded-md p-2 flex justify-between items-center cursor-pointer bg-white"
+                    className="rounded-md p-2 flex justify-between items-center cursor-pointer bg-white border border-gray-400"
                     onClick={() => toggleDropdown(grade)}
                   >
-                    <div className="text-gray-500">
+                    <div className="text-gray-500 flex flex-wrap gap-2 ">
                       {!selectedSubjects[grade] || selectedSubjects[grade].length === 0
                         ? "Choose subjects"
-                        : `${selectedSubjects[grade].length} subject${selectedSubjects[grade].length !== 1 ? 's' : ''} selected`}
+                        : selectedSubjects[grade].map(subject => (
+                          <span
+                            key={subject}
+                            className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm flex items-center"
+                          >
+                            {subject}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubjectSelection(grade, subject);
+                              }}
+                              className="ml-1 text-gray-500"
+                            >
+                              ✖
+                            </button>
+                          </span>
+                        ))}
                     </div>
                     <div className="flex items-center">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -220,30 +256,6 @@ const SubjectsSelector = () => {
 
                   {dropdownOpen[grade] && (
                     <div className="mt-1 p-4 rounded-lg shadow-lg bg-white ">
-                      {selectedSubjects[grade]?.length > 0 && (
-                        <div className="bg-gray-50 p-2">
-                          <div className="flex flex-wrap gap-2">
-                            {selectedSubjects[grade].map(subject => (
-                              <div
-                                key={subject}
-                                className="flex items-center px-3 py-2 rounded-lg text-sm text-[#2f4f4f] bg-[#eaeded]"
-                              >
-                                {subject}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSubjectSelection(grade, subject);
-                                  }}
-                                  className="ml-1"
-                                >
-                                  <X size={14} />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {Object.entries(SUBJECT_CATEGORIES).map(([category, subjects]) => (
                         <div key={category} className="mb-3">
                           <div className="text-[#2f4f4f] text-sm font-semibold font-['Work Sans'] leading-normal px-3 py-2 ">
@@ -303,9 +315,15 @@ const SubjectsSelector = () => {
                           onChange={(e) => handleDateSelection(`${grade}-${subject}`, e.target.value)}
                         />
                       </div>
-                      <div className="w-[124px] h-12 px-4 py-3 rounded-lg border border-[#e0e0e0] justify-center items-center gap-4 inline-flex">
-                        <div className="text-[#2f4f4f] text-lg font-normal font-['Work Sans'] leading-[30.60px]">90</div>
+                      <div className="w-[124px] h-12 border border-[#e0e0e0] rounded-lg flex justify-center items-center">
+                        <input
+                          type="number"
+                          value={number}
+                          onChange={handleChange}
+                          className="w-full h-full text-[#2f4f4f] text-lg font-normal font-['Work Sans'] leading-[30.60px] bg-transparent border-none outline-none text-center"
+                        />
                       </div>
+
                     </div>
                   ))}
                 </div>
@@ -314,7 +332,6 @@ const SubjectsSelector = () => {
           ))}
         </div>
       )}
-
     </>
   )
 }
