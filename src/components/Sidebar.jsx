@@ -45,12 +45,12 @@ const Sidebar = () => {
     {/* Toggle Button */}
     <button className="p-2 m-2" onClick={() => setIsOpen(!isOpen)}>
       {isOpen ? (
-        <div className="flex items-center">
+        <div className="flex items-center pl-1">
           <img src={HideSidebar} alt="Hide" className="w-4 h-4 mr-4" />
           <span>Hide</span>
         </div>
       ) : (
-        <div className="flex items-center">
+        <div className="flex items-center pl-1">
           <img src={CloseSidebarIcon} alt="Show" className="w-4 h-4 mr-4" />
           <span> </span>
         </div>
@@ -65,7 +65,7 @@ const Sidebar = () => {
           <Link key={item.to} to={item.to}>
              <li
               className={`list-none flex items-center rounded-md p-2 cursor-pointer
-                ${isActive ? "bg-white text-[#2F4F4F]" : 
+                ${isActive ? "bg-white text-[#2F4F4F] pl-2" : 
                 "bg-transparent hover:bg-[#2F4F4F] hover:text-[#white]"}
               `}
             > 
