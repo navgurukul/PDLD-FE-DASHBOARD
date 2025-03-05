@@ -6,6 +6,7 @@ import Users from "./pages/Users";
 import Reports from "./pages/Reports";
 import HelpAndSupport from "./pages/HelpAndSupport";
 import TestCreationForm from "./pages/TestCreationForm"
+import TableList from "./pages/TableList";
 
 function App() {
   return (
@@ -15,10 +16,10 @@ function App() {
           {/* All routes are nested under the Layout */}
           <Route path="/" element={<Layout />}>
             {/* Default Route (renders CreateTest by default) */}
-            <Route index element={<CreateTest />} />
+            <Route index element={<TableList />} />
 
             {/* Nested Routes within Layout */}
-            <Route path="/createTest" element={<CreateTest />} />
+            <Route path="/allTest" element={<TableList />} />
             <Route path="/users" element={<Users />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/testCreationForm" element={<TestCreationForm/>} />
