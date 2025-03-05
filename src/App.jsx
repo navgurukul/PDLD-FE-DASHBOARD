@@ -5,6 +5,7 @@ import CreateTest from "./pages/CreateTest";
 import Users from "./pages/Users";
 import Reports from "./pages/Reports";
 import HelpAndSupport from "./pages/HelpAndSupport";
+import TestCreationForm from "./pages/TestCreationForm"
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Route path="/createTest" element={<CreateTest />} />
             <Route path="/users" element={<Users />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/testCreationForm" element={<TestCreationForm/>} />
             <Route path="/help" element={<HelpAndSupport />} />
 
             {/* Fallback Route */}
