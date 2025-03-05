@@ -4,6 +4,10 @@ import editPencil from "../assets/edit.svg";
 import viewReports from "../assets/document_scanner.svg";
 import { Button, TextField, MenuItem } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import "./TestListTable.css"
+
 import apiInstance from "../../api";
 import {
   CLASS_OPTIONS,
@@ -30,6 +34,8 @@ const theme = createTheme({
 export default function TestListTable() {
   const [tests, setTests] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState([null, null]);
+  const [startDate, endDate] = dateRange;
 
   // Track dropdown selections
   const [selectedClass, setSelectedClass] = useState("");
@@ -38,34 +44,56 @@ export default function TestListTable() {
   // Keeping this for placeholder only; no changes to date-range logic
   const [selectedDateRange, setSelectedDateRange] = useState("");
 
+  function formatDate(date) {
+    if (!(date instanceof Date) || isNaN(date)) return null; // Guard if date is invalid
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`; // e.g. "01-02-2020"
+  }
+   
   // Fetch data from API
-  const fetchData = async () => {
-    try {
-      let url = "/dev/test/filter?startDate=01-02-2020&endDate=01-02-2026";
-      if (selectedClass) {
-        url += `&testClass=${selectedClass}`;
-      }
-      if (selectedSubject) {
-        url += `&subject=${selectedSubject}`;
-      }
-      if (selectedStatus) { 
-        url += `&status=${selectedStatus}`;
-      }
+const fetchData = async () => {
+  try {
+    let startDateFormatted;
+    let endDateFormatted;
 
-      const response = await apiInstance.get(url);
-      if (response.data && response.data.data) {
-        setTests(response.data.data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
+    // If user has selected both dates, use them; otherwise default
+    if (startDate && endDate) {
+      startDateFormatted = formatDate(startDate);
+      endDateFormatted = formatDate(endDate);
+    } else {
+      startDateFormatted = "01-02-2020";
+      endDateFormatted = "01-02-2026";
     }
-  };
+
+    // Build your URL with the final dates
+    let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}`;
+
+    if (selectedClass) {
+      url += `&testClass=${selectedClass}`;
+    }
+    if (selectedSubject) {
+      url += `&subject=${selectedSubject}`;
+    }
+    if (selectedStatus) {
+      url += `&status=${selectedStatus}`;
+    }
+
+    const response = await apiInstance.get(url);
+    if (response.data && response.data.data) {
+      setTests(response.data.data.data);
+    }
+  } catch (error) {
+    console.error("Error fetching data:", error);
+  }
+};
 
   // Re-fetch data whenever class, subject, or status changes
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClass, selectedSubject, selectedStatus]);
+    }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate]); 
 
   // Filter tests based on search query (local filter for "testName")
   const filteredTests = tests?.filter((test) =>
@@ -318,7 +346,7 @@ export default function TestListTable() {
           </TextField>
 
           {/* Date Range Dropdown (placeholder) */}
-          <TextField
+          {/* <TextField
             select
             size="small"
             variant="outlined"
@@ -341,7 +369,24 @@ export default function TestListTable() {
             <MenuItem value="">Date Range</MenuItem>
             <MenuItem value="Option1">Option 1</MenuItem>
             <MenuItem value="Option2">Option 2</MenuItem>
-          </TextField>
+          </TextField> */} 
+          <div style={{ border: "1px solid lightgrey", borderRadius: "5px" }}>
+            <DatePicker
+             className="my-date-picker"
+              selectsRange
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(dates) => {
+                // dates is an array: [start, end]
+                const [start, end] = dates;
+                console.log("Start date:", start);
+                console.log("End date:", end);
+                setDateRange(dates);
+              }}
+              placeholderText="Date Range"
+              style={{width:"220px"}}
+            />
+          </div>
         </div>
 
         {/* Data Table */}
