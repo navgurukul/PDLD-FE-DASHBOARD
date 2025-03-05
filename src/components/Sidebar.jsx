@@ -16,7 +16,7 @@ const Sidebar = () => {
   // Menu data (path + label)
   const menuItems = [
     {
-      to: "/createTest",
+      to: "/allTest",
       label: "Test",
       selectedImage: SelTests,
       unselectedImage: UNSelTests,

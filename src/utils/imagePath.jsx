@@ -16,10 +16,11 @@ import SelUsers from "../assets/seletedUser.png"
 import UNSelUsers from "../assets/unselectedUser.png"
 import UNSelTests from "../assets/unselectedTest.png"
 import UNSelReports from "../assets/unselectedReports.png"
+import addSymbolBtn from "../assets/addSymbolBtn.svg"
 
 export {
   SelReports,SelTests,SelUsers,UNSelUsers,UNSelTests,UNSelReports,
-    BrandGoogleAnalytics,
+    BrandGoogleAnalytics,addSymbolBtn,
     ChevronLeft,
     CreateTestImg,
     DocScanner,

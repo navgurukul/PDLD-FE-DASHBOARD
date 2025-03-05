@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
-import editPencil from "../assets/edit.svg";
-import viewReports from "../assets/document_scanner.svg";
+import { addSymbolBtn, EditPencilIcon, DocScanner } from "../utils/imagePath";
 import { Button, TextField, MenuItem } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import "./TestListTable.css"
+import { Pagination } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import "./TestListTable.css";
 
 import apiInstance from "../../api";
 import {
@@ -14,6 +15,7 @@ import {
   SUBJECT_OPTIONS,
   STATUS_LABELS,
 } from "../data/testData";
+import ButtonCustom from "./ButtonCustom";
 
 const theme = createTheme({
   typography: {
@@ -25,6 +27,21 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           boxShadow: "none",
+        },
+      },
+    },
+    MuiPaginationItem: {
+      styleOverrides: {
+        root: {
+          color: "black", // Change default text color
+          backgroundColor: "white", // Change the background color of all buttons
+          "&.Mui-selected": {
+            backgroundColor: "#2F4F4F", // Change color when selected
+            color: "white",
+          },
+          "&:hover": {
+            backgroundColor: "#A3BFBF ", // Hover color
+          },
         },
       },
     },
@@ -43,6 +60,16 @@ export default function TestListTable() {
   const [selectedStatus, setSelectedStatus] = useState("");
   // Keeping this for placeholder only; no changes to date-range logic
   const [selectedDateRange, setSelectedDateRange] = useState("");
+  const [totalRecords, setTotalRecords] = useState(0);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20; // The fixed page size
+
+  const navigate = useNavigate();
+
+  const handleCreateTest = () => {
+    navigate("/testCreationForm"); // Replace with your target route
+  };
 
   function formatDate(date) {
     if (!(date instanceof Date) || isNaN(date)) return null; // Guard if date is invalid
@@ -51,56 +78,64 @@ export default function TestListTable() {
     const year = date.getFullYear();
     return `${day}-${month}-${year}`; // e.g. "01-02-2020"
   }
-   
+
   // Fetch data from API
-const fetchData = async () => {
-  try {
-    let startDateFormatted;
-    let endDateFormatted;
+  const fetchData = async () => {
+    try {
+      let startDateFormatted;
+      let endDateFormatted;
 
-    // If user has selected both dates, use them; otherwise default
-    if (startDate && endDate) {
-      startDateFormatted = formatDate(startDate);
-      endDateFormatted = formatDate(endDate);
-    } else {
-      startDateFormatted = "01-02-2020";
-      endDateFormatted = "01-02-2026";
-    }
+      // If user has selected both dates, use them; otherwise default
+      if (startDate && endDate) {
+        startDateFormatted = formatDate(startDate);
+        endDateFormatted = formatDate(endDate);
+      } else {
+        startDateFormatted = "01-02-2020";
+        endDateFormatted = "01-02-2026";
+      }
 
-    // Build your URL with the final dates
-    let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}`;
+      // Build your URL with the final dates
+      // let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}`;
+      let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&page=${currentPage}&pageSize=${pageSize}`;
 
-    if (selectedClass) {
-      url += `&testClass=${selectedClass}`;
-    }
-    if (selectedSubject) {
-      url += `&subject=${selectedSubject}`;
-    }
-    if (selectedStatus) {
-      url += `&status=${selectedStatus}`;
-    }
+      if (selectedClass) {
+        url += `&testClass=${selectedClass}`;
+      }
+      if (selectedSubject) {
+        url += `&subject=${selectedSubject}`;
+      }
+      if (selectedStatus) {
+        url += `&status=${selectedStatus}`;
+      }
 
-    const response = await apiInstance.get(url);
-    if (response.data && response.data.data) {
-      setTests(response.data.data.data);
+      const response = await apiInstance.get(url);
+      if (response.data && response.data.data) {
+        setTests(response.data.data.data);
+        setTotalRecords(response.data.data.pagination.totalRecords);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
     }
-  } catch (error) {
-    console.error("Error fetching data:", error);
-  }
-};
+  };
 
   // Re-fetch data whenever class, subject, or status changes
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate]); 
+  }, [
+    selectedClass,
+    selectedSubject,
+    selectedStatus,
+    startDate,
+    endDate,
+    currentPage,
+  ]);
 
   // Filter tests based on search query (local filter for "testName")
   const filteredTests = tests?.filter((test) =>
     test.testName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Map API data to match UI structure
   const tableData = filteredTests?.map((test) => ({
     testName: test.testName,
     subject: test.subject || "N/A",
@@ -111,16 +146,10 @@ const fetchData = async () => {
       year: "numeric",
     }),
     schoolsSubmitted: 30,
-    status: getStatus(test.deadline),
+    // <-- Use testStatus directly instead of getStatus
+    status: test.testStatus,
     actions: "View Report",
   }));
-
-  // Function to determine status
-  function getStatus(deadline) {
-    const deadlineDate = new Date(deadline);
-    const currentDate = new Date();
-    return deadlineDate < currentDate ? "Deadline Missed" : "Submitted";
-  }
 
   // MUI DataTable columns
   const columns = [
@@ -160,9 +189,15 @@ const fetchData = async () => {
             style={{
               padding: "4px 8px",
               borderRadius: "6px",
-              color: value === "Deadline Missed" ? "#D9534F" : "#28A745",
+              // Example style logic: color red if CANCELLED or DEADLINE_MISSED; green otherwise
+              color:
+                value === "DEADLINE_MISSED" || value === "CANCELLED"
+                  ? "#D9534F"
+                  : "#28A745",
               backgroundColor:
-                value === "Deadline Missed" ? "#FADBD8" : "#D4EDDA",
+                value === "DEADLINE_MISSED" || value === "CANCELLED"
+                  ? "#FADBD8"
+                  : "#D4EDDA",
               fontWeight: "bold",
             }}
           >
@@ -189,7 +224,7 @@ const fetchData = async () => {
               }}
             >
               <img
-                src={editPencil}
+                src={EditPencilIcon}
                 alt="Edit"
                 style={{ width: "20px", height: "20px" }}
               />
@@ -205,7 +240,7 @@ const fetchData = async () => {
               }}
             >
               <img
-                src={viewReports}
+                src={DocScanner}
                 alt="View Report"
                 style={{ width: "20px", height: "20px" }}
               />
@@ -228,6 +263,7 @@ const fetchData = async () => {
     searchPlaceholder: "Search by Test Name",
     rowsPerPage: 10,
     rowsPerPageOptions: [10, 20, 30],
+    pagination: false,
   };
 
   return (
@@ -254,139 +290,124 @@ const fetchData = async () => {
         />
 
         {/* Filters */}
-        <div className="flex gap-2 my-[10px] mx-0">
-          {/* Class Dropdown */}
-          <TextField
-            select
-            size="small"
-            variant="outlined"
-            label="Class"
-            value={selectedClass}
-            onChange={(e) => setSelectedClass(e.target.value)}
-            sx={{
-              width: 150,
-              "& .MuiSelect-select": {
-                color: "#2F4F4F",
-                fontWeight: "600",
-                padding: "12px 16px",
-              },
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "8px",
-                backgroundColor: "#fff",
-              },
-            }}
-          >
-            <MenuItem value="">Class</MenuItem>
-            {CLASS_OPTIONS.map((option) => (
-              <MenuItem
-                key={option}
-                value={parseInt(option.replace("Class ", ""), 10)}
-              >
-                {option}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          {/* Subject Dropdown */}
-          <TextField
-            select
-            size="small"
-            variant="outlined"
-            label="Subject"
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
-            sx={{
-              width: 150,
-              "& .MuiSelect-select": {
-                color: "#2F4F4F",
-                fontWeight: "600",
-                padding: "12px 16px",
-              },
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "8px",
-                backgroundColor: "#fff",
-              },
-            }}
-          >
-            <MenuItem value="">Subject</MenuItem>
-            {SUBJECT_OPTIONS.map((subject) => (
-              <MenuItem key={subject} value={subject}>
-                {subject}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          {/* Status Dropdown */}
-          <TextField
-            select
-            size="small"
-            variant="outlined"
-            label="Status"
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            sx={{
-              width: 150,
-              "& .MuiSelect-select": {
-                color: "#2F4F4F",
-                fontWeight: "600",
-                padding: "12px 16px",
-              },
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "8px",
-                backgroundColor: "#fff",
-              },
-            }}
-          >
-            <MenuItem value="">Status</MenuItem>
-            {Object.keys(STATUS_LABELS).map((status) => (
-              <MenuItem key={status} value={status}>
-                {STATUS_LABELS[status]}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          {/* Date Range Dropdown (placeholder) */}
-          {/* <TextField
-            select
-            size="small"
-            variant="outlined"
-            label="Date Range"
-            value={selectedDateRange}
-            onChange={(e) => setSelectedDateRange(e.target.value)}
-            sx={{
-              width: 150,
-              "& .MuiSelect-select": {
-                color: "#2F4F4F",
-                fontWeight: "600",
-                padding: "12px 16px",
-              },
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "8px",
-                backgroundColor: "#fff",
-              },
-            }}
-          >
-            <MenuItem value="">Date Range</MenuItem>
-            <MenuItem value="Option1">Option 1</MenuItem>
-            <MenuItem value="Option2">Option 2</MenuItem>
-          </TextField> */} 
-          <div style={{ border: "1px solid lightgrey", borderRadius: "5px" }}>
-            <DatePicker
-             className="my-date-picker"
-              selectsRange
-              startDate={startDate}
-              endDate={endDate}
-              onChange={(dates) => {
-                // dates is an array: [start, end]
-                const [start, end] = dates;
-                console.log("Start date:", start);
-                console.log("End date:", end);
-                setDateRange(dates);
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2 my-[10px] mx-0">
+            {/* Class Dropdown */}
+            <TextField
+              select
+              size="small"
+              variant="outlined"
+              label="Class"
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              sx={{
+                width: 150,
+                "& .MuiSelect-select": {
+                  color: "#2F4F4F",
+                  fontWeight: "600",
+                  padding: "12px 16px",
+                },
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  backgroundColor: "#fff",
+                },
               }}
-              placeholderText="Date Range"
-              style={{width:"220px"}}
-            />
+            >
+              <MenuItem value="">Class</MenuItem>
+              {CLASS_OPTIONS.map((option) => (
+                <MenuItem
+                  key={option}
+                  value={parseInt(option.replace("Class ", ""), 10)}
+                >
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            {/* Subject Dropdown */}
+            <TextField
+              select
+              size="small"
+              variant="outlined"
+              label="Subject"
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              sx={{
+                width: 150,
+                "& .MuiSelect-select": {
+                  color: "#2F4F4F",
+                  fontWeight: "600",
+                  padding: "12px 16px",
+                },
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  backgroundColor: "#fff",
+                },
+              }}
+            >
+              <MenuItem value="">Subject</MenuItem>
+              {SUBJECT_OPTIONS.map((subject) => (
+                <MenuItem key={subject} value={subject}>
+                  {subject}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            {/* Status Dropdown */}
+            <TextField
+              select
+              size="small"
+              variant="outlined"
+              label="Status"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              sx={{
+                width: 150,
+                "& .MuiSelect-select": {
+                  color: "#2F4F4F",
+                  fontWeight: "600",
+                  padding: "12px 16px",
+                },
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  backgroundColor: "#fff",
+                },
+              }}
+            >
+              <MenuItem value="">Status</MenuItem>
+              {Object.keys(STATUS_LABELS).map((status) => (
+                <MenuItem key={status} value={status}>
+                  {STATUS_LABELS[status]}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            {/* Date Range Dropdown (placeholder) */}
+
+            <div style={{ border: "1px solid lightgrey", borderRadius: "5px" }}>
+              <DatePicker
+                className="my-date-picker"
+                selectsRange
+                startDate={startDate}
+                endDate={endDate}
+                onChange={(dates) => {
+                  // dates is an array: [start, end]
+                  const [start, end] = dates;
+                  console.log("Start date:", start);
+                  console.log("End date:", end);
+                  setDateRange(dates);
+                }}
+                placeholderText="Date Range"
+                style={{ width: "220px" }}
+              />
+            </div>
           </div>
+
+          <ButtonCustom
+            imageName={addSymbolBtn}
+            text={"Create Test"}
+            onClick={handleCreateTest}
+          />
         </div>
 
         {/* Data Table */}
@@ -400,6 +421,20 @@ const fetchData = async () => {
                 boxShadow: "none",
               },
             }}
+          />
+        </div>
+        <div
+          style={{
+            width: "max-content",
+            margin: "25px auto",
+          }}
+        >
+          <Pagination
+            count={Math.ceil(totalRecords / pageSize)}
+            page={currentPage}
+            onChange={(e, page) => setCurrentPage(page)}
+            showFirstButton
+            showLastButton
           />
         </div>
       </div>

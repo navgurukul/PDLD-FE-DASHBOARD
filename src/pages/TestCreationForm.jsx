@@ -1,7 +1,7 @@
 import { SUBJECTS_BY_GRADE, SUBJECT_CATEGORIES } from "../data/testData";
 import { Calendar, Clock, ChevronDown, Check, X } from "lucide-react";
 import { useState } from "react";
-import Button from "../components/Button";
+import Button from "../components/ButtonCustom";
 import apiInstance from "../../api";
 
 const TestCreationForm = () => {
@@ -51,50 +51,7 @@ const TestCreationForm = () => {
       [grade]: !prev[grade],
     }));
   }; 
-  // const handleCreateTest = async () => {
-  //   try {
-  //     // Build the payload based on user selections
-  //     const payload = {
-  //       // "regular" => "SYLLABUS", "remedial" => "REMEDIAL"
-  //       testType: testType === "regular" ? "SYLLABUS" : "REMEDIAL",
-  //       classes: selectedGrades.map((grade) => ({
-  //         class: grade,
-  //         subjects: (selectedSubjects[grade] || []).map((subject) => {
-  //           const key = `${grade}-${subject}`;
-  //           const subjectObj = {
-  //             subject,
-  //             // Example logic for testName
-  //             testName: `${subject} Test`,
-  //             // The due date from state
-  //             dueDate: testDates[key] || "",
-  //           };
-  //           // For Syllabus tests only, add maxScore from the UI
-  //           if (testType === "regular") {
-  //             subjectObj.maxScore = testScores[key]
-  //               ? Number(testScores[key])
-  //               : 100; // fallback or default
-  //           }
-  //           return subjectObj;
-  //         }),
-  //       })),
-  //     };
-
-  //     console.log("Payload => ", payload);
-
-      
-  //     const res = await fetch("/dev/test", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify(payload),
-  //     });
-
-  //     const data = await res.json();
-  //     console.log("Response => ", data);
-  //   } catch (error) {
-  //     console.error("Error => ", error);
-  //   }
-  // };
-
+   
   const handleCreateTest = async () => {
     try {
       const payload = {
@@ -260,16 +217,7 @@ const TestCreationForm = () => {
                               key={subject}
                               className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm flex items-center"
                             >
-                              {subject}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSubjectSelection(grade, subject);
-                                }}
-                                className="ml-1 text-gray-500"
-                              >
-                                :heavy_multiplication_x:
-                              </button>
+                              {subject} 
                             </span>
                           ))}
                     </div>

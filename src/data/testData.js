@@ -15,7 +15,7 @@ export const CLASS_OPTIONS = [
 ];
  
 export const SUBJECT_OPTIONS = [
-  "Mathematics",
+  "Maths",
   "English",
   "Physics",
   "Chemistry",
@@ -23,7 +23,7 @@ export const SUBJECT_OPTIONS = [
   "History",
   "Geography",
   "Hindi",
-  // ...any others you need
+  "Sanskrit",
 ];
 
 export const STATUS_LABELS = {
