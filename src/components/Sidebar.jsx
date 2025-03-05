@@ -7,12 +7,12 @@ import {
   UserGroup,
   BrandGoogleAnalytics,
   SelReports,SelTests,SelUsers,UNSelUsers,UNSelTests,UNSelReports,
-} from "../utils/imagePath";
+} from "../utils/imagePath"; 
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
   const location = useLocation(); // Detects current route
-
+  if (location.pathname.includes("testCreationForm")) return null;
   // Menu data (path + label)
   const menuItems = [
     {
