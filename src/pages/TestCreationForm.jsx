@@ -127,7 +127,7 @@ const TestCreationForm = () => {
   return (
     <div style={{ width: "40%", margin: "20px auto" }}>
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Test Type</h2>
+        <h2 className="text-xl font-semibold mb-2">Test Type</h2>
         <div className="flex space-x-4">
           <label className="flex items-center space-x-2">
             <input
@@ -136,10 +136,10 @@ const TestCreationForm = () => {
               value="regular"
               checked={testType === "regular"}
               onChange={() => setTestType("regular")}
-              className="w-5 h-5"
+              className="w-4 h-5"
             />
             <span
-              className={`px-4 py-2 rounded-lg ${
+              className={`px-2 py-2 rounded-lg ${
                 testType === "regular" ? " text-[#2F4F4F]" : " text-gray-700"
               }`}
             >
@@ -154,10 +154,10 @@ const TestCreationForm = () => {
                 value="remedial"
                 checked={testType === "remedial"}
                 onChange={() => setTestType("remedial")}
-                className="w-5 h-5"
+                className="w-4 h-5"
               />
               <span
-                className={`px-4 py-2 rounded-lg ${
+                className={`px-2 py-2 rounded-lg ${
                   testType === "remedial" ? "text-[#2F4F4F]" : "text-gray-700"
                 }`}
               >
@@ -169,7 +169,7 @@ const TestCreationForm = () => {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Classes</h2>
+        <h2 className="text-xl font-semibold mb-2">Classes</h2>
         <div className="relative">
           <select
             className="w-full bg-white text-black border border-[#BDBDBD] rounded-lg p-2 cursor-pointer focus:outline-none"
