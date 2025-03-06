@@ -414,11 +414,25 @@ export default function TestListTable() {
         <div style={{ borderRadius: "8px" }}>
           <MUIDataTable
             data={tableData}
-            columns={columns}
+            columns={columns.map((column) => ({
+              ...column,
+              options: {
+                ...column.options,
+                setCellProps: () => ({
+                  style: {
+                    paddingLeft: "30px",
+                    paddingRight: "30px",
+                  },
+                }),
+              },
+            }))}
             options={options}
             sx={{
               "& .MuiPaper-root": {
                 boxShadow: "none",
+              },
+              "& .MuiTableCell-root": {
+                textAlign: "center",
               },
             }}
           />
