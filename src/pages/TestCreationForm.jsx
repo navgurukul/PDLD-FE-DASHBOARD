@@ -86,10 +86,10 @@ const TestCreationForm = () => {
       console.log("Response => ", response?.data?.success);
 
       if (response?.data?.success) {
-        toast.success("Test Created Successfully"); 
+        toast.success("Test Created Successfully");
         setTimeout(() => {
-            navigate("/");
-        }, 2000); 
+          navigate("/");
+        }, 2000);
       } else {
         toast.error("Failed to create test");
       }
@@ -111,19 +111,18 @@ const TestCreationForm = () => {
     if (selectedGrades.length === 0) return false;
 
     for (const grade of selectedGrades) {
-        if (!selectedSubjects[grade]?.length) return false;
+      if (!selectedSubjects[grade]?.length) return false;
 
-        for (const subject of selectedSubjects[grade]) {
-            const key = `${grade}-${subject}`;
-            if (!testDates[key]) return false;
+      for (const subject of selectedSubjects[grade]) {
+        const key = `${grade}-${subject}`;
+        if (!testDates[key]) return false;
 
-            // Only validate maxScore for "regular" test type
-            if (testType === "regular" && !testScores[key]) return false;
-        }
+        // Only validate maxScore for "regular" test type
+        if (testType === "regular" && !testScores[key]) return false;
+      }
     }
     return true;
-};
-
+  };
 
   return (
     <div style={{ width: "40%", margin: "20px auto" }}>
@@ -172,37 +171,23 @@ const TestCreationForm = () => {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Classes</h2>
         <div className="relative">
-  <select
-    className="w-full bg-white text-black border border-[#BDBDBD] rounded-lg p-2 cursor-pointer focus:outline-none"
-    value=""
-    onChange={(e) => handleGradeSelection(Number(e.target.value))}
-  >
-    <option value="" disabled>
-      Choose class
-    </option>
-    {Array.from({ length: 12 }, (_, i) => i + 1)
-      .filter((grade) => !selectedGrades.includes(grade))
-      .map((grade) => (
-        <option key={grade} value={grade}>
-          Class {grade}
-        </option>
-      ))}
-  </select>
-  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z"
-        fill="#BDBDBD"
-      />
-    </svg>
-  </div>
-</div>
+          <select
+            className="w-full bg-white text-black border border-[#BDBDBD] rounded-lg p-2 cursor-pointer focus:outline-none"
+            value=""
+            onChange={(e) => handleGradeSelection(Number(e.target.value))}
+          >
+            <option value="" disabled>
+              Choose class
+            </option>
+            {Array.from({ length: 12 }, (_, i) => i + 1)
+              .filter((grade) => !selectedGrades.includes(grade))
+              .map((grade) => (
+                <option key={grade} value={grade}>
+                  Class {grade}
+                </option>
+              ))}
+          </select>
+        </div>
 
         <div className="flex flex-wrap gap-2">
           {selectedGrades.map((grade) => (
@@ -530,8 +515,12 @@ const TestCreationForm = () => {
         </button>
       </div>
       {/* <ToastContainer /> */}
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
-
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        closeOnClick
+      />
     </div>
   );
 };
