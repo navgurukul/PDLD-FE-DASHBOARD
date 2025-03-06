@@ -3,6 +3,10 @@ import { Calendar, Clock, ChevronDown, Check, X } from "lucide-react";
 import { useState } from "react";
 import Button from "../components/ButtonCustom";
 import apiInstance from "../../api";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import ButtonCustom from "../components/ButtonCustom";
+import { useNavigate } from "react-router";
 
 const TestCreationForm = () => {
   const [testDates, setTestDates] = useState({});
@@ -11,6 +15,8 @@ const TestCreationForm = () => {
   const [selectedSubjects, setSelectedSubjects] = useState({});
   const [testType, setTestType] = useState("regular");
   const [testScores, setTestScores] = useState({});
+
+  const navigate = useNavigate();
 
   const handleScoreChange = (gradeSubject, score) => {
     setTestScores((prev) => ({ ...prev, [gradeSubject]: score }));
@@ -77,11 +83,47 @@ const TestCreationForm = () => {
 
       console.log("Payload => ", payload);
       const response = await apiInstance.post("/dev/test", payload);
-      console.log("Response => ", response.data);
+      console.log("Response => ", response?.data?.success);
+
+      if (response?.data?.success) {
+        toast.success("Test Created Successfully"); 
+        setTimeout(() => {
+            navigate("/");
+        }, 2000); 
+      } else {
+        toast.error("Failed to create test");
+      }
     } catch (error) {
       console.error("Error => ", error);
     }
   };
+
+  const isSubjectSelected = (grade) => {
+    return selectedSubjects[grade] && selectedSubjects[grade].length > 0;
+  };
+
+  const isSubjectDetailsFilled = (grade, subject) => {
+    const key = `${grade}-${subject}`;
+    return testDates[key] && testScores[key];
+  };
+
+  const isFormValid = () => {
+    if (selectedGrades.length === 0) return false;
+
+    for (const grade of selectedGrades) {
+        if (!selectedSubjects[grade]?.length) return false;
+
+        for (const subject of selectedSubjects[grade]) {
+            const key = `${grade}-${subject}`;
+            if (!testDates[key]) return false;
+
+            // Only validate maxScore for "regular" test type
+            if (testType === "regular" && !testScores[key]) return false;
+        }
+    }
+    return true;
+};
+
 
   return (
     <div style={{ width: "40%", margin: "20px auto" }}>
@@ -130,42 +172,38 @@ const TestCreationForm = () => {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Classes</h2>
         <div className="relative">
-          <select
-            className="w-full bg-white flex-col justify-start items-center gap-12 inline-flex overflow-hidden p-2
-       border border-[#BDBDBD] rounded-lg text-[#BDBDBD] appearance-none cursor-pointer
-       focus:border-[#BDBDBD] focus:outline-none"
-            value=""
-            onChange={(e) => handleGradeSelection(Number(e.target.value))}
-          >
-            <option value="" disabled>
-              Choose class
-            </option>
-            {Array.from({ length: 12 }, (_, i) => i + 1)
-              .filter((grade) => !selectedGrades.includes(grade))
-              .map((grade) => (
-                <option key={grade} value={grade}>
-                  Class {grade}
-                </option>
-              ))}
-          </select>
-          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z"
-                fill="#BDBDBD"
-              />
-            </svg>
-          </div>
-          <div className="text-[#483D8B] text-sm font-normal font-['Work Sans'] leading-normal">
-            Relevant subjects will appear for each selected class
-          </div>
-        </div>
+  <select
+    className="w-full bg-white text-black border border-[#BDBDBD] rounded-lg p-2 cursor-pointer focus:outline-none"
+    value=""
+    onChange={(e) => handleGradeSelection(Number(e.target.value))}
+  >
+    <option value="" disabled>
+      Choose class
+    </option>
+    {Array.from({ length: 12 }, (_, i) => i + 1)
+      .filter((grade) => !selectedGrades.includes(grade))
+      .map((grade) => (
+        <option key={grade} value={grade}>
+          Class {grade}
+        </option>
+      ))}
+  </select>
+  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z"
+        fill="#BDBDBD"
+      />
+    </svg>
+  </div>
+</div>
+
         <div className="flex flex-wrap gap-2">
           {selectedGrades.map((grade) => (
             <div
@@ -215,9 +253,18 @@ const TestCreationForm = () => {
                         : selectedSubjects[grade].map((subject) => (
                             <span
                               key={subject}
-                              className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm flex items-center"
+                              className="bg-[#2F4F4F] text-[white] px-4 py-1 h-10 rounded-md text-sm flex items-center"
                             >
-                              {subject} 
+                              {subject}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSubjectSelection(grade, subject);
+                                }}
+                                className="ml-1 text-[white]"
+                              >
+                                ✖
+                              </button>
                             </span>
                           ))}
                     </div>
@@ -298,7 +345,7 @@ const TestCreationForm = () => {
                                 }}
                                 className="ml-1 text-gray-500"
                               >
-                                :heavy_multiplication_x:
+                                ✖
                               </button>
                             </span>
                           ))}
@@ -381,7 +428,7 @@ const TestCreationForm = () => {
                 </div>
               )}
 
-              {selectedSubjects[grade]?.length > 0 && (
+              {/* {selectedSubjects[grade]?.length > 0 && (
                 <div className="space-y-2 mt-4">
                   <h4 className="text-[#2F4F4F] text-lg font-semibold font-['Work Sans'] leading-[30.60px]">
                     Set Test Date and Max Score
@@ -409,7 +456,7 @@ const TestCreationForm = () => {
                           <div className="text-[#2F4F4F] text-lg font-normal font-['Work Sans'] leading-[30.60px]">
                             <input
                               type="text"
-                              placeholder="90"
+                              placeholder="Max Score"
                               className="w-full h-full focus:outline-none text-[#2F4F4F] text-lg font-normal"
                               value={testScores[combinedKey] || ""}
                               onChange={(e) =>
@@ -422,16 +469,69 @@ const TestCreationForm = () => {
                     );
                   })}
                 </div>
+              )} */}
+              {selectedSubjects[grade]?.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <h4 className="text-[#2F4F4F] text-lg font-semibold">
+                    Set Test Date {testType === "regular" && "and Max Score"}
+                  </h4>
+                  {selectedSubjects[grade].map((subject) => {
+                    const combinedKey = `${grade}-${subject}`;
+                    return (
+                      <div
+                        key={combinedKey}
+                        className="flex items-center space-x-4 p-2 bg-white rounded-lg"
+                      >
+                        <span className="w-48 text-gray-700">{subject}</span>
+                        <div className="flex justify-end w-full">
+                          <input
+                            type="date"
+                            className="w-36 p-2 border border-[#E0E0E0] rounded-lg"
+                            value={testDates[combinedKey] || ""}
+                            onChange={(e) =>
+                              handleDateSelection(combinedKey, e.target.value)
+                            }
+                          />
+                        </div>
+                        {testType === "regular" && (
+                          <div className="w-[200px] h-12 px-4 py-3 rounded-lg border border-[#E0E0E0] flex items-center">
+                            <input
+                              type="text"
+                              placeholder="Max Score"
+                              className="w-full h-full focus:outline-none text-lg"
+                              value={testScores[combinedKey] || ""}
+                              onChange={(e) =>
+                                handleScoreChange(combinedKey, e.target.value)
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           ))}
         </div>
       )}
 
-      {/**
-        Attach the new handleCreateTest function to our button click
-      */}
-      <Button text={"Create Test"} onClick={handleCreateTest} />
+      <div className="flex justify-center">
+        <button
+          onClick={handleCreateTest}
+          disabled={!isFormValid()}
+          className={`flex justify-center h-11 px-4 py-2 w-[120px] ${
+            !isFormValid()
+              ? "bg-gray-300 cursor-not-allowed"
+              : "bg-[#FFD700] cursor-pointer"
+          } rounded-lg items-center gap-2`}
+        >
+          Create Test
+        </button>
+      </div>
+      {/* <ToastContainer /> */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
+
     </div>
   );
 };
