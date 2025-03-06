@@ -384,7 +384,7 @@ export default function TestListTable() {
 
             {/* Date Range Dropdown (placeholder) */}
 
-            <div style={{ border: "1px solid lightgrey", borderRadius: "5px" }}>
+            <div style={{ border: "1px solid lightgrey", borderRadius: "7px" }}>
               <DatePicker
                 className="my-date-picker"
                 selectsRange
