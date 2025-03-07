@@ -344,6 +344,26 @@ export default function TestListTable() {
                   backgroundColor: "#fff",
                 },
               }}
+              SelectProps={{
+                MenuProps: {
+                  PaperProps: {
+                    sx: {
+                      maxHeight: 200, // Set the maximum height of the dropdown
+                      overflowY: "auto", // Add scroll functionality
+                      "&::-webkit-scrollbar": {
+                        width: "5px", // Make the scrollbar 5px wide
+                      },
+                      "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "#B0B0B0", // Set scrollbar thumb to grey
+                        borderRadius: "5px",
+                      },
+                      "&::-webkit-scrollbar-track": {
+                        backgroundColor: "#F0F0F0", // Optional: lighter grey for the track
+                      },
+                    },
+                  },
+                },
+              }}
             >
               <MenuItem value="">Subject</MenuItem>
               {SUBJECT_OPTIONS.map((subject) => (
