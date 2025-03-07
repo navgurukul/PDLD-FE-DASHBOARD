@@ -94,8 +94,7 @@ export default function TestListTable() {
         endDateFormatted = "01-02-2026";
       }
 
-      // Build your URL with the final dates
-      // let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}`;
+      // Build your URL with all applicable filters, including status
       let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&page=${currentPage}&pageSize=${pageSize}`;
 
       if (selectedClass) {
@@ -105,7 +104,7 @@ export default function TestListTable() {
         url += `&subject=${selectedSubject}`;
       }
       if (selectedStatus) {
-        url += `&status=${selectedStatus}`;
+        url += `&testStatus=${selectedStatus}`;
       }
 
       const response = await apiInstance.get(url);
@@ -118,10 +117,9 @@ export default function TestListTable() {
     }
   };
 
-  // Re-fetch data whenever class, subject, or status changes
+  // Re-fetch data whenever any filter changes
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     selectedClass,
     selectedSubject,
