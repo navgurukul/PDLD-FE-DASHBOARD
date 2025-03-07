@@ -18,7 +18,7 @@ const CreateTest = () => {
           </p>
           <button
             onClick={handleCreateTest}
-            className="flex items-center justify-center h-12 px-6 bg-[#FFD700] text-black font-medium rounded-lg shadow-md hover:bg-yellow-500 transition"
+            className="flex items-center justify-center h-12 px-6 bg-[#FFD700] text-black font-medium rounded-lg shadow-md hover:bg-yellow-500 transition cursor-pointer"
           >
             Create Test
           </button>

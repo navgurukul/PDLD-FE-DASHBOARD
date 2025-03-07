@@ -411,7 +411,7 @@ export default function TestListTable() {
         </div>
 
         {/* Data Table */}
-        <div style={{ borderRadius: "8px" }}>
+        {/* <div style={{ borderRadius: "8px" }}>
           <MUIDataTable
             data={tableData}
             columns={columns}
@@ -422,7 +422,36 @@ export default function TestListTable() {
               },
             }}
           />
+        </div> */}
+
+        <div style={{ borderRadius: "8px" }}>
+          <MUIDataTable
+            data={tableData}
+            columns={columns.map((column) => ({
+              ...column,
+              options: {
+                ...column.options,
+                setCellProps: () => ({
+                  style: {
+                    paddingLeft: "35px",
+                    paddingRight: "35px",
+                    textAlign: "center",
+                  },
+                }),
+              },
+            }))}
+            options={options}
+            sx={{
+              "& .MuiPaper-root": {
+                boxShadow: "none",
+              },
+              "& .MuiTableCell-root": {
+                textAlign: "center",
+              },
+            }}
+          />
         </div>
+
         <div
           style={{
             width: "max-content",

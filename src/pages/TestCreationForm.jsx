@@ -3,6 +3,8 @@ import { Calendar, Clock, ChevronDown, Check, X } from "lucide-react";
 import { useState } from "react";
 import Button from "../components/ButtonCustom";
 import apiInstance from "../../api";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const TestCreationForm = () => {
   const [testDates, setTestDates] = useState({});
@@ -15,7 +17,7 @@ const TestCreationForm = () => {
   const handleScoreChange = (gradeSubject, score) => {
     setTestScores((prev) => ({ ...prev, [gradeSubject]: score }));
   };
- 
+
   const handleGradeSelection = (grade) => {
     if (!grade) return;
     const isSelected = selectedGrades.includes(grade);
@@ -50,9 +52,37 @@ const TestCreationForm = () => {
       ...prev,
       [grade]: !prev[grade],
     }));
-  }; 
-   
+  };
+
   const handleCreateTest = async () => {
+    if (selectedGrades.length === 0) {
+      alert("Please select at least one class.");
+      return;
+    }
+
+    for (const grade of selectedGrades) {
+      if (!selectedSubjects[grade]?.length) {
+        alert(`Please select at least one subject for Class ${grade}.`);
+        return;
+      }
+
+      for (const subject of selectedSubjects[grade]) {
+        const key = `${grade}-${subject}`;
+
+        if (!testDates[key]) {
+          alert(`Please select a date for ${subject} in Class ${grade}.`);
+          return;
+        }
+
+        if (testType === "regular" && (!testScores[key] || isNaN(testScores[key]) || Number(testScores[key]) <= 0)) {
+          alert(`Please enter a valid max score for ${subject} in Class ${grade}.`);
+          return;
+        }
+      }
+    }
+
+    toast.success("Test Created Successfully");
+
     try {
       const payload = {
         testType: testType === "regular" ? "SYLLABUS" : "REMEDIAL",
@@ -98,9 +128,8 @@ const TestCreationForm = () => {
               className="w-5 h-5"
             />
             <span
-              className={`px-4 py-2 rounded-lg ${
-                testType === "regular" ? " text-[#2F4F4F]" : " text-gray-700"
-              }`}
+              className={`px-4 py-2 rounded-lg ${testType === "regular" ? " text-[#2F4F4F]" : " text-gray-700"
+                }`}
             >
               Syllabus
             </span>
@@ -116,9 +145,8 @@ const TestCreationForm = () => {
                 className="w-5 h-5"
               />
               <span
-                className={`px-4 py-2 rounded-lg ${
-                  testType === "remedial" ? "text-[#2F4F4F]" : "text-gray-700"
-                }`}
+                className={`px-4 py-2 rounded-lg ${testType === "remedial" ? "text-[#2F4F4F]" : "text-gray-700"
+                  }`}
               >
                 Remedial
               </span>
@@ -130,10 +158,10 @@ const TestCreationForm = () => {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Classes</h2>
         <div className="relative">
-          <select
+          {/* <select
             className="w-full bg-white flex-col justify-start items-center gap-12 inline-flex overflow-hidden p-2
        border border-[#BDBDBD] rounded-lg text-[#BDBDBD] appearance-none cursor-pointer
-       focus:border-[#BDBDBD] focus:outline-none"
+       focus:border-[#BDBDBD] focus:outline-none "
             value=""
             onChange={(e) => handleGradeSelection(Number(e.target.value))}
           >
@@ -147,7 +175,31 @@ const TestCreationForm = () => {
                   Class {grade}
                 </option>
               ))}
+          </select> */}
+
+          <select
+            className="w-full bg-white flex-col justify-start items-center gap-12 inline-flex overflow-hidden p-2
+    border border-[#BDBDBD] rounded-lg text-[#BDBDBD] appearance-none cursor-pointer
+    focus:border-[#BDBDBD] focus:outline-none"
+            value=""
+            onChange={(e) => handleGradeSelection(Number(e.target.value))}
+          >
+            <option value="" disabled>
+              Choose class
+            </option>
+            {Array.from({ length: 12 }, (_, i) => i + 1)
+              .filter((grade) => !selectedGrades.includes(grade))
+              .map((grade) => (
+                <option
+                  key={grade}
+                  value={grade}
+                  className="bg-white text-black checked:bg-gray-300"
+                >
+                  Class {grade}
+                </option>
+              ))}
           </select>
+
           <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
             <svg
               width="24"
@@ -210,16 +262,25 @@ const TestCreationForm = () => {
                   >
                     <div className="text-gray-500 flex flex-wrap gap-2">
                       {!selectedSubjects[grade] ||
-                      selectedSubjects[grade].length === 0
+                        selectedSubjects[grade].length === 0
                         ? "Choose subjects"
                         : selectedSubjects[grade].map((subject) => (
-                            <span
-                              key={subject}
-                              className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm flex items-center"
+                          <span
+                            key={subject}
+                            className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm flex items-center"
+                          >
+                            {subject}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubjectSelection(grade, subject);
+                              }}
+                              className="ml-1 text-gray-500"
                             >
-                              {subject} 
-                            </span>
-                          ))}
+                              ✖
+                            </button>
+                          </span>
+                        ))}
                     </div>
                     <div className="flex items-center">
                       <svg
@@ -283,25 +344,25 @@ const TestCreationForm = () => {
                   >
                     <div className="text-gray-500 flex flex-wrap gap-2 ">
                       {!selectedSubjects[grade] ||
-                      selectedSubjects[grade].length === 0
+                        selectedSubjects[grade].length === 0
                         ? "Choose subjects"
                         : selectedSubjects[grade].map((subject) => (
-                            <span
-                              key={subject}
-                              className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm flex items-center"
+                          <span
+                            key={subject}
+                            className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm flex items-center"
+                          >
+                            {subject}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubjectSelection(grade, subject);
+                              }}
+                              className="ml-1 text-gray-500"
                             >
-                              {subject}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSubjectSelection(grade, subject);
-                                }}
-                                className="ml-1 text-gray-500"
-                              >
-                                :heavy_multiplication_x:
-                              </button>
-                            </span>
-                          ))}
+                              ✖
+                            </button>
+                          </span>
+                        ))}
                     </div>
                     <div className="flex items-center">
                       <svg
@@ -343,31 +404,30 @@ const TestCreationForm = () => {
                                     }}
                                   >
                                     <div
-                                      className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${
-                                        selectedSubjects[grade]?.includes(
-                                          subject
-                                        )
-                                          ? "bg-[#2F4F4F] border-[#2F4F4F]"
-                                          : "border-[#2F4F4F] bg-white"
-                                      }`}
+                                      className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${selectedSubjects[grade]?.includes(
+                                        subject
+                                      )
+                                        ? "bg-[#2F4F4F] border-[#2F4F4F]"
+                                        : "border-[#2F4F4F] bg-white"
+                                        }`}
                                     >
                                       {selectedSubjects[grade]?.includes(
                                         subject
                                       ) && (
-                                        <svg
-                                          className="w-4 h-4"
-                                          fill="none"
-                                          stroke="white"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M5 13l4 4L19 7"
-                                          />
-                                        </svg>
-                                      )}
+                                          <svg
+                                            className="w-4 h-4"
+                                            fill="none"
+                                            stroke="white"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth="2"
+                                              d="M5 13l4 4L19 7"
+                                            />
+                                          </svg>
+                                        )}
                                     </div>
                                     {subject}
                                   </div>
@@ -409,7 +469,7 @@ const TestCreationForm = () => {
                           <div className="text-[#2F4F4F] text-lg font-normal font-['Work Sans'] leading-[30.60px]">
                             <input
                               type="text"
-                              placeholder="90"
+                              placeholder="Max Score"
                               className="w-full h-full focus:outline-none text-[#2F4F4F] text-lg font-normal"
                               value={testScores[combinedKey] || ""}
                               onChange={(e) =>
@@ -432,6 +492,7 @@ const TestCreationForm = () => {
         Attach the new handleCreateTest function to our button click
       */}
       <Button text={"Create Test"} onClick={handleCreateTest} />
+      <ToastContainer />
     </div>
   );
 };
