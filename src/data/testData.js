@@ -15,16 +15,33 @@ export const CLASS_OPTIONS = [
 ];
  
 export const SUBJECT_OPTIONS = [
-  "Maths",
-  "English",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "History",
-  "Geography",
-  "Hindi",
-  "Sanskrit",
-];
+    "Accountancy",
+    "Biology",
+    "Business Studies",
+    "Chemistry",
+    "Computer Science",
+    "Economics",
+    "Geography",
+    "History",
+    "Home Science",
+    "Physics",
+    "Political Science",
+    "Botany",
+    "Zoology",
+    "Mathematics",
+    "Hindi",
+    "Sanskrit",
+    "English",
+    "Regional Language",
+    "Environment Studies",
+    "Sports",
+    "Music",
+    "Science",
+    "Social Studies",
+    "Art Education",
+    "Health & Physical Education"
+  ];
+  
 
 export const STATUS_LABELS = {
   'ENTER_SCORE': 'Enter Score',
