@@ -1,7 +1,6 @@
 import { SUBJECTS_BY_GRADE, SUBJECT_CATEGORIES } from "../data/testData";
 import { Calendar, Clock, ChevronDown, Check, X } from "lucide-react";
-import { useState } from "react";
-import Button from "../components/ButtonCustom";
+import { useState } from "react"; 
 import apiInstance from "../../api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -68,7 +67,7 @@ const TestCreationForm = () => {
             const key = `${grade}-${subject}`;
             const subjectObj = {
               subject,
-              testName: `${subject} Test`,
+              // testName: `${subject} Test`,
               dueDate: testDates[key] || "",
             };
             if (testType === "regular") {
@@ -98,14 +97,7 @@ const TestCreationForm = () => {
     }
   };
 
-  const isSubjectSelected = (grade) => {
-    return selectedSubjects[grade] && selectedSubjects[grade].length > 0;
-  };
-
-  const isSubjectDetailsFilled = (grade, subject) => {
-    const key = `${grade}-${subject}`;
-    return testDates[key] && testScores[key];
-  };
+  
 
   const isFormValid = () => {
     if (selectedGrades.length === 0) return false;
