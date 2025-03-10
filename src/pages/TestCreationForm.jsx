@@ -18,8 +18,13 @@ const TestCreationForm = () => {
   const navigate = useNavigate();
 
   const handleScoreChange = (gradeSubject, score) => {
-    setTestScores((prev) => ({ ...prev, [gradeSubject]: score }));
-  };
+    const maxScore = Number(score);
+    if (maxScore > 80) {
+        toast.error("Max Score cannot be more than 80");
+        return;
+    }
+    setTestScores((prev) => ({ ...prev, [gradeSubject]: maxScore }));
+};
  
   const handleGradeSelection = (grade) => {
     if (!grade) return;
@@ -110,7 +115,9 @@ const TestCreationForm = () => {
         if (!testDates[key]) return false;
 
         // Only validate maxScore for "regular" test type
-        if (testType === "regular" && !testScores[key]) return false;
+        if (testType === "regular" && (!testScores[key] || testScores[key] > 80)) {
+          return false;
+        }
       }
     }
     return true;

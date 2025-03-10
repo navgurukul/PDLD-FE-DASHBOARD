@@ -173,7 +173,7 @@ export default function TestListTable() {
     },
     {
       name: "schoolsSubmitted",
-      label: "Schools Submitted (100)",
+      label: "Schools Submitted",
       options: { filter: false, sort: true },
     },
     {
@@ -252,6 +252,8 @@ export default function TestListTable() {
 
   // MUI DataTable options
   const options = {
+    filter: false,
+    search: false, 
     filterType: "dropdown",
     responsive: "standard",
     selectableRows: "none",
