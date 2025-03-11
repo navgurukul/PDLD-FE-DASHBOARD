@@ -230,7 +230,7 @@ export default function TestListTable() {
                 }}
                 onClick={() => {
                   console.log("Test ID:", testId);
-                  navigate(`/edit/testCreation`);
+                  navigate(`/edit/testCreation/${testId}`);
                 }}
               >
                 <img
