@@ -1,10 +1,8 @@
-import { SUBJECTS_BY_GRADE, SUBJECT_CATEGORIES } from "../data/testData";
-import { Calendar, Clock, ChevronDown, Check, X } from "lucide-react";
+import { SUBJECTS_BY_GRADE, SUBJECT_CATEGORIES } from "../data/testData"; 
 import { useState } from "react"; 
 import apiInstance from "../../api";
 import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import ButtonCustom from "../components/ButtonCustom";
+import "react-toastify/dist/ReactToastify.css"; 
 import { useNavigate } from "react-router";
 
 const TestCreationForm = () => {
@@ -18,8 +16,13 @@ const TestCreationForm = () => {
   const navigate = useNavigate();
 
   const handleScoreChange = (gradeSubject, score) => {
-    setTestScores((prev) => ({ ...prev, [gradeSubject]: score }));
-  };
+    const maxScore = Number(score);
+    if (maxScore > 80) {
+        toast.error("Max Score cannot be more than 80");
+        return;
+    }
+    setTestScores((prev) => ({ ...prev, [gradeSubject]: maxScore }));
+};
  
   const handleGradeSelection = (grade) => {
     if (!grade) return;
@@ -110,7 +113,9 @@ const TestCreationForm = () => {
         if (!testDates[key]) return false;
 
         // Only validate maxScore for "regular" test type
-        if (testType === "regular" && !testScores[key]) return false;
+        if (testType === "regular" && (!testScores[key] || testScores[key] > 80)) {
+          return false;
+        }
       }
     }
     return true;

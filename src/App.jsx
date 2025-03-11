@@ -23,6 +23,7 @@ function App() {
             <Route path="/users" element={<Users />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/testCreationForm" element={<TestCreationForm/>} />
+            <Route path="/edit/testCreation" element={<TestCreationForm/>} />
             <Route path="/help" element={<HelpAndSupport />} />
 
             {/* Fallback Route */}

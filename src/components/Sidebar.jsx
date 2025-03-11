@@ -11,8 +11,9 @@ import {
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
-  const location = useLocation(); // Detects current route
-  if (location.pathname.includes("testCreationForm")) return null;
+  const location = useLocation(); // Detects current route 
+  if (location.pathname.includes("testCreationForm") || location.pathname.includes("edit")) return null;
+
   // Menu data (path + label)
   const menuItems = [
     {
