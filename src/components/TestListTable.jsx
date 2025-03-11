@@ -135,6 +135,7 @@ export default function TestListTable() {
   );
 
   const tableData = filteredTests?.map((test) => ({
+    id: test.id,
     testName: test.testName,
     subject: test.subject || "N/A",
     class: `Class ${test.testClass || "N/A"}`,
@@ -151,6 +152,11 @@ export default function TestListTable() {
 
   // MUI DataTable columns
   const columns = [
+    {
+      name: "id",
+      label: "ID",
+      options: { display: false }, // Keep the ID hidden in the table
+    },
     {
       name: "testName",
       label: "Test Name",
@@ -210,42 +216,49 @@ export default function TestListTable() {
       options: {
         filter: false,
         sort: false,
-        customBodyRender: () => (
-          <div style={{ display: "flex", gap: "8px" }}>
-            <Button
-              variant="outlined"
-              size="small"
-              color="primary"
-              sx={{
-                borderColor: "transparent",
-                "&:hover": { borderColor: "transparent" },
-              }}
-            >
-              <img
-                src={EditPencilIcon}
-                alt="Edit"
-                style={{ width: "20px", height: "20px" }}
-              />
-              &nbsp;
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              color="secondary"
-              sx={{
-                borderColor: "transparent",
-                "&:hover": { borderColor: "transparent" },
-              }}
-            >
-              <img
-                src={DocScanner}
-                alt="View Report"
-                style={{ width: "20px", height: "20px" }}
-              />
-              &nbsp; View Report
-            </Button>
-          </div>
-        ),
+        customBodyRender: (value, tableMeta) => {
+          const testId = tableMeta.rowData[0]; // Now the ID is in the first column
+          return (
+            <div style={{ display: "flex", gap: "8px" }}>
+              <Button
+                variant="outlined"
+                size="small"
+                color="primary"
+                sx={{
+                  borderColor: "transparent",
+                  "&:hover": { borderColor: "transparent" },
+                }}
+                onClick={() => {
+                  console.log("Test ID:", testId);
+                  navigate(`/edit/testCreation`);
+                }}
+              >
+                <img
+                  src={EditPencilIcon}
+                  alt="Edit"
+                  style={{ width: "20px", height: "20px" }}
+                />
+                &nbsp;
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                color="secondary"
+                sx={{
+                  borderColor: "transparent",
+                  "&:hover": { borderColor: "transparent" },
+                }}
+              >
+                <img
+                  src={DocScanner}
+                  alt="View Report"
+                  style={{ width: "20px", height: "20px" }}
+                />
+                &nbsp; View Report
+              </Button>
+            </div>
+          );
+        },
       },
     },
   ];

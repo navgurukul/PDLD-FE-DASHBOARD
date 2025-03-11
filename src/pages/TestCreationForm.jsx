@@ -1,10 +1,8 @@
-import { SUBJECTS_BY_GRADE, SUBJECT_CATEGORIES } from "../data/testData";
-import { Calendar, Clock, ChevronDown, Check, X } from "lucide-react";
+import { SUBJECTS_BY_GRADE, SUBJECT_CATEGORIES } from "../data/testData"; 
 import { useState } from "react"; 
 import apiInstance from "../../api";
 import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import ButtonCustom from "../components/ButtonCustom";
+import "react-toastify/dist/ReactToastify.css"; 
 import { useNavigate } from "react-router";
 
 const TestCreationForm = () => {
