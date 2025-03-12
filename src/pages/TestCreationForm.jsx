@@ -130,6 +130,7 @@ const TestCreationForm = () => {
   };
 
   const toggleDropdown = (grade) => {
+    if(isEditMode) return;
     setDropdownOpen((prev) => ({
       ...prev,
       [grade]: !prev[grade],
@@ -139,49 +140,24 @@ const TestCreationForm = () => {
   const handleCreateTest = async () => {
     setCreatingTest(true);
     try {
-      const payload = {
-        testType: testType === "regular" ? "SYLLABUS" : "REMEDIAL",
-        classes: selectedGrades.map((grade) => ({
-          class: grade,
-          subjects: (selectedSubjects[grade] || []).map((subject) => {
-            const key = `${grade}-${subject}`;
-            const subjectObj = {
-              subject,
-              dueDate: testDates[key] || "",
-            };
-            if (testType === "regular") {
-              subjectObj.maxScore = testScores[key]
-                ? Number(testScores[key])
-                : 100;
-            }
-            return subjectObj;
-          }),
-        })),
-      };
-
-      console.log("Payload => ", payload);
-
       let response;
 
       if (!isEditMode) {
         // ---------- CREATE MODE (POST) ----------
-        // Keep your old "multi-class" payload logic EXACTLY as is:
         const payload = {
           testType: testType === "regular" ? "SYLLABUS" : "REMEDIAL",
           classes: selectedGrades.map((grade) => ({
             class: grade,
             subjects: (selectedSubjects[grade] || []).map((subject) => {
               const key = `${grade}-${subject}`;
-              const subjectObj = {
+              return {
                 subject,
                 dueDate: testDates[key] || "",
+                maxScore:
+                  testType === "regular" && testScores[key]
+                    ? Number(testScores[key])
+                    : 100,
               };
-              if (testType === "regular") {
-                subjectObj.maxScore = testScores[key]
-                  ? Number(testScores[key])
-                  : 100;
-              }
-              return subjectObj;
             }),
           })),
         };
@@ -190,47 +166,38 @@ const TestCreationForm = () => {
         response = await apiInstance.post("/dev/test", payload);
       } else {
         // ---------- EDIT MODE (PATCH) ----------
-        // Single grade & single subject => simplified patch payload
         const [grade] = selectedGrades;
         const [subject] = selectedSubjects[grade] || [];
         const key = `${grade}-${subject}`;
-        const originalDate = testDates[key] || "";
-
-        let editDate = "";
-        if (originalDate) {
-          const [year, month, day] = originalDate.split("-");
-          editDate = `${day}-${month}-${year}`;
+  
+        const editPayload = {};
+  
+        // Convert date format if changed
+        if (testDates[key]) {
+          const [year, month, day] = testDates[key].split("-");
+          editPayload.testDate = `${day}-${month}-${year}`;
         }
-
-        // Build the short payload
-        const editPayload = {
-          subject: subject,
-          testDate: editDate || "",
-        };
-        // If testType is "regular", include maxScore
-        if (testType === "regular") {
-          editPayload.maxScore = testScores[key]
-            ? Number(testScores[key])
-            : 100;
+  
+        // Add maxScore if changed
+        if (testType === "regular" && testScores[key] !== undefined) {
+          editPayload.maxScore = Number(testScores[key]);
         }
-
-        console.log("Edit Payload => ", editPayload);
+  
+        if (Object.keys(editPayload).length === 0) {
+          toast.warn("No changes made!");
+          setCreatingTest(false);
+          return;
+        }
+  
+        console.log("Edit Payload =>", editPayload);
         response = await apiInstance.patch(`/dev/test/${testId}`, editPayload);
       }
-
-      console.log("Response => ", response?.data?.success);
-
+  
       if (response?.data?.success) {
-        toast.success(
-          isEditMode ? "Test Updated Successfully" : "Test Created Successfully"
-        );
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
+        toast.success(isEditMode ? "Test Updated Successfully" : "Test Created Successfully");
+        setTimeout(() => navigate("/"), 2000);
       } else {
-        toast.error(
-          isEditMode ? "Failed to update test" : "Failed to create test"
-        );
+        toast.error(isEditMode ? "Failed to update test" : "Failed to create test");
       }
     } catch (error) {
       console.error("Error => ", error);
@@ -239,7 +206,7 @@ const TestCreationForm = () => {
       setCreatingTest(false);
     }
   };
-
+  
   const isFormValid = () => {
     if (selectedGrades.length === 0) return false;
 
@@ -393,7 +360,7 @@ const TestCreationForm = () => {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold mb-2">Classes</h2>
+        {!isEditMode && (<h2 className="text-xl font-semibold mb-2">Classes</h2>)}
           {/* {!isEditMode && (
             <div className="relative">
               <div
