@@ -7,6 +7,12 @@
     font-family: 'Karla', sans-serif !important; 
   }
 
+  th, .MuiTableCell-head { 
+    border-bottom: 1px solid lightgray !important; 
+    font-weight: 500 !important;  
+  }
+  
+
   .my-date-picker{
     width: 200px !important;
     padding: 2px !important;

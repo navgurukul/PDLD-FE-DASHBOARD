@@ -180,7 +180,18 @@ export default function TestListTable() {
     {
       name: "schoolsSubmitted",
       label: "Schools Submitted",
-      options: { filter: false, sort: true },
+      options: {
+        filter: false,
+        sort: true,
+        customBodyRender: (value) => {
+          return <div style={{ textAlign: "center" }}>{value}</div>;
+        },
+        setHeaderProps: () => ({
+          style: {
+            textAlign: "center",
+          },
+        }),
+      },
     },
     {
       name: "status",
@@ -188,6 +199,16 @@ export default function TestListTable() {
       options: {
         filter: true,
         sort: true,
+
+        // 1️⃣ Center the header text using customHeadRender
+        customHeadRender: (columnMeta) => {
+          return (
+            <th style={{ textAlign: "center" }} scope="col">
+              <div style={{ textAlign: "center" }}>{columnMeta.label}</div>
+            </th>
+          );
+        },
+
         customBodyRender: (value) => (
           <span
             style={{
@@ -216,6 +237,17 @@ export default function TestListTable() {
       options: {
         filter: false,
         sort: false,
+
+        // 1️⃣ Center the header text using customHeadRender
+        customHeadRender: (columnMeta) => {
+          return (
+            <th style={{ textAlign: "center" }} scope="col">
+              <div style={{ textAlign: "center" }}>{columnMeta.label}</div>
+            </th>
+          );
+        },
+
+        // 2️⃣ Keep your existing onClick/edit/view-report buttons
         customBodyRender: (value, tableMeta) => {
           const testId = tableMeta.rowData[0]; // Now the ID is in the first column
           return (

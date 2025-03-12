@@ -15,6 +15,7 @@ const TestCreationForm = () => {
   const [testType, setTestType] = useState("regular");
   const [testScores, setTestScores] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [creatingTest, setCreatingTest] = useState(false);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const { Id: testId } = useParams();
@@ -45,25 +46,71 @@ const TestCreationForm = () => {
   };
 
   const handleSubjectSelection = (grade, subject) => {
+    if (!grade || !subject) return;
+  
     if (isEditMode) {
-      // In edit mode, only one subject at a time
-      // If the user clicks an already-selected subject, it toggles off
-      // Otherwise, it completely replaces the existing subject array
-      if (selectedSubjects[grade]?.includes(subject)) {
-        // remove the subject
+      // In edit mode, only ONE subject per grade
+  
+      const currentlySelected = selectedSubjects[grade] || [];
+  
+      // 1️⃣ If user clicks the same subject => toggle it off
+      if (currentlySelected.includes(subject)) {
+        // Remove it
         setSelectedSubjects((prev) => ({
           ...prev,
           [grade]: prev[grade].filter((s) => s !== subject),
         }));
+        return;
+      }
+  
+      // 2️⃣ If exactly one subject is already selected => we’re “switching” subjects
+      if (currentlySelected.length === 1) {
+        const oldSubject = currentlySelected[0];
+  
+        // Preserve old date & score
+        const oldKey = `${grade}-${oldSubject}`;
+        const newKey = `${grade}-${subject}`;
+        
+        // Copy date from old subject to new subject
+        setTestDates((prev) => {
+          const oldValue = prev[oldKey];
+          // Don’t lose other fields
+          const updated = { ...prev };
+          if (oldValue) {
+            updated[newKey] = oldValue;
+          }
+          // Optionally remove the old date if you don’t want leftover keys
+          delete updated[oldKey];
+          return updated;
+        });
+  
+        // Copy maxScore from old subject to new subject
+        setTestScores((prev) => {
+          const oldValue = prev[oldKey];
+          const updated = { ...prev };
+          if (oldValue) {
+            updated[newKey] = oldValue;
+          }
+          // Optionally remove old subject’s score
+          delete updated[oldKey];
+          return updated;
+        });
+  
+        // Now replace the old subject with the new one in selectedSubjects
+        setSelectedSubjects((prev) => ({
+          ...prev,
+          [grade]: [subject],
+        }));
+  
       } else {
-        // replace with only this subject
+        // 3️⃣ No subject is selected yet => just add the new one
         setSelectedSubjects((prev) => ({
           ...prev,
           [grade]: [subject],
         }));
       }
     } else {
-      // Original multi-subject logic for create mode
+      // ⏺ Create mode => allow multiple subjects
       setSelectedSubjects((prev) => ({
         ...prev,
         [grade]: prev[grade]?.includes(subject)
@@ -88,6 +135,7 @@ const TestCreationForm = () => {
   };
 
   const handleCreateTest = async () => {
+    setCreatingTest(true);
     try {
       const payload = {
         testType: testType === "regular" ? "SYLLABUS" : "REMEDIAL",
@@ -184,6 +232,9 @@ const TestCreationForm = () => {
       }
     } catch (error) {
       console.error("Error => ", error);
+      toast.error("Something went wrong");
+    } finally {
+      setCreatingTest(false);
     }
   };
 
@@ -287,12 +338,14 @@ const TestCreationForm = () => {
                 value="regular"
                 checked={testType === "regular"}
                 onChange={() => setTestType("regular")}
-                className="w-4 h-5"
+                className="w-4 h-5 accent-gray-500"
                 disabled={isEditMode}
               />
               <span
                 className={`px-2 py-2 rounded-lg ${
-                  testType === "regular" ? " text-[#2F4F4F]" : " text-gray-700"
+                  testType === "regular"
+                    ? "text-gray-700 font-bold"
+                    : "text-gray-700"
                 }`}
               >
                 Syllabus
@@ -306,12 +359,14 @@ const TestCreationForm = () => {
                   value="remedial"
                   checked={testType === "remedial"}
                   onChange={() => setTestType("remedial")}
-                  className="w-4 h-5"
+                  className="w-4 h-5 accent-gray-500"
                   disabled={isEditMode}
                 />
                 <span
                   className={`px-2 py-2 rounded-lg ${
-                    testType === "remedial" ? "text-[#2F4F4F]" : "text-gray-700"
+                    testType === "remedial"
+                      ? "text-gray-700 font-bold"
+                      : "text-gray-700"
                   }`}
                 >
                   Remedial
@@ -321,7 +376,7 @@ const TestCreationForm = () => {
           </div>
         </div>
 
-        <div className="space-y-4">
+         <div className="space-y-4">
           <h2 className="text-xl font-semibold mb-2">Classes</h2>
 
           {!isEditMode && (
@@ -621,14 +676,19 @@ const TestCreationForm = () => {
         <div className="flex justify-center">
           <button
             onClick={handleCreateTest}
-            disabled={!isFormValid()}
-            className={`flex justify-center h-11 px-4 py-2 w-[120px] ${
-              !isFormValid()
+            // Disable if form is invalid OR if we are in the middle of creating a test
+            disabled={!isFormValid() || creatingTest}
+            className={`flex justify-center h-11 px-4 py-2 min-w-[120px] w-max ${
+              !isFormValid() || creatingTest
                 ? "bg-gray-300 cursor-not-allowed"
                 : "bg-[#FFD700] cursor-pointer"
             } rounded-lg items-center gap-2`}
           >
-            {isEditMode ? "Update Test" : "Create Test"}
+            {creatingTest
+              ? "Saving Test Details..."
+              : isEditMode
+              ? "Update Test"
+              : "Create Test"}
           </button>
         </div>
         {/* <ToastContainer /> */}
