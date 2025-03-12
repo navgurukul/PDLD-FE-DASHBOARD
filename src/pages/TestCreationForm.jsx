@@ -547,6 +547,7 @@ const TestCreationForm = () => {
                                   handleSubjectSelection(grade, subject);
                                 }}
                                 className="ml-1 text-gray-500"
+                                disabled={isEditMode}
                               >
                                 ✖
                               </button>
