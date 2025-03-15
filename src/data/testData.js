@@ -28,7 +28,7 @@ export const SUBJECT_OPTIONS = [
     "Political Science",
     "Botany",
     "Zoology",
-    "Maths",
+    "Maths", 
     "Hindi",
     "Sanskrit",
     "English",
