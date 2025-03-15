@@ -172,10 +172,8 @@ const TestCreationForm = () => {
   
         const editPayload = {};
   
-        // Convert date format if changed
         if (testDates[key]) {
-          const [year, month, day] = testDates[key].split("-");
-          editPayload.testDate = `${day}-${month}-${year}`;
+          editPayload.testDate = testDates[key];
         }
   
         // Add maxScore if changed
@@ -194,9 +192,13 @@ const TestCreationForm = () => {
       }
   
       if (response?.data?.success) {
-        toast.success(isEditMode ? "Test Updated Successfully" : "Test Created Successfully");
-        setTimeout(() => navigate("/"), 2000);
-      } else {
+        const successMessage = isEditMode ? "Test Updated Successfully" : "Test Created Successfully";
+      
+        // Redirect to the test list page with success message
+        navigate("/", { state: { successMessage } });
+      }
+      
+      else {
         toast.error(isEditMode ? "Failed to update test" : "Failed to create test");
       }
     } catch (error) {
@@ -780,13 +782,6 @@ const TestCreationForm = () => {
                 : "Create Test"}
           </button>
         </div>
-        {/* <ToastContainer /> */}
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-        />
       </div>
     </>
   );
