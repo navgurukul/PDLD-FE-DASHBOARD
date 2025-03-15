@@ -117,6 +117,12 @@ export default function TestListTable() {
     }
   };
 
+  function toTitleCase(str) {
+    return str
+      .toLowerCase()
+      .replace(/(?:^|\s)\S/g, (a) => a.toUpperCase());
+  }
+
   // Re-fetch data whenever any filter changes
   useEffect(() => {
     fetchData();
@@ -150,7 +156,7 @@ export default function TestListTable() {
     actions: "View Report",
   }));
 
-  // MUI DataTable columns
+  // MUI DataTable columns 
   const columns = [
     {
       name: "id",
@@ -160,22 +166,62 @@ export default function TestListTable() {
     {
       name: "testName",
       label: "Test Name",
-      options: { filter: false, sort: true },
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: (columnMeta) => {
+          return (
+            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
+              {toTitleCase(columnMeta.label)}
+            </div>
+          );
+        },
+      },
     },
     {
       name: "subject",
       label: "Subject",
-      options: { filter: true, sort: true },
+      options: {
+        filter: true,
+        sort: true,
+        customHeadLabelRender: (columnMeta) => {
+          return (
+            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
+              {toTitleCase(columnMeta.label)}
+            </div>
+          );
+        },
+      },
     },
     {
       name: "class",
       label: "Class",
-      options: { filter: true, sort: true },
+      options: {
+        filter: true,
+        sort: true,
+        customHeadLabelRender: (columnMeta) => {
+          return (
+            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
+              {toTitleCase(columnMeta.label)}
+            </div>
+          );
+        },
+      },
     },
     {
       name: "dateOfTest",
       label: "Date of Test",
-      options: { filter: true, sort: true },
+      options: {
+        filter: true,
+        sort: true,
+        customHeadLabelRender: (columnMeta) => {
+          return (
+            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
+              {toTitleCase(columnMeta.label)}
+            </div>
+          );
+        },
+      },
     },
     {
       name: "schoolsSubmitted",
@@ -185,6 +231,13 @@ export default function TestListTable() {
         sort: true,
         customBodyRender: (value) => {
           return <div style={{ textAlign: "center" }}>{value}</div>;
+        },
+        customHeadLabelRender: (columnMeta) => {
+          return (
+            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
+              {toTitleCase(columnMeta.label)}
+            </div>
+          );
         },
         setHeaderProps: () => ({
           style: {
@@ -199,22 +252,18 @@ export default function TestListTable() {
       options: {
         filter: true,
         sort: true,
-
-        // 1️⃣ Center the header text using customHeadRender
-        customHeadRender: (columnMeta) => {
+        customHeadLabelRender: (columnMeta) => {
           return (
-            <th style={{ textAlign: "center" }} scope="col">
-              <div style={{ textAlign: "center" }}>{columnMeta.label}</div>
-            </th>
+            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
+              {toTitleCase(columnMeta.label)}
+            </div>
           );
         },
-
         customBodyRender: (value) => (
           <span
             style={{
               padding: "4px 8px",
               borderRadius: "6px",
-              // Example style logic: color red if CANCELLED or DEADLINE_MISSED; green otherwise
               color:
                 value === "DEADLINE_MISSED" || value === "CANCELLED"
                   ? "#D9534F"
@@ -237,19 +286,15 @@ export default function TestListTable() {
       options: {
         filter: false,
         sort: false,
-
-        // 1️⃣ Center the header text using customHeadRender
-        customHeadRender: (columnMeta) => {
+        customHeadLabelRender: (columnMeta) => {
           return (
-            <th style={{ textAlign: "center" }} scope="col">
-              <div style={{ textAlign: "center" }}>{columnMeta.label}</div>
-            </th>
+            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
+              {toTitleCase(columnMeta.label)}
+            </div>
           );
         },
-
-        // 2️⃣ Keep your existing onClick/edit/view-report buttons
         customBodyRender: (value, tableMeta) => {
-          const testId = tableMeta.rowData[0]; // Now the ID is in the first column
+          const testId = tableMeta.rowData[0]; // ID is in the first column
           return (
             <div style={{ display: "flex", gap: "8px" }}>
               <Button
@@ -278,6 +323,8 @@ export default function TestListTable() {
                 color="secondary"
                 sx={{
                   borderColor: "transparent",
+                  color: "#2F4F4F",
+                  fontWeight: "bolder",
                   "&:hover": { borderColor: "transparent" },
                 }}
               >
@@ -298,7 +345,7 @@ export default function TestListTable() {
   // MUI DataTable options
   const options = {
     filter: false,
-    search: false, 
+    search: false,
     filterType: "dropdown",
     responsive: "standard",
     selectableRows: "none",
@@ -502,6 +549,7 @@ export default function TestListTable() {
             }}
           />
         </div>
+        {/* Pagination center to right */}
         <div
           style={{
             width: "max-content",
