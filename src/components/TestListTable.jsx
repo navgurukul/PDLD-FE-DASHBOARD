@@ -245,102 +245,95 @@ export default function TestListTable() {
         }),
       },
     },
+    // {
+    //   name: "status",
+    //   label: "Status",
+    //   options: {
+    //     filter: true,
+    //     sort: true,
+    //     customHeadLabelRender: (columnMeta) => {
+    //       return (
+    //         <div style={{ textAlign: "center", textTransform: "capitalize" }}>
+    //           {toTitleCase(columnMeta.label)}
+    //         </div>
+    //       );
+    //     },
+    //     customBodyRender: (value) => (
+    //       <span
+    //         style={{
+    //           padding: "4px 8px",
+    //           borderRadius: "6px",
+    //           color:
+    //             value === "DEADLINE_MISSED" || value === "CANCELLED"
+    //               ? "#D9534F"
+    //               : "#28A745",
+    //           backgroundColor:
+    //             value === "DEADLINE_MISSED" || value === "CANCELLED"
+    //               ? "#FADBD8"
+    //               : "#D4EDDA",
+    //           fontWeight: "bold",
+    //         }}
+    //       >
+    //         {value}
+    //       </span>
+    //     ),
+    //   },
+    // },
     {
-      name: "status",
-      label: "Status",
-      options: {
-        filter: true,
-        sort: true,
-        customHeadLabelRender: (columnMeta) => {
-          return (
-            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
-              {toTitleCase(columnMeta.label)}
-            </div>
-          );
-        },
-        customBodyRender: (value) => (
-          <span
-            style={{
-              padding: "4px 8px",
-              borderRadius: "6px",
-              color:
-                value === "DEADLINE_MISSED" || value === "CANCELLED"
-                  ? "#D9534F"
-                  : "#28A745",
-              backgroundColor:
-                value === "DEADLINE_MISSED" || value === "CANCELLED"
-                  ? "#FADBD8"
-                  : "#D4EDDA",
-              fontWeight: "bold",
-            }}
-          >
-            {value}
-          </span>
-        ),
-      },
-    },
-    {
-      name: "actions",
-      label: "Actions",
-      options: {
-        filter: false,
-        sort: false,
-        customHeadLabelRender: (columnMeta) => {
-          return (
-            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
-              {toTitleCase(columnMeta.label)}
-            </div>
-          );
-        },
-        customBodyRender: (value, tableMeta) => {
-          const testId = tableMeta.rowData[0]; // ID is in the first column
-          return (
-            <div style={{ display: "flex", gap: "8px" }}>
-              <Button
-                variant="outlined"
-                size="small"
-                color="primary"
-                sx={{
-                  borderColor: "transparent",
-                  "&:hover": { borderColor: "transparent" },
-                }}
-                onClick={() => {
-                  console.log("Test ID:", testId);
-                  navigate(`/edit/testCreation/${testId}`);
-                }}
-              >
-                <img
-                  src={EditPencilIcon}
-                  alt="Edit"
-                  style={{ width: "20px", height: "20px" }}
-                />
-                &nbsp;
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                color="secondary"
-                sx={{
-                  borderColor: "transparent",
-                  color: "#2F4F4F",
-                  fontWeight: "bolder",
-                  "&:hover": { borderColor: "transparent" },
-                }}
-              >
-                <img
-                  src={DocScanner}
-                  alt="View Report"
-                  style={{ width: "20px", height: "20px" }}
-                />
-                &nbsp; View Report
-              </Button>
-            </div>
-          );
-        },
-      },
-    },
-  ];
+			name: "actions",
+			label: "ACTIONS",
+			options: {
+				filter: false,
+				sort: false,
 
+				// 1️⃣ Center the header text using customHeadRender
+				customHeadRender: (columnMeta) => {
+					return (
+						<th style={{ textAlign: "center" }} scope="col">
+							<div style={{ textAlign: "center" }}>{columnMeta.label}</div>
+						</th>
+					);
+				},
+
+				// 2️⃣ Keep your existing onClick/edit/view-report buttons
+				customBodyRender: (value, tableMeta) => {
+					const testId = tableMeta.rowData[0]; // Now the ID is in the first column
+					return (
+						<div style={{ display: "flex", gap: "8px" }}>
+							<Button
+								variant="outlined"
+								size="small"
+								color="primary"
+								sx={{
+									borderColor: "transparent",
+									"&:hover": { borderColor: "transparent" },
+								}}
+								onClick={() => {
+									console.log("Test ID:", testId);
+									navigate(`/edit/testCreation/${testId}`);
+								}}
+							>
+								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
+								&nbsp;
+							</Button>
+							<Button
+								variant="outlined"
+								size="small"
+								color="secondary"
+								sx={{
+									borderColor: "transparent",
+									"&:hover": { borderColor: "transparent" },
+								}}
+							>
+								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
+								&nbsp; View Report
+							</Button>
+						</div>
+					);
+				},
+			},
+		},
+	];
 	// MUI DataTable options
 	const options = {
 		filter: false,
@@ -514,50 +507,50 @@ export default function TestListTable() {
 					<ButtonCustom imageName={addSymbolBtn} text={"Create Test"} onClick={handleCreateTest} />
 				</div>
 
-				{/* Data Table */}
-				<div style={{ borderRadius: "8px" }}>
-					<MUIDataTable
-						data={tableData}
-						columns={columns.map((column) => ({
-							...column,
-							options: {
-								...column.options,
-								setCellProps: () => ({
-									style: {
-										paddingLeft: "30px",
-										paddingRight: "30px",
-									},
-								}),
-							},
-						}))}
-						options={options}
-						sx={{
-							"& .MuiPaper-root": {
-								boxShadow: "none",
-							},
-							"& .MuiTableCell-root": {
-								textAlign: "center",
-							},
-						}}
-					/>
-				</div>
-				<div
-					style={{
-						width: "max-content",
-						margin: "25px auto",
-					}}
-				>
-					<Pagination
-						count={Math.ceil(totalRecords / pageSize)}
-						page={currentPage}
-						onChange={(e, page) => setCurrentPage(page)}
-						showFirstButton
-						showLastButton
-					/>
-				</div>
-				{/* <ToastContainer /> */}
+        {/* Data Table */}
+        <div style={{ borderRadius: "8px" }}>
+          <MUIDataTable
+            data={tableData}
+            columns={columns.map((column) => ({
+              ...column,
+              options: {
+                ...column.options,
+                setCellProps: () => ({
+                  style: {
+                    paddingLeft: "30px",
+                    paddingRight: "30px",
+                  },
+                }),
+              },
+            }))}
+            options={options}
+            sx={{
+              "& .MuiPaper-root": {
+                boxShadow: "none",
+              },
+              "& .MuiTableCell-root": {
+                textAlign: "center",
+              },
+            }}
+          />
+        </div>
+        <div
+          style={{
+            width: "max-content",
+            margin: "25px auto",
+          }}
+        >
+          <Pagination
+            count={Math.ceil(totalRecords / pageSize)}
+            page={currentPage}
+            onChange={(e, page) => setCurrentPage(page)}
+            showFirstButton
+            showLastButton
+          />
+        </div>
+        {/* <ToastContainer /> */}
 				<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
-			</div>
-		</ThemeProvider>
-	);
+      </div>
+    </ThemeProvider>
+  );
 }
