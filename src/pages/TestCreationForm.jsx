@@ -172,10 +172,8 @@ const TestCreationForm = () => {
   
         const editPayload = {};
   
-        // Convert date format if changed
         if (testDates[key]) {
-          const [year, month, day] = testDates[key].split("-");
-          editPayload.testDate = `${day}-${month}-${year}`;
+          editPayload.testDate = testDates[key];
         }
   
         // Add maxScore if changed
