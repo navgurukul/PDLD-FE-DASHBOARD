@@ -130,7 +130,7 @@ const TestCreationForm = () => {
   };
 
   const toggleDropdown = (grade) => {
-    if(isEditMode) return;
+    if (isEditMode) return;
     setDropdownOpen((prev) => ({
       ...prev,
       [grade]: !prev[grade],
@@ -169,35 +169,35 @@ const TestCreationForm = () => {
         const [grade] = selectedGrades;
         const [subject] = selectedSubjects[grade] || [];
         const key = `${grade}-${subject}`;
-  
+
         const editPayload = {};
-  
+
         if (testDates[key]) {
           editPayload.testDate = testDates[key];
         }
-  
+
         // Add maxScore if changed
         if (testType === "regular" && testScores[key] !== undefined) {
           editPayload.maxScore = Number(testScores[key]);
         }
-  
+
         if (Object.keys(editPayload).length === 0) {
           toast.warn("No changes made!");
           setCreatingTest(false);
           return;
         }
-  
+
         console.log("Edit Payload =>", editPayload);
         response = await apiInstance.patch(`/dev/test/${testId}`, editPayload);
       }
-  
+
       if (response?.data?.success) {
         const successMessage = isEditMode ? "Test Updated Successfully" : "Test Created Successfully";
-      
+
         // Redirect to the test list page with success message
         navigate("/", { state: { successMessage } });
       }
-      
+
       else {
         toast.error(isEditMode ? "Failed to update test" : "Failed to create test");
       }
@@ -208,7 +208,7 @@ const TestCreationForm = () => {
       setCreatingTest(false);
     }
   };
-  
+
   const isFormValid = () => {
     if (selectedGrades.length === 0) return false;
 
@@ -315,7 +315,7 @@ const TestCreationForm = () => {
 
       <div style={{ width: "40%", margin: "20px auto" }}>
         <div className="space-y-4">
-        { isEditMode && (<h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Edit Test Details</h5>) }
+          {isEditMode && (<h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Edit Test Details</h5>)}
           <h2 className="text-xl font-semibold mb-2">Test Type</h2>
           <div className="flex space-x-4">
             <label className="flex items-center space-x-2">
@@ -362,7 +362,7 @@ const TestCreationForm = () => {
         </div>
 
         <div className="space-y-4">
-        {!isEditMode && (<h2 className="text-xl font-semibold mb-2">Classes</h2>)}
+          {!isEditMode && (<h2 className="text-xl font-semibold mb-2">Classes</h2>)}
           {/* {!isEditMode && (
             <div className="relative">
               <div
@@ -522,214 +522,118 @@ const TestCreationForm = () => {
         </div>
 
         {selectedGrades.length > 0 && (
-          <div ref={dropdownRef} className="space-y-4">
+          <div ref={dropdownRef} className="space-y-4 mt-5">
             {selectedGrades.map((grade) => (
-              <div key={grade} className="p-4 rounded-lg">
-                <h3 className="text-lg font-semibold">Class {grade}</h3>
+              <div key={grade} className="p-4 rounded-lg text-[#2F4F4F] bg-white shadow-md border border-gray-300">
+                {/* Class Name */}
+                <h3 className="text-lg font-semibold mb-4">Class {grade}</h3>
 
-                {grade >= 1 && grade <= 10 && (
-                  <div className="w-full">
-                    <div
-                      className="rounded-md p-2 flex justify-between items-center cursor-pointer bg-white border border-gray-300"
-                      onClick={() => toggleDropdown(grade)}
-                    >
-                      <div className="text-gray-500 flex flex-wrap gap-2">
-                        {!selectedSubjects[grade] ||
-                          selectedSubjects[grade].length === 0
-                          ? "Choose subjects"
-                          : selectedSubjects[grade].map((subject) => (
-                            <span
-                              key={subject}
-                              className="bg-gray-200 text-black px-4 py-1 h-10 rounded-md text-sm flex items-center"
+                {/* Subject Selection Dropdown */}
+                <div className="w-full mb-4">
+                  <div
+                    className="rounded-md p-2 flex justify-between items-center cursor-pointer bg-white border border-gray-300"
+                    onClick={() => toggleDropdown(grade)}
+                  >
+                    <div className="text-gray-500 flex flex-wrap gap-2">
+                      {!selectedSubjects[grade] || selectedSubjects[grade].length === 0
+                        ? "Choose subjects"
+                        : selectedSubjects[grade].map((subject) => (
+                          <span
+                            key={subject}
+                            className="bg-gray-200 text-black px-4 py-1 h-10 rounded-md text-sm flex items-center"
+                          >
+                            {subject}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubjectSelection(grade, subject);
+                              }}
+                              className="ml-1 text-gray-500"
+                              disabled={isEditMode}
                             >
-                              {subject}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSubjectSelection(grade, subject);
-                                }}
-                                className="ml-1 text-gray-500"
-                                disabled={isEditMode}
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
                               >
-                                ✖
-                              </button>
-                            </span>
-                          ))}
-                      </div>
-                      <div className="flex items-center">
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z"
-                            fill="#BDBDBD"
-                          />
-                        </svg>
-                      </div>
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </span>
+                        ))}
                     </div>
-                    {dropdownOpen[grade] && (
-                      <div className="p-4 rounded-lg shadow-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
-                        <div className="flex flex-wrap gap-2">
-                          {(testType === "remedial"
-                            ? ["Maths", "Hindi"]
-                            : SUBJECTS_BY_GRADE[grade]
-                          )?.map((subject) => (
+                    <div className="flex items-center">
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z"
+                          fill="#BDBDBD"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  {dropdownOpen[grade] && (
+                    <div className="p-4 rounded-lg shadow-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
+                      <div className="flex flex-wrap gap-2">
+                        {(testType === "remedial"
+                          ? ["Maths", "Hindi"]
+                          : SUBJECTS_BY_GRADE[grade]
+                        )?.map((subject) => (
+                          <div
+                            key={subject}
+                            className="px-3 py-2 flex items-center cursor-pointer"
+                            onClick={() => handleSubjectSelection(grade, subject)}
+                          >
                             <div
-                              key={subject}
-                              className="px-3 py-2 flex items-center cursor-pointer"
-                              onClick={() =>
-                                handleSubjectSelection(grade, subject)
-                              }
+                              className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${selectedSubjects[grade]?.includes(subject)
+                                  ? "bg-[#2F4F4F] border-[#2F4F4F]"
+                                  : "border-[#2F4F4F] bg-white"
+                                }`}
                             >
-                              <div className="relative w-4 h-4 border border-[#2F4F4F] rounded-sm flex items-center justify-center mr-2">
-                                {selectedSubjects[grade]?.includes(subject) && (
-                                  <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 16 16"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M12.6667 2H3.33333C2.6 2 2 2.6 2 3.33333V12.6667C2 13.4 2.6 14 3.33333 14H12.6667C13.4 14 14 13.4 14 12.6667V3.33333C14 2.6 13.4 2 12.6667 2ZM7.14 10.86C6.88 11.12 6.46 11.12 6.2 10.86L3.80667 8.46667C3.54667 8.20667 3.54667 7.78667 3.80667 7.52667C4.06667 7.26667 4.48667 7.26667 4.74667 7.52667L6.66667 9.44667L11.2533 4.86C11.5133 4.6 11.9333 4.6 12.1933 4.86C12.4533 5.12 12.4533 5.54 12.1933 5.8L7.14 10.86Z"
-                                      fill="#2F4F4F"
-                                    />
-                                  </svg>
-                                )}
-                              </div>
-                              {subject}
+                              {selectedSubjects[grade]?.includes(subject) && (
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="white"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              )}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {(grade === 11 || grade === 12) && (
-                  <div className="w-full ">
-                    <div
-                      className="rounded-md p-2 flex justify-between items-center cursor-pointer bg-white border border-gray-400"
-                      onClick={() => toggleDropdown(grade)}
-                      ref={dropdownRef}
-                    >
-                      <div className="text-gray-500 flex flex-wrap gap-2 ">
-                        {!selectedSubjects[grade] ||
-                          selectedSubjects[grade].length === 0
-                          ? "Choose subjects"
-                          : selectedSubjects[grade].map((subject) => (
-                            <span
-                              key={subject}
-                              className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm flex items-center"
-                            >
-                              {subject}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSubjectSelection(grade, subject);
-                                }}
-                                className="ml-1 text-gray-500"
-                              >
-                                ✖
-                              </button>
-                            </span>
-                          ))}
-                      </div>
-                      <div className="flex items-center">
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z"
-                            fill="#BDBDBD"
-                          />
-                        </svg>
+                            {subject}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    {dropdownOpen[grade] && (
-                      <div
-                        className="mt-1 p-4 rounded-lg shadow-lg bg-white ">
-                        {Object.entries(SUBJECT_CATEGORIES).map(
-                          ([category, subjects]) => (
-                            <div key={category} className="mb-3">
-                              <div className="text-[#2F4F4F] text-sm font-semibold font-['Work Sans'] leading-normal px-3 py-2 ">
-                                {category}
-                              </div>
-                              <div className="flex flex-wrap gap-3 px-3">
-                                {subjects
-                                  .filter((subject) =>
-                                    testType === "remedial"
-                                      ? ["Maths", "Hindi"].includes(subject)
-                                      : SUBJECTS_BY_GRADE[grade].includes(
-                                        subject
-                                      )
-                                  )
-                                  .map((subject) => (
-                                    <div
-                                      key={subject}
-                                      className="px-3 py-2 hover:bg-gray-50 flex items-center cursor-pointer "
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleSubjectSelection(grade, subject);
-                                      }}
-                                    >
-                                      <div
-                                        className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${selectedSubjects[grade]?.includes(
-                                          subject
-                                        )
-                                          ? "bg-[#2F4F4F] border-[#2F4F4F]"
-                                          : "border-[#2F4F4F] bg-white"
-                                          }`}
-                                      >
-                                        {selectedSubjects[grade]?.includes(
-                                          subject
-                                        ) && (
-                                            <svg
-                                              className="w-4 h-4"
-                                              fill="none"
-                                              stroke="white"
-                                              viewBox="0 0 24 24"
-                                            >
-                                              <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M5 13l4 4L19 7"
-                                              />
-                                            </svg>
-                                          )}
-                                      </div>
-                                      {subject}
-                                    </div>
-                                  ))}
-                              </div>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
 
+                {/* Test Date and Max Score Inputs */}
                 {selectedSubjects[grade]?.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    <h4 className="text-[#2F4F4F] text-lg font-semibold">
-                      Set Test Date {testType === "regular" && "and Max Score"}
-                    </h4>
+                  <div className="space-y-2">
                     {selectedSubjects[grade].map((subject) => {
                       const combinedKey = `${grade}-${subject}`;
                       return (
                         <div
                           key={combinedKey}
-                          className="flex items-center space-x-4 p-2 bg-white rounded-lg"
+                          className="flex items-center space-x-4 p-2 bg-gray-50 rounded-lg"
                         >
                           <span className="w-48 text-gray-700">{subject}</span>
                           <div className="flex justify-end w-full">
@@ -764,7 +668,6 @@ const TestCreationForm = () => {
             ))}
           </div>
         )}
-
         <div className="flex justify-center mt-4">
           <button
             onClick={handleCreateTest}
