@@ -62,7 +62,7 @@ export default function TestListTable() {
 
 	const [currentPage, setCurrentPage] = useState(1);
 	const location = useLocation();
-  const navigate = useNavigate();
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		if (location.state?.successMessage) {
@@ -125,11 +125,11 @@ export default function TestListTable() {
 		}
 	};
 
-  function toTitleCase(str) {
-    return str
-      .toLowerCase()
-      .replace(/(?:^|\s)\S/g, (a) => a.toUpperCase());
-  }
+	function toTitleCase(str) {
+		return str
+			.toLowerCase()
+			.replace(/(?:^|\s)\S/g, (a) => a.toUpperCase());
+	}
 
 	// Re-fetch data whenever any filter changes
 	useEffect(() => {
@@ -155,133 +155,133 @@ export default function TestListTable() {
 		actions: "View Report",
 	}));
 
-  // MUI DataTable columns 
-  const columns = [
-    {
-      name: "id",
-      label: "ID",
-      options: { display: false }, // Keep the ID hidden in the table
-    },
-    {
-      name: "testName",
-      label: "Test Name",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: (columnMeta) => {
-          return (
-            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
-              {toTitleCase(columnMeta.label)}
-            </div>
-          );
-        },
-      },
-    },
-    {
-      name: "subject",
-      label: "Subject",
-      options: {
-        filter: true,
-        sort: true,
-        customHeadLabelRender: (columnMeta) => {
-          return (
-            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
-              {toTitleCase(columnMeta.label)}
-            </div>
-          );
-        },
-      },
-    },
-    {
-      name: "class",
-      label: "Class",
-      options: {
-        filter: true,
-        sort: true,
-        customHeadLabelRender: (columnMeta) => {
-          return (
-            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
-              {toTitleCase(columnMeta.label)}
-            </div>
-          );
-        },
-      },
-    },
-    {
-      name: "dateOfTest",
-      label: "Date of Test",
-      options: {
-        filter: true,
-        sort: true,
-        customHeadLabelRender: (columnMeta) => {
-          return (
-            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
-              {toTitleCase(columnMeta.label)}
-            </div>
-          );
-        },
-      },
-    },
-    {
-      name: "schoolsSubmitted",
-      label: "Schools Submitted",
-      options: {
-        filter: false,
-        sort: true,
-        customBodyRender: (value) => {
-          return <div style={{ textAlign: "center" }}>{value}</div>;
-        },
-        customHeadLabelRender: (columnMeta) => {
-          return (
-            <div style={{ textAlign: "center", textTransform: "capitalize" }}>
-              {toTitleCase(columnMeta.label)}
-            </div>
-          );
-        },
-        setHeaderProps: () => ({
-          style: {
-            textAlign: "center",
-          },
-        }),
-      },
-    },
-    // {
-    //   name: "status",
-    //   label: "Status",
-    //   options: {
-    //     filter: true,
-    //     sort: true,
-    //     customHeadLabelRender: (columnMeta) => {
-    //       return (
-    //         <div style={{ textAlign: "center", textTransform: "capitalize" }}>
-    //           {toTitleCase(columnMeta.label)}
-    //         </div>
-    //       );
-    //     },
-    //     customBodyRender: (value) => (
-    //       <span
-    //         style={{
-    //           padding: "4px 8px",
-    //           borderRadius: "6px",
-    //           color:
-    //             value === "DEADLINE_MISSED" || value === "CANCELLED"
-    //               ? "#D9534F"
-    //               : "#28A745",
-    //           backgroundColor:
-    //             value === "DEADLINE_MISSED" || value === "CANCELLED"
-    //               ? "#FADBD8"
-    //               : "#D4EDDA",
-    //           fontWeight: "bold",
-    //         }}
-    //       >
-    //         {value}
-    //       </span>
-    //     ),
-    //   },
-    // },
-    {
+	// MUI DataTable columns 
+	const columns = [
+		{
+			name: "id",
+			label: "ID",
+			options: { display: false }, // Keep the ID hidden in the table
+		},
+		{
+			name: "testName",
+			label: "Test Name",
+			options: {
+				filter: false,
+				sort: true,
+				customHeadLabelRender: (columnMeta) => {
+					return (
+						<div style={{ textAlign: "center", textTransform: "capitalize", fontWeight: "bold", color: "#2F4F4F" }}>
+							{toTitleCase(columnMeta.label)}
+						</div>
+					);
+				},
+			},
+		},
+		{
+			name: "subject",
+			label: "Subject",
+			options: {
+				filter: true,
+				sort: true,
+				customHeadLabelRender: (columnMeta) => {
+					return (
+						<div style={{ textAlign: "center", textTransform: "capitalize", fontWeight: "bold", color: "#2F4F4F" }}>
+							{toTitleCase(columnMeta.label)}
+						</div>
+					);
+				},
+			},
+		},
+		{
+			name: "class",
+			label: "Class",
+			options: {
+				filter: true,
+				sort: true,
+				customHeadLabelRender: (columnMeta) => {
+					return (
+						<div style={{ textAlign: "center", textTransform: "capitalize", fontWeight: "bold", color: "#2F4F4F" }}>
+							{toTitleCase(columnMeta.label)}
+						</div>
+					);
+				},
+			},
+		},
+		{
+			name: "dateOfTest",
+			label: "Date of Test",
+			options: {
+				filter: true,
+				sort: true,
+				customHeadLabelRender: (columnMeta) => {
+					return (
+						<div style={{ textAlign: "center", textTransform: "capitalize", fontWeight: "bold", color: "#2F4F4F" }}>
+							{toTitleCase(columnMeta.label)}
+						</div>
+					);
+				},
+			},
+		},
+		{
+			name: "schoolsSubmitted",
+			label: "Schools Submitted",
+			options: {
+				filter: false,
+				sort: true,
+				customBodyRender: (value) => {
+					return <div style={{ textAlign: "center" }}>{value}</div>;
+				},
+				customHeadLabelRender: (columnMeta) => {
+					return (
+						<div style={{ textAlign: "center", textTransform: "capitalize", fontWeight: "bold", color: "#2F4F4F" }}>
+							{toTitleCase(columnMeta.label)}
+						</div>
+					);
+				},
+				setHeaderProps: () => ({
+					style: {
+						textAlign: "center",
+					},
+				}),
+			},
+		},
+		// {
+		//   name: "status",
+		//   label: "Status",
+		//   options: {
+		//     filter: true,
+		//     sort: true,
+		//     customHeadLabelRender: (columnMeta) => {
+		//       return (
+		//         <div style={{ textAlign: "center", textTransform: "capitalize" }}>
+		//           {toTitleCase(columnMeta.label)}
+		//         </div>
+		//       );
+		//     },
+		//     customBodyRender: (value) => (
+		//       <span
+		//         style={{
+		//           padding: "4px 8px",
+		//           borderRadius: "6px",
+		//           color:
+		//             value === "DEADLINE_MISSED" || value === "CANCELLED"
+		//               ? "#D9534F"
+		//               : "#28A745",
+		//           backgroundColor:
+		//             value === "DEADLINE_MISSED" || value === "CANCELLED"
+		//               ? "#FADBD8"
+		//               : "#D4EDDA",
+		//           fontWeight: "bold",
+		//         }}
+		//       >
+		//         {value}
+		//       </span>
+		//     ),
+		//   },
+		// },
+		{
 			name: "actions",
-			label: "ACTIONS",
+			label: "Actons",
 			options: {
 				filter: false,
 				sort: false,
@@ -290,7 +290,7 @@ export default function TestListTable() {
 				customHeadRender: (columnMeta) => {
 					return (
 						<th style={{ textAlign: "center" }} scope="col">
-							<div style={{ textAlign: "center" }}>{columnMeta.label}</div>
+							<div style={{ textAlign: "center", fontWeight: "bold", color: "#2F4F4F" }}>{columnMeta.label}</div>
 						</th>
 					);
 				},
@@ -304,9 +304,11 @@ export default function TestListTable() {
 								variant="outlined"
 								size="small"
 								color="primary"
+
 								sx={{
 									borderColor: "transparent",
 									"&:hover": { borderColor: "transparent" },
+									fontWeight: "bold",
 								}}
 								onClick={() => {
 									console.log("Test ID:", testId);
@@ -318,11 +320,14 @@ export default function TestListTable() {
 							</Button>
 							<Button
 								variant="outlined"
-								size="small"
+								size="large"
 								color="secondary"
 								sx={{
 									borderColor: "transparent",
 									"&:hover": { borderColor: "transparent" },
+									textTransform: "none",
+									color: "#2F4F4F",
+									fontWeight: "bold",
 								}}
 							>
 								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
@@ -507,50 +512,50 @@ export default function TestListTable() {
 					<ButtonCustom imageName={addSymbolBtn} text={"Create Test"} onClick={handleCreateTest} />
 				</div>
 
-        {/* Data Table */}
-        <div style={{ borderRadius: "8px" }}>
-          <MUIDataTable
-            data={tableData}
-            columns={columns.map((column) => ({
-              ...column,
-              options: {
-                ...column.options,
-                setCellProps: () => ({
-                  style: {
-                    paddingLeft: "30px",
-                    paddingRight: "30px",
-                  },
-                }),
-              },
-            }))}
-            options={options}
-            sx={{
-              "& .MuiPaper-root": {
-                boxShadow: "none",
-              },
-              "& .MuiTableCell-root": {
-                textAlign: "center",
-              },
-            }}
-          />
-        </div>
-        <div
-          style={{
-            width: "max-content",
-            margin: "25px auto",
-          }}
-        >
-          <Pagination
-            count={Math.ceil(totalRecords / pageSize)}
-            page={currentPage}
-            onChange={(e, page) => setCurrentPage(page)}
-            showFirstButton
-            showLastButton
-          />
-        </div>
-        {/* <ToastContainer /> */}
+				{/* Data Table */}
+				<div style={{ borderRadius: "8px" }}>
+					<MUIDataTable
+						data={tableData}
+						columns={columns.map((column) => ({
+							...column,
+							options: {
+								...column.options,
+								setCellProps: () => ({
+									style: {
+										paddingLeft: "30px",
+										paddingRight: "30px",
+									},
+								}),
+							},
+						}))}
+						options={options}
+						sx={{
+							"& .MuiPaper-root": {
+								boxShadow: "none",
+							},
+							"& .MuiTableCell-root": {
+								textAlign: "center",
+							},
+						}}
+					/>
+				</div>
+				<div
+					style={{
+						width: "max-content",
+						margin: "25px auto",
+					}}
+				>
+					<Pagination
+						count={Math.ceil(totalRecords / pageSize)}
+						page={currentPage}
+						onChange={(e, page) => setCurrentPage(page)}
+						showFirstButton
+						showLastButton
+					/>
+				</div>
+				{/* <ToastContainer /> */}
 				<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
-      </div>
-    </ThemeProvider>
-  );
+			</div>
+		</ThemeProvider>
+	);
 }
