@@ -279,14 +279,13 @@ const TestCreationForm = () => {
   // Close dropdown if user clicks outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (!event.target.closest(".dropdown-container")) {
         setDropdownOpen({});
       }
     };
-
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, []);
 
@@ -522,7 +521,7 @@ const TestCreationForm = () => {
         </div>
 
         {selectedGrades.length > 0 && (
-          <div ref={dropdownRef} className="space-y-4">
+          <div className="dropdown-container space-y-4">
             {selectedGrades.map((grade) => (
               <div key={grade} className="p-4 rounded-lg">
                 <h3 className="text-lg font-semibold">Class {grade}</h3>
