@@ -17,10 +17,12 @@ import UNSelUsers from "../assets/unselectedUser.png"
 import UNSelTests from "../assets/unselectedTest.png"
 import UNSelReports from "../assets/unselectedReports.png"
 import addSymbolBtn from "../assets/addSymbolBtn.svg"
+import closeCross from "../assets/closeCross.svg"
+import deadlineSummaryModal from "../assets/deadlineSummaryModal.svg"
 
 export {
   SelReports,SelTests,SelUsers,UNSelUsers,UNSelTests,UNSelReports,
-    BrandGoogleAnalytics,addSymbolBtn,
+    BrandGoogleAnalytics,addSymbolBtn,closeCross,deadlineSummaryModal,
     ChevronLeft,
     CreateTestImg,
     DocScanner,
