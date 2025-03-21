@@ -443,14 +443,12 @@ export default function TestListTable() {
 								selectsRange
 								startDate={startDate}
 								endDate={endDate}
-								onChange={(dates) => {
-									// dates is an array: [start, end]
-									const [start, end] = dates;
-									console.log("Start date:", start);
-									console.log("End date:", end);
+								onChange={(dates) => { 
+									const [start, end] = dates; 
 									setDateRange(dates);
 								}}
 								placeholderText="Date Range"
+								dateFormat="dd/MM/YYYY "
 								style={{ width: "220px" }}
 							/>
 						</div>
