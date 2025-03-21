@@ -70,7 +70,6 @@ const TestCreationForm = () => {
 				}));
 				return;
 			}
-			
 
 			// 2️⃣ If exactly one subject is already selected => we’re “switching” subjects
 			if (currentlySelected.length === 1) {
@@ -239,7 +238,7 @@ const TestCreationForm = () => {
 			const response = await apiInstance.get(`/dev/test/${id}`);
 			console.log(response, "RESPONSE");
 			if (response?.data?.success) {
-				const { subject, testDate, testClass, testType, maxScore, deadline  } = response.data.data;
+				const { subject, testDate, testClass, testType, maxScore, deadline } = response.data.data;
 
 				// Map the fetched testType to our internal state ("SYLLABUS" => "regular", "REMEDIAL" => "remedial")
 				setTestType(testType === "SYLLABUS" ? "regular" : "remedial");
@@ -258,7 +257,7 @@ const TestCreationForm = () => {
 				if (deadline) {
 					const deadlineStr = new Date(deadline).toISOString().split("T")[0];
 					setTestDeadlines({ [`${testClass}-${subject}`]: deadlineStr });
-				  }
+				}
 
 				// If the test is a SYLLABUS test, we also need the maxScore
 				if (testType === "SYLLABUS") {
@@ -577,12 +576,6 @@ const TestCreationForm = () => {
 																className="bg-[#2F4F4F] text-white px-3 py-2 rounded-md text-sm flex items-center"
 																style={{ fontSize: "14px" }}
 															>
-																{/* <span
-                                key={subject}
-                                className="bg-[#2F4F4F] text-white px-3 py-2 rounded-md text-sm flex items-center"
-                                style={{ fontSize: "14px" }}
-                              > */}
-
 																{subject}
 																<button
 																	onClick={(e) => {
@@ -612,64 +605,111 @@ const TestCreationForm = () => {
 												</svg>
 											</div>
 										</div>
-										{dropdownOpen[grade] && (
-											<div className="mt-1 p-4 rounded-lg shadow-lg bg-white ">
-												{Object.entries(SUBJECT_CATEGORIES).map(([category, subjects]) => (
-													<div key={category} className="mb-3">
-														<div className="text-[#2F4F4F] text-sm font-semibold font-['Work Sans'] leading-normal px-3 py-2 ">
-															{category}
+										{dropdownOpen[grade] &&
+											(() => {
+												// Check if it's a remedial test for Class 11 or 12
+												const isRemedialFor11Or12 =
+													testType === "remedial" && (grade === 11 || grade === 12);
+
+												if (isRemedialFor11Or12) {
+													// ✅ ONLY show Maths + Hindi, hide everything else
+													return (
+														<div className="p-4 rounded-lg shadow-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
+															<div className="flex flex-col gap-3">
+																<div className="flex items-center gap-2 px-3 py-2">
+																	<input
+																		type="checkbox"
+																		checked={selectedSubjects[grade]?.includes(
+																			"Maths"
+																		)}
+																		onChange={() =>
+																			handleSubjectSelection(grade, "Maths")
+																		}
+																	/>
+																	<span>Maths</span>
+																</div>
+																<div className="flex items-center gap-2 px-3 py-2">
+																	<input
+																		type="checkbox"
+																		checked={selectedSubjects[grade]?.includes(
+																			"Hindi"
+																		)}
+																		onChange={() =>
+																			handleSubjectSelection(grade, "Hindi")
+																		}
+																	/>
+																	<span>Hindi</span>
+																</div>
+															</div>
 														</div>
-														<div className="flex flex-wrap gap-3 px-3">
-															{subjects
-																.filter((subject) =>
-																	testType === "remedial"
-																		? ["Maths", "Hindi"].includes(subject)
-																		: SUBJECTS_BY_GRADE[grade].includes(subject)
-																)
-																.map((subject) => (
-																	<div
-																		key={subject}
-																		className="px-3 py-2 hover:bg-gray-50 flex items-center cursor-pointer "
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			handleSubjectSelection(grade, subject);
-																		}}
-																	>
-																		<div
-																			className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${
-																				selectedSubjects[grade]?.includes(
+													);
+												}
+
+												// Otherwise (non-remedial, or a different grade) — show the usual categories
+												return (
+													<div className="p-4 rounded-lg shadow-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
+														{Object.entries(SUBJECT_CATEGORIES).map(
+															([category, subjects]) => (
+																<div key={category} className="mb-3">
+																	<div className="text-[#2F4F4F] text-sm font-semibold px-3 py-2">
+																		{category}
+																	</div>
+																	<div className="flex flex-wrap gap-3 px-3">
+																		{subjects
+																			.filter((subject) =>
+																				SUBJECTS_BY_GRADE[grade]?.includes(
 																					subject
 																				)
-																					? "bg-[#2F4F4F] border-[#2F4F4F]"
-																					: "border-[#2F4F4F] bg-white"
-																			}`}
-																		>
-																			{selectedSubjects[grade]?.includes(
-																				subject
-																			) && (
-																				<svg
-																					className="w-4 h-4"
-																					fill="none"
-																					stroke="white"
-																					viewBox="0 0 24 24"
+																			)
+																			.map((subject) => (
+																				<div
+																					key={subject}
+																					className="px-3 py-2 hover:bg-gray-50 flex items-center cursor-pointer"
+																					onClick={(e) => {
+																						e.stopPropagation();
+																						handleSubjectSelection(
+																							grade,
+																							subject
+																						);
+																					}}
 																				>
-																					<path
-																						strokeLinecap="round"
-																						strokeLinejoin="round"
-																						strokeWidth="2"
-																						d="M5 13l4 4L19 7"
-																					/>
-																				</svg>
-																			)}
-																		</div>
-																		{subject}
+																					<div
+																						className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${
+																							selectedSubjects[
+																								grade
+																							]?.includes(subject)
+																								? "bg-[#2F4F4F] border-[#2F4F4F]"
+																								: "border-[#2F4F4F] bg-white"
+																						}`}
+																					>
+																						{selectedSubjects[
+																							grade
+																						]?.includes(subject) && (
+																							<svg
+																								className="w-4 h-4"
+																								fill="none"
+																								stroke="white"
+																								viewBox="0 0 24 24"
+																							>
+																								<path
+																									strokeLinecap="round"
+																									strokeLinejoin="round"
+																									strokeWidth="2"
+																									d="M5 13l4 4L19 7"
+																								/>
+																							</svg>
+																						)}
+																					</div>
+																					{subject}
+																				</div>
+																			))}
 																	</div>
-																))}
-														</div>
+																</div>
+															)
+														)}
 													</div>
-												))}
-											</div>
-										)}
+												);
+											})()}
 									</div>
 								)}
 
