@@ -22,7 +22,6 @@ const TestCreationForm = () => {
   const location = useLocation();
   const dropdownRef = useRef(null);
 
-
   const navigate = useNavigate();
 
   const handleScoreChange = (gradeSubject, score) => {
@@ -103,7 +102,6 @@ const TestCreationForm = () => {
           ...prev,
           [grade]: [subject],
         }));
-
       } else {
         // 3️⃣ No subject is selected yet => just add the new one
         setSelectedSubjects((prev) => ({
@@ -192,14 +190,16 @@ const TestCreationForm = () => {
       }
 
       if (response?.data?.success) {
-        const successMessage = isEditMode ? "Test Updated Successfully" : "Test Created Successfully";
+        const successMessage = isEditMode
+          ? "Test Updated Successfully"
+          : "Test Created Successfully";
 
         // Redirect to the test list page with success message
         navigate("/", { state: { successMessage } });
-      }
-
-      else {
-        toast.error(isEditMode ? "Failed to update test" : "Failed to create test");
+      } else {
+        toast.error(
+          isEditMode ? "Failed to update test" : "Failed to create test"
+        );
       }
     } catch (error) {
       console.error("Error => ", error);
@@ -284,12 +284,11 @@ const TestCreationForm = () => {
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, []);
-
 
   return (
     <>
@@ -315,7 +314,11 @@ const TestCreationForm = () => {
 
       <div style={{ width: "40%", margin: "20px auto" }}>
         <div className="space-y-4">
-          {isEditMode && (<h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Edit Test Details</h5>)}
+          {isEditMode && (
+            <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">
+              Edit Test Details
+            </h5>
+          )}
           <h2 className="text-xl font-semibold mb-2">Test Type</h2>
           <div className="flex space-x-4">
             <label className="flex items-center space-x-2">
@@ -329,10 +332,11 @@ const TestCreationForm = () => {
                 disabled={isEditMode}
               />
               <span
-                className={`px-2 py-2 rounded-lg ${testType === "regular"
-                  ? "text-gray-700 font-bold"
-                  : "text-gray-700"
-                  }`}
+                className={`px-2 py-2 rounded-lg ${
+                  testType === "regular"
+                    ? "text-gray-700 font-bold"
+                    : "text-gray-700"
+                }`}
               >
                 Syllabus
               </span>
@@ -349,10 +353,11 @@ const TestCreationForm = () => {
                   disabled={isEditMode}
                 />
                 <span
-                  className={`px-2 py-2 rounded-lg ${testType === "remedial"
-                    ? "text-gray-700 font-bold"
-                    : "text-gray-700"
-                    }`}
+                  className={`px-2 py-2 rounded-lg ${
+                    testType === "remedial"
+                      ? "text-gray-700 font-bold"
+                      : "text-gray-700"
+                  }`}
                 >
                   Remedial
                 </span>
@@ -362,7 +367,9 @@ const TestCreationForm = () => {
         </div>
 
         <div className="space-y-4">
-          {!isEditMode && (<h2 className="text-xl font-semibold mb-2">Classes</h2>)}
+          {!isEditMode && (
+            <h2 className="text-xl font-semibold mb-2">Classes</h2>
+          )}
           {/* {!isEditMode && (
             <div className="relative">
               <div
@@ -518,13 +525,15 @@ const TestCreationForm = () => {
               )}
             </div>
           )}
-
         </div>
 
         {selectedGrades.length > 0 && (
           <div ref={dropdownRef} className="space-y-4 mt-5">
             {selectedGrades.map((grade) => (
-              <div key={grade} className="p-4 rounded-lg text-[#2F4F4F] bg-white shadow-md border border-gray-300">
+              <div
+                key={grade}
+                className="p-4 rounded-lg text-[#2F4F4F] bg-white shadow-md border border-gray-300"
+              >
                 {/* Class Name */}
                 <h3 className="text-lg font-semibold mb-4">Class {grade}</h3>
 
@@ -535,38 +544,40 @@ const TestCreationForm = () => {
                     onClick={() => toggleDropdown(grade)}
                   >
                     <div className="text-gray-500 flex flex-wrap gap-2">
-                      {!selectedSubjects[grade] || selectedSubjects[grade].length === 0
+                      {!selectedSubjects[grade] ||
+                      selectedSubjects[grade].length === 0
                         ? "Choose subjects"
                         : selectedSubjects[grade].map((subject) => (
-                          <span
-                            key={subject}
-                            className="bg-gray-200 text-black px-4 py-1 h-10 rounded-md text-sm flex items-center"
-                          >
-                            {subject}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSubjectSelection(grade, subject);
-                              }}
-                              className="ml-1 text-gray-500"
-                              disabled={isEditMode}
+                            <span
+                              key={subject}
+                              className="bg-[#2F4F4F] text-white px-4 py-1 h-10 rounded-md text-sm flex items-center"
                             >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                              {/*the changes for bg color of selected subject*/}
+                              {subject}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSubjectSelection(grade, subject);
+                                }}
+                                className="ml-1 text-white"
+                                disabled={isEditMode}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            </button>
-                          </span>
-                        ))}
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
+                              </button>
+                            </span>
+                          ))}
                     </div>
                     <div className="flex items-center">
                       <svg
@@ -593,13 +604,16 @@ const TestCreationForm = () => {
                           <div
                             key={subject}
                             className="px-3 py-2 flex items-center cursor-pointer"
-                            onClick={() => handleSubjectSelection(grade, subject)}
+                            onClick={() =>
+                              handleSubjectSelection(grade, subject)
+                            }
                           >
                             <div
-                              className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${selectedSubjects[grade]?.includes(subject)
+                              className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${
+                                selectedSubjects[grade]?.includes(subject)
                                   ? "bg-[#2F4F4F] border-[#2F4F4F]"
                                   : "border-[#2F4F4F] bg-white"
-                                }`}
+                              }`}
                             >
                               {selectedSubjects[grade]?.includes(subject) && (
                                 <svg
@@ -673,16 +687,17 @@ const TestCreationForm = () => {
             onClick={handleCreateTest}
             // Disable if form is invalid OR if we are in the middle of creating a test
             disabled={!isFormValid() || creatingTest}
-            className={`flex justify-center h-11 px-4 py-2 min-w-[120px] w-max ${!isFormValid() || creatingTest
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-[#FFD700] cursor-pointer"
-              } rounded-lg items-center gap-2`}
+            className={`flex justify-center h-11 px-4 py-2 min-w-[120px] w-max ${
+              !isFormValid() || creatingTest
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-[#FFD700] cursor-pointer"
+            } rounded-lg items-center gap-2`}
           >
             {creatingTest
               ? "Saving Test Details..."
               : isEditMode
-                ? "Update Test"
-                : "Create Test"}
+              ? "Update Test"
+              : "Create Test"}
           </button>
         </div>
       </div>
