@@ -305,7 +305,13 @@ const TestCreationForm = () => {
 	};
 
 	const handleTestDateChange = (key, value) => {
+		// Always update the testDates object
 		setTestDates((prev) => ({ ...prev, [key]: value }));
+
+		// If we’re editing a test, reset the deadline so the user must re-select it
+		if (isEditMode) {
+			setTestDeadlines((prev) => ({ ...prev, [key]: "" }));
+		}
 	};
 
 	const handleDeadlineChange = (key, value) => {
@@ -670,17 +676,17 @@ const TestCreationForm = () => {
 										</h4>
 										{selectedSubjects[grade].map((subject) => {
 											const combinedKey = `${grade}-${subject}`;
-											  // 1) Min date for testDate is "today".
-  const today = new Date();
-  const minTestDate = today.toISOString().split("T")[0];
+											// 1) Min date for testDate is "today".
+											const today = new Date();
+											const minTestDate = today.toISOString().split("T")[0];
 
-   // 2) Min date for deadline is "one day after" testDate (if selected).
-   let minDeadline = "";
-  if (testDates[combinedKey]) {
-    const dt = new Date(testDates[combinedKey]); // testDate
-    dt.setDate(dt.getDate() + 1);               // one day later
-    minDeadline = dt.toISOString().split("T")[0];
-  }
+											// 2) Min date for deadline is "one day after" testDate (if selected).
+											let minDeadline = "";
+											if (testDates[combinedKey]) {
+												const dt = new Date(testDates[combinedKey]); // testDate
+												dt.setDate(dt.getDate() + 1); // one day later
+												minDeadline = dt.toISOString().split("T")[0];
+											}
 											return (
 												<div key={combinedKey} className=" space-x-4 p-2 bg-white rounded-lg">
 													<div style={{ marginBottom: "8px" }}>
@@ -715,14 +721,14 @@ const TestCreationForm = () => {
 																onChange={(e) =>
 																	handleDeadlineChange(combinedKey, e.target.value)
 																}
-																min={minDeadline} 
-															 />
+																min={minDeadline}
+															/>
 														</div>
-														<div className="w-20">
-															<Typography color="primary" variant="subtitle2">
-																Max Score
-															</Typography>
-															{testType === "regular" && (
+														{testType === "regular" && (
+															<div className="w-20">
+																<Typography color="primary" variant="subtitle2">
+																	Max Score
+																</Typography>
 																<div className="w-20 h-12 px-4 py-3 rounded-lg border border-[#E0E0E0] flex items-center">
 																	<input
 																		type="text"
@@ -737,8 +743,8 @@ const TestCreationForm = () => {
 																		}
 																	/>
 																</div>
-															)}
-														</div>
+															</div>
+														)}
 													</div>
 												</div>
 											);
