@@ -58,15 +58,19 @@ const TestCreationForm = () => {
 
 			const currentlySelected = selectedSubjects[grade] || [];
 
-			// 1️⃣ If user clicks the same subject => toggle it off
 			if (currentlySelected.includes(subject)) {
-				// Remove it
+				// 🔒 Prevent removal if remedial test for Class 11/12
+				if (testType === "remedial" && (grade === 11 || grade === 12)) {
+					return;
+				}
+				// Otherwise allow removal
 				setSelectedSubjects((prev) => ({
 					...prev,
 					[grade]: prev[grade].filter((s) => s !== subject),
 				}));
 				return;
 			}
+			
 
 			// 2️⃣ If exactly one subject is already selected => we’re “switching” subjects
 			if (currentlySelected.length === 1) {
