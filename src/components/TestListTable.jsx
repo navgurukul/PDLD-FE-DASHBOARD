@@ -175,6 +175,9 @@ export default function TestListTable() {
 			name: "dateOfTest",
 			label: "Date of Test",
 			options: { filter: true, sort: true },
+			customBodyRender: (value) => (
+				<div style={{ whiteSpace: "nowrap" }}>{value}</div>
+			  ),
 		},
 		{
 			name: "schoolsSubmitted",
