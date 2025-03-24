@@ -155,8 +155,8 @@ export const SUBJECTS_BY_GRADE = {
       'Music',
       'Science',
       'Social Studies',
-      'Art Eduaction',
-      'Health & Physical Eduaction'
+      'Art Education', 
+      'Health & Physical Education'
   ],
   12: [
       'Accountancy',
@@ -182,8 +182,8 @@ export const SUBJECTS_BY_GRADE = {
       'Music',
       'Science',
       'Social Studies',
-      'Art Eduaction',
-      'Health & Physical Eduaction'
+      'Art Education', 
+      'Health & Physical Education'
   ]
 };
 
