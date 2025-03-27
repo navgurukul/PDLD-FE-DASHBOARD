@@ -130,7 +130,7 @@ export default function UserCreationForm() {
 				setHierarchyFields({
 					showBlock: true,
 					showCluster: true,
-					showSchool: true,
+					showSchool: false,
 				});
 				fetchBlocks();
 				break;
@@ -208,18 +208,14 @@ export default function UserCreationForm() {
 	};
 
 	const handleClusterChange = (event) => {
-		const clusterId = event.target.value;
-
-		// For CAC, we allow selecting only one cluster
-		const newClusters = formData.role === "CAC" ? [clusterId] : [...selectedEntities.clusters, clusterId];
+		// For multiselect, event.target.value will be an array
+		const selectedClusters = event.target.value;
 
 		setSelectedEntities({
 			...selectedEntities,
-			clusters: newClusters,
+			clusters: selectedClusters,
 			schools: [],
 		});
-
-		fetchSchools(clusterId);
 	};
 
 	const handleSchoolChange = (event) => {
@@ -345,7 +341,7 @@ export default function UserCreationForm() {
 					<div className="mb-4">
 						<FormControl fullWidth variant="outlined" required>
 							<Select
-                            size="small"
+								size="small"
 								displayEmpty
 								value={formData.role}
 								onChange={handleRoleChange}
@@ -394,76 +390,29 @@ export default function UserCreationForm() {
 										Select Clusters in {availableBlocks.find((b) => b.id === formData.block)?.name}
 									</InputLabel>
 									<Select
-										value=""
+										multiple
+										value={selectedEntities.clusters}
 										onChange={handleClusterChange}
 										label={`Select Clusters in ${
 											availableBlocks.find((b) => b.id === formData.block)?.name
 										}`}
-										displayEmpty
 										size="small"
+										renderValue={(selected) => (
+											<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+												{selected.map((clusterId) => {
+													const cluster = availableClusters.find((c) => c.id === clusterId);
+													return <Chip key={clusterId} label={cluster?.name} size="small" />;
+												})}
+											</Box>
+										)}
 									>
 										{availableClusters.map((cluster) => (
-											<MenuItem
-												key={cluster.id}
-												value={cluster.id}
-												disabled={selectedEntities.clusters.includes(cluster.id)}
-											>
+											<MenuItem key={cluster.id} value={cluster.id}>
 												{cluster.name}
 											</MenuItem>
 										))}
 									</Select>
 								</FormControl>
-
-								{selectedEntities.clusters.length > 0 && (
-									<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}>
-										{selectedEntities.clusters.map((clusterId) => {
-											const cluster = availableClusters.find((c) => c.id === clusterId);
-											return (
-												<Chip
-													key={clusterId}
-													label={cluster?.name}
-													onDelete={() => handleRemoveCluster(clusterId)}
-												/>
-											);
-										})}
-									</Box>
-								)}
-							</div>
-						</>
-					)}
-
-					{hierarchyFields.showSchool && selectedEntities.clusters.length > 0 && (
-						<>
-							<div className="mb-4">
-								<FormControl fullWidth margin="normal">
-									<InputLabel>Select Schools</InputLabel>
-									<Select value="" onChange={handleSchoolChange} label="Select Schools" displayEmpty>
-										{availableSchools.map((school) => (
-											<MenuItem
-												key={school.id}
-												value={school.id}
-												disabled={selectedEntities.schools.includes(school.id)}
-											>
-												{school.name}
-											</MenuItem>
-										))}
-									</Select>
-								</FormControl>
-
-								{selectedEntities.schools.length > 0 && (
-									<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}>
-										{selectedEntities.schools.map((schoolId) => {
-											const school = availableSchools.find((s) => s.id === schoolId);
-											return (
-												<Chip
-													key={schoolId}
-													label={school?.name}
-													onDelete={() => handleRemoveSchool(schoolId)}
-												/>
-											);
-										})}
-									</Box>
-								)}
 							</div>
 						</>
 					)}
@@ -503,7 +452,7 @@ export default function UserCreationForm() {
 					)}
 
 					<div className="flex justify-end">
-						<ButtonCustom text="Create User" onClick={generatePassword} />
+						<ButtonCustom text="Create User" onClick={handleSubmit} />
 					</div>
 				</form>
 			</Paper>
