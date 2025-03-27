@@ -8,14 +8,17 @@ import {
   FormHelperText 
 } from "@mui/material";
 import { toast } from "react-toastify";
+import apiInstance from "../../api"; // Import the custom axios instance
 
-export default function AddSchool() {
+export default function AddSchool({ onClose, onSave }) {
   const [formData, setFormData] = useState({
     schoolName: "",
     udiseCode: "",
     clusterName: "",
     blockName: ""
   });
+
+  const [loading, setLoading] = useState(false); // Add loading state
 
   const [errors, setErrors] = useState({
     schoolName: false,
@@ -54,12 +57,59 @@ export default function AddSchool() {
     return !Object.values(newErrors).some(error => error);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
-      // Process form submission
-      toast.success("School created successfully!");
-      onSave(formData);
-      onClose();
+      try {
+        setLoading(true);
+        
+        // Prepare payload based on the expected structure
+        const payload = {
+          schoolName: formData.schoolName,
+          udiseCode: formData.udiseCode,
+          blockName: formData.blockName,
+          clusterName: formData.clusterName
+        };
+        
+        // Make POST request to create school
+        const response = await apiInstance.post('/dev/school/add', payload);
+        
+        // Check response status and show appropriate message
+        if (response.status === 200 || response.status === 201) {
+          toast.success("School created successfully!");
+          
+          // Call onSave with the created school data if needed
+          if (onSave && typeof onSave === 'function') {
+            onSave(response.data?.data || formData);
+          }
+          
+          // Close the form or navigate away
+          if (onClose && typeof onClose === 'function') {
+            onClose();
+          }
+        } else {
+          // Handle unexpected success responses
+          toast.warning("Request succeeded but with an unexpected response. Please verify the school was created.");
+        }
+      } catch (error) {
+        // Handle error cases
+        console.error("Error creating school:", error);
+        
+        // Show appropriate error message based on the error response
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          const errorMessage = error.response.data?.message || "Failed to create school. Please try again.";
+          toast.error(errorMessage);
+        } else if (error.request) {
+          // The request was made but no response was received
+          toast.error("Server did not respond. Please check your connection and try again.");
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          toast.error("An error occurred while creating the school. Please try again.");
+        }
+      } finally {
+        setLoading(false);
+      }
     } else {
       toast.error("Please fill all required fields");
     }
@@ -112,7 +162,7 @@ export default function AddSchool() {
             </Typography>
             <TextField
               fullWidth
-               size="small"
+              size="small"
               name="udiseCode"
               value={formData.udiseCode}
               onChange={handleChange}
@@ -135,7 +185,7 @@ export default function AddSchool() {
             </Typography>
             <TextField
               fullWidth
-               size="small"
+              size="small"
               name="clusterName"
               value={formData.clusterName}
               onChange={handleChange}
@@ -158,7 +208,7 @@ export default function AddSchool() {
             </Typography>
             <TextField
               fullWidth
-               size="small"
+              size="small"
               name="blockName"
               value={formData.blockName}
               onChange={handleChange}
@@ -179,8 +229,9 @@ export default function AddSchool() {
         <div style={{display:"flex", justifyContent:"center"}} >
         <Button
           variant="contained"
-           size="small"
+          size="small"
           onClick={handleSubmit}
+          disabled={loading}
           sx={{
             bgcolor: "#FFD700",
             color: "black",
@@ -193,7 +244,7 @@ export default function AddSchool() {
             }
           }}
         >
-          Create School
+          {loading ? "Creating..." : "Create School"}
         </Button>
         </div>
       </Paper>
