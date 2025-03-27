@@ -194,45 +194,7 @@ export default function TestListTable() {
 					},
 				}),
 			},
-		},
-		// {
-		//   name: "status",
-		//   label: "Status",
-		//   options: {
-		//     filter: true,
-		//     sort: true,
-
-		//     // 1️⃣ Center the header text using customHeadRender
-		//     customHeadRender: (columnMeta) => {
-		//       return (
-		//         <th style={{ textAlign: "center" }} scope="col">
-		//           <div style={{ textAlign: "center" }}>{columnMeta.label}</div>
-		//         </th>
-		//       );
-		//     },
-
-		//     customBodyRender: (value) => (
-		//       <span
-		//         style={{
-		//           padding: "4px 8px",
-		//           borderRadius: "6px",
-		//           // Example style logic: color red if CANCELLED or DEADLINE_MISSED; green otherwise
-		//           color:
-		//             value === "DEADLINE_MISSED" || value === "CANCELLED"
-		//               ? "#D9534F"
-		//               : "#28A745",
-		//           backgroundColor:
-		//             value === "DEADLINE_MISSED" || value === "CANCELLED"
-		//               ? "#FADBD8"
-		//               : "#D4EDDA",
-		//           fontWeight: "bold",
-		//         }}
-		//       >
-		//         {value}
-		//       </span>
-		//     ),
-		//   },
-		// },
+		}, 
 		{
 			name: "actions",
 			label: "ACTIONS",
