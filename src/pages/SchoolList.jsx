@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
-import { Button, TextField, Box } from "@mui/material";
+import { Button, TextField,   } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import AddIcon from "@mui/icons-material/Add";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy"; 
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import SearchIcon from "@mui/icons-material/Search";
 import AddSchool from "../components/AddSchool"; // Make sure path is correct
 import BulkUploadSchools from "../components/BulkUpload";
-import { addSymbolBtn, DocScanner, EditPencilIcon, trash } from "../utils/imagePath";
+import { addSymbolBtn,    EditPencilIcon, trash } from "../utils/imagePath";
 import ButtonCustom from "../components/ButtonCustom";
 
 const theme = createTheme({
@@ -45,6 +44,8 @@ const theme = createTheme({
 		},
 	},
 });
+ 
+ 
 
 export default function Schools() {
 	const [schools, setSchools] = useState([
@@ -265,7 +266,7 @@ export default function Schools() {
 								}}
 							>
 								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
-																&nbsp;
+								&nbsp;
 							</Button>
 							<Button
 								variant="text"
@@ -277,16 +278,14 @@ export default function Schools() {
 									minWidth: "unset",
 								}}
 								onClick={() => {
-									console.log("Delete School ID:", schoolId);
-									// Add delete logic here
+									console.log("Delete School ID:", schoolId); 
 									const updatedSchools = schools.filter((school) => school.id !== schoolId);
 									setSchools(updatedSchools);
 									toast.success("School deleted successfully!");
 								}}
 							>
-
 								<img src={trash} alt="View Report" style={{ width: "20px", height: "20px" }} />
-																&nbsp;
+								&nbsp;
 							</Button>
 						</div>
 					);
@@ -338,12 +337,28 @@ export default function Schools() {
 				</div>
 
 				<div className="school-list-container mt-8 bg-white p-6 rounded-lg shadow-sm">
+					 
+
+					{/* Search Bar */}
 					<div className="flex justify-between items-center mb-4">
-						<div>
-							<h2 className="text-xl font-bold text-[#2F4F4F]">School List</h2>
-							<p className="text-sm text-gray-600">View and manage all schools in the system</p>
-						</div>
-						<div className="flex gap-3"> 
+						<TextField
+							variant="outlined"
+							placeholder="Search schools..."
+							size="small"
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							InputProps={{
+								style: {
+									backgroundColor: "#fff",
+									borderRadius: "8px",
+									width: "420px",
+									height: "48px",
+								},
+								startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
+							}}
+						/>
+
+						<div className="flex gap-3">
 							<ButtonCustom imageName={addSymbolBtn} text={"Add School"} onClick={handleAddSchool} />
 							<Button
 								variant="outlined"
@@ -363,25 +378,6 @@ export default function Schools() {
 							</Button>
 						</div>
 					</div>
-
-					{/* Search Bar */}
-					<TextField
-						variant="outlined"
-						placeholder="Search schools..."
-						size="small"
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						InputProps={{
-							style: {
-								backgroundColor: "#fff",
-								borderRadius: "8px",
-								width: "420px",
-								height: "48px",
-							},
-							startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
-						}}
-						sx={{ marginBottom: "20px" }}
-					/>
 
 					{/* Data Table */}
 					<div style={{ borderRadius: "8px" }}>

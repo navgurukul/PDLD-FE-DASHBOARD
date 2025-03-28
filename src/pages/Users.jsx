@@ -140,7 +140,7 @@ export default function Users() {
     },
     {
       name: "actions",
-      label: "ACTIONS",
+      label: "Actions",
       options: {
         customHeadRender: (columnMeta) => (
           <th className="text-center">{columnMeta.label}</th>

@@ -7,8 +7,7 @@
     font-family: 'Karla', sans-serif !important; 
   }
 
-  th, .MuiTableCell-head { 
-    border-bottom: 1px solid lightgray !important; 
+  th, .MuiTableCell-head {  
     font-weight: 500 !important;  
   }
   
