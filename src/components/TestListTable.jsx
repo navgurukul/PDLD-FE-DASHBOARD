@@ -62,7 +62,7 @@ export default function TestListTable() {
 
 	const [currentPage, setCurrentPage] = useState(1);
 	const location = useLocation();
-  const navigate = useNavigate();
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		if (location.state?.successMessage) {
@@ -73,7 +73,6 @@ export default function TestListTable() {
 	}, [location, navigate]);
 
 	const pageSize = 20; // The fixed page size
-
 
 	const handleCreateTest = () => {
 		navigate("/testCreationForm"); // Replace with your target route
@@ -175,9 +174,7 @@ export default function TestListTable() {
 			name: "dateOfTest",
 			label: "Date of Test",
 			options: { filter: true, sort: true },
-			customBodyRender: (value) => (
-				<div style={{ whiteSpace: "nowrap" }}>{value}</div>
-			  ),
+			customBodyRender: (value) => <div style={{ whiteSpace: "nowrap" }}>{value}</div>,
 		},
 		{
 			name: "schoolsSubmitted",
@@ -194,61 +191,67 @@ export default function TestListTable() {
 					},
 				}),
 			},
-		}, 
+		},
 		{
 			name: "actions",
 			label: "ACTIONS",
 			options: {
-				filter: false,
-				sort: false,
-
-				// 1️⃣ Center the header text using customHeadRender
-				customHeadRender: (columnMeta) => {
-					return (
-						<th style={{ textAlign: "center" }} scope="col">
-							<div style={{ textAlign: "center" }}>{columnMeta.label}</div>
-						</th>
-					);
-				},
-
-				// 2️⃣ Keep your existing onClick/edit/view-report buttons
-				customBodyRender: (value, tableMeta) => {
-					const testId = tableMeta.rowData[0]; // Now the ID is in the first column
-					return (
-						<div style={{ display: "flex", gap: "8px" }}>
-							<Button
-								variant="outlined"
-								size="small"
-								color="primary"
-								sx={{
-									borderColor: "transparent",
-									"&:hover": { borderColor: "transparent" },
-								}}
-								onClick={() => {
-									console.log("Test ID:", testId);
-									navigate(`/edit/testCreation/${testId}`);
-								}}
-							>
-								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
-								&nbsp;
-							</Button>
-							<Button
-								variant="outlined"
-								size="small"
-								color="secondary"
-								sx={{
-									borderColor: "transparent",
-									"&:hover": { borderColor: "transparent" },
-								}}
-							>
-								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
-								&nbsp; View Report
-							</Button>
-						</div>
-					);
-				},
+			  filter: false,
+			  sort: false,
+		  
+			  // Center the header text using customHeadRender with small font size
+			  customHeadRender: (columnMeta) => {
+				return (
+				  <th
+					style={{
+					  textAlign: "center",
+					  borderBottom: "1px solid lightgray",
+					}}
+					scope="col"
+				  >
+					<div style={{ textAlign: "center", fontSize: "14px" }}>{columnMeta.label}</div>
+				  </th>
+				);
+			  },
+		  
+			  // The rest of your customBodyRender code remains the same
+			  customBodyRender: (value, tableMeta) => {
+				const testId = tableMeta.rowData[0];
+				return (
+				  <div style={{ display: "flex", gap: "8px" }}>
+					<Button
+					  variant="outlined"
+					  size="small"
+					  color="primary"
+					  sx={{
+						borderColor: "transparent",
+						"&:hover": { borderColor: "transparent" },
+					  }}
+					  onClick={() => {
+						console.log("Test ID:", testId);
+						navigate(`/edit/testCreation/${testId}`);
+					  }}
+					>
+					  <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
+					  &nbsp;
+					</Button>
+					<Button
+					  variant="outlined"
+					  size="small"
+					  color="secondary"
+					  sx={{
+						borderColor: "transparent",
+						"&:hover": { borderColor: "transparent" },
+					  }}
+					>
+					  <img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
+					  &nbsp; View Report
+					</Button>
+				  </div>
+				);
+			  },
 			},
-		},
+		  }
 	];
 
 	// MUI DataTable options
@@ -408,8 +411,8 @@ export default function TestListTable() {
 								selectsRange
 								startDate={startDate}
 								endDate={endDate}
-								onChange={(dates) => { 
-									const [start, end] = dates; 
+								onChange={(dates) => {
+									const [start, end] = dates;
 									setDateRange(dates);
 								}}
 								placeholderText="Date Range"

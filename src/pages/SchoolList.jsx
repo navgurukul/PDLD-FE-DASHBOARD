@@ -236,15 +236,21 @@ export default function Schools() {
 		},
 		{
 			name: "actions",
-			label: "Actions",
+			label: "ACTIONS",
 			options: {
 				filter: false,
 				sort: false,
 				customHeadRender: (columnMeta) => {
 					return (
-						<th key={`th-${columnMeta.index}`} style={{ textAlign: "center" }} scope="col">
-							<div style={{ textAlign: "center" }}>{columnMeta.label}</div>
-						</th>
+						<th
+						style={{
+						  textAlign: "center",
+						  borderBottom: "1px solid lightgray",
+						}}
+						scope="col"
+					  >
+						<div style={{ textAlign: "center", fontSize: "14px" }}>{columnMeta.label}</div>
+					  </th>
 					);
 				},
 				customBodyRender: (value, tableMeta) => {
