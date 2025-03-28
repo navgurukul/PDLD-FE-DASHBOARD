@@ -7,8 +7,7 @@
     font-family: 'Karla', sans-serif !important; 
   }
 
-  th, .MuiTableCell-head { 
-    border-bottom: 1px solid lightgray !important; 
+  th, .MuiTableCell-head {  
     font-weight: 500 !important;  
   }
   
@@ -116,4 +115,7 @@
     border: 1px solid #527575;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
- 
+  
+.MuiTableHead-root .MuiTableCell-head {
+  border-bottom: 2px solid lightgray !important;
+}
