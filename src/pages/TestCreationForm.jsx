@@ -28,6 +28,14 @@ const TestCreationForm = () => {
 
 	const navigate = useNavigate();
 
+	useEffect(() => { 
+		const authToken = localStorage.getItem("authToken");
+		if (!authToken) {
+		  toast.error("Please login to continue");
+		  navigate("/login");
+		}
+	  }, []);
+
 	const handleScoreChange = (gradeSubject, score) => {
 		const maxScore = Number(score);
 		if (maxScore > 80) {
@@ -127,12 +135,7 @@ const TestCreationForm = () => {
 		}
 	};
 
-	const handleDateSelection = (gradeSubject, date) => {
-		setTestDates((prevDates) => ({
-			...prevDates,
-			[gradeSubject]: date,
-		}));
-	};
+	 
 
 	const toggleDropdown = (grade) => {
 		if (isEditMode) return;
