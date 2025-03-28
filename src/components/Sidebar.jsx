@@ -11,7 +11,7 @@ import {
 	SelUsers,
 	UNSelUsers,
 	UNSelTests,
-	UNSelReports,
+	UNSelReports,school,unselectedschool,
 } from "../utils/imagePath";
 
 const Sidebar = () => {
@@ -30,8 +30,8 @@ const Sidebar = () => {
 		{
 			to: "/schools",
 			label: "Schools",
-			selectedImage: SelReports,
-			unselectedImage: UNSelReports,
+			selectedImage: unselectedschool,
+			unselectedImage: school,
 		},
 		{
 			to: "/users",
