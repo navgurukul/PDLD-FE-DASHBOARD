@@ -12,6 +12,8 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import SearchIcon from "@mui/icons-material/Search";
 import AddSchool from "../components/AddSchool"; // Make sure path is correct
 import BulkUploadSchools from "../components/BulkUpload";
+import { addSymbolBtn, DocScanner, EditPencilIcon, trash } from "../utils/imagePath";
+import ButtonCustom from "../components/ButtonCustom";
 
 const theme = createTheme({
 	typography: {
@@ -262,7 +264,8 @@ export default function Schools() {
 									navigate(`/edit-school/${schoolId}`);
 								}}
 							>
-								EDIT
+								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
+																&nbsp;
 							</Button>
 							<Button
 								variant="text"
@@ -281,7 +284,9 @@ export default function Schools() {
 									toast.success("School deleted successfully!");
 								}}
 							>
-								DELETE
+
+								<img src={trash} alt="View Report" style={{ width: "20px", height: "20px" }} />
+																&nbsp;
 							</Button>
 						</div>
 					);
@@ -338,22 +343,8 @@ export default function Schools() {
 							<h2 className="text-xl font-bold text-[#2F4F4F]">School List</h2>
 							<p className="text-sm text-gray-600">View and manage all schools in the system</p>
 						</div>
-						<div className="flex gap-3">
-							<Button
-								variant="contained"
-								sx={{
-									backgroundColor: "#FFD700", // Changed to yellow color
-									color: "#2F4F4F", // Changed text to black for better contrast
-									borderRadius: "8px",
-									"&:hover": {
-										backgroundColor: "#E6C200", // Darker yellow on hover
-									},
-								}}
-								onClick={handleAddSchool}
-							>
-								<AddIcon sx={{ mr: 1 }} />
-								Add School
-							</Button>
+						<div className="flex gap-3"> 
+							<ButtonCustom imageName={addSymbolBtn} text={"Add School"} onClick={handleAddSchool} />
 							<Button
 								variant="outlined"
 								sx={{
