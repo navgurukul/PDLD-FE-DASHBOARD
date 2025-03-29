@@ -112,9 +112,9 @@ export default function AddSchool({ onClose, onSave }) {
 	};
 
 	return (
-		<Box sx={{ p: 3, maxWidth: "800px", margin: "0 auto" }}>
+		<Box sx={{ pl: 3, pr:3, pb:3, maxWidth: "800px", margin: "0 auto" }}>
 			<h5 className="text-lg font-bold text-[#2F4F4F]">Add New School</h5>
-			<Typography variant="body1" sx={{ color: "#666", mb: 4 }}>
+			<Typography variant="body1" sx={{ color: "#666", mb: 1 }}>
 				Create a school by filling in the details below
 			</Typography>
 
