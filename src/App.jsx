@@ -83,6 +83,7 @@ function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/schools" element={<Schools />} />
             <Route path="/schools/add-school" element={<AddSchool />} />
+            <Route path="/schools/update/:schoolId" element={<AddSchool />} />
             <Route path="/schools/bulk-upload" element={<BulkUploadSchools />} />
             <Route path="/testCreationForm" element={<TestCreationForm/>} />
             <Route path="/edit/testCreation/:Id" element={<TestCreationForm/>} />
