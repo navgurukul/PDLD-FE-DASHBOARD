@@ -351,7 +351,7 @@ export default function SchoolList() {
 					</div>
 				</div>
 
-				<div className="school-list-container mt-4 bg-white p-6 rounded-lg shadow-sm">
+				<div className="school-list-container mt-4 bg-white rounded-lg">
 					{/* Search Bar */}
 					<div className="flex justify-between items-center mb-2">
 						<TextField
