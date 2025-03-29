@@ -17,7 +17,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import GetAppIcon from '@mui/icons-material/GetApp';
+import GetAppIcon from "@mui/icons-material/GetApp";
 import { useNavigate } from "react-router-dom";
 import ButtonCustom from "./ButtonCustom";
 import apiInstance from "../../api";
@@ -159,12 +159,12 @@ export default function BulkUploadSchools() {
 		if (event.target.files && event.target.files[0]) {
 			const selectedFile = event.target.files[0];
 			setFile(selectedFile);
-			
+
 			// Count lines in the CSV file to determine total upload count
 			const reader = new FileReader();
-			reader.onload = function(e) {
+			reader.onload = function (e) {
 				const content = e.target.result;
-				const lines = content.split('\n').filter(line => line.trim().length > 0);
+				const lines = content.split("\n").filter((line) => line.trim().length > 0);
 				// Subtract 1 for the header row
 				setTotalUploadCount(Math.max(0, lines.length - 1));
 			};
@@ -249,15 +249,17 @@ export default function BulkUploadSchools() {
 		const headers = ["UDISE Code", "School Name", "Block Name", "Cluster Name", "Error"];
 		const csvContent = [
 			headers.join(","),
-			...uploadResult.data.errors.map(error => {
+			...uploadResult.data.errors.map((error) => {
 				return [
 					error.udiseCode || "",
 					error.schoolName || "",
 					error.blockName || "",
 					error.clusterName || "",
-					(error.reason || error.error || "Unknown error").replace(/,/g, ";") // Replace commas in error text
-				].map(value => `"${value}"`).join(",");
-			})
+					(error.reason || error.error || "Unknown error").replace(/,/g, ";"), // Replace commas in error text
+				]
+					.map((value) => `"${value}"`)
+					.join(",");
+			}),
 		].join("\n");
 
 		// Create a Blob and download
@@ -275,9 +277,7 @@ export default function BulkUploadSchools() {
 		<ThemeProvider theme={theme}>
 			<Box sx={{ p: 2, maxWidth: "800px", margin: "0 auto" }}>
 				<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-					<Typography variant="h4" fontWeight="bold" sx={{ color: "#2F4F4F" }}>
-						Bulk Upload Schools
-					</Typography>
+					<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
 				</Box>
 
 				<Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
@@ -380,7 +380,9 @@ export default function BulkUploadSchools() {
 										backgroundColor: "#f5f5f5",
 									}}
 								>
-									<Typography>{file.name} {totalUploadCount > 0 && `(${totalUploadCount} schools)`}</Typography>
+									<Typography>
+										{file.name} {totalUploadCount > 0 && `(${totalUploadCount} schools)`}
+									</Typography>
 									<CloseIcon
 										size="small"
 										onClick={confirmFileRemoval}
@@ -424,7 +426,7 @@ export default function BulkUploadSchools() {
 							>
 								Upload Results
 							</Typography>
-							
+
 							{uploadResult && uploadResult.data.errors && uploadResult.data.errors.length > 0 && (
 								<Button
 									variant="contained"
@@ -447,7 +449,8 @@ export default function BulkUploadSchools() {
 							<>
 								<Box sx={{ mb: 3, p: 2, backgroundColor: "#f8f9fa", borderRadius: 1 }}>
 									<Typography variant="body1" sx={{ mb: 1 }}>
-										Total schools in CSV: <span style={{ fontWeight: "bold" }}>{totalUploadCount}</span>
+										Total schools in CSV:{" "}
+										<span style={{ fontWeight: "bold" }}>{totalUploadCount}</span>
 									</Typography>
 									<Typography variant="body1">
 										Successfully added:{" "}
