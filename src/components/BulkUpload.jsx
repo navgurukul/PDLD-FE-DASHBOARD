@@ -21,8 +21,8 @@ import { useNavigate } from "react-router-dom";
 import ButtonCustom from "./ButtonCustom";
 import apiInstance from "../../api";
 import { toast } from "react-toastify";
-import CloseIcon from '@mui/icons-material/Close';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import CloseIcon from "@mui/icons-material/Close";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 const theme = createTheme({
 	typography: {
@@ -213,10 +213,10 @@ export default function BulkUploadSchools() {
 			setFile(null);
 			setIsDeleting(false);
 			setDeleteModalOpen(false);
-			
+
 			// Reset the file input so the same file can be selected again
 			if (fileInputRef.current) {
-				fileInputRef.current.value = '';
+				fileInputRef.current.value = "";
 			}
 		}, 500);
 	};
@@ -303,7 +303,7 @@ export default function BulkUploadSchools() {
 							}}
 						>
 							<CheckCircleOutlineIcon sx={{ color: "#2F4F4F", mr: 2, flexShrink: 0 }} />
-							<Box textAlign="left">
+							<Box textAlign="center">
 								<Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
 									CSV Format
 								</Typography>
@@ -327,7 +327,7 @@ export default function BulkUploadSchools() {
 										display: "flex",
 										justifyContent: "space-between",
 										alignItems: "center",
-										p: 2,
+										p: 1.2,
 										mb: 3,
 										border: "1px solid #e0e0e0",
 										borderRadius: 1,
@@ -335,9 +335,17 @@ export default function BulkUploadSchools() {
 									}}
 								>
 									<Typography>{file.name}</Typography>
-									<CloseIcon 
+									<CloseIcon
+										size="small"
 										onClick={confirmFileRemoval}
-										sx={{ cursor: 'pointer' }}
+										sx={{
+											cursor: "pointer",
+											fontSize: "20px", // Makes the icon smaller
+											backgroundColor: "#e0e0e0", // Light grey background
+											borderRadius: "50%", // Makes the background circular
+											padding: "4px", // Adds some space around the icon
+											marginLeft: "10px", // Adds margin to the left
+										}}
 									/>
 								</Box>
 							)}

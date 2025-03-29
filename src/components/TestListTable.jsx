@@ -142,7 +142,7 @@ export default function TestListTable() {
 			month: "short",
 			year: "numeric",
 		}),
-		schoolsSubmitted: 30,
+		schoolsSubmitted: test.totalSubmittedSchools || 0,
 		// <-- Use testStatus directly instead of getStatus
 		status: test.testStatus,
 		actions: "View Report",
@@ -205,7 +205,7 @@ export default function TestListTable() {
 				  <th
 					style={{
 					  textAlign: "center",
-					  borderBottom: "1px solid lightgray",
+					  borderBottom: "2px solid lightgray",
 					}}
 					scope="col"
 				  >

@@ -288,7 +288,9 @@ export default function SchoolList() {
                 }}
                 onClick={() => {
                   console.log("Edit School ID:", schoolId);
-                  navigate(`/schools/edit/${schoolId}`);
+                  navigate(`/schools/update/${schoolId}`, {
+                    state: { schoolData: schoolObj }  // Pass the entire school object
+                  });
                 }}
               >
                 <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
