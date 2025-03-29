@@ -41,7 +41,7 @@ const Sidebar = () => {
 		},
 
 		{
-			to: "/reports",
+			to: "",
 			label: "Reports",
 			selectedImage: SelReports,
 			unselectedImage: UNSelReports,
