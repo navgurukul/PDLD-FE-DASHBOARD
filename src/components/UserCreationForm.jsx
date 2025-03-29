@@ -291,7 +291,7 @@ export default function UserCreationForm() {
 				</Typography>
 
 				<form onSubmit={handleSubmit}>
-					<div className="mb-4">
+					<div className="mt-4">
 						<TextField
 							label="Full Name"
 							name="fullName"
@@ -300,13 +300,16 @@ export default function UserCreationForm() {
 							required
 							fullWidth
 							placeholder="Enter full name"
-							margin="normal"
 							variant="outlined"
-							size="small"
+							sx={{
+								"& .MuiOutlinedInput-root": {
+									height: "48px",
+								},
+							}}
 						/>
 					</div>
 
-					<div className="mb-4">
+					<div className="my-6">
 						<TextField
 							label="Email (Optional)"
 							name="email"
@@ -315,37 +318,31 @@ export default function UserCreationForm() {
 							onChange={handleInputChange}
 							fullWidth
 							placeholder="Enter email"
-							margin="normal"
 							variant="outlined"
-							size="small"
+							sx={{
+								"& .MuiOutlinedInput-root": {
+									height: "48px",
+								},
+							}}
 						/>
 					</div>
 
-					<div className="mb-4 flex gap-2 items-center">
-						<TextField
-							label="Password"
-							name="password"
-							type="password"
-							value={formData.password}
-							onChange={handleInputChange}
-							required
-							fullWidth
-							placeholder="Enter password"
-							margin="normal"
-							variant="outlined"
-							size="small"
-						/>
-						<ButtonCustom text="Generate" onClick={generatePassword} />
-					</div>
-
-					<div className="mb-4">
+					<div className="mb-6">
 						<FormControl fullWidth variant="outlined" required>
 							<Select
-								size="small"
 								displayEmpty
 								value={formData.role}
 								onChange={handleRoleChange}
 								inputProps={{ "aria-label": "Role" }}
+								sx={{
+									height: "48px",
+									"& .MuiSelect-select": {
+										height: "48px",
+										display: "flex",
+										alignItems: "center",
+										padding: "0 14px",
+									},
+								}}
 								renderValue={(selected) => {
 									if (!selected) {
 										return <span className="text-gray-500">Role *</span>;
@@ -363,14 +360,21 @@ export default function UserCreationForm() {
 					</div>
 
 					{hierarchyFields.showBlock && (
-						<div className="mb-4">
-							<FormControl fullWidth margin="normal" required>
+						<div className="">
+							<FormControl fullWidth required>
 								<InputLabel>Select Block</InputLabel>
 								<Select
+									sx={{
+										height: "48px",
+										"& .MuiSelect-select": {
+											height: "48px",
+											display: "flex",
+											alignItems: "center",
+										},
+									}}
 									value={formData.block}
 									onChange={handleBlockChange}
 									label="Select Block"
-									size="small"
 								>
 									{availableBlocks.map((block) => (
 										<MenuItem key={block.id} value={block.id}>
@@ -384,24 +388,45 @@ export default function UserCreationForm() {
 
 					{hierarchyFields.showCluster && formData.block && (
 						<>
-							<div className="mb-4">
-								<FormControl fullWidth margin="normal" required>
+							<div className="mt-6">
+								<FormControl fullWidth required>
 									<InputLabel>
 										Select Clusters in {availableBlocks.find((b) => b.id === formData.block)?.name}
 									</InputLabel>
 									<Select
+										sx={{
+											height: "48px",
+											"& .MuiSelect-select": {
+												minHeight: "48px",
+												display: "flex",
+												alignItems: "center",
+											},
+										}}
 										multiple
 										value={selectedEntities.clusters}
 										onChange={handleClusterChange}
 										label={`Select Clusters in ${
 											availableBlocks.find((b) => b.id === formData.block)?.name
 										}`}
-										size="small"
 										renderValue={(selected) => (
 											<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
 												{selected.map((clusterId) => {
 													const cluster = availableClusters.find((c) => c.id === clusterId);
-													return <Chip key={clusterId} label={cluster?.name} size="small" />;
+													return (
+														<Chip
+															key={clusterId}
+															label={cluster?.name}
+															onDelete={() => handleRemoveCluster(clusterId)}
+															onMouseDown={(event) => {
+																event.stopPropagation();
+															}}
+															onClick={(event) => {
+																event.stopPropagation();
+															}}
+															size="small"
+															sx={{ m: 0.5 }}
+														/>
+													);
 												})}
 											</Box>
 										)}
@@ -420,9 +445,9 @@ export default function UserCreationForm() {
 					{(selectedEntities.blocks.length > 0 ||
 						selectedEntities.clusters.length > 0 ||
 						selectedEntities.schools.length > 0) && (
-						<div className="mb-6 mt-4 p-4 bg-gray-50 rounded-lg">
-							<Typography variant="subtitle1" className="mb-2 font-semibold">
-								Selected Schools ({selectedEntities.schools.length})
+						<div className="mb-6 mt-6 p-4 bg-gray-50 rounded-lg border border-gray-300 rounded-lg">
+							<Typography variant="subtitle1" className="mb-4 font-semibold">
+								Summary of Selected Entities
 							</Typography>
 							<div className="flex flex-wrap gap-2">
 								{formData.block && (
@@ -451,7 +476,7 @@ export default function UserCreationForm() {
 						</div>
 					)}
 
-					<div className="flex justify-end">
+					<div className="flex justify-end mt-4">
 						<ButtonCustom text="Create User" onClick={handleSubmit} />
 					</div>
 				</form>
