@@ -17,6 +17,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import GetAppIcon from '@mui/icons-material/GetApp';
 import { useNavigate } from "react-router-dom";
 import ButtonCustom from "./ButtonCustom";
 import apiInstance from "../../api";
@@ -150,12 +151,24 @@ export default function BulkUploadSchools() {
 	const [uploadResult, setUploadResult] = useState(null);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [totalUploadCount, setTotalUploadCount] = useState(0);
 	const fileInputRef = useRef(null);
 	const navigate = useNavigate();
 
 	const handleFileChange = (event) => {
 		if (event.target.files && event.target.files[0]) {
-			setFile(event.target.files[0]);
+			const selectedFile = event.target.files[0];
+			setFile(selectedFile);
+			
+			// Count lines in the CSV file to determine total upload count
+			const reader = new FileReader();
+			reader.onload = function(e) {
+				const content = e.target.result;
+				const lines = content.split('\n').filter(line => line.trim().length > 0);
+				// Subtract 1 for the header row
+				setTotalUploadCount(Math.max(0, lines.length - 1));
+			};
+			reader.readAsText(selectedFile);
 		}
 	};
 
@@ -213,6 +226,7 @@ export default function BulkUploadSchools() {
 			setFile(null);
 			setIsDeleting(false);
 			setDeleteModalOpen(false);
+			setTotalUploadCount(0);
 
 			// Reset the file input so the same file can be selected again
 			if (fileInputRef.current) {
@@ -223,6 +237,38 @@ export default function BulkUploadSchools() {
 
 	const confirmFileRemoval = () => {
 		setDeleteModalOpen(true);
+	};
+
+	const downloadErrorsCSV = () => {
+		if (!uploadResult || !uploadResult.data || !uploadResult.data.errors || uploadResult.data.errors.length === 0) {
+			toast.error("No errors to download");
+			return;
+		}
+
+		// Create CSV content
+		const headers = ["UDISE Code", "School Name", "Block Name", "Cluster Name", "Error"];
+		const csvContent = [
+			headers.join(","),
+			...uploadResult.data.errors.map(error => {
+				return [
+					error.udiseCode || "",
+					error.schoolName || "",
+					error.blockName || "",
+					error.clusterName || "",
+					(error.reason || error.error || "Unknown error").replace(/,/g, ";") // Replace commas in error text
+				].map(value => `"${value}"`).join(",");
+			})
+		].join("\n");
+
+		// Create a Blob and download
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.setAttribute("href", url);
+		link.setAttribute("download", "upload_errors.csv");
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
 	};
 
 	return (
@@ -334,7 +380,7 @@ export default function BulkUploadSchools() {
 										backgroundColor: "#f5f5f5",
 									}}
 								>
-									<Typography>{file.name}</Typography>
+									<Typography>{file.name} {totalUploadCount > 0 && `(${totalUploadCount} schools)`}</Typography>
 									<CloseIcon
 										size="small"
 										onClick={confirmFileRemoval}
@@ -369,18 +415,40 @@ export default function BulkUploadSchools() {
 				{/* Results Modal */}
 				<Modal open={openModal} onClose={handleCloseModal} aria-labelledby="upload-results-modal">
 					<Box sx={modalStyle}>
-						<Typography
-							id="upload-results-modal"
-							variant="h5"
-							fontWeight="bold"
-							sx={{ mb: 2, color: "#2F4F4F" }}
-						>
-							Upload Results
-						</Typography>
+						<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+							<Typography
+								id="upload-results-modal"
+								variant="h5"
+								fontWeight="bold"
+								sx={{ color: "#2F4F4F" }}
+							>
+								Upload Results
+							</Typography>
+							
+							{uploadResult && uploadResult.data.errors && uploadResult.data.errors.length > 0 && (
+								<Button
+									variant="contained"
+									startIcon={<GetAppIcon />}
+									onClick={downloadErrorsCSV}
+									sx={{
+										backgroundColor: "#2F4F4F",
+										color: "white",
+										"&:hover": {
+											backgroundColor: "#1E3535",
+										},
+									}}
+								>
+									Download Errors
+								</Button>
+							)}
+						</Box>
 
 						{uploadResult && (
 							<>
 								<Box sx={{ mb: 3, p: 2, backgroundColor: "#f8f9fa", borderRadius: 1 }}>
+									<Typography variant="body1" sx={{ mb: 1 }}>
+										Total schools in CSV: <span style={{ fontWeight: "bold" }}>{totalUploadCount}</span>
+									</Typography>
 									<Typography variant="body1">
 										Successfully added:{" "}
 										<span style={{ fontWeight: "bold", color: "green" }}>
