@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../App"; // Import the AuthContext
 import apiInstance from "../../api"; // Import your API instance
 import { Eye, EyeOff } from "lucide-react";
+import ButtonCustom from "./ButtonCustom";
 
 const theme = createTheme({
 	typography: {
@@ -164,7 +165,7 @@ export default function LoginForm({ onLogin }) {
 						Enter your credentials to access your account
 					</Typography>
 
-					<form onSubmit={handleSubmit}>
+					<form >
 						<Box sx={{ mb: 2 }}>
 							<Typography
 								variant="subtitle1"
@@ -172,14 +173,17 @@ export default function LoginForm({ onLogin }) {
 								htmlFor="username"
 								sx={{
 									display: "block",
-									mb: 1,
 									fontWeight: 500,
 								}}
 							>
 								Username
 							</Typography>
 							<TextField
-								size="small"
+								sx={{
+									"& .MuiOutlinedInput-root": {
+										height: "48px",
+									},
+								}}
 								id="username"
 								name="username"
 								value={formData.username}
@@ -204,14 +208,17 @@ export default function LoginForm({ onLogin }) {
 								htmlFor="password"
 								sx={{
 									display: "block",
-									mb: 1,
 									fontWeight: 500,
 								}}
 							>
 								Password
 							</Typography>
 							<TextField
-								size="small"
+								sx={{
+									"& .MuiOutlinedInput-root": {
+										height: "48px",
+									},
+								}}
 								id="password"
 								name="password"
 								type={showPassword ? "text" : "password"}
@@ -250,13 +257,14 @@ export default function LoginForm({ onLogin }) {
 							</Typography>
 						)}
 
-						<button
-							type="submit"
-							disabled={isLoading}
-							className="w-full  py-2 px-4 bg-[#FFD700] text-black font-medium rounded-md transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
-						>
-							{isLoading ? "Signing In..." : "Sign In"}
-						</button>
+						<div className="mt-8">
+							<ButtonCustom
+								btnWidth={500}
+								disabled={isLoading}
+								text={isLoading ? "Signing In..." : "Sign In"}
+								onClick={handleSubmit}
+							/>
+						</div>
 					</form>
 				</Paper>
 			</Box>

@@ -28,11 +28,11 @@ const Breadcrumb = () => {
 			separator={<NavigateNextIcon fontSize="small" />}
 			aria-label="breadcrumb"
 			sx={{
-				mb: 2,
+				mb:1,
 				pl: 6,
 				mt: 5,
 				fontFamily: "'Karla', sans-serif", // Add the custom font
-				fontSize: "14px", // Adjust font size
+				fontSize: "14px",
 			}}
 		>
 			<Link to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "#757575" }}>
