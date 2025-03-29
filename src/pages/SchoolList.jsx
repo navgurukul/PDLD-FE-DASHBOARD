@@ -14,6 +14,7 @@ import ButtonCustom from "../components/ButtonCustom";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
 import apiInstance from "../../api";
+import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 
 const theme = createTheme({
   typography: {
@@ -332,7 +333,7 @@ export default function SchoolList() {
   // Default view - List of schools
   return (
     <ThemeProvider theme={theme}>
-      <div className="main-page-wrapper">
+      <div className="main-page-wrapper" style={{ position: "relative" }}>
         <div className="header-container">
           <div>
             <h5 className="text-lg font-bold text-[#2F4F4F]">School Management</h5>
@@ -384,28 +385,22 @@ export default function SchoolList() {
 
           {/* Data Table */}
           <div style={{ borderRadius: "8px", position: "relative", minHeight: "300px" }}>
-            {isLoading ? (
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "300px" }}>
-                <CircularProgress />
-              </div>
-            ) : (
-              <MUIDataTable
-                data={tableData}
-                columns={columns.map((column) => ({
-                  ...column,
-                  options: {
-                    ...column.options,
-                    setCellProps: () => ({
-                      style: {
-                        paddingLeft: "16px",
-                        paddingRight: "16px",
-                      },
-                    }),
-                  },
-                }))}
-                options={options}
-              />
-            )}
+            <MUIDataTable
+              data={tableData}
+              columns={columns.map((column) => ({
+                ...column,
+                options: {
+                  ...column.options,
+                  setCellProps: () => ({
+                    style: {
+                      paddingLeft: "16px",
+                      paddingRight: "16px",
+                    },
+                  }),
+                },
+              }))}
+              options={options}
+            />
           </div>
 
           <div
@@ -439,6 +434,11 @@ export default function SchoolList() {
             icon={<DeleteOutlineIcon fontSize="large" />}
           />
         </div>
+
+        {/* Overlay Loader */}
+        {isLoading && (
+         <SpinnerPageOverlay isLoading={isLoading} />
+        )}
       </div>
     </ThemeProvider>
   );
