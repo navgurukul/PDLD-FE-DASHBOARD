@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, TextField,  Paper, FormHelperText, CircularProgress } from "@mui/material";
+import { Box, Typography, TextField, Paper, FormHelperText, CircularProgress } from "@mui/material";
 import { toast } from "react-toastify";
 import apiInstance from "../../api"; // Import the custom axios instance
 import ButtonCustom from "./ButtonCustom";
@@ -217,10 +217,10 @@ export default function AddSchool({ onClose, onSave }) {
 				{schoolId ? "Update school details below" : "Create a school by filling in the details below"}
 			</Typography>
 
-			<Paper sx={{ p: 4, borderRadius: 2 }}>
+			<Box sx={{ p: 4, border: "0.5px solid #ccc", borderRadius: 2 }}>
 				<Box sx={{ display: "flex", flexDirection: "column", gap: 3, mb: 4 }}>
 					<Box>
-						<Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>
+						<Typography variant="body1" fontWeight="bold">
 							School Name *
 						</Typography>
 						<TextField
@@ -230,10 +230,10 @@ export default function AddSchool({ onClose, onSave }) {
 							onChange={handleChange}
 							placeholder="Enter school name"
 							error={errors.schoolName}
-							size="small"
 							sx={{
 								"& .MuiOutlinedInput-root": {
 									borderRadius: "8px",
+									height: "48px",
 								},
 							}}
 						/>
@@ -241,12 +241,11 @@ export default function AddSchool({ onClose, onSave }) {
 					</Box>
 
 					<Box>
-						<Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>
+						<Typography variant="body1" fontWeight="bold">
 							UDISE Code *
 						</Typography>
 						<TextField
 							fullWidth
-							size="small"
 							name="udiseCode"
 							value={formData.udiseCode}
 							onChange={handleChange}
@@ -256,6 +255,7 @@ export default function AddSchool({ onClose, onSave }) {
 							sx={{
 								"& .MuiOutlinedInput-root": {
 									borderRadius: "8px",
+									height: "48px",
 								},
 							}}
 						/>
@@ -263,12 +263,11 @@ export default function AddSchool({ onClose, onSave }) {
 					</Box>
 
 					<Box>
-						<Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>
+						<Typography variant="body1" fontWeight="bold">
 							Cluster Name *
 						</Typography>
 						<TextField
 							fullWidth
-							size="small"
 							name="clusterName"
 							value={formData.clusterName}
 							onChange={handleChange}
@@ -277,6 +276,7 @@ export default function AddSchool({ onClose, onSave }) {
 							sx={{
 								"& .MuiOutlinedInput-root": {
 									borderRadius: "8px",
+									height: "48px",
 								},
 							}}
 						/>
@@ -284,12 +284,11 @@ export default function AddSchool({ onClose, onSave }) {
 					</Box>
 
 					<Box>
-						<Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>
+						<Typography variant="body1" fontWeight="bold">
 							Block Name *
 						</Typography>
 						<TextField
 							fullWidth
-							size="small"
 							name="blockName"
 							value={formData.blockName}
 							onChange={handleChange}
@@ -298,6 +297,7 @@ export default function AddSchool({ onClose, onSave }) {
 							sx={{
 								"& .MuiOutlinedInput-root": {
 									borderRadius: "8px",
+									height: "48px",
 								},
 							}}
 						/>
@@ -319,7 +319,7 @@ export default function AddSchool({ onClose, onSave }) {
 						onClick={handleSubmit}
 					/>
 				</div>
-			</Paper>
+			</Box>
 		</Box>
 	);
 }

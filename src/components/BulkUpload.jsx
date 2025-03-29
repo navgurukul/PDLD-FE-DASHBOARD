@@ -276,15 +276,13 @@ export default function BulkUploadSchools() {
 	return (
 		<ThemeProvider theme={theme}>
 			<Box sx={{ p: 2, maxWidth: "800px", margin: "0 auto" }}>
-				<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-					<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
-				</Box>
+				<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
 
 				<Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
 					Upload a CSV file with multiple schools to add them at once
 				</Typography>
 
-				<Paper sx={{ p: 3, borderRadius: 2 }}>
+				<Box sx={{ p: 3, border: "1px solid #ccc", borderRadius: 2 }}>
 					<Box
 						sx={{
 							border: "2px dashed #ccc",
@@ -412,7 +410,7 @@ export default function BulkUploadSchools() {
 							</Box>
 						)}
 					</Box>
-				</Paper>
+				</Box>
 
 				{/* Results Modal */}
 				<Modal open={openModal} onClose={handleCloseModal} aria-labelledby="upload-results-modal">
