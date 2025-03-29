@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, DocScanner } from "../utils/imagePath";
-import { Button, TextField, MenuItem } from "@mui/material";
+import { Button, TextField, MenuItem, CircularProgress } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -14,6 +14,7 @@ import { useLocation } from "react-router-dom";
 import apiInstance from "../../api";
 import { CLASS_OPTIONS, SUBJECT_OPTIONS, STATUS_LABELS } from "../data/testData";
 import ButtonCustom from "./ButtonCustom";
+import SpinnerPageOverlay from "./SpinnerPageOverlay";
 
 const theme = createTheme({
 	typography: {
@@ -51,6 +52,7 @@ export default function TestListTable() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [dateRange, setDateRange] = useState([null, null]);
 	const [startDate, endDate] = dateRange;
+	const [isLoading, setIsLoading] = useState(false);
 
 	// Track dropdown selections
 	const [selectedClass, setSelectedClass] = useState("");
@@ -88,6 +90,7 @@ export default function TestListTable() {
 
 	// Fetch data from API
 	const fetchData = async () => {
+		setIsLoading(true);
 		try {
 			let startDateFormatted;
 			let endDateFormatted;
@@ -121,6 +124,8 @@ export default function TestListTable() {
 			}
 		} catch (error) {
 			console.error("Error fetching data:", error);
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
@@ -196,62 +201,62 @@ export default function TestListTable() {
 			name: "actions",
 			label: "ACTIONS",
 			options: {
-			  filter: false,
-			  sort: false,
-		  
-			  // Center the header text using customHeadRender with small font size
-			  customHeadRender: (columnMeta) => {
-				return (
-				  <th
-					style={{
-					  textAlign: "center",
-					  borderBottom: "2px solid lightgray",
-					}}
-					scope="col"
-				  >
-					<div style={{ textAlign: "center", fontSize: "14px" }}>{columnMeta.label}</div>
-				  </th>
-				);
-			  },
-		  
-			  // The rest of your customBodyRender code remains the same
-			  customBodyRender: (value, tableMeta) => {
-				const testId = tableMeta.rowData[0];
-				return (
-				  <div style={{ display: "flex", gap: "8px" }}>
-					<Button
-					  variant="outlined"
-					  size="small"
-					  color="primary"
-					  sx={{
-						borderColor: "transparent",
-						"&:hover": { borderColor: "transparent" },
-					  }}
-					  onClick={() => {
-						console.log("Test ID:", testId);
-						navigate(`/edit/testCreation/${testId}`);
-					  }}
-					>
-					  <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
-					  &nbsp;
-					</Button>
-					<Button
-					  variant="outlined"
-					  size="small"
-					  color="secondary"
-					  sx={{
-						borderColor: "transparent",
-						"&:hover": { borderColor: "transparent" },
-					  }}
-					>
-					  <img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
-					  &nbsp; View Report
-					</Button>
-				  </div>
-				);
-			  },
+				filter: false,
+				sort: false,
+
+				// Center the header text using customHeadRender with small font size
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{
+								textAlign: "center",
+								borderBottom: "2px solid lightgray",
+							}}
+							scope="col"
+						>
+							<div style={{ textAlign: "center", fontSize: "14px" }}>{columnMeta.label}</div>
+						</th>
+					);
+				},
+
+				// The rest of your customBodyRender code remains the same
+				customBodyRender: (value, tableMeta) => {
+					const testId = tableMeta.rowData[0];
+					return (
+						<div style={{ display: "flex", gap: "8px" }}>
+							<Button
+								variant="outlined"
+								size="small"
+								color="primary"
+								sx={{
+									borderColor: "transparent",
+									"&:hover": { borderColor: "transparent" },
+								}}
+								onClick={() => {
+									console.log("Test ID:", testId);
+									navigate(`/edit/testCreation/${testId}`);
+								}}
+							>
+								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
+								&nbsp;
+							</Button>
+							<Button
+								variant="outlined"
+								size="small"
+								color="secondary"
+								sx={{
+									borderColor: "transparent",
+									"&:hover": { borderColor: "transparent" },
+								}}
+							>
+								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
+								&nbsp; View Report
+							</Button>
+						</div>
+					);
+				},
 			},
-		  }
+		},
 	];
 
 	// MUI DataTable options
@@ -274,7 +279,6 @@ export default function TestListTable() {
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper">
 				<h5 className="text-lg font-bold text-[#2F4F4F]">All Tests</h5>
-
 				{/* Search Bar */}
 				<TextField
 					variant="outlined"
@@ -466,8 +470,11 @@ export default function TestListTable() {
 						showLastButton
 					/>
 				</div>
-				{/* <ToastContainer /> */}
+
 				<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
+
+				{/* Loading Overlay */}
+				{isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
 			</div>
 		</ThemeProvider>
 	);
