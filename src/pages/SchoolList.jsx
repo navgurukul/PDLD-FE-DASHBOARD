@@ -209,24 +209,24 @@ export default function SchoolList() {
       label: "Block",
       options: { filter: false, sort: true },
     },
-    {
-      name: "username",
-      label: "Username",
-      options: { filter: false, sort: true },
-      customBodyRender: (value) => (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span>{value}</span>
-          <Button
-            variant="text"
-            size="small"
-            sx={{ minWidth: "30px", marginLeft: "5px" }}
-            onClick={() => handleCopy(value, "Username")}
-          >
-            <ContentCopyIcon style={{ fontSize: "18px", color: "#1976d2" }} />
-          </Button>
-        </div>
-      ),
-    },
+    // {
+    //   name: "username",
+    //   label: "Username",
+    //   options: { filter: false, sort: true },
+    //   customBodyRender: (value) => (
+    //     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    //       <span>{value}</span>
+    //       <Button
+    //         variant="text"
+    //         size="small"
+    //         sx={{ minWidth: "30px", marginLeft: "5px" }}
+    //         onClick={() => handleCopy(value, "Username")}
+    //       >
+    //         <ContentCopyIcon style={{ fontSize: "18px", color: "#1976d2" }} />
+    //       </Button>
+    //     </div>
+    //   ),
+    // },
     {
       name: "password",
       label: "Password",
