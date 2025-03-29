@@ -379,6 +379,8 @@ export default function SchoolList() {
 									borderColor: "#2F4F4F",
 									color: "#2F4F4F",
 									borderRadius: "8px",
+									textTransform: "none",
+									fontSize:"18px",
 									"&:hover": {
 										borderColor: "#1E3535",
 										backgroundColor: "rgba(47, 79, 79, 0.1)",
