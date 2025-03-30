@@ -1,10 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
 	Button,
 	Box,
 	Typography,
 	Paper,
-	Modal,
 	Table,
 	TableBody,
 	TableCell,
@@ -15,15 +14,13 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import GetAppIcon from "@mui/icons-material/GetApp";
 import { useNavigate } from "react-router-dom";
 import ButtonCustom from "./ButtonCustom";
 import apiInstance from "../../api";
 import { toast } from "react-toastify";
 import CloseIcon from "@mui/icons-material/Close";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import Modal from "@mui/material/Modal";
 
 const theme = createTheme({
 	typography: {
@@ -43,21 +40,6 @@ const theme = createTheme({
 		},
 	},
 });
-
-const modalStyle = {
-	position: "absolute",
-	top: "50%",
-	left: "50%",
-	transform: "translate(-50%, -50%)",
-	width: 800,
-	maxWidth: "90%",
-	maxHeight: "90vh",
-	bgcolor: "background.paper",
-	boxShadow: 24,
-	p: 4,
-	borderRadius: 2,
-	overflow: "auto",
-};
 
 // Delete Confirmation Modal Component
 const DeleteConfirmationModal = ({
@@ -150,11 +132,9 @@ const DeleteConfirmationModal = ({
 export default function BulkUploadSchools() {
 	const [file, setFile] = useState(null);
 	const [isUploading, setIsUploading] = useState(false);
-	const [openModal, setOpenModal] = useState(false);
-	const [uploadResult, setUploadResult] = useState(null);
+	const [totalUploadCount, setTotalUploadCount] = useState(0);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
-	const [totalUploadCount, setTotalUploadCount] = useState(0);
 	const fileInputRef = useRef(null);
 	const navigate = useNavigate();
 
@@ -192,34 +172,32 @@ export default function BulkUploadSchools() {
 				},
 			});
 
-			setUploadResult(response.data);
-
 			// Show success toast
 			toast.success(`Upload completed: ${response.data.data.successCount} schools added successfully`);
-
-			// If there are errors, show the modal with details
-			if (response.data.data.errorCount > 0) {
-				setOpenModal(true);
-			}
+			
+			// Navigate to the summary page with the upload results
+			navigate("/bulk-Upload-Summary", { 
+				state: { 
+					uploadResult: response.data,
+					totalUploadCount: totalUploadCount
+				} 
+			});
 		} catch (error) {
 			console.error("Error uploading file:", error);
 			toast.error(error.response?.data?.message || "Error uploading file");
 
+			// Navigate to the summary page even if there are errors
 			if (error.response?.data) {
-				setUploadResult(error.response.data);
-				setOpenModal(true);
+				navigate("/upload-summary", { 
+					state: { 
+						uploadResult: error.response.data,
+						totalUploadCount: totalUploadCount
+					} 
+				});
 			}
 		} finally {
 			setIsUploading(false);
 		}
-	};
-
-	const handleGoBack = () => {
-		navigate("/schools");
-	};
-
-	const handleCloseModal = () => {
-		setOpenModal(false);
 	};
 
 	const handleRemoveFile = () => {
@@ -240,40 +218,6 @@ export default function BulkUploadSchools() {
 
 	const confirmFileRemoval = () => {
 		setDeleteModalOpen(true);
-	};
-
-	const downloadErrorsCSV = () => {
-		if (!uploadResult || !uploadResult.data || !uploadResult.data.errors || uploadResult.data.errors.length === 0) {
-			toast.error("No errors to download");
-			return;
-		}
-
-		// Create CSV content
-		const headers = ["UDISE Code", "School Name", "Block Name", "Cluster Name", "Error"];
-		const csvContent = [
-			headers.join(","),
-			...uploadResult.data.errors.map((error) => {
-				return [
-					error.udiseCode || "",
-					error.schoolName || "",
-					error.blockName || "",
-					error.clusterName || "",
-					(error.reason || error.error || "Unknown error").replace(/,/g, ";"), // Replace commas in error text
-				]
-					.map((value) => `"${value}"`)
-					.join(",");
-			}),
-		].join("\n");
-
-		// Create a Blob and download
-		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-		const url = URL.createObjectURL(blob);
-		const link = document.createElement("a");
-		link.setAttribute("href", url);
-		link.setAttribute("download", "upload_errors.csv");
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
 	};
 
 	return (
@@ -344,7 +288,6 @@ export default function BulkUploadSchools() {
 								alignItems: "center",
 							}}
 						>
-							<CheckCircleOutlineIcon sx={{ color: "#2F4F4F", mr: 2, flexShrink: 0 }} />
 							<Box textAlign="center">
 								<Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
 									CSV Format
@@ -410,106 +353,6 @@ export default function BulkUploadSchools() {
 						)}
 					</Box>
 				</Box>
-
-				{/* Results Modal */}
-				<Modal open={openModal} onClose={handleCloseModal} aria-labelledby="upload-results-modal">
-					<Box sx={modalStyle}>
-						<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-							<Typography
-								id="upload-results-modal"
-								variant="h5"
-								fontWeight="bold"
-								sx={{ color: "#2F4F4F" }}
-							>
-								Upload Results
-							</Typography>
-
-							{uploadResult && uploadResult.data.errors && uploadResult.data.errors.length > 0 && (
-								<Button
-									variant="outlined"
-									startIcon={<GetAppIcon />}
-									onClick={downloadErrorsCSV}
-									sx={{
-										color: "#2F4F4F",
-										border: "1px solid #2F4F4F",
-										height: "48px",
-										"&:hover": {
-											backgroundColor: "#2F4F4F",
-											color: "white",
-										},
-									}}
-								>
-									Status Report
-								</Button>
-							)}
-						</Box>
-
-						{uploadResult && (
-							<>
-								<Box sx={{ mb: 3, p: 2, backgroundColor: "#f8f9fa", borderRadius: 1 }}>
-									<Typography variant="body1" sx={{ mb: 1 }}>
-										Total schools in CSV:{" "}
-										<span style={{ fontWeight: "bold" }}>{totalUploadCount}</span>
-									</Typography>
-									<Typography variant="body1">
-										Successfully added:{" "}
-										<span style={{ fontWeight: "bold", color: "green" }}>
-											{uploadResult.data.successCount}
-										</span>{" "}
-										schools
-									</Typography>
-									{uploadResult.data.errorCount > 0 && (
-										<Typography variant="body1">
-											Errors encountered:{" "}
-											<span style={{ fontWeight: "bold", color: "red" }}>
-												{uploadResult.data.errorCount}
-											</span>{" "}
-											schools
-										</Typography>
-									)}
-								</Box>
-
-								{uploadResult.data.errors && uploadResult.data.errors.length > 0 && (
-									<>
-										<Typography variant="h6" sx={{ color: "red", mb: 1 }}>
-											Error Details:
-										</Typography>
-										<TableContainer component={Paper} sx={{ mb: 2 }}>
-											<Table size="small">
-												<TableHead>
-													<TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-														<TableCell>UDISE Code</TableCell>
-														<TableCell>School Name</TableCell>
-														<TableCell>Block</TableCell>
-														<TableCell>Cluster</TableCell>
-														<TableCell>Error</TableCell>
-													</TableRow>
-												</TableHead>
-												<TableBody>
-													{uploadResult.data.errors.map((error, index) => (
-														<TableRow key={index} sx={{ backgroundColor: "#fff0f0" }}>
-															<TableCell>{error.udiseCode || "-"}</TableCell>
-															<TableCell>{error.schoolName || "-"}</TableCell>
-															<TableCell>{error.blockName || "-"}</TableCell>
-															<TableCell>{error.clusterName || "-"}</TableCell>
-															<TableCell sx={{ color: "red" }}>
-																{error.reason || error.error || "Unknown error"}
-															</TableCell>
-														</TableRow>
-													))}
-												</TableBody>
-											</Table>
-										</TableContainer>
-									</>
-								)}
-
-								<Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-									<ButtonCustom text="Close" btnWidth="120" onClick={handleCloseModal} />
-								</Box>
-							</>
-						)}
-					</Box>
-				</Modal>
 
 				{/* Delete Confirmation Modal */}
 				<DeleteConfirmationModal
