@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, DocScanner } from "../utils/imagePath";
 import { Button, TextField, MenuItem, CircularProgress } from "@mui/material";
@@ -139,11 +139,53 @@ export default function TestListTable() {
 	// Filter tests based on search query (local filter for "testName")
 	const filteredTests = tests?.filter((test) => test.testName?.toLowerCase().includes(searchQuery.toLowerCase()));
 
-	const tableData = filteredTests?.map((test) => ({
+	// Add this sort function at the component level
+	// Sort function
+	const sortByClassNumber = (data, order = "asc") => {
+		return [...data].sort((a, b) => {
+			const aClassNum = parseInt(a.testClass || 0, 10);
+			const bClassNum = parseInt(b.testClass || 0, 10);
+			return order === "asc" ? aClassNum - bClassNum : bClassNum - aClassNum;
+		});
+	};
+
+	// State to track sorting
+	const [sortConfig, setSortConfig] = useState({
+		key: null,
+		direction: "asc",
+	});
+
+	// Add this sort function for dates
+	const sortByDateTimestamp = (data, order = "asc") => {
+		return [...data].sort((a, b) => {
+			// Use the timestamp for proper date sorting
+			const aTimestamp = new Date(a.testDate).getTime();
+			const bTimestamp = new Date(b.testDate).getTime();
+
+			return order === "asc" ? aTimestamp - bTimestamp : bTimestamp - aTimestamp;
+		});
+	};
+
+	// Apply sorting based on which column is being sorted
+	const sortedTests = useMemo(() => {
+		if (!sortConfig.key) return filteredTests;
+
+		switch (sortConfig.key) {
+			case "class":
+				return sortByClassNumber(filteredTests, sortConfig.direction);
+			case "date":
+				return sortByDateTimestamp(filteredTests, sortConfig.direction);
+			default:
+				return filteredTests;
+		}
+	}, [filteredTests, sortConfig]);
+
+	// Then proceed with mapping to tableData as before
+	const tableData = sortedTests?.map((test) => ({
 		id: test.id,
 		testName: test.testName,
 		subject: test.subject || "N/A",
-		class: `Class ${test.testClass || "N/A"}`,
+		class: `CLASS ${test.testClass || "N/A"}`,
 		dateOfTest: new Date(test.testDate).toLocaleDateString("en-GB", {
 			day: "2-digit",
 			month: "short",
@@ -174,14 +216,87 @@ export default function TestListTable() {
 		},
 		{
 			name: "class",
-			label: "Class",
-			options: { filter: true, sort: true },
+			label: "CLASS",
+			options: {
+				filter: true,
+				sort: false, // Disable built-in sorting
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{ 
+								cursor: "pointer",
+								borderBottom: "2px solid lightgray",
+								fontSize: "14px",  
+								textTransform: "uppercase", // Keep it capitalized
+							}}
+							onClick={() => {
+								// Toggle sort direction if already sorting by class
+								setSortConfig({
+									key: "class",
+									direction:
+										sortConfig.key === "class" && sortConfig.direction === "asc" ? "desc" : "asc",
+								});
+							}}
+						>
+							<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+								}}
+							>
+								{columnMeta.label}
+								<span style={{ marginLeft: "5px" }}>
+									{sortConfig.key === "class" ? (sortConfig.direction === "asc" ? "" : "") : ""}
+								</span>
+							</div>
+						</th>
+					);
+				},
+			},
 		},
 		{
 			name: "dateOfTest",
-			label: "Date of Test",
-			options: { filter: true, sort: true },
-			customBodyRender: (value) => <div style={{ whiteSpace: "nowrap" }}>{value}</div>,
+			label: "DATE OF TEST",
+			options: {
+				filter: true,
+				sort: false, // Disable built-in sorting
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{
+								textAlign: "center",
+								cursor: "pointer",
+								borderBottom: "2px solid lightgray",
+								fontSize: "14px", // Smaller font size for this specific header
+								textTransform: "uppercase", // Keep it capitalized
+							}}
+							onClick={() => {
+								// Toggle sort direction if already sorting by date
+								setSortConfig({
+									key: "date",
+									direction:
+										sortConfig.key === "date" && sortConfig.direction === "asc" ? "desc" : "asc",
+								});
+							}}
+						>
+							<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+								}}
+							>
+								{columnMeta.label}
+								<span style={{ marginLeft: "5px" }}>
+									{sortConfig.key === "date" ? (sortConfig.direction === "asc" ? "" : "") : ""}
+								</span>
+							</div>
+						</th>
+					);
+				},
+				customBodyRender: (value) => <div style={{ whiteSpace: "nowrap" }}>{value}</div>,
+			},
 		},
 		{
 			name: "schoolsSubmitted",
@@ -201,7 +316,7 @@ export default function TestListTable() {
 		},
 		{
 			name: "actions",
-			label: "Actions",
+			label: "ACTIONS",
 			options: {
 				filter: false,
 				sort: false,
@@ -225,7 +340,7 @@ export default function TestListTable() {
 				customBodyRender: (value, tableMeta) => {
 					const testId = tableMeta.rowData[0];
 					return (
-						<div style={{ display: "flex", justifyContent:"center"}}>
+						<div style={{ display: "flex", justifyContent: "center" }}>
 							<Button
 								variant="outlined"
 								size="small"
@@ -234,7 +349,7 @@ export default function TestListTable() {
 									borderColor: "transparent",
 									"&:hover": { borderColor: "transparent" },
 								}}
-								onClick={() => { 
+								onClick={() => {
 									navigate(`/editTest/${testId}`);
 								}}
 							>
@@ -468,8 +583,7 @@ export default function TestListTable() {
 								...column.options,
 								setCellProps: () => ({
 									style: {
-										paddingLeft: "16px",
-										paddingRight: "30px",
+										textAlign: "center",  
 									},
 								}),
 							},
@@ -480,7 +594,9 @@ export default function TestListTable() {
 								boxShadow: "none",
 							},
 							"& .MuiTableCell-root": {
-								textAlign: "center",
+								// textAlign: "center",
+								// border:"1px solid blue",
+								// textAlign: "left",
 							},
 						}}
 					/>
