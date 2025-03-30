@@ -282,12 +282,19 @@ export default function SchoolList() {
 					const udiseCode = tableMeta.rowData[2]; // Index 2 is the udiseCode column
 
 					return (
-						<div style={{ display: "flex", alignItems: "center" }}>
+						<div
+							style={{
+								display: "flex",
+								width: "120px",
+								justifyContent: "space-between",
+								alignItems: "center",
+							}}
+						>
 							<span>{value}</span>
 							<Button
 								variant="text"
 								size="small"
-								sx={{ minWidth: "30px", marginLeft: "15px" }}
+								sx={{ minWidth: "30px", marginRight: "14px" }}
 								onClick={() =>
 									handleCopy(`UDISE: ${udiseCode}, Password: ${value}`, "UDISE and Password")
 								}
@@ -305,7 +312,7 @@ export default function SchoolList() {
 		},
 		{
 			name: "actions",
-			label: "ACTIONS",
+			label: "Actions",
 			options: {
 				filter: false,
 				sort: false,
@@ -562,7 +569,7 @@ export default function SchoolList() {
 									...column.options,
 									setCellProps: () => ({
 										style: {
-											paddingLeft: "30px",
+											paddingLeft: "16px",
 										},
 									}),
 								},

@@ -201,7 +201,7 @@ export default function TestListTable() {
 		},
 		{
 			name: "actions",
-			label: "ACTIONS",
+			label: "Actions",
 			options: {
 				filter: false,
 				sort: false,
@@ -225,7 +225,7 @@ export default function TestListTable() {
 				customBodyRender: (value, tableMeta) => {
 					const testId = tableMeta.rowData[0];
 					return (
-						<div style={{ display: "flex", gap: "8px" }}>
+						<div style={{ display: "flex", justifyContent:"center"}}>
 							<Button
 								variant="outlined"
 								size="small"
@@ -234,8 +234,7 @@ export default function TestListTable() {
 									borderColor: "transparent",
 									"&:hover": { borderColor: "transparent" },
 								}}
-								onClick={() => {
-									console.log("Test ID:", testId);
+								onClick={() => { 
 									navigate(`/editTest/${testId}`);
 								}}
 							>
@@ -469,7 +468,7 @@ export default function TestListTable() {
 								...column.options,
 								setCellProps: () => ({
 									style: {
-										paddingLeft: "30px",
+										paddingLeft: "16px",
 										paddingRight: "30px",
 									},
 								}),
