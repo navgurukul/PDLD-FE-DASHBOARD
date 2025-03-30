@@ -28,18 +28,25 @@ const TestCreationForm = () => {
 
 	const navigate = useNavigate();
 
-	useEffect(() => { 
+	useEffect(() => {
 		const authToken = localStorage.getItem("authToken");
 		if (!authToken) {
-		  toast.error("Please login to continue");
-		  navigate("/login");
+			toast.error("Please login to continue");
+			navigate("/login");
 		}
-	  }, []);
+	}, []);
 
 	const handleScoreChange = (gradeSubject, score) => {
 		const maxScore = Number(score);
-		if (maxScore > 80) {
-			toast.error("Max Score cannot be more than 80");
+		if (maxScore > 90) {
+			toast.error("Max Score cannot be more than 90", {
+				position: "top-right",
+				autoClose: 3000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+			});
 			return;
 		}
 		setTestScores((prev) => ({ ...prev, [gradeSubject]: maxScore }));
@@ -134,8 +141,6 @@ const TestCreationForm = () => {
 			}));
 		}
 	};
-
-	 
 
 	const toggleDropdown = (grade) => {
 		if (isEditMode) return;
@@ -827,6 +832,8 @@ const TestCreationForm = () => {
 						{creatingTest ? "Saving Test Details..." : isEditMode ? "Update Test" : "Create Test"}
 					</button>
 				</div>
+
+				<ToastContainer newestOnTop rtl={false} pauseOnFocusLoss draggable />
 
 				<ModalSummary
 					isOpen={showSummary}
