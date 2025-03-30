@@ -211,20 +211,21 @@ export default function AddSchool({ onClose, onSave }) {
 	}
 
 	return (
-		<Box sx={{ pl: 3, pr: 3, pb: 3, maxWidth: "800px", margin: "0 auto" }}>
+		<Box sx={{ py: 3, px: 1, maxWidth: "700px", margin: "0 auto" }}>
 			<h5 className="text-lg font-bold text-[#2F4F4F]">{schoolId ? "Edit School" : "Add New School"}</h5>
 			<Typography variant="body1" sx={{ color: "#666", mb: 1 }}>
 				{schoolId ? "Update school details below" : "Create a school by filling in the details below"}
 			</Typography>
 
-			<Box sx={{ p: 4, border: "0.5px solid #ccc", borderRadius: 2 }}>
+			<Box sx={{ py: 2 }}>
 				<Box sx={{ display: "flex", flexDirection: "column", gap: 3, mb: 4 }}>
 					<Box>
-						<Typography variant="body1" fontWeight="bold">
+						{/* <Typography variant="body1" fontWeight="bold">
 							School Name *
-						</Typography>
+						</Typography> */}
 						<TextField
 							fullWidth
+							label="School Name"
 							name="schoolName"
 							value={formData.schoolName}
 							onChange={handleChange}
@@ -235,17 +236,21 @@ export default function AddSchool({ onClose, onSave }) {
 									borderRadius: "8px",
 									height: "48px",
 								},
+								"& .MuiInputLabel-root": {
+									fontSize: "16px",
+								},
 							}}
 						/>
 						{errors.schoolName && <FormHelperText error>School name is required</FormHelperText>}
 					</Box>
 
 					<Box>
-						<Typography variant="body1" fontWeight="bold">
+						{/* <Typography variant="body1" fontWeight="bold">
 							UDISE Code *
-						</Typography>
+						</Typography> */}
 						<TextField
 							fullWidth
+							label="UDISE Code"
 							name="udiseCode"
 							value={formData.udiseCode}
 							onChange={handleChange}
@@ -257,17 +262,21 @@ export default function AddSchool({ onClose, onSave }) {
 									borderRadius: "8px",
 									height: "48px",
 								},
+								"& .MuiInputLabel-root": {
+									fontSize: "16px",
+								},
 							}}
 						/>
 						{errors.udiseCode && <FormHelperText error>UDISE code is required</FormHelperText>}
 					</Box>
 
 					<Box>
-						<Typography variant="body1" fontWeight="bold">
+						{/* <Typography variant="body1" fontWeight="bold">
 							Cluster Name *
-						</Typography>
+						</Typography> */}
 						<TextField
 							fullWidth
+							label="Cluster Name"
 							name="clusterName"
 							value={formData.clusterName}
 							onChange={handleChange}
@@ -278,17 +287,21 @@ export default function AddSchool({ onClose, onSave }) {
 									borderRadius: "8px",
 									height: "48px",
 								},
+								"& .MuiInputLabel-root": {
+									fontSize: "16px",
+								},
 							}}
 						/>
 						{errors.clusterName && <FormHelperText error>Cluster name is required</FormHelperText>}
 					</Box>
 
 					<Box>
-						<Typography variant="body1" fontWeight="bold">
+						{/* <Typography variant="body1" fontWeight="bold">
 							Block Name *
-						</Typography>
+						</Typography> */}
 						<TextField
 							fullWidth
+							label="Block Name"
 							name="blockName"
 							value={formData.blockName}
 							onChange={handleChange}
@@ -298,6 +311,9 @@ export default function AddSchool({ onClose, onSave }) {
 								"& .MuiOutlinedInput-root": {
 									borderRadius: "8px",
 									height: "48px",
+								},
+								"& .MuiInputLabel-root": {
+									fontSize: "16px",
 								},
 							}}
 						/>
