@@ -9,6 +9,10 @@ html{
   overflow-y: hidden;
 }
 
+button{
+  cursor: pointer;
+}
+
 .Toastify__toast {
   font-family: 'Karla', sans-serif !important;
 	font-size: 16px;

@@ -17,6 +17,7 @@ const theme = createTheme({
 				root: {
 					backgroundColor: "#EFF3F9",
 					borderRadius: "0.5rem",
+					height: "48px", // Fixed height
 					"&.Mui-focused .MuiOutlinedInput-notchedOutline": {
 						borderColor: "#0d6efd",
 						borderWidth: "1px",
@@ -27,6 +28,11 @@ const theme = createTheme({
 					"& .MuiOutlinedInput-notchedOutline": {
 						borderColor: "transparent",
 					},
+					// Ensure input area doesn't grow beyond the specified height
+					"& .MuiOutlinedInput-input": {
+						padding: "12px 14px", // Adjust padding to fit within the 48px height
+						height: "24px", // Set explicit height for the input element itself
+					},
 				},
 			},
 		},
@@ -36,6 +42,15 @@ const theme = createTheme({
 					"&.Mui-focused": {
 						color: "#0d6efd",
 					},
+				},
+			},
+		}, 
+		MuiFormHelperText: {
+			styleOverrides: {
+				root: {
+					marginTop: 4, // Add some space between input and helper text
+					position: "absolute", // Position absolutely
+					bottom: "-20px", // Position below the input
 				},
 			},
 		},
@@ -165,8 +180,8 @@ export default function LoginForm({ onLogin }) {
 						Enter your credentials to access your account
 					</Typography>
 
-					<form >
-						<Box sx={{ mb: 2 }}>
+					<form onSubmit={handleSubmit}>
+						<Box sx={{ mb: 2, position: "relative" }}>
 							<Typography
 								variant="subtitle1"
 								component="label"
@@ -176,14 +191,9 @@ export default function LoginForm({ onLogin }) {
 									fontWeight: 500,
 								}}
 							>
-								Username
+								Username*
 							</Typography>
 							<TextField
-								sx={{
-									"& .MuiOutlinedInput-root": {
-										height: "48px",
-									},
-								}}
 								id="username"
 								name="username"
 								value={formData.username}
@@ -194,14 +204,12 @@ export default function LoginForm({ onLogin }) {
 								error={!!errors.username}
 								helperText={errors.username}
 								InputProps={{
-									sx: {
-										backgroundColor: "#EFF3F9",
-									},
+									style: { height: "48px" }, // Additional inline height enforcement
 								}}
 							/>
 						</Box>
 
-						<Box sx={{ mb: 3 }}>
+						<Box sx={{ mb: 4, position: "relative" }}>
 							<Typography
 								variant="subtitle1"
 								component="label"
@@ -211,14 +219,9 @@ export default function LoginForm({ onLogin }) {
 									fontWeight: 500,
 								}}
 							>
-								Password
+								Password*
 							</Typography>
 							<TextField
-								sx={{
-									"& .MuiOutlinedInput-root": {
-										height: "48px",
-									},
-								}}
 								id="password"
 								name="password"
 								type={showPassword ? "text" : "password"}
@@ -230,9 +233,7 @@ export default function LoginForm({ onLogin }) {
 								error={!!errors.password}
 								helperText={errors.password}
 								InputProps={{
-									sx: {
-										backgroundColor: "#EFF3F9",
-									},
+									style: { height: "48px" }, // Additional inline height enforcement
 									endAdornment: (
 										<button
 											type="button"
@@ -263,6 +264,7 @@ export default function LoginForm({ onLogin }) {
 								disabled={isLoading}
 								text={isLoading ? "Signing In..." : "Sign In"}
 								onClick={handleSubmit}
+								type="submit"
 							/>
 						</div>
 					</form>
