@@ -282,7 +282,7 @@ export default function BulkUploadSchools() {
 					Upload a CSV file with multiple schools to add them at once
 				</Typography>
 
-				<Box sx={{ p: 3, border: "1px solid #ccc", borderRadius: 2 }}>
+				<Box sx={{ p: 2, }}>
 					<Box
 						sx={{
 							border: "2px dashed #ccc",
@@ -330,11 +330,6 @@ export default function BulkUploadSchools() {
 								: "Click the Cloud Icon to Select a CSV File"}
 						</Typography>
 
-						<Typography variant="body1" sx={{ color: "#666", mb: 2 }}>
-							Upload a CSV file with school data. The file should contain School Name, UDISE Code, Cluster
-							Name, and Block Name.
-						</Typography>
-
 						<Box
 							sx={{
 								backgroundColor: "#f0f7ff",
@@ -352,7 +347,8 @@ export default function BulkUploadSchools() {
 									CSV Format
 								</Typography>
 								<Typography variant="body2" sx={{ color: "#555" }}>
-									The CSV should include: School Name, UDISE Code, Cluster Name, Block Name
+									Upload a CSV file with school data. The file should contain School Name, UDISE Code,
+									Cluster Name, and Block Name.
 								</Typography>
 							</Box>
 						</Box>
@@ -430,9 +426,9 @@ export default function BulkUploadSchools() {
 									variant="outlined"
 									startIcon={<GetAppIcon />}
 									onClick={downloadErrorsCSV}
-									sx={{  
+									sx={{
 										color: "#2F4F4F",
-										border:"1px solid #2F4F4F",
+										border: "1px solid #2F4F4F",
 										height: "48px",
 										"&:hover": {
 											backgroundColor: "#2F4F4F",
