@@ -185,7 +185,7 @@ export default function TestListTable() {
 		id: test.id,
 		testName: test.testName,
 		subject: test.subject || "N/A",
-		class: `CLASS ${test.testClass || "N/A"}`,
+		class: `Class ${test.testClass || "N/A"}`,
 		dateOfTest: new Date(test.testDate).toLocaleDateString("en-GB", {
 			day: "2-digit",
 			month: "short",
@@ -223,10 +223,10 @@ export default function TestListTable() {
 				customHeadRender: (columnMeta) => {
 					return (
 						<th
-							style={{ 
+							style={{
 								cursor: "pointer",
 								borderBottom: "2px solid lightgray",
-								fontSize: "14px",  
+								fontSize: "14px",
 								textTransform: "uppercase", // Keep it capitalized
 							}}
 							onClick={() => {
@@ -242,7 +242,8 @@ export default function TestListTable() {
 								style={{
 									display: "flex",
 									alignItems: "center",
-									justifyContent: "center",
+									// justifyContent: "center", 
+									paddingLeft: "16px",
 								}}
 							>
 								{columnMeta.label}
@@ -265,7 +266,7 @@ export default function TestListTable() {
 					return (
 						<th
 							style={{
-								textAlign: "center",
+								// textAlign: "center",
 								cursor: "pointer",
 								borderBottom: "2px solid lightgray",
 								fontSize: "14px", // Smaller font size for this specific header
@@ -284,7 +285,8 @@ export default function TestListTable() {
 								style={{
 									display: "flex",
 									alignItems: "center",
-									justifyContent: "center",
+									// justifyContent: "center", 
+									paddingLeft: "16px",
 								}}
 							>
 								{columnMeta.label}
@@ -305,13 +307,8 @@ export default function TestListTable() {
 				filter: false,
 				sort: true,
 				customBodyRender: (value) => {
-					return <div style={{ textAlign: "center" }}>{value}</div>;
+					return <div style={{ paddingLeft: "50px" }}>{value}</div>;
 				},
-				setHeaderProps: () => ({
-					style: {
-						textAlign: "center",
-					},
-				}),
 			},
 		},
 		{
@@ -326,12 +323,19 @@ export default function TestListTable() {
 					return (
 						<th
 							style={{
-								textAlign: "center",
+								// textAlign: "center",
 								borderBottom: "2px solid lightgray",
 							}}
 							scope="col"
 						>
-							<div style={{ textAlign: "center", fontSize: "14px" }}>{columnMeta.label}</div>
+							<div
+								style={{
+									// textAlign: "center",
+									fontSize: "14px",
+								}}
+							>
+								{columnMeta.label}
+							</div>
 						</th>
 					);
 				},
@@ -340,7 +344,12 @@ export default function TestListTable() {
 				customBodyRender: (value, tableMeta) => {
 					const testId = tableMeta.rowData[0];
 					return (
-						<div style={{ display: "flex", justifyContent: "center" }}>
+						<div
+							style={{
+								display: "flex",
+								justifyContent: "center",
+							}}
+						>
 							<Button
 								variant="outlined"
 								size="small"
@@ -358,10 +367,10 @@ export default function TestListTable() {
 							</Button>
 							<Button
 								variant="outlined"
-								size="small"
-								color="secondary"
+								size="small" 
 								sx={{
 									borderColor: "transparent",
+									color:"#2F4F4F",
 									"&:hover": { borderColor: "transparent" },
 								}}
 							>
@@ -583,7 +592,7 @@ export default function TestListTable() {
 								...column.options,
 								setCellProps: () => ({
 									style: {
-										textAlign: "center",  
+										textAlign: "center",
 									},
 								}),
 							},

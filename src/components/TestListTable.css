@@ -109,7 +109,7 @@
 /* table CSS */
 th,
 .MuiTableCell-head {
-	font-weight: 500 !important; 
+	font-weight: 500 !important;
 	text-align: center !important;
 }
 
@@ -117,13 +117,24 @@ th,
 	border-bottom: 2px solid lightgray !important;
 }
 
-th > span{ 
-  display: flex;
-  justify-content: center;
-  align-items: center;
+th > span {
+	display: flex;
+	/* justify-content: center; */
+	/* align-items: center; */
+	/* border: 1px solid red;  */
 }
 
-.MuiTableCell-head{
-  text-align: center !important;
-  padding: 10px 20px !important; 
+.MuiTableCell-head {
+	/* text-align: center !important;  */
+	/* border: 1px solid blue; */
+}
+
+th .MuiButtonBase-root {
+	/* border: 1px solid red; */
+	padding: 0px;
+}
+
+.MuiTableCell-body div {
+	/* border: 1px solid red; */
+	text-align: left;
 }
