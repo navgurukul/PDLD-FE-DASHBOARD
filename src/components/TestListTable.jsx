@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import "./TestListTable.css";
 import { ToastContainer, toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import Tooltip from "@mui/material/Tooltip";
 
 import apiInstance from "../../api";
 import { CLASS_OPTIONS, SUBJECT_OPTIONS, STATUS_LABELS } from "../data/testData";
@@ -275,6 +277,15 @@ export default function TestListTable() {
 		pagination: false,
 	};
 
+	const resetFilters = () => {
+		setSelectedClass("");
+		setSelectedSubject("");
+		setSelectedStatus("");
+		setDateRange([null, null]);
+		setSearchQuery("");
+		setCurrentPage(1);
+	};
+
 	return (
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper">
@@ -379,7 +390,7 @@ export default function TestListTable() {
 						</TextField>
 
 						{/* Status Dropdown */}
-						<TextField
+						{/* <TextField
 							select
 							size="small"
 							variant="outlined"
@@ -405,7 +416,7 @@ export default function TestListTable() {
 									{STATUS_LABELS[status]}
 								</MenuItem>
 							))}
-						</TextField>
+						</TextField> */}
 
 						{/* Date Range Dropdown (placeholder) */}
 
@@ -423,6 +434,25 @@ export default function TestListTable() {
 								dateFormat="dd/MM/YYYY "
 								style={{ width: "220px" }}
 							/>
+						</div>
+
+						<div>
+							<Tooltip title="Reset Filters" placement="top">
+								<div
+									onClick={resetFilters}
+									style={{
+										cursor: "pointer",
+										display: "flex",
+										alignItems: "center",
+										backgroundColor: "#f5f5f5",
+										padding: "6px 12px",
+										borderRadius: "4px",
+										height: "48px",
+									}}
+								>
+									<RestartAltIcon color="action" />
+								</div>
+							</Tooltip>
 						</div>
 					</div>
 
