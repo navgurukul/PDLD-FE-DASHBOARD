@@ -16,6 +16,7 @@ import LoginForm from "./components/LoginForm";
 
 // Auth context to manage authentication state
 import { createContext } from 'react';
+import UploadSummary from "./components/UploadSummary";
 export const AuthContext = createContext(null);
 
 function App() {
@@ -85,6 +86,7 @@ function App() {
             <Route path="/schools/add-school" element={<AddSchool />} />
             <Route path="/schools/update/:schoolId" element={<AddSchool />} />
             <Route path="/schools/bulk-upload" element={<BulkUploadSchools />} />
+            <Route path="/bulk-Upload-Summary" element={<UploadSummary />} />
             <Route path="/testCreationForm" element={<TestCreationForm/>} />
             <Route path="/editTest/:Id" element={<TestCreationForm/>} />
             <Route path="/help" element={<HelpAndSupport />} />
