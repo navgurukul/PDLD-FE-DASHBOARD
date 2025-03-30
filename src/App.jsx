@@ -86,7 +86,7 @@ function App() {
             <Route path="/schools/update/:schoolId" element={<AddSchool />} />
             <Route path="/schools/bulk-upload" element={<BulkUploadSchools />} />
             <Route path="/testCreationForm" element={<TestCreationForm/>} />
-            <Route path="/edit/testCreation/:Id" element={<TestCreationForm/>} />
+            <Route path="/editTest/:Id" element={<TestCreationForm/>} />
             <Route path="/help" element={<HelpAndSupport />} />
 
             {/* Fallback Route */}
