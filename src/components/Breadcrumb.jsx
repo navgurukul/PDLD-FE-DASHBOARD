@@ -8,6 +8,9 @@ const Breadcrumb = () => {
 	const location = useLocation();
 	const pathnames = location.pathname.split("/").filter((x) => x);
 
+	// Check if current route is testCreationForm or edit/testCreation/[id]
+	const isTestCreationRoute =
+		pathnames.includes("testCreationForm") || (pathnames.includes("editTest"));
 	// Define path to label mapping
 	const pathMap = {
 		schools: "School Management",
@@ -23,16 +26,23 @@ const Breadcrumb = () => {
 		help: "Help & Support",
 	};
 
+	// Filter out UUID paths
+	const filteredPathnames = pathnames.filter(
+		(path) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(path)
+	);
+
 	return (
 		<Breadcrumbs
 			separator={<NavigateNextIcon fontSize="small" />}
 			aria-label="breadcrumb"
 			sx={{
-				mb:1,
+				mb: 1,
 				pl: 6,
 				mt: 5,
 				fontFamily: "'Karla', sans-serif", // Add the custom font
 				fontSize: "14px",
+				// Add margin-left: 50% only for test creation routes
+				...(isTestCreationRoute && { ml: "27%" }),
 			}}
 		>
 			<Link to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "#757575" }}>
@@ -41,7 +51,16 @@ const Breadcrumb = () => {
 			</Link>
 
 			{pathnames.map((value, index) => {
-				const last = index === pathnames.length - 1;
+				// Skip UUID formatted paths
+				if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
+					return null;
+				}
+
+				// Calculate position in filtered list for "last" determination
+				const position = filteredPathnames.indexOf(value);
+				const last = position === filteredPathnames.length - 1;
+
+				// Create path
 				const to = `/${pathnames.slice(0, index + 1).join("/")}`;
 
 				// Handle numeric IDs in the path

@@ -236,7 +236,7 @@ export default function TestListTable() {
 								}}
 								onClick={() => {
 									console.log("Test ID:", testId);
-									navigate(`/edit/testCreation/${testId}`);
+									navigate(`/editTest/${testId}`);
 								}}
 							>
 								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
