@@ -242,12 +242,12 @@ export default function SchoolList() {
 					const udiseCode = tableMeta.rowData[2]; // Index 2 is the udiseCode column
 
 					return (
-						<div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+						<div style={{ display: "flex", alignItems: "center" }}>
 							<span>{value}</span>
 							<Button
 								variant="text"
 								size="small"
-								sx={{ minWidth: "30px", marginLeft: "5px" }}
+								sx={{ minWidth: "30px", marginLeft: "15px" }}
 								onClick={() =>
 									handleCopy(`UDISE: ${udiseCode}, Password: ${value}`, "UDISE and Password")
 								}
@@ -284,10 +284,10 @@ export default function SchoolList() {
 				},
 				customBodyRender: (value, tableMeta) => {
 					const schoolId = tableMeta.rowData[0];
-					const schoolObj = tableMeta.rowData[7]; // Index of schoolObj in the rowData array
+					const schoolObj = tableMeta.rowData[6]; // Index of schoolObj in the rowData array
 
 					return (
-						<div style={{ display: "flex", justifyContent: "space-between", gap: "16px" }}>
+						<div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
 							<Button
 								variant="text"
 								size="small"
@@ -380,7 +380,7 @@ export default function SchoolList() {
 									color: "#2F4F4F",
 									borderRadius: "8px",
 									textTransform: "none",
-									fontSize:"18px",
+									fontSize: "18px",
 									"&:hover": {
 										borderColor: "#1E3535",
 										backgroundColor: "rgba(47, 79, 79, 0.1)",
@@ -404,13 +404,21 @@ export default function SchoolList() {
 									...column.options,
 									setCellProps: () => ({
 										style: {
-											paddingLeft: "16px",
-											paddingRight: "16px",
+											paddingLeft: "30px",
 										},
 									}),
 								},
 							}))}
 							options={options}
+							sx={{
+								"& .MuiPaper-root": {
+									boxShadow: "none",
+								},
+								"& .MuiTableCell-root": {
+									textAlign: "center",
+									border: "1px solid red",
+								},
+							}}
 						/>
 					</div>
 

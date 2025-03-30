@@ -319,7 +319,7 @@ export default function BulkUploadSchools() {
 										transition: "all 0.3s ease",
 									}}
 								>
-									<CloudUploadIcon sx={{ fontSize: 40, color: "#0d6efd" }} />
+									<CloudUploadIcon sx={{ fontSize: 40, color: "#2F4F4F" }} />
 								</Box>
 							</label>
 						</Box>
@@ -427,14 +427,16 @@ export default function BulkUploadSchools() {
 
 							{uploadResult && uploadResult.data.errors && uploadResult.data.errors.length > 0 && (
 								<Button
-									variant="contained"
+									variant="outlined"
 									startIcon={<GetAppIcon />}
 									onClick={downloadErrorsCSV}
-									sx={{
-										backgroundColor: "#2F4F4F",
-										color: "white",
+									sx={{  
+										color: "#2F4F4F",
+										border:"1px solid #2F4F4F",
+										height: "48px",
 										"&:hover": {
-											backgroundColor: "#1E3535",
+											backgroundColor: "#2F4F4F",
+											color: "white",
 										},
 									}}
 								>
