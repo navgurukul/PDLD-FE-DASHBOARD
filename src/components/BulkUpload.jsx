@@ -76,7 +76,7 @@ const DeleteConfirmationModal = ({
 		top: "50%",
 		left: "50%",
 		transform: "translate(-50%, -50%)",
-		width: 400,
+		width: 450,
 		maxWidth: "90%",
 		bgcolor: "background.paper",
 		boxShadow: 24,
@@ -116,6 +116,9 @@ const DeleteConfirmationModal = ({
 						sx={{
 							borderColor: "#ccc",
 							color: "#555",
+							textTransform: "none",
+							fontSize: "16px",
+							fontWeight: "600",
 							"&:hover": {
 								borderColor: "#999",
 								bgcolor: "#f5f5f5",
@@ -289,7 +292,7 @@ export default function BulkUploadSchools() {
 							borderRadius: 2,
 							p: 4,
 							textAlign: "center",
-							mb: 3,
+							mb: 1,
 						}}
 					>
 						<Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
@@ -436,7 +439,7 @@ export default function BulkUploadSchools() {
 										},
 									}}
 								>
-									Download Errors
+									Status Report
 								</Button>
 							)}
 						</Box>
