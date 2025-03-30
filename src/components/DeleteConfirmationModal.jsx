@@ -21,7 +21,7 @@ const DeleteConfirmationModal = ({
 		top: "50%",
 		left: "50%",
 		transform: "translate(-50%, -50%)",
-		width: 400,
+		width: 450,
 		maxWidth: "90%",
 		bgcolor: "background.paper",
 		boxShadow: 24,
@@ -55,19 +55,28 @@ const DeleteConfirmationModal = ({
 
 				{/* File Display Section (if applicable) */}
 				{selectedFile && (
-					<Box 
-						sx={{ 
-							display: "flex", 
-							alignItems: "center", 
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
 							justifyContent: "space-between",
 							mb: 3,
 							p: 1.5,
 							backgroundColor: "#f8f9fa",
 							borderRadius: 1,
-							border: "1px solid #e9ecef"
+							border: "1px solid #e9ecef",
 						}}
 					>
-						<Typography variant="body2" sx={{ color: "#2F4F4F", maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+						<Typography
+							variant="body2"
+							sx={{
+								color: "#2F4F4F",
+								maxWidth: "70%",
+								overflow: "hidden",
+								textOverflow: "ellipsis",
+								whiteSpace: "nowrap",
+							}}
+						>
 							{selectedFile.name}
 						</Typography>
 						
@@ -89,8 +98,12 @@ const DeleteConfirmationModal = ({
 						onClick={onClose}
 						disabled={isProcessing}
 						sx={{
+							borderRadius: "8px",
 							borderColor: "#ccc",
 							color: "#555",
+							textTransform: "none",
+							fontSize: "16px",
+							fontWeight: "600",
 							"&:hover": {
 								borderColor: "#999",
 								bgcolor: "#f5f5f5",
@@ -104,7 +117,6 @@ const DeleteConfirmationModal = ({
 						text={isProcessing ? "Deleting..." : confirmText}
 						onClick={onConfirm}
 						disabled={isProcessing}
-						btnWidth="120"
 						customStyle={{
 							backgroundColor: confirmButtonColor === "error" ? "#d32f2f" : "#0d6efd",
 							color: "white",
