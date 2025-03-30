@@ -312,7 +312,7 @@ export default function SchoolList() {
 		},
 		{
 			name: "actions",
-			label: "Actions",
+			label: "ACTIONS",
 			options: {
 				filter: false,
 				sort: false,
@@ -402,7 +402,7 @@ export default function SchoolList() {
 					<div className="flex justify-between items-center mb-2">
 						<TextField
 							variant="outlined"
-							placeholder="Search schools..."
+							placeholder="Search by School name, UDISE, Cluster, Block Name..."
 							size="small"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
@@ -410,7 +410,7 @@ export default function SchoolList() {
 								style: {
 									backgroundColor: "#fff",
 									borderRadius: "8px",
-									width: "420px",
+									width: "480px",
 									height: "48px",
 								},
 								startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
