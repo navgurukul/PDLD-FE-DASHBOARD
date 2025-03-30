@@ -10,11 +10,14 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import Tooltip from "@mui/material/Tooltip";
 import ButtonCustom from "../components/ButtonCustom";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
 import apiInstance from "../../api";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
+import { MenuItem } from "@mui/material";
 
 const theme = createTheme({
 	typography: {
@@ -63,6 +66,12 @@ export default function SchoolList() {
 	const [isDeleting, setIsDeleting] = useState(false);
 	const navigate = useNavigate();
 
+	// New state for filters
+	const [selectedCluster, setSelectedCluster] = useState("");
+	const [selectedBlock, setSelectedBlock] = useState("");
+	const [clusters, setClusters] = useState([]);
+	const [blocks, setBlocks] = useState([]);
+
 	// Fetch schools from API
 	const fetchSchools = async () => {
 		setIsLoading(true);
@@ -87,6 +96,19 @@ export default function SchoolList() {
 		fetchSchools();
 	}, [currentPage]);
 
+	// Extract unique clusters and blocks for filter dropdowns
+	useEffect(() => {
+		if (schools.length > 0) {
+			// Extract unique clusters
+			const uniqueClusters = [...new Set(schools.map((school) => school.clusterName))].filter(Boolean).sort();
+			setClusters(uniqueClusters);
+
+			// Extract unique blocks
+			const uniqueBlocks = [...new Set(schools.map((school) => school.blockName))].filter(Boolean).sort();
+			setBlocks(uniqueBlocks);
+		}
+	}, [schools]);
+
 	const handleAddSchool = () => {
 		navigate("/schools/add-school");
 	};
@@ -106,14 +128,32 @@ export default function SchoolList() {
 		setCurrentPage(page);
 	};
 
-	// Filter schools based on search query
-	const filteredSchools = schools.filter(
-		(school) =>
-			school.schoolName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			school.udiseCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			school.blockName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			school.clusterName.toLowerCase().includes(searchQuery.toLowerCase())
-	);
+	// Reset all filters
+	const resetFilters = () => {
+		setSelectedCluster("");
+		setSelectedBlock("");
+		setSearchQuery("");
+		setCurrentPage(1);
+	};
+
+	// Filter schools based on all criteria
+	const filteredSchools = schools.filter((school) => {
+		// Search query filter
+		const matchesSearch =
+			searchQuery === "" ||
+			school.schoolName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			school.udiseCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			school.blockName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			school.clusterName?.toLowerCase().includes(searchQuery.toLowerCase());
+
+		// Cluster filter
+		const matchesCluster = selectedCluster === "" || school.clusterName === selectedCluster;
+
+		// Block filter
+		const matchesBlock = selectedBlock === "" || school.blockName === selectedBlock;
+
+		return matchesSearch && matchesCluster && matchesBlock;
+	});
 
 	// Open delete confirmation modal
 	const openDeleteModal = (school) => {
@@ -347,11 +387,10 @@ export default function SchoolList() {
 				<div className="header-container">
 					<div>
 						<h5 className="text-lg font-bold text-[#2F4F4F]">School Management</h5>
-						<p className="text-sm text-gray-600">Create and manage schools in the Dantewada district</p>
 					</div>
 				</div>
 
-				<div className="school-list-container mt-4 bg-white rounded-lg">
+				<div className="school-list-container mt-1 bg-white rounded-lg">
 					{/* Search Bar */}
 					<div className="flex justify-between items-center mb-2">
 						<TextField
@@ -370,6 +409,125 @@ export default function SchoolList() {
 								startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
 							}}
 						/>
+					</div>
+
+					<div className="flex justify-between items-center mb-2">
+						<div className="flex gap-2 my-[10px] mx-0">
+							{/* Cluster Dropdown */}
+							<TextField
+								select
+								size="small"
+								variant="outlined"
+								label="Cluster"
+								value={selectedCluster}
+								onChange={(e) => setSelectedCluster(e.target.value)}
+								sx={{
+									width: 150,
+									"& .MuiSelect-select": {
+										color: "#2F4F4F",
+										fontWeight: "600",
+										padding: "12px 16px",
+									},
+									"& .MuiOutlinedInput-root": {
+										borderRadius: "8px",
+										backgroundColor: "#fff",
+									},
+								}}
+								SelectProps={{
+									MenuProps: {
+										PaperProps: {
+											sx: {
+												maxHeight: 200,
+												overflowY: "auto",
+												"&::-webkit-scrollbar": {
+													width: "5px",
+												},
+												"&::-webkit-scrollbar-thumb": {
+													backgroundColor: "#B0B0B0",
+													borderRadius: "5px",
+												},
+												"&::-webkit-scrollbar-track": {
+													backgroundColor: "#F0F0F0",
+												},
+											},
+										},
+									},
+								}}
+							>
+								<MenuItem value="">All Clusters</MenuItem>
+								{clusters.map((cluster) => (
+									<MenuItem key={cluster} value={cluster}>
+										{cluster}
+									</MenuItem>
+								))}
+							</TextField>
+
+							{/* Block Dropdown */}
+							<TextField
+								select
+								size="small"
+								variant="outlined"
+								label="Block"
+								value={selectedBlock}
+								onChange={(e) => setSelectedBlock(e.target.value)}
+								sx={{
+									width: 150,
+									"& .MuiSelect-select": {
+										color: "#2F4F4F",
+										fontWeight: "600",
+										padding: "12px 16px",
+									},
+									"& .MuiOutlinedInput-root": {
+										borderRadius: "8px",
+										backgroundColor: "#fff",
+									},
+								}}
+								SelectProps={{
+									MenuProps: {
+										PaperProps: {
+											sx: {
+												maxHeight: 200,
+												overflowY: "auto",
+												"&::-webkit-scrollbar": {
+													width: "5px",
+												},
+												"&::-webkit-scrollbar-thumb": {
+													backgroundColor: "#B0B0B0",
+													borderRadius: "5px",
+												},
+												"&::-webkit-scrollbar-track": {
+													backgroundColor: "#F0F0F0",
+												},
+											},
+										},
+									},
+								}}
+							>
+								<MenuItem value="">All Blocks</MenuItem>
+								{blocks.map((block) => (
+									<MenuItem key={block} value={block}>
+										{block}
+									</MenuItem>
+								))}
+							</TextField>
+
+							<Tooltip title="Reset Filters" placement="top">
+								<div
+									onClick={resetFilters}
+									style={{
+										cursor: "pointer",
+										display: "flex",
+										alignItems: "center",
+										backgroundColor: "#f5f5f5",
+										padding: "6px 12px",
+										borderRadius: "4px",
+										height: "48px",
+									}}
+								>
+									<RestartAltIcon color="action" />
+								</div>
+							</Tooltip>
+						</div>
 
 						<div className="flex gap-3">
 							<ButtonCustom imageName={addSymbolBtn} text={"Add School"} onClick={handleAddSchool} />
