@@ -1,47 +1,39 @@
+.react-datepicker-wrapper {
+	width: 220px !important; /* or your desired width */
+	height: 40px !important; /* or your desired height */
+	padding: 8px !important;
+	font-family: "Karla", sans-serif !important;
+}
 
-
-  .react-datepicker-wrapper{
-    width: 220px !important;   /* or your desired width */
-    height: 40px !important;    /* or your desired height */
-    padding: 8px !important; 
-    font-family: 'Karla', sans-serif !important; 
-  }
-
-  th, .MuiTableCell-head {  
-    font-weight: 500 !important;  
-  }
-  
-
-  .my-date-picker{
-    width: 200px !important;
-    padding: 2px !important;
-    border: 1px solid blue; 
-  }
-
-  .my-date-picker input:active{ 
-    border: none  !important;
-  }
-
-  .my-date-picker input:focus{ 
-    border: none  !important;
-  }
-
-  /* Target the input inside the date picker */
 .my-date-picker {
-    border: none !important;
-    outline: none !important;
-  }
-  
-  /* Remove the border on focus */
-  .my-date-picker:focus,
-  .my-date-picker:active {
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
-  }
-  
- 
-  /* .my-date-picker .react-datepicker__input-container input:focus,
+	width: 200px !important;
+	padding: 2px !important;
+	border: 1px solid blue;
+}
+
+.my-date-picker input:active {
+	border: none !important;
+}
+
+.my-date-picker input:focus {
+	border: none !important;
+}
+
+/* Target the input inside the date picker */
+.my-date-picker {
+	border: none !important;
+	outline: none !important;
+}
+
+/* Remove the border on focus */
+.my-date-picker:focus,
+.my-date-picker:active {
+	border: none !important;
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+/* .my-date-picker .react-datepicker__input-container input:focus,
 .my-date-picker .react-datepicker__input-container input:active {
   outline: none !important;
   box-shadow: none !important;
@@ -50,8 +42,8 @@
 
 /* Apply a custom font to the entire date picker */
 .react-datepicker {
-    font-family: 'Karla', sans-serif; /* Change 'Karla' to your preferred font */
-    font-size: 14px; /* Optional: Adjust font size */
+	font-family: "Karla", sans-serif; /* Change 'Karla' to your preferred font */
+	font-size: 14px; /* Optional: Adjust font size */
 }
 
 /* Apply custom font to calendar days */
@@ -60,62 +52,78 @@
 .react-datepicker__current-month,
 .react-datepicker-time__header,
 .react-datepicker-year-header {
-    font-family: 'Karla', sans-serif;
-    color: #2F4F4F; /* Optional: Change text color */
+	font-family: "Karla", sans-serif;
+	color: #2f4f4f; /* Optional: Change text color */
 }
 
 /* Optional: Change font style for selected date */
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
-    font-weight: bold;
-    color: white;
-    background-color: #2F4F4F;
+	font-weight: bold;
+	color: white;
+	background-color: #2f4f4f;
 }
 
 /* Optional: Change font style for today's date */
 .react-datepicker__day--today {
-    font-weight: bold;
-    color: white;
+	font-weight: bold;
+	color: white;
 }
-
 
 /* ========================================================= */
 /* hovering */
 /* Change the selected date range background color */
- 
 
 /* Change the hover effect on date cells */
 .react-datepicker__day:hover {
-    background-color: #527575 !important; /* Light red on hover */
-    color: white !important;
+	background-color: #527575 !important; /* Light red on hover */
+	color: white !important;
 }
 
- /* Apply red color to the selected date range */
+/* Apply red color to the selected date range */
 .react-datepicker__day--in-range,
 .react-datepicker__day--in-selecting-range {
-    background-color: #527575 !important; /* Red background */
-    color: white !important;
+	background-color: #527575 !important; /* Red background */
+	color: white !important;
 }
 
 /* Change the color when hovering over a date */
 .react-datepicker__day:hover {
-    background-color: #527575 !important; /* Light red on hover */
-    color: white !important;
+	background-color: #527575 !important; /* Light red on hover */
+	color: white !important;
 }
 
 /* Change the color of the currently selected date */
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
-    background-color: #527575 !important; /* Darker red */
-    color: white !important;
+	background-color: #527575 !important; /* Darker red */
+	color: white !important;
 }
 
 /* Optional: Make sure the border and shadow also match the theme */
 .react-datepicker {
-    border: 1px solid #527575;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+	border: 1px solid #527575;
+	box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
-  
+/* ========================================================= */
+/* table CSS */
+th,
+.MuiTableCell-head {
+	font-weight: 500 !important; 
+	text-align: center !important;
+}
+
 .MuiTableHead-root .MuiTableCell-head {
-  border-bottom: 2px solid lightgray !important;
+	border-bottom: 2px solid lightgray !important;
+}
+
+th > span{ 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.MuiTableCell-head{
+  text-align: center !important;
+  padding: 10px 20px !important; 
 }
