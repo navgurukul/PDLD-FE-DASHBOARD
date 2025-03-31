@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import apiInstance from "../../api";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ButtonCustom from "./ButtonCustom";
+import { toast, ToastContainer } from "react-toastify"; // Assuming react-toastify is installed
 
 const theme = createTheme({
 	typography: {
@@ -89,6 +90,47 @@ export default function UserCreationForm() {
 		{ value: "CP", label: "Cluster Principal" },
 		{ value: "CAC", label: "Cluster Academic Coordinator" },
 	];
+
+	// Validation function - returns true if valid, false if invalid
+	const validateForm = () => {
+		// Validate full name
+		if (!formData.fullName.trim()) {
+			toast.error("Full name is required");
+			return false;
+		} else if (formData.fullName.trim().length < 3) {
+			toast.error("Full name must be at least 3 characters");
+			return false;
+		} else if (!/^[a-zA-Z\s]+$/.test(formData.fullName.trim())) {
+			toast.error("Full name should only contain letters and spaces");
+			return false;
+		}
+
+		// Validate email if provided
+		if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+			toast.error("Please enter a valid email address");
+			return false;
+		}
+
+		// Validate role
+		if (!formData.role) {
+			toast.error("Please select a role");
+			return false;
+		}
+
+		// Validate block selection for roles that require it
+		if (hierarchyFields.showBlock && !formData.block) {
+			toast.error("Please select a block");
+			return false;
+		}
+
+		// Validate cluster selection for roles that require it
+		if (hierarchyFields.showCluster && selectedEntities.clusters.length === 0) {
+			toast.error("Please select at least one cluster");
+			return false;
+		}
+
+		return true;
+	};
 
 	// Handle role change to determine which fields to show
 	const handleRoleChange = (event) => {
@@ -242,8 +284,8 @@ export default function UserCreationForm() {
 	const handleSubmit = async (event) => {
 		event.preventDefault();
 
-		if (!formData.fullName || !formData.role) {
-			alert("Please fill in all required fields");
+		// Validate form before submission
+		if (!validateForm()) {
 			return;
 		}
 
@@ -268,6 +310,9 @@ export default function UserCreationForm() {
 
 			console.log("User created:", response.data);
 
+			// Show success toast
+			toast.success("User created successfully!");
+
 			// Navigate back to users page with success message
 			navigate("/users", {
 				state: { successMessage: "User created successfully!" },
@@ -277,7 +322,7 @@ export default function UserCreationForm() {
 
 			// Show appropriate error message
 			const errorMessage = error.response?.data?.message || "Failed to create user. Please try again.";
-			alert(errorMessage); // Replace with toast or other notification
+			toast.error(errorMessage);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -498,6 +543,7 @@ export default function UserCreationForm() {
 					</div>
 				</form>
 			</Paper>
+			<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
 		</ThemeProvider>
 	);
 }
