@@ -8,6 +8,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import { Typography } from "@mui/material";
 import ModalSummary from "../components/SummaryModal";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const TestCreationForm = () => {
 	const [testDates, setTestDates] = useState({});
@@ -232,6 +234,9 @@ const TestCreationForm = () => {
 			for (const subject of selectedSubjects[grade]) {
 				const key = `${grade}-${subject}`;
 				if (!testDates[key]) return false;
+
+				// Always require deadline date for all test types
+				if (!testDeadlines[key]) return false;
 
 				// Only validate maxScore for "regular" test type
 				if (testType === "regular" && (!testScores[key] || testScores[key] > 90)) {
@@ -779,40 +784,59 @@ const TestCreationForm = () => {
 															</Typography>
 														</div>
 
-														<div className="flex gap-4">
+														<div className="flex gap-4 ">
 															<div className="w-full">
 																<Typography color="primary" variant="subtitle2">
 																	Test Date
 																</Typography>
-																<input
-																	type="date"
-																	className="h-12 w-full p-2 border border-[#E0E0E0] rounded-lg"
-																	value={testDates[combinedKey] || ""}
-																	onChange={(e) =>
-																		handleTestDateChange(
-																			combinedKey,
-																			e.target.value
-																		)
+																<DatePicker
+																	selected={
+																		testDates[combinedKey]
+																			? new Date(testDates[combinedKey])
+																			: null
 																	}
-																	min={minTestDate}
+																	onChange={(date) => {
+																		// Format date as YYYY-MM-DD string to maintain compatibility
+																		const dateStr = date
+																			? date.toISOString().split("T")[0]
+																			: "";
+																		handleTestDateChange(combinedKey, dateStr);
+																	}}
+																	minDate={new Date(minTestDate)}
+																	dateFormat="dd-MM-yyyy"
+																	className="h-12 w-full p-2 border border-[#E0E0E0] rounded-lg"
+																	placeholderText="Select test date"
+																	isClearable
 																/>
 															</div>
+															{/* Replace the Score Submission Deadline DatePicker with this code */}
 															<div className="w-full">
 																<Typography color="primary" variant="subtitle2">
 																	Score Submission Deadline
 																</Typography>
-																<input
-																	type="date"
-																	className="h-12 w-full p-2 border border-[#E0E0E0] rounded-lg"
-																	value={testDeadlines[combinedKey] || ""}
-																	onChange={(e) =>
-																		handleDeadlineChange(
-																			combinedKey,
-																			e.target.value
-																		)
-																	}
-																	min={minDeadline}
-																/>
+																<div style={{ width: "100%" }}>
+																	<DatePicker
+																		selected={
+																			testDeadlines[combinedKey]
+																				? new Date(testDeadlines[combinedKey])
+																				: null
+																		}
+																		onChange={(date) => {
+																			const dateStr = date
+																				? date.toISOString().split("T")[0]
+																				: "";
+																			handleDeadlineChange(combinedKey, dateStr);
+																		}}
+																		minDate={
+																			minDeadline ? new Date(minDeadline) : null
+																		}
+																		dateFormat="dd-MM-yyyy"
+																		className="h-12 w-full p-2 border border-[#E0E0E0] rounded-lg"
+																		placeholderText="Select deadline"
+																		isClearable
+																		disabled={!testDates[combinedKey]}
+																	/>
+																</div>
 															</div>
 															{testType === "regular" && (
 																<div className="w-20">
