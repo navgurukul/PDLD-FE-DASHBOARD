@@ -70,6 +70,7 @@ export default function UserCreationForm() {
 	const [availableBlocks, setAvailableBlocks] = useState([]);
 	const [availableClusters, setAvailableClusters] = useState([]);
 	const [availableSchools, setAvailableSchools] = useState([]);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedEntities, setSelectedEntities] = useState({
 		blocks: [],
 		clusters: [],
@@ -177,22 +178,6 @@ export default function UserCreationForm() {
 		}
 	};
 
-	const fetchSchools = async (clusterId) => {
-		try {
-			// const response = await apiInstance.get(`/dev/schools?clusterId=${clusterId}`);
-			// setAvailableSchools(response.data.data);
-
-			// Mock data for schools
-			setAvailableSchools([
-				{ id: 1, name: "School 1", clusterId: clusterId },
-				{ id: 2, name: "School 2", clusterId: clusterId },
-				{ id: 3, name: "School 3", clusterId: clusterId },
-			]);
-		} catch (error) {
-			console.error("Error fetching schools:", error);
-		}
-	};
-
 	const handleBlockChange = (event) => {
 		const blockId = event.target.value;
 		setFormData({ ...formData, block: blockId });
@@ -218,14 +203,6 @@ export default function UserCreationForm() {
 		});
 	};
 
-	const handleSchoolChange = (event) => {
-		const schoolId = event.target.value;
-		setSelectedEntities({
-			...selectedEntities,
-			schools: [...selectedEntities.schools, schoolId],
-		});
-	};
-
 	const handleRemoveCluster = (clusterId) => {
 		setSelectedEntities({
 			...selectedEntities,
@@ -236,50 +213,86 @@ export default function UserCreationForm() {
 		});
 	};
 
-	const handleRemoveSchool = (schoolId) => {
-		setSelectedEntities({
-			...selectedEntities,
-			schools: selectedEntities.schools.filter((id) => id !== schoolId),
-		});
-	};
-
 	const handleInputChange = (event) => {
 		const { name, value } = event.target;
 		setFormData({ ...formData, [name]: value });
 	};
 
-	const generatePassword = () => {
-		const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-		let password = "";
-		for (let i = 0; i < 12; i++) {
-			password += chars.charAt(Math.floor(Math.random() * chars.length));
-		}
-		setFormData({ ...formData, password });
+	// Add this function to generate the username
+	const generateUsername = (fullName, role) => {
+		// Replace spaces with underscores and convert to lowercase
+		const formattedName = fullName.trim().replace(/\s+/g, "_").toLowerCase();
+
+		// Generate a random 3-digit number
+		const randomDigits = Math.floor(100 + Math.random() * 900);
+
+		// Map role values to role codes
+		const roleMap = {
+			DO: "DO",
+			BO: "BO",
+			CP: "CP",
+			CAC: "CAC",
+		};
+
+		// Create the username
+		return `${formattedName}_${roleMap[role]}_${randomDigits}`;
 	};
 
+	// Modify the handleSubmit function to use the API
 	const handleSubmit = async (event) => {
 		event.preventDefault();
 
+		if (!formData.fullName || !formData.role) {
+			alert("Please fill in all required fields");
+			return;
+		}
+
+		// Generate the username based on name and role
+		const username = generateUsername(formData.fullName, formData.role);
+
 		// Prepare data for submission
 		const userData = {
+			username: username,
+			password: formData.password || "default_password", // Use provided password or default
 			name: formData.fullName,
-			email: formData.email,
-			password: formData.password,
-			role: formData.role,
-			blockId: formData.block,
-			clusters: selectedEntities.clusters,
-			schools: selectedEntities.schools,
+			role: mapRoleToAPIFormat(formData.role), // Convert role to the format expected by API
+			email: formData.email || "",
+			assignedBlocks: formData.block ? [availableBlocks.find((b) => b.id === formData.block)?.name] : [],
+			assignedClusters: selectedEntities.clusters.map((id) => availableClusters.find((c) => c.id === id)?.name),
+			permissions: ["audit", "view_reports"], // Default permissions
 		};
 
 		try {
-			// await apiInstance.post('/dev/users', userData);
-			console.log("User created:", userData);
+			setIsSubmitting(true); // Add this state variable
+			const response = await apiInstance.post("/dev/user/add", userData);
+
+			console.log("User created:", response.data);
+
+			// Navigate back to users page with success message
 			navigate("/users", {
 				state: { successMessage: "User created successfully!" },
 			});
 		} catch (error) {
 			console.error("Error creating user:", error);
+
+			// Show appropriate error message
+			const errorMessage = error.response?.data?.message || "Failed to create user. Please try again.";
+			alert(errorMessage); // Replace with toast or other notification
+		} finally {
+			setIsSubmitting(false);
 		}
+	};
+
+	// Helper function to map role codes to API format
+	const mapRoleToAPIFormat = (role) => {
+		const roleMap = {
+			DO: "DISTRICT_OFFICER",
+			BO: "BLOCK_OFFICER",
+			CP: "CLUSTER_PRINCIPAL",
+			CAC: "CLUSTER_ACADEMIC_COORDINATOR",
+		};
+
+		return roleMap[role] || role;
 	};
 
 	return (
@@ -477,7 +490,11 @@ export default function UserCreationForm() {
 					)}
 
 					<div className="flex justify-end mt-4">
-						<ButtonCustom text="Create User" onClick={handleSubmit} />
+						<ButtonCustom
+							text={isSubmitting ? "Creating..." : "Create User"}
+							onClick={handleSubmit}
+							disabled={isSubmitting}
+						/>
 					</div>
 				</form>
 			</Paper>
