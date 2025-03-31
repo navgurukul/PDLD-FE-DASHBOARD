@@ -18,6 +18,7 @@ import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
 import apiInstance from "../../api";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { MenuItem } from "@mui/material";
+import { useLocation } from "react-router-dom";
 
 const theme = createTheme({
 	typography: {
@@ -51,6 +52,8 @@ const theme = createTheme({
 });
 
 export default function SchoolList() {
+	// Then in your component
+	const location = useLocation();
 	const [schools, setSchools] = useState([]);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
@@ -95,6 +98,17 @@ export default function SchoolList() {
 	useEffect(() => {
 		fetchSchools();
 	}, [currentPage]);
+
+	// Add this in your SchoolList component, in the useEffect section
+	useEffect(() => {
+		// Check for success message in location state
+		if (location.state?.successMessage) {
+			toast.success(location.state.successMessage);
+
+			// Clear the message from location state to prevent showing it again on refresh
+			navigate(location.pathname, { replace: true, state: {} });
+		}
+	}, [location]);
 
 	// Extract unique clusters and blocks for filter dropdowns
 	useEffect(() => {
