@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
-import { Button } from "@mui/material";
+import { Button, TextField } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -44,6 +44,8 @@ export default function Users() {
 	const [users, setUsers] = useState([]);
 	const [totalRecords, setTotalRecords] = useState(0);
 	const [currentPage, setCurrentPage] = useState(1);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [filteredUsers, setFilteredUsers] = useState([]);
 	const location = useLocation();
 	const navigate = useNavigate();
 	const pageSize = 20;
@@ -54,6 +56,22 @@ export default function Users() {
 			navigate(location.pathname, { replace: true });
 		}
 	}, [location, navigate]);
+
+	useEffect(() => {
+		if (!searchQuery.trim()) {
+			setFilteredUsers(users);
+			return;
+		}
+
+		const lowercaseQuery = searchQuery.toLowerCase();
+		const filtered = users.filter(
+			(user) =>
+				user.name?.toLowerCase().includes(lowercaseQuery) ||
+				formatRoleName(user.role)?.toLowerCase().includes(lowercaseQuery)
+		);
+
+		setFilteredUsers(filtered);
+	}, [searchQuery, users]);
 
 	const handleCreateUser = () => {
 		navigate("/users/userCreationForm");
@@ -96,7 +114,7 @@ export default function Users() {
 		fetchData();
 	}, [currentPage]);
 
-	const tableData = users.map((user) => ({
+	const tableData = filteredUsers.map((user) => ({
 		id: user.userId || user.id,
 		name: user.name || "N/A",
 		username: user.username || "N/A",
@@ -228,8 +246,25 @@ export default function Users() {
 	return (
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper bg-white rounded-lg shadow-sm">
-				<div className="flex justify-between items-center mb-6">
+				<div className="flex justify-between items-center mb-1">
 					<h5 className="text-lg font-bold text-[#2F4F4F]">All Users</h5>
+				</div>
+				<div className="flex justify-between mb-2">
+					<TextField
+						variant="outlined"
+						placeholder="Search by Name or Role..."
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+						InputProps={{
+							style: {
+								backgroundColor: "#fff",
+								borderRadius: "8px",
+								width: "420px",
+								height: "48px",
+							},
+						}}
+						sx={{ marginBottom: "10px" }}
+					/>
 					<ButtonCustom imageName={addSymbolBtn} text="Create User" onClick={handleCreateUser} />
 				</div>
 
