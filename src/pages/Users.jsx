@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
-import { addSymbolBtn, EditPencilIcon, DocScanner } from "../utils/imagePath";
+import { addSymbolBtn, EditPencilIcon } from "../utils/imagePath";
 import { Button } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
-import { useLocation } from "react-router-dom";
 import apiInstance from "../../api";
 import ButtonCustom from "../components/ButtonCustom";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline"; // Make sure to import this
 
 const theme = createTheme({
 	typography: {
@@ -40,12 +40,6 @@ const theme = createTheme({
 	},
 });
 
-const USER_STATUS_LABELS = {
-	active: "Active",
-	inactive: "Inactive",
-	pending: "Pending",
-};
-
 export default function Users() {
 	const [users, setUsers] = useState([]);
 	const [totalRecords, setTotalRecords] = useState(0);
@@ -65,15 +59,36 @@ export default function Users() {
 		navigate("/users/userCreationForm");
 	};
 
+	// Function to format role names for better display
+	const formatRoleName = (role) => {
+		if (!role) return '';
+		
+		const roleMap = {
+			'DISTRICT_OFFICER': 'District Officer',
+			'BLOCK_OFFICER': 'Block Officer',
+			'CLUSTER_PRINCIPAL': 'Cluster Principal',
+			'CLUSTER_ACADEMIC_COORDINATOR': 'Cluster Academic Coordinator'
+		};
+		
+		return roleMap[role] || role.replace(/_/g, ' ');
+	};
+
 	const fetchData = async () => {
 		try {
-			const response = await apiInstance.get(`/dev/users/filter?page=${currentPage}&pageSize=${pageSize}`);
-			if (response.data?.data) {
-				setUsers(response.data.data.data);
-				setTotalRecords(response.data.data.pagination.totalRecords);
+			const response = await apiInstance.get(`/dev/users?page=${currentPage}&pageSize=${pageSize}`);
+			
+			if (response.data?.success && response.data?.data) {
+				// Extract users array from response
+				const usersData = response.data.data.users || [];
+				setUsers(usersData);
+				
+				// Extract pagination info
+				const paginationData = response.data.data.pagination || {};
+				setTotalRecords(paginationData.totalUsers || usersData.length);
 			}
 		} catch (error) {
 			console.error("Error fetching users:", error);
+			toast.error("Failed to load users. Please try again.");
 		}
 	};
 
@@ -81,17 +96,39 @@ export default function Users() {
 		fetchData();
 	}, [currentPage]);
 
-	const tableData = users?.map((user) => ({
-		id: user.id,
-		name: user.name,
-		email: user.email,
-		role: user.role,
+	// Handle delete user
+	const handleDeleteUser = (userId) => {
+		// Confirm before deleting
+		if (window.confirm("Are you sure you want to delete this user?")) {
+			// Add your delete API call here
+			// apiInstance.delete(`/dev/user/${userId}`)
+			// .then(() => {
+			//   fetchData(); // Refresh the list
+			//   toast.success("User deleted successfully");
+			// })
+			// .catch(error => {
+			//   console.error("Error deleting user:", error);
+			//   toast.error("Failed to delete user");
+			// });
+			
+			// For now, just show a toast
+			toast.info("Delete functionality will be implemented here");
+		}
+	};
+
+	const tableData = users.map((user) => ({
+		id: user.userId || user.id,
+		name: user.name || 'N/A',
+		username: user.username || 'N/A',
+		role: formatRoleName(user.role) || 'N/A',
 		dateJoined: new Date(user.createdAt).toLocaleDateString("en-GB", {
 			day: "2-digit",
 			month: "short",
 			year: "numeric",
 		}),
-		status: user.status,
+		schoolsMapped: (user.managedSchoolIds?.length || user.assignedSchools?.length || "0") + " Schools",
+		password: user.password || 'default123',
+		status: user.isActive ? 'Active' : 'Inactive',
 		actions: "Manage User",
 	}));
 
@@ -107,8 +144,8 @@ export default function Users() {
 			options: { sort: true },
 		},
 		{
-			name: "email",
-			label: "Email",
+			name: "username",
+			label: "Username",
 			options: { sort: true },
 		},
 		{
@@ -122,20 +159,30 @@ export default function Users() {
 			options: { sort: true },
 		},
 		{
+			name: "schoolsMapped",
+			label: "Schools Mapped",
+			options: { sort: true },
+		},
+		{
+			name: "password",
+			label: "Password",
+			options: { sort: true },
+		},
+		{
 			name: "status",
 			label: "Status",
 			options: {
 				customBodyRender: (value) => (
 					<span
 						className={`px-2 py-1 rounded-full ${
-							value === "active"
+							value === "Active"
 								? "bg-green-100 text-green-800"
-								: value === "inactive"
+								: value === "Inactive"
 								? "bg-red-100 text-red-800"
 								: "bg-yellow-100 text-yellow-800"
 						}`}
 					>
-						{USER_STATUS_LABELS[value] || value}
+						{value}
 					</span>
 				),
 			},
@@ -158,7 +205,7 @@ export default function Users() {
 				customBodyRender: (value, tableMeta) => {
 					const userId = tableMeta.rowData[0];
 					return (
-						<div className="flex gap-2">
+						<div className="flex gap-2 justify-center">
 							<button
 								className="p-1 hover:bg-gray-100 rounded"
 								onClick={() => navigate(`/edit/user/${userId}`)}
@@ -166,11 +213,10 @@ export default function Users() {
 								<img src={EditPencilIcon} alt="Edit" className="w-5 h-5" />
 							</button>
 							<button
-								className="flex items-center gap-1 px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded"
-								onClick={() => navigate(`/user/${userId}/details`)}
+								className="p-1 hover:bg-gray-100 rounded text-red-500"
+								onClick={() => handleDeleteUser(userId)}
 							>
-								<img src={DocScanner} alt="Details" className="w-5 h-5" />
-								View Details
+								<DeleteOutlineIcon style={{ width: "20px", height: "20px" }} />
 							</button>
 						</div>
 					);
