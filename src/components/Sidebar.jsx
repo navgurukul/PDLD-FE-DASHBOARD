@@ -11,13 +11,14 @@ import {
 	SelUsers,
 	UNSelUsers,
 	UNSelTests,
-	UNSelReports,school,unselectedschool,
+	UNSelReports,
+	school,
+	unselectedschool,
 } from "../utils/imagePath";
 
 const Sidebar = () => {
 	const [isOpen, setIsOpen] = useState(true);
-	const location = useLocation(); // Detects current route
-	if (location.pathname.includes("testCreationForm") || location.pathname.includes("edit")) return null;
+	const location = useLocation();
 
 	// Menu data (path + label)
 	const menuItems = [
@@ -39,14 +40,27 @@ const Sidebar = () => {
 			selectedImage: SelUsers,
 			unselectedImage: UNSelUsers,
 		},
-
 		{
-			to: "",
+			to: "/reports", // Changed from empty string
 			label: "Reports",
 			selectedImage: SelReports,
 			unselectedImage: UNSelReports,
 		},
 	];
+
+	// Function to determine if a menu item should be active
+	const isMenuItemActive = (path) => {
+		if (path === "/allTest") {
+			// For Test menu item, also check for testCreationForm and edit paths
+			return location.pathname === path || 
+				   location.pathname === "/testCreationForm" || 
+				   location.pathname.includes("/testCreationForm") || 
+				   location.pathname.includes("/edit");
+		}
+		
+		// For other items, just check if the path matches
+		return location.pathname.startsWith(path);
+	};
 
 	return (
 		<div
@@ -73,7 +87,8 @@ const Sidebar = () => {
 			{/* Navigation */}
 			<nav className="mt-4 flex flex-col space-y-2 px-2">
 				{menuItems.map((item) => {
-					const isActive = location.pathname === item.to;
+					const isActive = isMenuItemActive(item.to);
+					
 					return (
 						<Link key={item.to} to={item.to}>
 							<li

@@ -9,8 +9,8 @@ const Breadcrumb = () => {
 	const pathnames = location.pathname.split("/").filter((x) => x);
 
 	// Check if current route is testCreationForm or edit/testCreation/[id]
-	const isTestCreationRoute =
-		pathnames.includes("testCreationForm") || (pathnames.includes("editTest"));
+	// const isTestCreationRoute =
+	// 	pathnames.includes("testCreationForm") || (pathnames.includes("editTest"));
 	// Define path to label mapping
 	const pathMap = {
 		schools: "School Management",
@@ -42,7 +42,7 @@ const Breadcrumb = () => {
 				fontFamily: "'Karla', sans-serif", // Add the custom font
 				fontSize: "14px",
 				// Add margin-left: 50% only for test creation routes
-				...(isTestCreationRoute && { ml: "27%" }),
+				// ...(isTestCreationRoute && { ml: "27%" }),
 			}}
 		>
 			<Link to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "#757575" }}>

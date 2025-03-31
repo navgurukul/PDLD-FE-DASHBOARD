@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Box, Typography, TextField, Paper, FormHelperText, CircularProgress } from "@mui/material";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import apiInstance from "../../api"; // Import the custom axios instance
 import ButtonCustom from "./ButtonCustom";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -93,6 +93,13 @@ export default function AddSchool({ onClose, onSave }) {
 			clusterName: !formData.clusterName.trim(),
 			blockName: !formData.blockName.trim(),
 		};
+
+		// Add UDISE code length validation
+		if (formData.udiseCode.trim().length !== 11) {
+			newErrors.udiseCode = true;
+			toast.error("UDISE MUST BE 11 digit");
+			return false;
+		}
 
 		setErrors(newErrors);
 
@@ -336,6 +343,7 @@ export default function AddSchool({ onClose, onSave }) {
 					/>
 				</div>
 			</Box>
+			<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
 		</Box>
 	);
 }

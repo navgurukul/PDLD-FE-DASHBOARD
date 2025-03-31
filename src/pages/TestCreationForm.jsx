@@ -351,7 +351,7 @@ const TestCreationForm = () => {
 				</Box>
 			)}
 
-			<div style={{ width: "40%", margin: "20px auto" }}>
+			<div style={{ width: "50%", margin: "20px auto" }}>
 				<div className="space-y-4">
 					{isEditMode && <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Edit Test Details</h5>}
 					<h2 className="text-xl font-semibold mb-2">Test Type</h2>
