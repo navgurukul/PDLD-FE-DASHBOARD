@@ -72,6 +72,12 @@ export default function AddSchool({ onClose, onSave }) {
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;
+
+		// For UDISE, only allow numeric input
+		if (name === "udiseCode" && value !== "" && !/^\d+$/.test(value)) {
+			return; // Don't update state if non-numeric characters are entered
+		}
+
 		setFormData({
 			...formData,
 			[name]: value,
@@ -264,6 +270,11 @@ export default function AddSchool({ onClose, onSave }) {
 							placeholder="Enter UDISE code"
 							error={errors.udiseCode}
 							disabled={!!schoolId} // Disable UDISE code field in edit mode
+							type="tel" // This brings up numeric keyboard on mobile
+							inputProps={{
+								maxLength: 11,
+								inputMode: "numeric",
+							}}
 							sx={{
 								"& .MuiOutlinedInput-root": {
 									borderRadius: "8px",
