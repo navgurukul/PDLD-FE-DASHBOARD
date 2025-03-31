@@ -138,6 +138,17 @@ export default function BulkUploadSchools() {
 	const fileInputRef = useRef(null);
 	const navigate = useNavigate();
 
+	const downloadSampleCSV = () => {
+		// Google Drive file ID or direct download link
+		const googleDriveFileUrl = "https://drive.google.com/file/d/1H-GyMkbQyt4Hv4dq5Ua7FjVB22hg7mmS/view?usp=sharing";
+
+		// Open the Google Drive file URL in a new tab
+		window.open(googleDriveFileUrl, "_blank");
+
+		// Show success toast
+		toast.success("Sample CSV download initiated");
+	};
+
 	const handleFileChange = (event) => {
 		if (event.target.files && event.target.files[0]) {
 			const selectedFile = event.target.files[0];
@@ -174,13 +185,13 @@ export default function BulkUploadSchools() {
 
 			// Show success toast
 			toast.success(`Upload completed: ${response.data.data.successCount} schools added successfully`);
-			
+
 			// Navigate to the summary page with the upload results
-			navigate("/bulk-Upload-Summary", { 
-				state: { 
+			navigate("/bulk-Upload-Summary", {
+				state: {
 					uploadResult: response.data,
-					totalUploadCount: totalUploadCount
-				} 
+					totalUploadCount: totalUploadCount,
+				},
 			});
 		} catch (error) {
 			console.error("Error uploading file:", error);
@@ -188,11 +199,11 @@ export default function BulkUploadSchools() {
 
 			// Navigate to the summary page even if there are errors
 			if (error.response?.data) {
-				navigate("/upload-summary", { 
-					state: { 
+				navigate("/upload-summary", {
+					state: {
 						uploadResult: error.response.data,
-						totalUploadCount: totalUploadCount
-					} 
+						totalUploadCount: totalUploadCount,
+					},
 				});
 			}
 		} finally {
@@ -223,13 +234,32 @@ export default function BulkUploadSchools() {
 	return (
 		<ThemeProvider theme={theme}>
 			<Box sx={{ p: 2, maxWidth: "800px", margin: "0 auto" }}>
-				<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
+				<div className="flex justify-between">
+					<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
+					<Button
+						variant="outlined"
+						startIcon={<GetAppIcon />}
+						onClick={downloadSampleCSV}
+						sx={{
+							color: "#2F4F4F",
+							borderRadius: "8px",
+							border: "1px solid #2F4F4F",
+							height: "44px",
+							"&:hover": {
+								backgroundColor: "#2F4F4F",
+								color: "white",
+							},
+						}}
+					>
+						Sample csv
+					</Button>
+				</div>
 
 				<Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
 					Upload a CSV file with multiple schools to add them at once
 				</Typography>
 
-				<Box sx={{ p: 2, }}>
+				<Box sx={{ p: 2 }}>
 					<Box
 						sx={{
 							border: "2px dashed #ccc",
