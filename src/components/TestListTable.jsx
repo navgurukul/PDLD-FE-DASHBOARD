@@ -242,7 +242,7 @@ export default function TestListTable() {
 								style={{
 									display: "flex",
 									alignItems: "center",
-									// justifyContent: "center", 
+									// justifyContent: "center",
 									paddingLeft: "16px",
 								}}
 							>
@@ -285,7 +285,7 @@ export default function TestListTable() {
 								style={{
 									display: "flex",
 									alignItems: "center",
-									// justifyContent: "center", 
+									// justifyContent: "center",
 									paddingLeft: "16px",
 								}}
 							>
@@ -302,13 +302,45 @@ export default function TestListTable() {
 		},
 		{
 			name: "schoolsSubmitted",
-			label: "Schools Submitted",
+			label: "SCHOOLS SUBMITTED",
 			options: {
 				filter: false,
 				sort: true,
-				customBodyRender: (value) => {
-					return <div style={{ paddingLeft: "50px" }}>{value}</div>;
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{
+								borderBottom: "2px solid lightgray",
+								fontSize: "14px",
+								width: "120px",
+								maxWidth: "120px",
+							}}
+							scope="col"
+						>
+							{columnMeta.label}
+						</th>
+					);
 				},
+				customBodyRender: (value) => {
+					return (
+						<div
+							style={{
+								textAlign: "center",
+								paddingLeft: "0px",
+								width: "120px",
+								maxWidth: "120px",
+							}}
+						>
+							{value}
+						</div>
+					);
+				},
+				setCellProps: () => ({
+					style: {
+						width: "100px",
+						maxWidth: "100px",
+					},
+				}),
 			},
 		},
 		{
@@ -367,10 +399,10 @@ export default function TestListTable() {
 							</Button>
 							<Button
 								variant="outlined"
-								size="small" 
+								size="small"
 								sx={{
 									borderColor: "transparent",
-									color:"#2F4F4F",
+									color: "#2F4F4F",
 									"&:hover": { borderColor: "transparent" },
 								}}
 							>
