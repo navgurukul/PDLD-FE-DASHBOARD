@@ -231,7 +231,7 @@ const TestCreationForm = () => {
 				if (!testDates[key]) return false;
 
 				// Only validate maxScore for "regular" test type
-				if (testType === "regular" && (!testScores[key] || testScores[key] > 80)) {
+				if (testType === "regular" && (!testScores[key] || testScores[key] > 90)) {
 					return false;
 				}
 			}
@@ -283,7 +283,7 @@ const TestCreationForm = () => {
 
 	useEffect(() => {
 		// Check if the URL path includes '/edit/testCreation' or contains "edit" in some fashion
-		if (location.pathname.includes("/edit/testCreation") && testId) {
+		if (location.pathname.includes("/editTest") && testId) {
 			setIsEditMode(true);
 			fetchSingleTestData(testId);
 		}
@@ -351,9 +351,16 @@ const TestCreationForm = () => {
 				</Box>
 			)}
 
-			<div style={{ width: "50%", height: "75vh", margin: "20px auto",
-			display:"flex", flexDirection:"column", justifyContent:"space-between",
-			 }}>
+			<div
+				style={{
+					width: "50%",
+					height: "75vh",
+					margin: "20px auto",
+					display: "flex",
+					flexDirection: "column",
+					justifyContent: "space-between",
+				}}
+			>
 				<div>
 					<div className="space-y-4">
 						{isEditMode && <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Edit Test Details</h5>}
@@ -414,7 +421,7 @@ const TestCreationForm = () => {
 										{selectedGrades.map((grade) => (
 											<div
 												key={grade}
-												className="px-3 py-1 bg-[#EAEDED] text-[#2F4F4F] rounded-lg flex items-center gap-2"
+												className="px-3 py-2 bg-[#EAEDED] text-[#2F4F4F] rounded-lg flex items-center gap-2"
 											>
 												<span>Class {grade}</span>
 												{!isEditMode && (
@@ -487,11 +494,15 @@ const TestCreationForm = () => {
 					{selectedGrades.length > 0 && (
 						<div className="dropdown-container space-y-4">
 							{selectedGrades.map((grade) => (
-								<div key={grade} className="p-4 rounded-lg">
+								<div key={grade} className="rounded-lg py-2">
 									<h3 className="text-lg font-semibold">Class {grade}</h3>
 
 									{grade >= 1 && grade <= 10 && (
-										<div className="w-full">
+										<div
+											className="w-full p-2 
+										[box-shadow:0px_1px_2px_0px_rgba(47,79,79,0.06),0px_2px_1px_0px_rgba(47,79,79,0.04),0px_1px_5px_0px_rgba(47,79,79,0.08)]
+										"
+										>
 											<div
 												className="rounded-md p-2 flex justify-between items-center cursor-pointer bg-red border border-gray-300"
 												onClick={() => toggleDropdown(grade)}
@@ -535,7 +546,7 @@ const TestCreationForm = () => {
 												</div>
 											</div>
 											{dropdownOpen[grade] && (
-												<div className="p-4 rounded-lg shadow-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
+												<div className="p-4 rounded-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
 													<div className="flex flex-wrap gap-2">
 														{(testType === "remedial"
 															? ["Maths", "Hindi"]
@@ -572,7 +583,11 @@ const TestCreationForm = () => {
 									)}
 
 									{(grade === 11 || grade === 12) && (
-										<div className="w-full ">
+										<div
+											className="w-full p-2 
+										[box-shadow:0px_1px_2px_0px_rgba(47,79,79,0.06),0px_2px_1px_0px_rgba(47,79,79,0.04),0px_1px_5px_0px_rgba(47,79,79,0.08)]
+										"
+										>
 											<div
 												className="rounded-md p-2 flex justify-between items-center cursor-pointer bg-white border border-gray-400"
 												onClick={() => toggleDropdown(grade)}
@@ -625,7 +640,7 @@ const TestCreationForm = () => {
 													if (isRemedialFor11Or12) {
 														// ✅ ONLY show Maths + Hindi, hide everything else
 														return (
-															<div className="p-4 rounded-lg shadow-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
+															<div className="p-4 rounded-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
 																<div className="flex flex-col gap-3">
 																	<div className="flex items-center gap-2 px-3 py-2">
 																		<input
@@ -658,7 +673,7 @@ const TestCreationForm = () => {
 
 													// Otherwise (non-remedial, or a different grade) — show the usual categories
 													return (
-														<div className="p-4 rounded-lg shadow-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
+														<div className="p-4 rounded-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
 															{Object.entries(SUBJECT_CATEGORIES).map(
 																([category, subjects]) => (
 																	<div key={category} className="mb-3">

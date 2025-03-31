@@ -328,7 +328,7 @@ export default function AddSchool({ onClose, onSave }) {
 					</Box>
 				</Box>
 
-				<div style={{ display: "flex", justifyContent: "center" }}>
+				<div style={{ display: "flex", justifyContent: "center", marginTop: "130px" }}>
 					<ButtonCustom
 						text={
 							loading
