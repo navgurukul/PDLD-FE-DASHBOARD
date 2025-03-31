@@ -206,7 +206,7 @@ export default function Users() {
 						<div className="flex gap-2 justify-center">
 							<button
 								className="p-1 hover:bg-gray-100 rounded"
-								onClick={() => navigate(`/edit/user/${userId}`)}
+								// onClick={() => navigate(`/edit/user/${userId}`)}
 							>
 								<img src={EditPencilIcon} alt="Edit" className="w-5 h-5" />
 							</button>
