@@ -489,7 +489,7 @@ export default function UserCreationForm() {
 						</div>
 					)}
 
-					<div className="flex justify-end mt-4">
+					<div className="flex justify-center mt-4">
 						<ButtonCustom
 							text={isSubmitting ? "Creating..." : "Create User"}
 							onClick={handleSubmit}

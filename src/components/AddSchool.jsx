@@ -290,31 +290,6 @@ export default function AddSchool({ onClose, onSave }) {
 
 					<Box>
 						{/* <Typography variant="body1" fontWeight="bold">
-							Cluster Name *
-						</Typography> */}
-						<TextField
-							fullWidth
-							label="Cluster Name"
-							name="clusterName"
-							value={formData.clusterName}
-							onChange={handleChange}
-							placeholder="Enter cluster name"
-							error={errors.clusterName}
-							sx={{
-								"& .MuiOutlinedInput-root": {
-									borderRadius: "8px",
-									height: "48px",
-								},
-								"& .MuiInputLabel-root": {
-									fontSize: "16px",
-								},
-							}}
-						/>
-						{errors.clusterName && <FormHelperText error>Cluster name is required</FormHelperText>}
-					</Box>
-
-					<Box>
-						{/* <Typography variant="body1" fontWeight="bold">
 							Block Name *
 						</Typography> */}
 						<TextField
@@ -336,6 +311,31 @@ export default function AddSchool({ onClose, onSave }) {
 							}}
 						/>
 						{errors.blockName && <FormHelperText error>Block name is required</FormHelperText>}
+					</Box>
+
+					<Box>
+						{/* <Typography variant="body1" fontWeight="bold">
+							Cluster Name *
+						</Typography> */}
+						<TextField
+							fullWidth
+							label="Cluster Name"
+							name="clusterName"
+							value={formData.clusterName}
+							onChange={handleChange}
+							placeholder="Enter cluster name"
+							error={errors.clusterName}
+							sx={{
+								"& .MuiOutlinedInput-root": {
+									borderRadius: "8px",
+									height: "48px",
+								},
+								"& .MuiInputLabel-root": {
+									fontSize: "16px",
+								},
+							}}
+						/>
+						{errors.clusterName && <FormHelperText error>Cluster name is required</FormHelperText>}
 					</Box>
 				</Box>
 

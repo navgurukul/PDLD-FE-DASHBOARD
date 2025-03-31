@@ -258,13 +258,13 @@ export default function SchoolList() {
 			options: { filter: false, sort: true },
 		},
 		{
-			name: "cluster",
-			label: "Cluster",
+			name: "block",
+			label: "Block",
 			options: { filter: false, sort: true },
 		},
 		{
-			name: "block",
-			label: "Block",
+			name: "cluster",
+			label: "Cluster",
 			options: { filter: false, sort: true },
 		},
 		// {
