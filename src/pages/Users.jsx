@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
-import { addSymbolBtn, EditPencilIcon } from "../utils/imagePath";
+import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
 import { Button } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination } from "@mui/material";
@@ -61,27 +61,27 @@ export default function Users() {
 
 	// Function to format role names for better display
 	const formatRoleName = (role) => {
-		if (!role) return '';
-		
+		if (!role) return "";
+
 		const roleMap = {
-			'DISTRICT_OFFICER': 'District Officer',
-			'BLOCK_OFFICER': 'Block Officer',
-			'CLUSTER_PRINCIPAL': 'Cluster Principal',
-			'CLUSTER_ACADEMIC_COORDINATOR': 'Cluster Academic Coordinator'
+			DISTRICT_OFFICER: "District Officer",
+			BLOCK_OFFICER: "Block Officer",
+			CLUSTER_PRINCIPAL: "Cluster Principal",
+			CLUSTER_ACADEMIC_COORDINATOR: "Cluster Academic Coordinator",
 		};
-		
-		return roleMap[role] || role.replace(/_/g, ' ');
+
+		return roleMap[role] || role.replace(/_/g, " ");
 	};
 
 	const fetchData = async () => {
 		try {
 			const response = await apiInstance.get(`/dev/users?page=${currentPage}&pageSize=${pageSize}`);
-			
+
 			if (response.data?.success && response.data?.data) {
 				// Extract users array from response
 				const usersData = response.data.data.users || [];
 				setUsers(usersData);
-				
+
 				// Extract pagination info
 				const paginationData = response.data.data.pagination || {};
 				setTotalRecords(paginationData.totalUsers || usersData.length);
@@ -96,39 +96,19 @@ export default function Users() {
 		fetchData();
 	}, [currentPage]);
 
-	// Handle delete user
-	const handleDeleteUser = (userId) => {
-		// Confirm before deleting
-		if (window.confirm("Are you sure you want to delete this user?")) {
-			// Add your delete API call here
-			// apiInstance.delete(`/dev/user/${userId}`)
-			// .then(() => {
-			//   fetchData(); // Refresh the list
-			//   toast.success("User deleted successfully");
-			// })
-			// .catch(error => {
-			//   console.error("Error deleting user:", error);
-			//   toast.error("Failed to delete user");
-			// });
-			
-			// For now, just show a toast
-			toast.info("Delete functionality will be implemented here");
-		}
-	};
-
 	const tableData = users.map((user) => ({
 		id: user.userId || user.id,
-		name: user.name || 'N/A',
-		username: user.username || 'N/A',
-		role: formatRoleName(user.role) || 'N/A',
+		name: user.name || "N/A",
+		username: user.username || "N/A",
+		role: formatRoleName(user.role) || "N/A",
 		dateJoined: new Date(user.createdAt).toLocaleDateString("en-GB", {
 			day: "2-digit",
 			month: "short",
 			year: "numeric",
 		}),
 		schoolsMapped: (user.managedSchoolIds?.length || user.assignedSchools?.length || "0") + " Schools",
-		password: user.password || 'default123',
-		status: user.isActive ? 'Active' : 'Inactive',
+		password: user.password || "default123",
+		status: user.isActive ? "Active" : "Inactive",
 		actions: "Manage User",
 	}));
 
@@ -195,7 +175,7 @@ export default function Users() {
 					<th
 						style={{
 							textAlign: "center",
-							borderBottom: "1px solid lightgray",
+							borderBottom: "2px solid lightgray",
 						}}
 						scope="col"
 					>
@@ -212,12 +192,20 @@ export default function Users() {
 							>
 								<img src={EditPencilIcon} alt="Edit" className="w-5 h-5" />
 							</button>
-							<button
-								className="p-1 hover:bg-gray-100 rounded text-red-500"
-								onClick={() => handleDeleteUser(userId)}
+							<Button
+								variant="text"
+								size="small"
+								sx={{
+									color: "#d32f2f",
+									"&:hover": { backgroundColor: "transparent" },
+									padding: "2px",
+									minWidth: "unset",
+								}}
+								// onClick={() => openDeleteModal(schoolObj)}
 							>
-								<DeleteOutlineIcon style={{ width: "20px", height: "20px" }} />
-							</button>
+								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
+								&nbsp;
+							</Button>
 						</div>
 					);
 				},

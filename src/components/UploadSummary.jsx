@@ -112,7 +112,8 @@ export default function UploadSummary() {
 							sx={{
 								color: "#2F4F4F",
 								border: "1px solid #2F4F4F",
-								height: "48px",
+								height: "44px",
+								borderRadius: "8px",
 								"&:hover": {
 									backgroundColor: "#2F4F4F",
 									color: "white",
