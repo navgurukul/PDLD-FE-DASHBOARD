@@ -574,7 +574,10 @@ export default function SchoolList() {
 					</div>
 
 					{/* Data Table */}
-					<div style={{ borderRadius: "8px", position: "relative", minHeight: "300px" }}>
+					<div
+						style={{ borderRadius: "8px", position: "relative", minHeight: "300px" }}
+						className="rounded-lg overflow-hidden border border-gray-200"
+					>
 						<MUIDataTable
 							data={tableData}
 							columns={columns.map((column) => ({
