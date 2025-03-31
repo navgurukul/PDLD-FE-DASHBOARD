@@ -75,7 +75,7 @@ const TestCreationForm = () => {
 
 			if (currentlySelected.includes(subject)) {
 				// 🔒 Prevent removal if remedial test for Class 11/12
-				if (testType === "remedial" && (grade === 11 || grade === 12)) {
+				if ((testType === "remedial" && (grade === 11 || grade === 12)) || (testType === "regular" && isEditMode)) {
 					return;
 				}
 				// Otherwise allow removal
