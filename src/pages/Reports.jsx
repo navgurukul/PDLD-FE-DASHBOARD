@@ -1345,7 +1345,7 @@ const Reports = () => {
 														{SUBJECTS.map((subject) => (
 															<td
 																key={subject}
-																className={`p-2 text-center border ${
+																className={`text-white  p-2 text-center border ${
 																	test[subject] >= 90
 																		? "bg-green-100 dark:bg-green-900"
 																		: test[subject] >= 80
