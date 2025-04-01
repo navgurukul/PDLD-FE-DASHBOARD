@@ -609,28 +609,21 @@ export default function UserCreationForm() {
 					</div>
 
 					<div className="mb-6">
-						<FormControl fullWidth variant="outlined" required>
-							<InputLabel>Role</InputLabel>
+						<FormControl fullWidth required>
+							<InputLabel id="role-select-label">Role</InputLabel>
 							<Select
-								displayEmpty
+								labelId="role-select-label"
+								id="role-select"
 								value={formData.role}
-								onChange={handleRoleChange}
-								inputProps={{ "aria-label": "Role" }}
 								label="Role"
+								onChange={handleRoleChange}
 								sx={{
 									height: "48px",
 									"& .MuiSelect-select": {
 										height: "48px",
 										display: "flex",
 										alignItems: "center",
-										padding: "0 14px",
 									},
-								}}
-								renderValue={(selected) => {
-									if (!selected) {
-										return <span className="text-gray-500">Role *</span>;
-									}
-									return roles.find((role) => role.value === selected)?.label;
 								}}
 							>
 								{roles.map((role) => (
