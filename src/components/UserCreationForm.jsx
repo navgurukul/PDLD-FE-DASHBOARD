@@ -382,10 +382,15 @@ export default function UserCreationForm() {
 					username: formData.username,
 					name: formData.fullName,
 					role: mapRoleToAPIFormat(formData.role),
-					email: formData.email || "",
+
 					assignedBlocks: formData.block ? [formData.block] : [],
 					assignedClusters: selectedEntities.clusters,
+					schoolsMapped: totalSchoolsSelected,
 				};
+
+				if (formData.email) {
+					updateData.email = formData.email;
+				}
 
 				// Call update API
 				const response = await apiInstance.put(`/dev/user/update/${userId}`, updateData);
@@ -401,10 +406,15 @@ export default function UserCreationForm() {
 					password: formData.password || "default_password", // Use provided password or default
 					name: formData.fullName,
 					role: mapRoleToAPIFormat(formData.role),
-					email: formData.email || "",
+
 					assignedBlocks: formData.block ? [formData.block] : [],
 					assignedClusters: selectedEntities.clusters,
+					schoolsMapped: totalSchoolsSelected,
 				};
+
+				if (formData.email) {
+					userData.email = formData.email;
+				}
 
 				// Call create API
 				const response = await apiInstance.post("/dev/user/add", userData);
