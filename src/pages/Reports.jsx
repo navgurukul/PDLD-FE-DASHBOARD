@@ -18,6 +18,7 @@ import {
 	ComposedChart,
 	Scatter,
 } from "recharts";
+import { SubjectTestAnalytics } from "../components/graph/SubjectTestAnalytics ";
 import ButtonCustom from "../components/ButtonCustom";
 import { studentPerformanceDataq, performanceData, schoolsData, studentsData } from "../data/testData";
 import {
@@ -225,6 +226,65 @@ const Reports = () => {
 		setShowSearchResults(false);
 		setViewMode("student");
 		setSearchQuery("");
+	};
+
+	// Add this function to your Reports.jsx file
+	const getSubjectTestAnalytics = (selectedSchool, selectedYear, selectedSubject) => {
+		if (!selectedSchool || !selectedYear || !selectedSubject) return null;
+
+		// Get all students for this school
+		const schoolStudents = studentsData.filter((student) => student.schoolUdise === selectedSchool.udiseCode);
+		const schoolStudentIds = schoolStudents.map((student) => student.studentId);
+
+		// Map to track unique tests
+		const testsMap = new Map();
+
+		// Process each student's test data
+		schoolStudentIds.forEach((studentId) => {
+			const studentData = STUDENT_PERFORMANCE_DATA[studentId] || [];
+
+			studentData
+				.filter((test) => test.year === selectedYear && test[selectedSubject] !== undefined)
+				.forEach((test) => {
+					if (!testsMap.has(test.testId)) {
+						testsMap.set(test.testId, {
+							testId: test.testId,
+							month: test.month,
+							testName: test.testName,
+							testType: test.testType,
+							students: [],
+							passed: 0,
+							failed: 0,
+							passingScore: 40, // Customizable passing threshold
+						});
+					}
+
+					const testEntry = testsMap.get(test.testId);
+					const score = test[selectedSubject];
+					const passed = score >= testEntry.passingScore;
+
+					testEntry.students.push({
+						studentId,
+						score,
+						passed,
+					});
+
+					if (passed) {
+						testEntry.passed++;
+					} else {
+						testEntry.failed++;
+					}
+				});
+		});
+
+		return {
+			tests: [...testsMap.values()],
+			summary: {
+				totalTests: testsMap.size,
+				totalPassed: [...testsMap.values()].reduce((sum, test) => sum + test.passed, 0),
+				totalFailed: [...testsMap.values()].reduce((sum, test) => sum + test.failed, 0),
+			},
+		};
 	};
 
 	// Handle selection of class
@@ -692,7 +752,7 @@ const Reports = () => {
 	// First, update your handler function to accept a parameter
 	const handleSearchTypeChange = (type) => {
 		setSearchType(type);
-		setViewMode(type)
+		setViewMode(type);
 	};
 
 	return (
@@ -1014,32 +1074,6 @@ const Reports = () => {
 								</div>
 							)}
 
-							{/* Student Selection - Only show if class is selected */}
-							{viewMode === "school" && selectedSchool && selectedClass && (
-								<div>
-									<label className="block font-medium mb-2">Student:</label>
-									<select
-										className={`w-full px-3 py-2 rounded-md ${cardBg} ${borderColor} border`}
-										value={selectedStudent?.studentId || ""}
-										onChange={(e) => {
-											const student = studentsData.find((s) => s.studentId === e.target.value);
-											if (student) {
-												handleSelectStudent(student);
-											} else {
-												setSelectedStudent(null);
-											}
-										}}
-									>
-										<option value="">All Students</option>
-										{getStudentsInClass().map((student) => (
-											<option key={student.studentId} value={student.studentId}>
-												{student.name} (Roll: {student.rollNo})
-											</option>
-										))}
-									</select>
-								</div>
-							)}
-
 							<div>
 								<label className="block font-medium mb-2">Subject:</label>
 								<select
@@ -1066,6 +1100,15 @@ const Reports = () => {
 					</div>
 				)}
 
+				{/* Add this inside your Performance Charts section */}
+				{selectedSchool && selectedYear && selectedSubject && (
+					<SubjectTestAnalytics
+						selectedSchool={selectedSchool}
+						selectedYear={selectedYear}
+						selectedSubject={selectedSubject}
+					/>
+				)}
+
 				{/* Performance Charts */}
 				{selectedSchool && (
 					<div className={`${cardBg} rounded-xl shadow-md p-6 ${borderColor} border mb-6`}>
@@ -1075,6 +1118,31 @@ const Reports = () => {
 								: `School Performance - ${selectedSchool?.name}`}
 							{selectedYear && ` (${viewMode === "school" ? selectedYear : selectedStudentYear})`}
 						</h2>
+
+						{/* Year-over-Year Comparison */}
+						<div className="mb-8">
+							<h3 className="text-lg font-semibold mb-4">Year-over-Year Performance</h3>
+							<div className="h-80">
+								<ResponsiveContainer width="100%" height="100%">
+									<LineChart data={getYearOverYearData()}>
+										<CartesianGrid strokeDasharray="3 3" />
+										<XAxis dataKey="year" />
+										<YAxis domain={[0, 100]} />
+										<Tooltip />
+										<Legend />
+										{SUBJECTS.map((subject, index) => (
+											<Line
+												key={subject}
+												type="monotone"
+												dataKey={subject}
+												stroke={COLORS[index % COLORS.length]}
+												activeDot={{ r: 8 }}
+											/>
+										))}
+									</LineChart>
+								</ResponsiveContainer>
+							</div>
+						</div>
 
 						{/* Test Count Card - Only for School View */}
 						{viewMode === "school" && (
@@ -1101,31 +1169,6 @@ const Reports = () => {
 								</div>
 							</div>
 						)}
-
-						{/* Year-over-Year Comparison */}
-						<div className="mb-8">
-							<h3 className="text-lg font-semibold mb-4">Year-over-Year Performance</h3>
-							<div className="h-80">
-								<ResponsiveContainer width="100%" height="100%">
-									<LineChart data={getYearOverYearData()}>
-										<CartesianGrid strokeDasharray="3 3" />
-										<XAxis dataKey="year" />
-										<YAxis domain={[0, 100]} />
-										<Tooltip />
-										<Legend />
-										{SUBJECTS.map((subject, index) => (
-											<Line
-												key={subject}
-												type="monotone"
-												dataKey={subject}
-												stroke={COLORS[index % COLORS.length]}
-												activeDot={{ r: 8 }}
-											/>
-										))}
-									</LineChart>
-								</ResponsiveContainer>
-							</div>
-						</div>
 
 						{/* Monthly Performance Chart */}
 						<div className="mb-8">
@@ -1159,7 +1202,7 @@ const Reports = () => {
 										<Line
 											type="monotone"
 											dataKey="overall"
-											name="Overall Average"
+											name="Overall Average (in %) "
 											stroke="#000000"
 											strokeWidth={2}
 											activeDot={{ r: 8 }}
@@ -1168,97 +1211,6 @@ const Reports = () => {
 								</ResponsiveContainer>
 							</div>
 						</div>
-
-						{/* Subject Distribution Pie Chart */}
-						<div className="mb-8">
-							<h3 className="text-lg font-semibold mb-4">Subject Distribution</h3>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								<div className="h-80">
-									<ResponsiveContainer width="100%" height="100%">
-										<PieChart>
-											<Pie
-												data={getSubjectDistribution()}
-												cx="50%"
-												cy="50%"
-												labelLine={false}
-												outerRadius={80}
-												fill="#8884d8"
-												dataKey="value"
-												label={({ name, value }) => `${name}: ${value}%`}
-											>
-												{getSubjectDistribution().map((entry, index) => (
-													<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-												))}
-											</Pie>
-											<Tooltip formatter={(value) => `${value}%`} />
-											<Legend />
-										</PieChart>
-									</ResponsiveContainer>
-								</div>
-
-								<div className="h-80">
-									<ResponsiveContainer width="100%" height="100%">
-										<BarChart data={getSubjectDistribution()} layout="vertical">
-											<CartesianGrid strokeDasharray="3 3" />
-											<XAxis type="number" domain={[0, 100]} />
-											<YAxis dataKey="name" type="category" />
-											<Tooltip formatter={(value) => `${value}%`} />
-											<Legend />
-											<Bar dataKey="value" name="Average Score" fill="#8884d8">
-												{getSubjectDistribution().map((entry, index) => (
-													<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-												))}
-											</Bar>
-										</BarChart>
-									</ResponsiveContainer>
-								</div>
-							</div>
-						</div>
-
-						{/* Student Performance Comparison - Only for School View with Class Selected */}
-						{viewMode === "school" && selectedClass && (
-							<div className="mb-8">
-								<h3 className="text-lg font-semibold mb-4">Class Performance Comparison</h3>
-								<div className="h-80">
-									<ResponsiveContainer width="100%" height="100%">
-										<ComposedChart
-											data={getStudentsInClass().map((student) => {
-												const studentPerf = studentPerformanceData.filter(
-													(p) => p.studentId === student.studentId && p.year === selectedYear
-												);
-
-												if (studentPerf.length === 0) return { name: student.name };
-
-												const result = { name: student.name };
-
-												SUBJECTS.forEach((subject) => {
-													result[subject] = Math.round(
-														studentPerf.reduce((sum, record) => sum + record[subject], 0) /
-															studentPerf.length
-													);
-												});
-
-												result.average = Math.round(
-													SUBJECTS.reduce((sum, subject) => sum + (result[subject] || 0), 0) /
-														SUBJECTS.filter((subject) => result[subject] !== undefined)
-															.length
-												);
-
-												return result;
-											})}
-										>
-											<CartesianGrid strokeDasharray="3 3" />
-											<XAxis dataKey="name" />
-											<YAxis domain={[0, 100]} />
-											<Tooltip />
-											<Legend />
-											<Bar dataKey="average" name="Class Average" fill="#8884d8" />
-											<Line type="monotone" dataKey="average" stroke="#ff7300" dot={true} />
-										</ComposedChart>
-									</ResponsiveContainer>
-								</div>
-							</div>
-						)}
 
 						{/* Student Progress Over Time - Only for Student View */}
 						{viewMode === "student" && selectedStudent && (
