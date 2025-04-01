@@ -9,6 +9,8 @@ import { ToastContainer, toast } from "react-toastify";
 import apiInstance from "../../api";
 import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
+import GenericConfirmationModal from "../components/DeleteConfirmationModal";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 const theme = createTheme({
 	typography: {
@@ -50,6 +52,10 @@ export default function Users() {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const pageSize = 20;
+
+	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	const [userToDelete, setUserToDelete] = useState(null);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	useEffect(() => {
 		if (location.state?.successMessage) {
@@ -118,6 +124,57 @@ export default function Users() {
 		fetchData();
 	}, [currentPage]);
 
+	// Open delete confirmation modal
+	const openDeleteModal = (user) => {
+		setUserToDelete(user);
+		setDeleteModalOpen(true);
+	};
+
+	// Close delete confirmation modal
+	const closeDeleteModal = () => {
+		setDeleteModalOpen(false);
+		setUserToDelete(null);
+	};
+
+	// Delete user handler
+	const confirmDeleteUser = async () => {
+		if (!userToDelete) return;
+
+		setIsDeleting(true);
+		try {
+			// Call the API to delete the user
+			await apiInstance.delete(`/dev/user/delete/${userToDelete.userId || userToDelete.id}`);
+
+			// Remove the user from the local state
+			const updatedUsers = users.filter(
+				(user) => (user.userId || user.id) !== (userToDelete.userId || userToDelete.id)
+			);
+			setUsers(updatedUsers);
+
+			// Show success message and update pagination if needed
+			toast.success(`"${userToDelete.name}" has been deleted successfully!`);
+
+			if (updatedUsers.length === 0 && currentPage > 1) {
+				setCurrentPage(currentPage - 1);
+			} else {
+				// If we're on the last page and it's now empty, go back one page
+				const totalPages = Math.ceil((totalRecords - 1) / pageSize);
+				if (currentPage > totalPages && totalPages > 0) {
+					setCurrentPage(totalPages);
+				} else {
+					// Otherwise, just refresh the current page
+					fetchData();
+				}
+			}
+		} catch (error) {
+			console.error("Error deleting user:", error);
+			toast.error(error.response?.data?.message || "Error deleting user");
+		} finally {
+			setIsDeleting(false);
+			closeDeleteModal();
+		}
+	};
+
 	const tableData = filteredUsers.map((user) => ({
 		id: user.userId || user.id,
 		name: user.name || "N/A",
@@ -132,6 +189,7 @@ export default function Users() {
 		password: user.password || "default123",
 		status: user.isActive ? "Active" : "Inactive",
 		actions: "Manage User",
+		userObj: user, // Pass the entire user object for the delete modal
 	}));
 
 	const columns = [
@@ -190,6 +248,10 @@ export default function Users() {
 			},
 		},
 		{
+			name: "userObj", // Hidden column to store user object
+			options: { display: false },
+		},
+		{
 			name: "actions",
 			label: "ACTIONS",
 			options: {
@@ -206,11 +268,13 @@ export default function Users() {
 				),
 				customBodyRender: (value, tableMeta) => {
 					const userId = tableMeta.rowData[0];
+					const userObj = tableMeta.rowData[8]; // Index of userObj in the rowData array
+
 					return (
 						<div className="flex gap-2 justify-center">
 							<button
 								className="p-1 hover:bg-gray-100 rounded"
-								// onClick={() => navigate(`/edit/user/${userId}`)}
+								onClick={() => navigate(`/edit/user/${userId}`)}
 							>
 								<img src={EditPencilIcon} alt="Edit" className="w-5 h-5" />
 							</button>
@@ -223,7 +287,7 @@ export default function Users() {
 									padding: "2px",
 									minWidth: "unset",
 								}}
-								// onClick={() => openDeleteModal(schoolObj)}
+								onClick={() => openDeleteModal(userObj)}
 							>
 								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
 								&nbsp;
@@ -286,6 +350,21 @@ export default function Users() {
 						className="[&_.Mui-selected]:bg-[#2F4F4F] [&_.Mui-selected]:text-white"
 					/>
 				</div>
+
+				{/* Delete Confirmation Modal */}
+				<GenericConfirmationModal
+					open={deleteModalOpen}
+					onClose={closeDeleteModal}
+					onConfirm={confirmDeleteUser}
+					title="Delete User"
+					message="Are you sure you want to delete this user:"
+					entityName={userToDelete ? userToDelete.name : ""}
+					isProcessing={isDeleting}
+					confirmText="Delete"
+					cancelText="Cancel"
+					confirmButtonColor="error"
+					icon={<DeleteOutlineIcon fontSize="large" />}
+				/>
 
 				<ToastContainer position="top-right" autoClose={3000} />
 			</div>
