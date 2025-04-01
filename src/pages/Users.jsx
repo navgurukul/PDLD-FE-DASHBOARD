@@ -8,7 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import apiInstance from "../../api";
 import ButtonCustom from "../components/ButtonCustom";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline"; // Make sure to import this
+import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 
 const theme = createTheme({
 	typography: {
@@ -46,6 +46,7 @@ export default function Users() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filteredUsers, setFilteredUsers] = useState([]);
+	const [isLoading, setIsLoading] = useState(false);
 	const location = useLocation();
 	const navigate = useNavigate();
 	const pageSize = 20;
@@ -93,6 +94,7 @@ export default function Users() {
 
 	const fetchData = async () => {
 		try {
+			setIsLoading(true); // Show loader when fetching data
 			const response = await apiInstance.get(`/dev/users?page=${currentPage}&pageSize=${pageSize}`);
 
 			if (response.data?.success && response.data?.data) {
@@ -107,6 +109,8 @@ export default function Users() {
 		} catch (error) {
 			console.error("Error fetching users:", error);
 			toast.error("Failed to load users. Please try again.");
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
@@ -285,6 +289,7 @@ export default function Users() {
 
 				<ToastContainer position="top-right" autoClose={3000} />
 			</div>
+			{isLoading && <SpinnerPageOverlay />}
 		</ThemeProvider>
 	);
 }
