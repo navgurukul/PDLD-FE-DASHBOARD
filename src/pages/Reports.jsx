@@ -696,7 +696,7 @@ const Reports = () => {
 	};
 
 	return (
-		<div className={`min-h-screen ${bgColor} ${textColor} p-4 md:p-8`}>
+		<div className={`min-h-screen ${bgColor} ${textColor} p-4 md:p-8 main-page-wrapper`}>
 			<div className="max-w-7xl mx-auto">
 				{/* Header with dark mode toggle and view mode selection */}
 				<div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">

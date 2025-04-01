@@ -37,7 +37,7 @@ const Breadcrumb = () => {
 			aria-label="breadcrumb"
 			sx={{
 				mb: 1,
-				pl: 6,
+				pl: 10,
 				mt: 5,
 				fontFamily: "'Karla', sans-serif", // Add the custom font
 				fontSize: "14px",
