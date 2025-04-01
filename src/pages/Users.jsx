@@ -175,6 +175,19 @@ export default function Users() {
 		}
 	};
 
+	const getSchoolCount = (user) => {
+		// First check if schoolsMapped is directly provided
+		if (typeof user.schoolsMapped === "number") {
+			return user.schoolsMapped;
+		}
+
+		// Otherwise check various arrays that might contain school info
+		const managedCount = user.managedSchoolIds?.length || 0;
+		const assignedCount = user.assignedSchools?.length || 0;
+
+		return managedCount + assignedCount;
+	};
+
 	const tableData = filteredUsers.map((user) => ({
 		id: user.userId || user.id,
 		name: user.name || "N/A",
@@ -185,7 +198,7 @@ export default function Users() {
 			month: "short",
 			year: "numeric",
 		}),
-		schoolsMapped: (user.managedSchoolIds?.length || user.assignedSchools?.length || "0") + " Schools",
+		schoolsMapped: `${getSchoolCount(user)} Schools`,
 		password: user.password || "default123",
 		status: user.isActive ? "Active" : "Inactive",
 		actions: "Manage User",
