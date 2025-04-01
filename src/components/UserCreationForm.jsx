@@ -11,11 +11,12 @@ import {
 	Typography,
 	Paper,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import apiInstance from "../../api";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ButtonCustom from "./ButtonCustom";
 import { toast, ToastContainer } from "react-toastify";
+import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 
 const theme = createTheme({
 	typography: {
@@ -58,6 +59,14 @@ const theme = createTheme({
 
 export default function UserCreationForm() {
 	const navigate = useNavigate();
+	const { userId } = useParams(); // Get userId if it exists for edit mode
+	const location = useLocation();
+	const userData = location.state?.userData; // Get userData passed from the table
+
+	// Check if we're in edit mode
+	const isEditMode = !!userId;
+	const [isLoading, setIsLoading] = useState(false);
+
 	const [formData, setFormData] = useState({
 		fullName: "",
 		email: "",
@@ -66,6 +75,7 @@ export default function UserCreationForm() {
 		block: "",
 		cluster: "",
 		school: "",
+		username: "",
 	});
 
 	const [blocksData, setBlocksData] = useState([]);
@@ -93,22 +103,60 @@ export default function UserCreationForm() {
 		{ value: "CAC", label: "Cluster Academic Coordinator" },
 	];
 
+	useEffect(() => {
+		if (isEditMode && formData.block && blocksData.length > 0) {
+			loadAvailableClusters(formData.block);
+		}
+	}, [blocksData, isEditMode, formData.block]);
+
 	// Fetch blocks and clusters data on component mount
 	useEffect(() => {
 		fetchBlocksAndClusters();
-	}, []);
 
-	// Process blocks and clusters when blocksData changes
-	useEffect(() => {
-		if (blocksData.length > 0) {
-			// Format blocks for the dropdown
-			const blocks = blocksData.map((block) => ({
-				id: block.blockName,
-				name: block.blockName,
-			}));
-			setAvailableBlocks(blocks);
+		// If in edit mode, initialize the form with user data
+		if (isEditMode) {
+			if (userData) {
+				// Use data passed from the table
+				initializeFormWithUserData(userData);
+			} else {
+				// Fetch user data from API if not passed via state
+				fetchUserData(userId);
+			}
 		}
-	}, [blocksData]);
+	}, [isEditMode, userId, userData]);
+
+	// Fetch user data from API for edit mode
+	const fetchUserData = async (userId) => {
+		try {
+			setIsLoading(true);
+			const response = await apiInstance.get(`/dev/user/${userId}`);
+
+			if (response.data && response.data.success) {
+				initializeFormWithUserData(response.data.data);
+			} else {
+				toast.error("Failed to load user data");
+				navigate("/users");
+			}
+		} catch (error) {
+			console.error("Error fetching user data:", error);
+			toast.error("Failed to load user data");
+			navigate("/users");
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	// Map API role format to form format
+	const mapAPIRoleToFormFormat = (apiRole) => {
+		const roleMap = {
+			DISTRICT_OFFICER: "DO",
+			BLOCK_OFFICER: "BO",
+			CLUSTER_PRINCIPAL: "CP",
+			CAC: "CAC",
+		};
+
+		return roleMap[apiRole] || apiRole;
+	};
 
 	// Update total schools when selected clusters change
 	useEffect(() => {
@@ -135,6 +183,40 @@ export default function UserCreationForm() {
 		}
 
 		setTotalSchoolsSelected(totalSchools);
+	};
+
+	// Update hierarchy fields based on role
+	const updateHierarchyFieldsBasedOnRole = (role) => {
+		switch (role) {
+			case "DO":
+				setHierarchyFields({
+					showBlock: false,
+					showCluster: false,
+					showSchool: false,
+				});
+				break;
+			case "BO":
+				setHierarchyFields({
+					showBlock: true,
+					showCluster: false,
+					showSchool: false,
+				});
+				break;
+			case "CP":
+			case "CAC":
+				setHierarchyFields({
+					showBlock: true,
+					showCluster: true,
+					showSchool: false,
+				});
+				break;
+			default:
+				setHierarchyFields({
+					showBlock: false,
+					showCluster: false,
+					showSchool: false,
+				});
+		}
 	};
 
 	// Validation function - returns true if valid, false if invalid
@@ -190,85 +272,40 @@ export default function UserCreationForm() {
 			schools: [],
 		});
 
-		// Determine which fields to show based on selected role
-		switch (role) {
-			case "DO":
-				setHierarchyFields({
-					showBlock: false,
-					showCluster: false,
-					showSchool: false,
-				});
-				break;
-			case "BO":
-				setHierarchyFields({
-					showBlock: true,
-					showCluster: false,
-					showSchool: false,
-				});
-				break;
-			case "CP":
-				setHierarchyFields({
-					showBlock: true,
-					showCluster: true,
-					showSchool: false,
-				});
-				break;
-			case "CAC":
-				setHierarchyFields({
-					showBlock: true,
-					showCluster: true,
-					showSchool: false,
-				});
-				break;
-			default:
-				setHierarchyFields({
-					showBlock: false,
-					showCluster: false,
-					showSchool: false,
-				});
-		}
+		// Update hierarchy fields based on role
+		updateHierarchyFieldsBasedOnRole(role);
 	};
 
-	// Fetch blocks and clusters data from API
 	const fetchBlocksAndClusters = async () => {
 		try {
 			const response = await apiInstance.get("/dev/user/dropdown-data");
 			if (response.data && response.data.success) {
-				setBlocksData(response.data.data);
+				const blocks = response.data.data;
+				setBlocksData(blocks);
+
+				// IMPORTANT FIX: After blocks are loaded, if we're in edit mode and have a block,
+				// ensure we load available clusters for that block
+				if (isEditMode && formData.block && blocks.length > 0) {
+					const blockName = formData.block;
+					const selectedBlock = blocks.find(
+						(block) => block.blockName.toLowerCase() === blockName.toLowerCase()
+					);
+
+					if (selectedBlock) {
+						const clusters = selectedBlock.clusters.map((cluster) => ({
+							id: cluster.name,
+							name: cluster.name,
+							totalSchool: cluster.totalSchool,
+						}));
+						setAvailableClusters(clusters);
+					}
+				}
 			} else {
 				console.error("Failed to fetch blocks and clusters:", response.data.message);
 			}
 		} catch (error) {
 			console.error("Error fetching blocks and clusters:", error);
 			toast.error("Failed to load blocks and clusters data");
-		}
-	};
-
-	// Update available clusters when block is selected
-	const handleBlockChange = (event) => {
-		const blockName = event.target.value;
-		setFormData({ ...formData, block: blockName });
-
-		// Reset cluster and school selections when block changes
-		setSelectedEntities({
-			...selectedEntities,
-			clusters: [],
-			schools: [],
-		});
-
-		// Find the selected block in the data
-		const selectedBlock = blocksData.find((block) => block.blockName === blockName);
-
-		if (selectedBlock) {
-			// Format clusters for the dropdown
-			const clusters = selectedBlock.clusters.map((cluster) => ({
-				id: cluster.name,
-				name: cluster.name,
-				totalSchool: cluster.totalSchool,
-			}));
-			setAvailableClusters(clusters);
-		} else {
-			setAvailableClusters([]);
 		}
 	};
 
@@ -315,6 +352,18 @@ export default function UserCreationForm() {
 		return `${formattedName}_${roleMap[role]}_${randomDigits}`;
 	};
 
+	// Helper function to map role codes to API format
+	const mapRoleToAPIFormat = (role) => {
+		const roleMap = {
+			DO: "DISTRICT_OFFICER",
+			BO: "BLOCK_OFFICER",
+			CP: "CLUSTER_PRINCIPAL",
+			CAC: "CAC",
+		};
+
+		return roleMap[role] || role;
+	};
+
 	// Submit form data to API
 	const handleSubmit = async (event) => {
 		event.preventDefault();
@@ -324,67 +373,183 @@ export default function UserCreationForm() {
 			return;
 		}
 
-		// Generate the username based on name and role
-		const username = generateUsername(formData.fullName, formData.role);
-
-		// Prepare data for submission
-		const userData = {
-			username: username,
-			password: formData.password || "default_password", // Use provided password or default
-			name: formData.fullName,
-			role: mapRoleToAPIFormat(formData.role), // Convert role to the format expected by API
-			email: formData.email || "",
-			assignedBlocks: formData.block ? [formData.block] : [],
-			assignedClusters: selectedEntities.clusters,
-			permissions: ["audit", "view_reports"], // Default permissions
-		};
-
 		try {
 			setIsSubmitting(true);
-			const response = await apiInstance.post("/dev/user/add", userData);
 
-			console.log("User created:", response.data);
+			if (isEditMode) {
+				// EDIT MODE: Prepare data for update
+				const updateData = {
+					username: formData.username,
+					name: formData.fullName,
+					role: mapRoleToAPIFormat(formData.role),
+					email: formData.email || "",
+					assignedBlocks: formData.block ? [formData.block] : [],
+					assignedClusters: selectedEntities.clusters,
+				};
 
-			// Show success toast
-			toast.success("User created successfully!");
+				// Call update API
+				const response = await apiInstance.put(`/dev/user/update/${userId}`, updateData);
+				console.log("User updated:", response.data);
+				toast.success("User updated successfully!");
+			} else {
+				// CREATE MODE: Generate the username for new user
+				const username = generateUsername(formData.fullName, formData.role);
+
+				// Prepare data for creating new user
+				const userData = {
+					username: username,
+					password: formData.password || "default_password", // Use provided password or default
+					name: formData.fullName,
+					role: mapRoleToAPIFormat(formData.role),
+					email: formData.email || "",
+					assignedBlocks: formData.block ? [formData.block] : [],
+					assignedClusters: selectedEntities.clusters,
+				};
+
+				// Call create API
+				const response = await apiInstance.post("/dev/user/add", userData);
+				console.log("User created:", response.data);
+				toast.success("User created successfully!");
+			}
 
 			// Navigate back to users page with success message
 			navigate("/users", {
-				state: { successMessage: "User created successfully!" },
+				state: {
+					successMessage: isEditMode ? "User updated successfully!" : "User created successfully!",
+				},
 			});
 		} catch (error) {
-			console.error("Error creating user:", error);
-
-			// Show appropriate error message
-			const errorMessage = error.response?.data?.message || "Failed to create user. Please try again.";
+			console.error(isEditMode ? "Error updating user:" : "Error creating user:", error);
+			const errorMessage =
+				error.response?.data?.message ||
+				(isEditMode ? "Failed to update user. Please try again." : "Failed to create user. Please try again.");
 			toast.error(errorMessage);
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
 
-	// Helper function to map role codes to API format
-	const mapRoleToAPIFormat = (role) => {
-		const roleMap = {
-			DO: "DISTRICT_OFFICER",
-			BO: "BLOCK_OFFICER",
-			CP: "CLUSTER_PRINCIPAL",
-			CAC: "CLUSTER_ACADEMIC_COORDINATOR",
-		};
-
-		return roleMap[role] || role;
-	};
-
 	const capitalizeFirstLetter = (str) => {
 		return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 	};
 
+	const loadAvailableClusters = (blockName) => {
+		if (!blockName || !blocksData.length) return;
+
+		console.log(`Loading clusters for block: ${blockName}`);
+
+		// Find the selected block in the data - make the comparison case-insensitive
+		const selectedBlock = blocksData.find((block) => block.blockName.toLowerCase() === blockName.toLowerCase());
+
+		if (selectedBlock) {
+			console.log("Found matching block:", selectedBlock.blockName);
+			console.log("Available clusters:", selectedBlock.clusters.length);
+
+			// Format clusters for the dropdown
+			const clusters = selectedBlock.clusters.map((cluster) => ({
+				id: cluster.name,
+				name: cluster.name,
+				totalSchool: cluster.totalSchool,
+			}));
+			setAvailableClusters(clusters);
+		} else {
+			console.log("No matching block found for:", blockName);
+			console.log(
+				"Available block names:",
+				blocksData.map((b) => b.blockName)
+			);
+			setAvailableClusters([]);
+		}
+	};
+
+	const initializeFormWithUserData = (user) => {
+		setIsLoading(true);
+
+		// Map API role format to form role format
+		const roleCode = mapAPIRoleToFormFormat(user.role);
+
+		// IMPORTANT FIX: Check both assignedBlock and assignedBlocks arrays
+		// The issue is your data has both assignedBlock and assignedBlocks fields
+		const blockList =
+			user.assignedBlocks && user.assignedBlocks.length > 0
+				? user.assignedBlocks
+				: user.assignedBlock && user.assignedBlock.length > 0
+				? user.assignedBlock
+				: [];
+
+		const assignedBlock = blockList.length > 0 ? blockList[0] : "";
+
+		console.log("User data:", user);
+		console.log("Assigned block from user data:", assignedBlock);
+
+		// Update hierarchy fields based on role first
+		updateHierarchyFieldsBasedOnRole(roleCode);
+
+		// Set form data with user values
+		setFormData({
+			fullName: user.name || "",
+			email: user.email || "",
+			role: roleCode,
+			block: assignedBlock,
+			username: user.username || "",
+		});
+
+		// Set selected entities
+		setSelectedEntities({
+			blocks: blockList,
+			clusters: user.assignedClusters || [],
+			schools: [],
+		});
+
+		// IMPORTANT FIX: Ensure we load available clusters for the assigned block
+		if (assignedBlock && blocksData.length > 0) {
+			loadAvailableClusters(assignedBlock);
+		}
+
+		setIsLoading(false);
+	};
+
+	// UPDATE handleBlockChange to use loadAvailableClusters:
+	const handleBlockChange = (event) => {
+		const blockName = event.target.value;
+		setFormData({ ...formData, block: blockName });
+
+		// Reset cluster and school selections when block changes
+		setSelectedEntities({
+			...selectedEntities,
+			clusters: [],
+			schools: [],
+		});
+
+		loadAvailableClusters(blockName);
+	};
+
+	// KEEP this effect but simplify it:
+	useEffect(() => {
+		if (blocksData.length > 0) {
+			// Format blocks for the dropdown
+			const blocks = blocksData.map((block) => ({
+				id: block.blockName,
+				name: block.blockName,
+			}));
+			setAvailableBlocks(blocks);
+
+			// If there's a block selected, load its clusters
+			if (formData.block) {
+				loadAvailableClusters(formData.block);
+			}
+		}
+	}, [blocksData, formData.block]);
+
 	return (
 		<ThemeProvider theme={theme}>
+			{isLoading && <SpinnerPageOverlay />}
 			<Paper elevation={0} className="max-w-2xl mx-auto p-6 rounded-lg">
-				<h5 className="text-lg font-bold text-[#2F4F4F]">Create New User</h5>
+				<h5 className="text-lg font-bold text-[#2F4F4F]">{isEditMode ? "Edit User" : "Create New User"}</h5>
 				<Typography variant="body1" className="text-gray-600 mb-6">
-					Create a new user with a specific role and map them to schools
+					{isEditMode
+						? "Update user information and role assignments"
+						: "Create a new user with a specific role and map them to schools"}
 				</Typography>
 
 				<form onSubmit={handleSubmit}>
@@ -405,6 +570,25 @@ export default function UserCreationForm() {
 							}}
 						/>
 					</div>
+
+					{isEditMode && (
+						<div className="my-6">
+							<TextField
+								label="Username"
+								name="username"
+								value={formData.username}
+								disabled
+								fullWidth
+								variant="outlined"
+								sx={{
+									"& .MuiOutlinedInput-root": {
+										height: "48px",
+										backgroundColor: "#f5f5f5",
+									},
+								}}
+							/>
+						</div>
+					)}
 
 					<div className="my-6">
 						<TextField
@@ -471,9 +655,24 @@ export default function UserCreationForm() {
 											alignItems: "center",
 										},
 									}}
-									value={formData.block}
+									value={formData.block || ""}
 									onChange={handleBlockChange}
 									label="Select Block"
+									renderValue={(selected) => {
+										// Check if the selected value actually exists in the dropdown
+										const matchingBlock = availableBlocks.find(
+											(block) =>
+												block.id === selected ||
+												block.id.toLowerCase() === selected.toLowerCase()
+										);
+
+										if (matchingBlock) {
+											return capitalizeFirstLetter(matchingBlock.name);
+										}
+
+										// Fallback to just displaying the value
+										return capitalizeFirstLetter(selected);
+									}}
 								>
 									{availableBlocks.map((block) => (
 										<MenuItem key={block.id} value={block.id}>
@@ -545,7 +744,6 @@ export default function UserCreationForm() {
 														accentColor: "#2F4F4F",
 													}}
 												/>
-												{/* {cluster.name} */}
 												{capitalizeFirstLetter(cluster.name)}
 											</MenuItem>
 										))}
@@ -594,7 +792,15 @@ export default function UserCreationForm() {
 
 					<div className="flex justify-center mt-4">
 						<ButtonCustom
-							text={isSubmitting ? "Creating..." : "Create User"}
+							text={
+								isSubmitting
+									? isEditMode
+										? "Updating..."
+										: "Creating..."
+									: isEditMode
+									? "Update User"
+									: "Create User"
+							}
 							onClick={handleSubmit}
 							disabled={isSubmitting}
 						/>
