@@ -161,28 +161,42 @@ export default function UserCreationForm() {
 	// Update total schools when selected clusters change
 	useEffect(() => {
 		calculateTotalSchools();
-	}, [selectedEntities.clusters, blocksData]);
+	}, [selectedEntities.clusters, formData.block, formData.role, blocksData]);
 
-	// Calculate total schools for selected clusters
+	// Calculate total schools for selected clusters or blocks
 	const calculateTotalSchools = () => {
-		if (!selectedEntities.clusters.length || !blocksData.length) {
-			setTotalSchoolsSelected(0);
+		// If clusters are selected, calculate based on clusters
+		if (selectedEntities.clusters.length > 0 && blocksData.length > 0) {
+			let totalSchools = 0;
+			const selectedBlock = blocksData.find((block) => block.blockName === formData.block);
+
+			if (selectedBlock) {
+				selectedEntities.clusters.forEach((clusterName) => {
+					const cluster = selectedBlock.clusters.find((c) => c.name === clusterName);
+					if (cluster) {
+						totalSchools += cluster.totalSchool;
+					}
+				});
+			}
+
+			setTotalSchoolsSelected(totalSchools);
 			return;
 		}
 
-		let totalSchools = 0;
-		const selectedBlock = blocksData.find((block) => block.blockName === formData.block);
+		// If only block is selected (for Block Officer role), use totalSchoolInBlock
+		if (formData.block && formData.role === "BO" && blocksData.length > 0) {
+			const selectedBlock = blocksData.find(
+				(block) => block.blockName.toLowerCase() === formData.block.toLowerCase()
+			);
 
-		if (selectedBlock) {
-			selectedEntities.clusters.forEach((clusterName) => {
-				const cluster = selectedBlock.clusters.find((c) => c.name === clusterName);
-				if (cluster) {
-					totalSchools += cluster.totalSchool;
-				}
-			});
+			if (selectedBlock && selectedBlock.totalSchoolInBlock) {
+				setTotalSchoolsSelected(selectedBlock.totalSchoolInBlock);
+				return;
+			}
 		}
 
-		setTotalSchoolsSelected(totalSchools);
+		// Default case - no schools selected
+		setTotalSchoolsSelected(0);
 	};
 
 	// Update hierarchy fields based on role
@@ -766,7 +780,7 @@ export default function UserCreationForm() {
 									<Typography
 										variant="body2"
 										className="
-									bg-gray-200 px-2 py-1 rounded-[50px]"
+									bg-gray-200 px-2 py-1 rounded-[50px] mr-2!"
 									>
 										1 Block ({formData.block})
 									</Typography>
