@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import apiInstance from "../../api";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ButtonCustom from "./ButtonCustom";
-import { toast, ToastContainer } from "react-toastify"; // Assuming react-toastify is installed
+import { toast, ToastContainer } from "react-toastify";
 
 const theme = createTheme({
 	typography: {
@@ -68,9 +68,11 @@ export default function UserCreationForm() {
 		school: "",
 	});
 
+	const [blocksData, setBlocksData] = useState([]);
+	const [totalSchoolsSelected, setTotalSchoolsSelected] = useState(0);
+
 	const [availableBlocks, setAvailableBlocks] = useState([]);
 	const [availableClusters, setAvailableClusters] = useState([]);
-	const [availableSchools, setAvailableSchools] = useState([]);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedEntities, setSelectedEntities] = useState({
 		blocks: [],
@@ -90,6 +92,50 @@ export default function UserCreationForm() {
 		{ value: "CP", label: "Cluster Principal" },
 		{ value: "CAC", label: "Cluster Academic Coordinator" },
 	];
+
+	// Fetch blocks and clusters data on component mount
+	useEffect(() => {
+		fetchBlocksAndClusters();
+	}, []);
+
+	// Process blocks and clusters when blocksData changes
+	useEffect(() => {
+		if (blocksData.length > 0) {
+			// Format blocks for the dropdown
+			const blocks = blocksData.map((block) => ({
+				id: block.blockName,
+				name: block.blockName,
+			}));
+			setAvailableBlocks(blocks);
+		}
+	}, [blocksData]);
+
+	// Update total schools when selected clusters change
+	useEffect(() => {
+		calculateTotalSchools();
+	}, [selectedEntities.clusters, blocksData]);
+
+	// Calculate total schools for selected clusters
+	const calculateTotalSchools = () => {
+		if (!selectedEntities.clusters.length || !blocksData.length) {
+			setTotalSchoolsSelected(0);
+			return;
+		}
+
+		let totalSchools = 0;
+		const selectedBlock = blocksData.find((block) => block.blockName === formData.block);
+
+		if (selectedBlock) {
+			selectedEntities.clusters.forEach((clusterName) => {
+				const cluster = selectedBlock.clusters.find((c) => c.name === clusterName);
+				if (cluster) {
+					totalSchools += cluster.totalSchool;
+				}
+			});
+		}
+
+		setTotalSchoolsSelected(totalSchools);
+	};
 
 	// Validation function - returns true if valid, false if invalid
 	const validateForm = () => {
@@ -135,7 +181,7 @@ export default function UserCreationForm() {
 	// Handle role change to determine which fields to show
 	const handleRoleChange = (event) => {
 		const role = event.target.value;
-		setFormData({ ...formData, role });
+		setFormData({ ...formData, role, block: "" });
 
 		// Reset selections when role changes
 		setSelectedEntities({
@@ -159,7 +205,6 @@ export default function UserCreationForm() {
 					showCluster: false,
 					showSchool: false,
 				});
-				fetchBlocks();
 				break;
 			case "CP":
 				setHierarchyFields({
@@ -167,7 +212,6 @@ export default function UserCreationForm() {
 					showCluster: true,
 					showSchool: false,
 				});
-				fetchBlocks();
 				break;
 			case "CAC":
 				setHierarchyFields({
@@ -175,7 +219,6 @@ export default function UserCreationForm() {
 					showCluster: true,
 					showSchool: false,
 				});
-				fetchBlocks();
 				break;
 			default:
 				setHierarchyFields({
@@ -186,43 +229,25 @@ export default function UserCreationForm() {
 		}
 	};
 
-	// Mock API functions - replace with actual implementations
-	const fetchBlocks = async () => {
+	// Fetch blocks and clusters data from API
+	const fetchBlocksAndClusters = async () => {
 		try {
-			// const response = await apiInstance.get('/dev/blocks');
-			// setAvailableBlocks(response.data.data);
-
-			// Mock data for blocks
-			setAvailableBlocks([
-				{ id: 1, name: "Block 1" },
-				{ id: 2, name: "Block 2" },
-				{ id: 3, name: "Block 3" },
-			]);
+			const response = await apiInstance.get("/dev/user/dropdown-data");
+			if (response.data && response.data.success) {
+				setBlocksData(response.data.data);
+			} else {
+				console.error("Failed to fetch blocks and clusters:", response.data.message);
+			}
 		} catch (error) {
-			console.error("Error fetching blocks:", error);
+			console.error("Error fetching blocks and clusters:", error);
+			toast.error("Failed to load blocks and clusters data");
 		}
 	};
 
-	const fetchClusters = async (blockId) => {
-		try {
-			// const response = await apiInstance.get(`/dev/clusters?blockId=${blockId}`);
-			// setAvailableClusters(response.data.data);
-
-			// Mock data for clusters
-			setAvailableClusters([
-				{ id: 1, name: "Cluster 1", blockId: blockId },
-				{ id: 2, name: "Cluster 2", blockId: blockId },
-				{ id: 3, name: "Cluster 3", blockId: blockId },
-				{ id: 4, name: "Cluster 4", blockId: blockId },
-			]);
-		} catch (error) {
-			console.error("Error fetching clusters:", error);
-		}
-	};
-
+	// Update available clusters when block is selected
 	const handleBlockChange = (event) => {
-		const blockId = event.target.value;
-		setFormData({ ...formData, block: blockId });
+		const blockName = event.target.value;
+		setFormData({ ...formData, block: blockName });
 
 		// Reset cluster and school selections when block changes
 		setSelectedEntities({
@@ -231,7 +256,20 @@ export default function UserCreationForm() {
 			schools: [],
 		});
 
-		fetchClusters(blockId);
+		// Find the selected block in the data
+		const selectedBlock = blocksData.find((block) => block.blockName === blockName);
+
+		if (selectedBlock) {
+			// Format clusters for the dropdown
+			const clusters = selectedBlock.clusters.map((cluster) => ({
+				id: cluster.name,
+				name: cluster.name,
+				totalSchool: cluster.totalSchool,
+			}));
+			setAvailableClusters(clusters);
+		} else {
+			setAvailableClusters([]);
+		}
 	};
 
 	const handleClusterChange = (event) => {
@@ -245,13 +283,10 @@ export default function UserCreationForm() {
 		});
 	};
 
-	const handleRemoveCluster = (clusterId) => {
+	const handleRemoveCluster = (clusterName) => {
 		setSelectedEntities({
 			...selectedEntities,
-			clusters: selectedEntities.clusters.filter((id) => id !== clusterId),
-			schools: selectedEntities.schools.filter(
-				(school) => !availableSchools.find((s) => s.id === school && s.clusterId === clusterId)
-			),
+			clusters: selectedEntities.clusters.filter((name) => name !== clusterName),
 		});
 	};
 
@@ -260,7 +295,7 @@ export default function UserCreationForm() {
 		setFormData({ ...formData, [name]: value });
 	};
 
-	// Add this function to generate the username
+	// Generate the username
 	const generateUsername = (fullName, role) => {
 		// Replace spaces with underscores and convert to lowercase
 		const formattedName = fullName.trim().replace(/\s+/g, "_").toLowerCase();
@@ -280,7 +315,7 @@ export default function UserCreationForm() {
 		return `${formattedName}_${roleMap[role]}_${randomDigits}`;
 	};
 
-	// Modify the handleSubmit function to use the API
+	// Submit form data to API
 	const handleSubmit = async (event) => {
 		event.preventDefault();
 
@@ -299,13 +334,13 @@ export default function UserCreationForm() {
 			name: formData.fullName,
 			role: mapRoleToAPIFormat(formData.role), // Convert role to the format expected by API
 			email: formData.email || "",
-			assignedBlocks: formData.block ? [availableBlocks.find((b) => b.id === formData.block)?.name] : [],
-			assignedClusters: selectedEntities.clusters.map((id) => availableClusters.find((c) => c.id === id)?.name),
+			assignedBlocks: formData.block ? [formData.block] : [],
+			assignedClusters: selectedEntities.clusters,
 			permissions: ["audit", "view_reports"], // Default permissions
 		};
 
 		try {
-			setIsSubmitting(true); // Add this state variable
+			setIsSubmitting(true);
 			const response = await apiInstance.post("/dev/user/add", userData);
 
 			console.log("User created:", response.data);
@@ -338,6 +373,10 @@ export default function UserCreationForm() {
 		};
 
 		return roleMap[role] || role;
+	};
+
+	const capitalizeFirstLetter = (str) => {
+		return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 	};
 
 	return (
@@ -387,11 +426,13 @@ export default function UserCreationForm() {
 
 					<div className="mb-6">
 						<FormControl fullWidth variant="outlined" required>
+							<InputLabel>Role</InputLabel>
 							<Select
 								displayEmpty
 								value={formData.role}
 								onChange={handleRoleChange}
 								inputProps={{ "aria-label": "Role" }}
+								label="Role"
 								sx={{
 									height: "48px",
 									"& .MuiSelect-select": {
@@ -418,7 +459,7 @@ export default function UserCreationForm() {
 					</div>
 
 					{hierarchyFields.showBlock && (
-						<div className="">
+						<div className="mb-6">
 							<FormControl fullWidth required>
 								<InputLabel>Select Block</InputLabel>
 								<Select
@@ -436,7 +477,7 @@ export default function UserCreationForm() {
 								>
 									{availableBlocks.map((block) => (
 										<MenuItem key={block.id} value={block.id}>
-											{block.name}
+											{capitalizeFirstLetter(block.name)}
 										</MenuItem>
 									))}
 								</Select>
@@ -446,16 +487,14 @@ export default function UserCreationForm() {
 
 					{hierarchyFields.showCluster && formData.block && (
 						<>
-							<div className="mt-6">
+							<div className="mb-6">
 								<FormControl fullWidth required>
-									<InputLabel>
-										Select Clusters in {availableBlocks.find((b) => b.id === formData.block)?.name}
-									</InputLabel>
+									<InputLabel>Select Clusters in {formData.block}</InputLabel>
 									<Select
 										sx={{
 											height: "48px",
 											"& .MuiSelect-select": {
-												minHeight: "48px",
+												height: "48px",
 												display: "flex",
 												alignItems: "center",
 											},
@@ -463,35 +502,51 @@ export default function UserCreationForm() {
 										multiple
 										value={selectedEntities.clusters}
 										onChange={handleClusterChange}
-										label={`Select Clusters in ${
-											availableBlocks.find((b) => b.id === formData.block)?.name
-										}`}
+										label={`Select Clusters in ${formData.block}`}
 										renderValue={(selected) => (
 											<Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-												{selected.map((clusterId) => {
-													const cluster = availableClusters.find((c) => c.id === clusterId);
-													return (
-														<Chip
-															key={clusterId}
-															label={cluster?.name}
-															onDelete={() => handleRemoveCluster(clusterId)}
-															onMouseDown={(event) => {
-																event.stopPropagation();
-															}}
-															onClick={(event) => {
-																event.stopPropagation();
-															}}
-															size="small"
-															sx={{ m: 0.5 }}
-														/>
-													);
-												})}
+												{selected.map((clusterName) => (
+													<Chip
+														key={clusterName}
+														label={capitalizeFirstLetter(clusterName)}
+														onDelete={() => handleRemoveCluster(clusterName)}
+														onMouseDown={(event) => {
+															event.stopPropagation();
+														}}
+														onClick={(event) => {
+															event.stopPropagation();
+														}}
+														size="small"
+														sx={{ m: 0.5 }}
+													/>
+												))}
 											</Box>
 										)}
+										MenuProps={{
+											PaperProps: {
+												style: {
+													maxHeight: 300,
+												},
+											},
+										}}
 									>
 										{availableClusters.map((cluster) => (
-											<MenuItem key={cluster.id} value={cluster.id}>
-												{cluster.name}
+											<MenuItem
+												key={cluster.id}
+												value={cluster.id}
+												sx={{ display: "flex", alignItems: "center" }}
+											>
+												<input
+													type="checkbox"
+													checked={selectedEntities.clusters.includes(cluster.id)}
+													readOnly
+													style={{
+														marginRight: "10px",
+														accentColor: "#2F4F4F",
+													}}
+												/>
+												{/* {cluster.name} */}
+												{capitalizeFirstLetter(cluster.name)}
 											</MenuItem>
 										))}
 									</Select>
@@ -500,35 +555,38 @@ export default function UserCreationForm() {
 						</>
 					)}
 
-					{(selectedEntities.blocks.length > 0 ||
-						selectedEntities.clusters.length > 0 ||
-						selectedEntities.schools.length > 0) && (
+					{(formData.block || selectedEntities.clusters.length > 0) && (
 						<div className="mb-6 mt-6 p-4 bg-gray-50 rounded-lg border border-gray-300 rounded-lg">
 							<Typography variant="subtitle1" className="mb-4 font-semibold">
 								Summary of Selected Entities
 							</Typography>
-							<div className="flex flex-wrap gap-2">
+							<div className="mb-2 flex">
 								{formData.block && (
-									<Chip
-										label={`${availableBlocks.find((b) => b.id === formData.block)?.name}`}
-										color="default"
-									/>
+									<Typography
+										variant="body2"
+										className="
+									bg-gray-200 px-2 py-1 rounded-[50px]"
+									>
+										1 Block ({formData.block})
+									</Typography>
 								)}
 								{selectedEntities.clusters.length > 0 && (
-									<Chip
-										label={`${selectedEntities.clusters.length} cluster${
-											selectedEntities.clusters.length > 1 ? "s" : ""
-										}`}
-										color="default"
-									/>
+									<Typography
+										variant="body2"
+										className="
+									bg-gray-200 mx-4! px-2 py-1 rounded-[50px]"
+									>
+										{selectedEntities.clusters.length} Clusters
+									</Typography>
 								)}
-								{selectedEntities.schools.length > 0 && (
-									<Chip
-										label={`${selectedEntities.schools.length} school${
-											selectedEntities.schools.length > 1 ? "s" : ""
-										}`}
-										color="default"
-									/>
+								{totalSchoolsSelected > 0 && (
+									<Typography
+										variant="body2"
+										className="
+									bg-gray-200 px-2 py-1 rounded-[50px]"
+									>
+										{totalSchoolsSelected} Schools
+									</Typography>
 								)}
 							</div>
 						</div>
