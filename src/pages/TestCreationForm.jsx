@@ -8,6 +8,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import { Typography } from "@mui/material";
 import ModalSummary from "../components/SummaryModal";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const TestCreationForm = () => {
 	const [testDates, setTestDates] = useState({});
@@ -75,7 +77,10 @@ const TestCreationForm = () => {
 
 			if (currentlySelected.includes(subject)) {
 				// 🔒 Prevent removal if remedial test for Class 11/12
-				if ((testType === "remedial" && (grade === 11 || grade === 12)) || (testType === "regular" && isEditMode)) {
+				if (
+					(testType === "remedial" && (grade === 11 || grade === 12)) ||
+					(testType === "regular" && isEditMode)
+				) {
 					return;
 				}
 				// Otherwise allow removal
@@ -229,6 +234,9 @@ const TestCreationForm = () => {
 			for (const subject of selectedSubjects[grade]) {
 				const key = `${grade}-${subject}`;
 				if (!testDates[key]) return false;
+
+				// Always require deadline date for all test types
+				if (!testDeadlines[key]) return false;
 
 				// Only validate maxScore for "regular" test type
 				if (testType === "regular" && (!testScores[key] || testScores[key] > 90)) {
@@ -637,35 +645,43 @@ const TestCreationForm = () => {
 													const isRemedialFor11Or12 =
 														testType === "remedial" && (grade === 11 || grade === 12);
 
+													// Updated code section for remedial test checkboxes for Class 11 and 12
+													// Replace the existing remedial test condition block with this code
+
 													if (isRemedialFor11Or12) {
 														// ✅ ONLY show Maths + Hindi, hide everything else
 														return (
 															<div className="p-4 rounded-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
-																<div className="flex flex-col gap-3">
-																	<div className="flex items-center gap-2 px-3 py-2">
-																		<input
-																			type="checkbox"
-																			checked={selectedSubjects[grade]?.includes(
-																				"Maths"
-																			)}
-																			onChange={() =>
-																				handleSubjectSelection(grade, "Maths")
+																<div className="flex flex-wrap gap-2">
+																	{["Maths", "Hindi"].map((subject) => (
+																		<div
+																			key={subject}
+																			className="px-3 py-2 flex items-center cursor-pointer"
+																			onClick={() =>
+																				handleSubjectSelection(grade, subject)
 																			}
-																		/>
-																		<span>Maths</span>
-																	</div>
-																	<div className="flex items-center gap-2 px-3 py-2">
-																		<input
-																			type="checkbox"
-																			checked={selectedSubjects[grade]?.includes(
-																				"Hindi"
-																			)}
-																			onChange={() =>
-																				handleSubjectSelection(grade, "Hindi")
-																			}
-																		/>
-																		<span>Hindi</span>
-																	</div>
+																		>
+																			<div className="relative w-4 h-4 border border-[#2F4F4F] rounded-sm flex items-center justify-center mr-2">
+																				{selectedSubjects[grade]?.includes(
+																					subject
+																				) && (
+																					<svg
+																						width="16"
+																						height="16"
+																						viewBox="0 0 16 16"
+																						fill="none"
+																						xmlns="http://www.w3.org/2000/svg"
+																					>
+																						<path
+																							d="M12.6667 2H3.33333C2.6 2 2 2.6 2 3.33333V12.6667C2 13.4 2.6 14 3.33333 14H12.6667C13.4 14 14 13.4 14 12.6667V3.33333C14 2.6 13.4 2 12.6667 2ZM7.14 10.86C6.88 11.12 6.46 11.12 6.2 10.86L3.80667 8.46667C3.54667 8.20667 3.54667 7.78667 3.80667 7.52667C4.06667 7.26667 4.48667 7.26667 4.74667 7.52667L6.66667 9.44667L11.2533 4.86C11.5133 4.6 11.9333 4.6 12.1933 4.86C12.4533 5.12 12.4533 5.54 12.1933 5.8L7.14 10.86Z"
+																							fill="#2F4F4F"
+																						/>
+																					</svg>
+																				)}
+																			</div>
+																			{subject}
+																		</div>
+																	))}
 																</div>
 															</div>
 														);
@@ -768,40 +784,59 @@ const TestCreationForm = () => {
 															</Typography>
 														</div>
 
-														<div className="flex gap-4">
+														<div className="flex gap-4 ">
 															<div className="w-full">
 																<Typography color="primary" variant="subtitle2">
 																	Test Date
 																</Typography>
-																<input
-																	type="date"
-																	className="h-12 w-full p-2 border border-[#E0E0E0] rounded-lg"
-																	value={testDates[combinedKey] || ""}
-																	onChange={(e) =>
-																		handleTestDateChange(
-																			combinedKey,
-																			e.target.value
-																		)
+																<DatePicker
+																	selected={
+																		testDates[combinedKey]
+																			? new Date(testDates[combinedKey])
+																			: null
 																	}
-																	min={minTestDate}
+																	onChange={(date) => {
+																		// Format date as YYYY-MM-DD string to maintain compatibility
+																		const dateStr = date
+																			? date.toISOString().split("T")[0]
+																			: "";
+																		handleTestDateChange(combinedKey, dateStr);
+																	}}
+																	minDate={new Date(minTestDate)}
+																	dateFormat="dd-MM-yyyy"
+																	className="h-12 w-full p-2 border border-[#E0E0E0] rounded-lg"
+																	placeholderText="Select test date"
+																	isClearable
 																/>
 															</div>
+															{/* Replace the Score Submission Deadline DatePicker with this code */}
 															<div className="w-full">
 																<Typography color="primary" variant="subtitle2">
 																	Score Submission Deadline
 																</Typography>
-																<input
-																	type="date"
-																	className="h-12 w-full p-2 border border-[#E0E0E0] rounded-lg"
-																	value={testDeadlines[combinedKey] || ""}
-																	onChange={(e) =>
-																		handleDeadlineChange(
-																			combinedKey,
-																			e.target.value
-																		)
-																	}
-																	min={minDeadline}
-																/>
+																<div style={{ width: "100%" }}>
+																	<DatePicker
+																		selected={
+																			testDeadlines[combinedKey]
+																				? new Date(testDeadlines[combinedKey])
+																				: null
+																		}
+																		onChange={(date) => {
+																			const dateStr = date
+																				? date.toISOString().split("T")[0]
+																				: "";
+																			handleDeadlineChange(combinedKey, dateStr);
+																		}}
+																		minDate={
+																			minDeadline ? new Date(minDeadline) : null
+																		}
+																		dateFormat="dd-MM-yyyy"
+																		className="h-12 w-full p-2 border border-[#E0E0E0] rounded-lg"
+																		placeholderText="Select deadline"
+																		isClearable
+																		disabled={!testDates[combinedKey]}
+																	/>
+																</div>
 															</div>
 															{testType === "regular" && (
 																<div className="w-20">
