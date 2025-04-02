@@ -110,10 +110,10 @@ export default function TestListTable() {
 			// let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&page=${currentPage}&pageSize=${pageSize}`;
 			let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
 
-			if(!selectedClass && !selectedSubject && !selectedStatus){
+			if (!selectedClass && !selectedSubject && !selectedStatus) {
 				url += `&page=${currentPage}`;
 			}
-			
+
 			if (selectedClass) {
 				url += `&testClass=${selectedClass}`;
 				url += `&page=1`;
@@ -126,7 +126,7 @@ export default function TestListTable() {
 				url += `&testStatus=${selectedStatus}`;
 				url += `&page=1`;
 			}
-			
+
 			const response = await apiInstance.get(url);
 			if (response.data && response.data.data) {
 				setTests(response.data.data.data);
@@ -233,7 +233,7 @@ export default function TestListTable() {
 						<th
 							style={{
 								cursor: "pointer",
-								borderBottom: "2px solid lightgray",
+								borderBottom: "1px solid lightgray",
 								fontSize: "14px",
 								textTransform: "uppercase", // Keep it capitalized
 							}}
@@ -276,7 +276,7 @@ export default function TestListTable() {
 							style={{
 								// textAlign: "center",
 								cursor: "pointer",
-								borderBottom: "2px solid lightgray",
+								borderBottom: "1px solid lightgray",
 								fontSize: "14px", // Smaller font size for this specific header
 								textTransform: "uppercase", // Keep it capitalized
 							}}
@@ -318,7 +318,7 @@ export default function TestListTable() {
 					return (
 						<th
 							style={{
-								borderBottom: "2px solid lightgray",
+								borderBottom: "1px solid lightgray",
 								fontSize: "14px",
 								width: "120px",
 								maxWidth: "120px",
@@ -364,7 +364,7 @@ export default function TestListTable() {
 						<th
 							style={{
 								// textAlign: "center",
-								borderBottom: "2px solid lightgray",
+								borderBottom: "1px solid lightgray",
 							}}
 							scope="col"
 						>
@@ -451,212 +451,178 @@ export default function TestListTable() {
 
 	return (
 		<ThemeProvider theme={theme}>
-			<div className="main-page-wrapper">
+			{/* Main container with responsive adjustments */}
+			<div className="main-page-wrapper px-3 sm:px-4">
 				<h5 className="text-lg font-bold text-[#2F4F4F]">All Tests</h5>
-				{/* Search Bar */}
 
-
-				{/* Filters */}
-				<div className="flex justify-between items-center">
-					<div className="flex gap-2 my-[10px] mx-0">
-					<TextField
-					variant="outlined"
-					placeholder="Search by Test Name"
-					size="small"
-					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
-					InputProps={{
-						style: {
-							backgroundColor: "#fff",
-							borderRadius: "8px",
-							width: "420px",
-							height: "48px",
-						},
-					}}
-					sx={{ marginBottom: "10px" }}
-				/>
-						{/* Class Dropdown */}
-						<TextField
-							select
-							size="small"
-							variant="outlined"
-							label="Class"
-							value={selectedClass}
-							onChange={(e) => setSelectedClass(e.target.value)}
-							sx={{
-								width: 150,
-								"& .MuiSelect-select": {
-									color: "#2F4F4F",
-									fontWeight: "600",
-									padding: "12px 16px",
-								},
-								"& .MuiOutlinedInput-root": {
-									borderRadius: "8px",
-									backgroundColor: "#fff",
-								},
-							}}
-						>
-							<MenuItem value="">Class</MenuItem>
-							{CLASS_OPTIONS.map((option) => (
-								<MenuItem key={option} value={parseInt(option.replace("Class ", ""), 10)}>
-									{option}
-								</MenuItem>
-							))}
-						</TextField>
-
-						{/* Subject Dropdown */}
-						<TextField
-							select
-							size="small"
-							variant="outlined"
-							label="Subject"
-							value={selectedSubject}
-							onChange={(e) => setSelectedSubject(e.target.value)}
-							sx={{
-								width: 150,
-								"& .MuiSelect-select": {
-									color: "#2F4F4F",
-									fontWeight: "600",
-									padding: "12px 16px",
-								},
-								"& .MuiOutlinedInput-root": {
-									borderRadius: "8px",
-									backgroundColor: "#fff",
-								},
-							}}
-							SelectProps={{
-								MenuProps: {
-									PaperProps: {
-										sx: {
-											maxHeight: 200, // Set the maximum height of the dropdown
-											overflowY: "auto", // Add scroll functionality
-											"&::-webkit-scrollbar": {
-												width: "5px", // Make the scrollbar 5px wide
-											},
-											"&::-webkit-scrollbar-thumb": {
-												backgroundColor: "#B0B0B0", // Set scrollbar thumb to grey
-												borderRadius: "5px",
-											},
-											"&::-webkit-scrollbar-track": {
-												backgroundColor: "#F0F0F0", // Optional: lighter grey for the track
-											},
+				{/* Filters and Action Button - Stack on mobile */}
+				<div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
+					{/* Search and Filters - Takes full width on mobile */}
+					<div className="w-full lg:flex-1">
+						<div className="flex flex-col md:flex-row md:flex-wrap gap-2 my-[10px] mx-0">
+							{/* Filter Container - Wrap on mobile */}
+							<div className="flex w-full flex-wrap gap-2">
+								<TextField
+									variant="outlined"
+									placeholder="Search by Test Name"
+									size="small"
+									value={searchQuery}
+									onChange={(e) => setSearchQuery(e.target.value)}
+									InputProps={{
+										style: {
+											backgroundColor: "#fff",
+											borderRadius: "8px",
+											height: "48px",
+											minWidth: "250px",
+											width: "385px",
 										},
-									},
-								},
-							}}
-						>
-							<MenuItem value="">Subject</MenuItem>
-							{SUBJECT_OPTIONS.map((subject) => (
-								<MenuItem key={subject} value={subject}>
-									{subject}
-								</MenuItem>
-							))}
-						</TextField>
-
-						{/* Status Dropdown */}
-						{/* <TextField
-							select
-							size="small"
-							variant="outlined"
-							label="Status"
-							value={selectedStatus}
-							onChange={(e) => setSelectedStatus(e.target.value)}
-							sx={{
-								width: 150,
-								"& .MuiSelect-select": {
-									color: "#2F4F4F",
-									fontWeight: "600",
-									padding: "12px 16px",
-								},
-								"& .MuiOutlinedInput-root": {
-									borderRadius: "8px",
-									backgroundColor: "#fff",
-								},
-							}}
-						>
-							<MenuItem value="">Status</MenuItem>
-							{Object.keys(STATUS_LABELS).map((status) => (
-								<MenuItem key={status} value={status}>
-									{STATUS_LABELS[status]}
-								</MenuItem>
-							))}
-						</TextField> */}
-
-						{/* Date Range Dropdown (placeholder) */}
-
-						<div style={{ border: "1px solid lightgrey", borderRadius: "7px", height: "48px" }}>
-							<DatePicker
-								className="my-date-picker"
-								selectsRange
-								startDate={startDate}
-								endDate={endDate}
-								onChange={(dates) => {
-									const [start, end] = dates;
-									setDateRange(dates);
-								}}
-								placeholderText="Date Range"
-								dateFormat="dd/MM/YYYY "
-								style={{ width: "220px"}}
-							/>
-						</div>
-
-						<div>
-							<Tooltip title="Reset Filters" placement="top">
-								<div
-									onClick={resetFilters}
-									style={{
-										cursor: "pointer",
-										display: "flex",
-										alignItems: "center",
-										backgroundColor: "#f5f5f5",
-										padding: "6px 12px",
-										borderRadius: "4px",
-										height: "48px",
+									}}
+									sx={{ marginBottom: { xs: "10px", md: "0" } }}
+								/>
+								{/* Class Dropdown */}
+								<TextField
+									select
+									size="small"
+									variant="outlined"
+									label="Class"
+									value={selectedClass}
+									onChange={(e) => setSelectedClass(e.target.value)}
+									sx={{
+										width: { xs: "calc(50% - 4px)", sm: "150px" },
+										minWidth: "120px",
+										"& .MuiSelect-select": {
+											color: "#2F4F4F",
+											fontWeight: "600",
+											padding: "12px 16px",
+										},
+										"& .MuiOutlinedInput-root": {
+											borderRadius: "8px",
+											backgroundColor: "#fff",
+										},
+										marginBottom: { xs: "8px", md: "0" },
 									}}
 								>
-									<RestartAltIcon color="action" />
+									<MenuItem value="">Class</MenuItem>
+									{CLASS_OPTIONS.map((option) => (
+										<MenuItem key={option} value={parseInt(option.replace("Class ", ""), 10)}>
+											{option}
+										</MenuItem>
+									))}
+								</TextField>
+
+								{/* Subject Dropdown */}
+								<TextField
+									select
+									size="small"
+									variant="outlined"
+									label="Subject"
+									value={selectedSubject}
+									onChange={(e) => setSelectedSubject(e.target.value)}
+									sx={{
+										width: { xs: "calc(50% - 4px)", sm: "150px" },
+										minWidth: "120px",
+										"& .MuiSelect-select": {
+											color: "#2F4F4F",
+											fontWeight: "600",
+											padding: "12px 16px",
+										},
+										"& .MuiOutlinedInput-root": {
+											borderRadius: "8px",
+											backgroundColor: "#fff",
+										},
+										marginBottom: { xs: "8px", md: "0" },
+									}}
+									SelectProps={{
+										MenuProps: {
+											PaperProps: {
+												sx: {
+													maxHeight: 200,
+													overflowY: "auto",
+													"&::-webkit-scrollbar": {
+														width: "5px",
+													},
+													"&::-webkit-scrollbar-thumb": {
+														backgroundColor: "#B0B0B0",
+														borderRadius: "5px",
+													},
+													"&::-webkit-scrollbar-track": {
+														backgroundColor: "#F0F0F0",
+													},
+												},
+											},
+										},
+									}}
+								>
+									<MenuItem value="">Subject</MenuItem>
+									{SUBJECT_OPTIONS.map((subject) => (
+										<MenuItem key={subject} value={subject}>
+											{subject}
+										</MenuItem>
+									))}
+								</TextField>
+
+								{/* Date Range Picker */}
+								<div
+									style={{
+										border: "1px solid lightgrey",
+										borderRadius: "7px",
+										height: "48px",
+									}}
+									className="w-full sm:w-auto min-w-[120px] mb-2 sm:mb-0"
+								>
+									<DatePicker
+										className="my-date-picker w-full"
+										selectsRange
+										startDate={startDate}
+										endDate={endDate}
+										onChange={(dates) => {
+											setDateRange(dates);
+										}}
+										placeholderText="Date Range"
+										dateFormat="dd/MM/YYYY"
+									/>
 								</div>
-							</Tooltip>
+
+								{/* Reset Button */}
+								<div className="flex justify-end sm:justify-start w-full sm:w-auto">
+									<Tooltip title="Reset Filters" placement="top">
+										<div
+											onClick={resetFilters}
+											style={{
+												cursor: "pointer",
+												display: "flex",
+												alignItems: "center",
+												backgroundColor: "#f5f5f5",
+												padding: "6px 12px",
+												borderRadius: "4px",
+												height: "48px",
+											}}
+										>
+											<RestartAltIcon color="action" />
+										</div>
+									</Tooltip>
+								</div>
+
+								<ButtonCustom
+									imageName={addSymbolBtn}
+									text={"Create Test"}
+									onClick={handleCreateTest}
+								/>
+							</div>
 						</div>
 					</div>
-
-					<ButtonCustom imageName={addSymbolBtn} text={"Create Test"} onClick={handleCreateTest} />
 				</div>
 
-				{/* Data Table */}
-				<div style={{ borderRadius: "8px" }} className="rounded-lg overflow-hidden border border-gray-200">
-					<MUIDataTable
-						data={tableData}
-						columns={columns.map((column) => ({
-							...column,
-							options: {
-								...column.options,
-								setCellProps: () => ({
-									style: {
-										textAlign: "center",
-									},
-								}),
-							},
-						}))}
-						options={options}
-						sx={{
-							"& .MuiPaper-root": {
-								boxShadow: "none",
-							},
-							"& .MuiTableCell-root": {
-								// textAlign: "center",
-								// border:"1px solid blue",
-								// textAlign: "left",
-							},
-						}}
-					/>
-				</div>
+				{/* Data Table (rest of the code remains the same) */}
 				<div
-					style={{
-						width: "max-content",
-						margin: "25px auto",
-					}}
+					style={{ borderRadius: "8px" }}
+					className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
 				>
+					<MUIDataTable data={tableData} columns={columns} options={options} />
+				</div>
+
+				{/* Pagination - centered */}
+				<div style={{ width: "max-content", margin: "25px auto" }}>
 					<Pagination
 						count={Math.ceil(totalRecords / pageSize)}
 						page={currentPage}

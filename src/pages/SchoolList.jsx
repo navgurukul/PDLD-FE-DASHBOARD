@@ -407,35 +407,30 @@ export default function SchoolList() {
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper" style={{ position: "relative" }}>
 				<div className="header-container">
-					<div>
-						<h5 className="text-lg font-bold text-[#2F4F4F]">School Management</h5>
-					</div>
+					<h5 className="text-lg font-bold text-[#2F4F4F]">School Management</h5>
 				</div>
 
 				<div className="school-list-container mt-1 bg-white rounded-lg">
-					{/* Search Bar */}
-					<div className="flex justify-between items-center mb-2">
-						
-					</div>
-
-					<div className="flex justify-between items-center mb-2">
+					<div className="flex justify-between items-center">
 						<div className="flex gap-2 my-[10px] mx-0">
-						<TextField
-							variant="outlined"
-							placeholder="Search by School name, UDISE, Cluster, Block Name..."
-							size="small"
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							InputProps={{
-								style: {
-									backgroundColor: "#fff",
-									borderRadius: "8px",
-									width: "480px",
-									height: "48px",
-								},
-								startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
-							}}
-						/>
+							<TextField
+								variant="outlined"
+								placeholder="Search by School name, UDISE, Cluster, Block Name..."
+								size="small"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								InputProps={{
+									style: {
+										backgroundColor: "#fff",
+										borderRadius: "8px",
+
+										height: "48px",
+										minWidth: "250px",
+										width: "385px",
+									},
+									startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
+								}}
+							/>
 							{/* Cluster Dropdown */}
 							<TextField
 								select

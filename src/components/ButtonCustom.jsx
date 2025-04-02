@@ -5,7 +5,7 @@ const ButtonCustom = ({ text, onClick, imageName, disabled, btnWidth }) => {
 	return (
 		<div className="flex justify-center" >
 			<button
-				className={`flex justify-center h-11 px-4 py-2 ${
+				className={`flex justify-center h-12 px-4 py-2 ${
 					disabled ? "bg-gray-300" : "bg-[#FFD700]"
 				} rounded-lg items-center gap-2 ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
 				style={buttonStyle} // Apply width using inline style
