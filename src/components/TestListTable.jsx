@@ -624,7 +624,7 @@ export default function TestListTable() {
 				</div>
 
 				{/* Data Table */}
-				<div style={{ borderRadius: "8px", marginTop: "10px" }} className="rounded-lg overflow-hidden border border-gray-200">
+				<div style={{ borderRadius: "8px" }} className="rounded-lg overflow-hidden border border-gray-200">
 					<MUIDataTable
 						data={tableData}
 						columns={columns.map((column) => ({
