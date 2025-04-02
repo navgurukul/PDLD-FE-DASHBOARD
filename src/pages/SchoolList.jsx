@@ -579,15 +579,6 @@ export default function SchoolList() {
 							data={tableData}
 							columns={columns}
 							options={options}
-							sx={{
-								"& .MuiPaper-root": {
-									boxShadow: "none",
-								},
-								"& .MuiTableCell-root": {
-									textAlign: "center",
-									border: "1px solid red",
-								},
-							}}
 						/>
 					</div>
 
