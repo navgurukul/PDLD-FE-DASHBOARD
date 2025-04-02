@@ -17,6 +17,9 @@ import apiInstance from "../../api";
 import { CLASS_OPTIONS, SUBJECT_OPTIONS, STATUS_LABELS } from "../data/testData";
 import ButtonCustom from "./ButtonCustom";
 import SpinnerPageOverlay from "./SpinnerPageOverlay";
+import { FormControl } from "@mui/material";
+import { Select } from "@mui/material";
+import { InputLabel } from "@mui/material";
 
 const theme = createTheme({
 	typography: {
@@ -480,60 +483,97 @@ export default function TestListTable() {
 									sx={{ marginBottom: { xs: "10px", md: "0" } }}
 								/>
 								{/* Class Dropdown */}
-								<TextField
-									select
-									size="small"
-									variant="outlined"
-									label="Class"
-									value={selectedClass}
-									onChange={(e) => setSelectedClass(e.target.value)}
+								<FormControl
 									sx={{
+										height: "48px",
+										display: "flex",
+										width: "150px",
+									}}
+								>
+									<InputLabel
+										id="class-select-label"
+										sx={{
+											transform: "translate(14px, 14px) scale(1)",
+											"&.Mui-focused, &.MuiFormLabel-filled": {
+												transform: "translate(14px, -9px) scale(0.75)",
+											},
+										}}
+									>
+										Class
+									</InputLabel>
+									<Select
+										labelId="class-select-label"
+										id="class-select"
+										value={selectedClass}
+										label="Class"
+										onChange={(e) => setSelectedClass(e.target.value)}
+										sx={{
+											height: "100%",
+											borderRadius: "8px",
+											"& .MuiOutlinedInput-notchedOutline": {
+												borderRadius: "8px",
+											},
+											"& .MuiSelect-select": {
+												paddingTop: "12px",
+												paddingBottom: "12px",
+												display: "flex",
+												alignItems: "center",
+											},
+										}}
+									>
+										<MenuItem value="">Class</MenuItem>
+										{CLASS_OPTIONS.map((option) => (
+											<MenuItem key={option} value={parseInt(option.replace("Class ", ""), 10)}>
+												{option}
+											</MenuItem>
+										))}
+									</Select>
+								</FormControl>
+
+								{/* Subject Dropdown */}
+								<FormControl
+									sx={{
+										height: "48px",
+										display: "flex",
 										width: { xs: "calc(50% - 4px)", sm: "150px" },
 										minWidth: "120px",
-										"& .MuiSelect-select": {
-											color: "#2F4F4F",
-											fontWeight: "600",
-											padding: "12px 16px",
-										},
-										"& .MuiOutlinedInput-root": {
-											borderRadius: "8px",
-											backgroundColor: "#fff",
-										},
 										marginBottom: { xs: "8px", md: "0" },
 									}}
 								>
-									<MenuItem value="">Class</MenuItem>
-									{CLASS_OPTIONS.map((option) => (
-										<MenuItem key={option} value={parseInt(option.replace("Class ", ""), 10)}>
-											{option}
-										</MenuItem>
-									))}
-								</TextField>
-
-								{/* Subject Dropdown */}
-								<TextField
-									select
-									size="small"
-									variant="outlined"
-									label="Subject"
-									value={selectedSubject}
-									onChange={(e) => setSelectedSubject(e.target.value)}
-									sx={{
-										width: { xs: "calc(50% - 4px)", sm: "150px" },
-										minWidth: "120px",
-										"& .MuiSelect-select": {
-											color: "#2F4F4F",
-											fontWeight: "600",
-											padding: "12px 16px",
-										},
-										"& .MuiOutlinedInput-root": {
+									<InputLabel
+										id="subject-select-label"
+										sx={{
+											transform: "translate(14px, 14px) scale(1)",
+											"&.Mui-focused, &.MuiFormLabel-filled": {
+												transform: "translate(14px, -9px) scale(0.75)",
+											},
+										}}
+									>
+										Subject
+									</InputLabel>
+									<Select
+										labelId="subject-select-label"
+										id="subject-select"
+										value={selectedSubject}
+										label="Subject"
+										onChange={(e) => setSelectedSubject(e.target.value)}
+										sx={{
+											height: "100%",
 											borderRadius: "8px",
 											backgroundColor: "#fff",
-										},
-										marginBottom: { xs: "8px", md: "0" },
-									}}
-									SelectProps={{
-										MenuProps: {
+											"& .MuiOutlinedInput-notchedOutline": {
+												borderRadius: "8px",
+											},
+											"& .MuiSelect-select": {
+												paddingTop: "12px",
+												paddingBottom: "12px",
+												display: "flex",
+												alignItems: "center",
+												color: "#2F4F4F",
+												fontWeight: "600",
+											},
+										}}
+										MenuProps={{
 											PaperProps: {
 												sx: {
 													maxHeight: 200,
@@ -550,16 +590,16 @@ export default function TestListTable() {
 													},
 												},
 											},
-										},
-									}}
-								>
-									<MenuItem value="">Subject</MenuItem>
-									{SUBJECT_OPTIONS.map((subject) => (
-										<MenuItem key={subject} value={subject}>
-											{subject}
-										</MenuItem>
-									))}
-								</TextField>
+										}}
+									>
+										<MenuItem value="">All Subjects</MenuItem>
+										{SUBJECT_OPTIONS.map((subject) => (
+											<MenuItem key={subject} value={subject}>
+												{subject}
+											</MenuItem>
+										))}
+									</Select>
+								</FormControl>
 
 								{/* Date Range Picker */}
 								<div

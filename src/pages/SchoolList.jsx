@@ -19,6 +19,9 @@ import apiInstance from "../../api";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { MenuItem } from "@mui/material";
 import { useLocation } from "react-router-dom";
+import { FormControl } from "@mui/material";
+import { Select } from "@mui/material";
+import { InputLabel } from "@mui/material";
 
 const theme = createTheme({
 	typography: {
@@ -414,7 +417,7 @@ export default function SchoolList() {
 								<div className="flex w-full flex-wrap gap-2">
 									<TextField
 										variant="outlined"
-										placeholder="Search by School name, UDISE, Cluster, Block Name..."
+										placeholder="Search by School name, UDISE, Block Name.."
 										size="small"
 										value={searchQuery}
 										onChange={(e) => setSearchQuery(e.target.value)}
@@ -426,7 +429,6 @@ export default function SchoolList() {
 												minWidth: "150px",
 												width: "385px",
 											},
-											startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
 										}}
 										sx={{
 											width: { xs: "100%", md: "385px" },
@@ -435,29 +437,49 @@ export default function SchoolList() {
 									/>
 
 									{/* Cluster Dropdown */}
-									<TextField
-										select
-										size="small"
-										variant="outlined"
-										label="Cluster"
-										value={selectedCluster}
-										onChange={(e) => setSelectedCluster(e.target.value)}
+									<FormControl
 										sx={{
+											height: "48px",
+											display: "flex",
 											width: { xs: "calc(50% - 4px)", md: "150px" },
 											minWidth: "100px",
-											"& .MuiSelect-select": {
-												color: "#2F4F4F",
-												fontWeight: "600",
-												padding: "12px 16px",
-											},
-											"& .MuiOutlinedInput-root": {
-												borderRadius: "8px",
-												backgroundColor: "#fff",
-											},
 											marginBottom: { xs: "8px", md: "0" },
 										}}
-										SelectProps={{
-											MenuProps: {
+									>
+										<InputLabel
+											id="cluster-select-label"
+											sx={{
+												transform: "translate(14px, 14px) scale(1)",
+												"&.Mui-focused, &.MuiFormLabel-filled": {
+													transform: "translate(14px, -9px) scale(0.75)",
+												},
+											}}
+										>
+											Cluster
+										</InputLabel>
+										<Select
+											labelId="cluster-select-label"
+											id="cluster-select"
+											value={selectedCluster}
+											label="Cluster"
+											onChange={(e) => setSelectedCluster(e.target.value)}
+											sx={{
+												height: "100%",
+												borderRadius: "8px",
+												backgroundColor: "#fff",
+												"& .MuiOutlinedInput-notchedOutline": {
+													borderRadius: "8px",
+												},
+												"& .MuiSelect-select": {
+													paddingTop: "12px",
+													paddingBottom: "12px",
+													display: "flex",
+													alignItems: "center",
+													color: "#2F4F4F",
+													fontWeight: "600",
+												},
+											}}
+											MenuProps={{
 												PaperProps: {
 													sx: {
 														maxHeight: 200,
@@ -474,41 +496,61 @@ export default function SchoolList() {
 														},
 													},
 												},
-											},
-										}}
-									>
-										<MenuItem value="">All Clusters</MenuItem>
-										{clusters.map((cluster) => (
-											<MenuItem key={cluster} value={cluster}>
-												{capitalizeFirstLetter(cluster)}
-											</MenuItem>
-										))}
-									</TextField>
+											}}
+										>
+											<MenuItem value="">All Clusters</MenuItem>
+											{clusters.map((cluster) => (
+												<MenuItem key={cluster} value={cluster}>
+													{capitalizeFirstLetter(cluster)}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
 
 									{/* Block Dropdown */}
-									<TextField
-										select
-										size="small"
-										variant="outlined"
-										label="Block"
-										value={selectedBlock}
-										onChange={(e) => setSelectedBlock(e.target.value)}
+									<FormControl
 										sx={{
+											height: "48px",
+											display: "flex",
 											width: { xs: "calc(50% - 4px)", md: "150px" },
 											minWidth: "100px",
-											"& .MuiSelect-select": {
-												color: "#2F4F4F",
-												fontWeight: "600",
-												padding: "12px 16px",
-											},
-											"& .MuiOutlinedInput-root": {
-												borderRadius: "8px",
-												backgroundColor: "#fff",
-											},
 											marginBottom: { xs: "8px", md: "0" },
 										}}
-										SelectProps={{
-											MenuProps: {
+									>
+										<InputLabel
+											id="block-select-label"
+											sx={{
+												transform: "translate(14px, 14px) scale(1)",
+												"&.Mui-focused, &.MuiFormLabel-filled": {
+													transform: "translate(14px, -9px) scale(0.75)",
+												},
+											}}
+										>
+											Block
+										</InputLabel>
+										<Select
+											labelId="block-select-label"
+											id="block-select"
+											value={selectedBlock}
+											label="Block"
+											onChange={(e) => setSelectedBlock(e.target.value)}
+											sx={{
+												height: "100%",
+												borderRadius: "8px",
+												backgroundColor: "#fff",
+												"& .MuiOutlinedInput-notchedOutline": {
+													borderRadius: "8px",
+												},
+												"& .MuiSelect-select": {
+													paddingTop: "12px",
+													paddingBottom: "12px",
+													display: "flex",
+													alignItems: "center",
+													color: "#2F4F4F",
+													fontWeight: "600",
+												},
+											}}
+											MenuProps={{
 												PaperProps: {
 													sx: {
 														maxHeight: 200,
@@ -525,16 +567,16 @@ export default function SchoolList() {
 														},
 													},
 												},
-											},
-										}}
-									>
-										<MenuItem value="">All Blocks</MenuItem>
-										{blocks.map((block) => (
-											<MenuItem key={block} value={block}>
-												{capitalizeFirstLetter(block)}
-											</MenuItem>
-										))}
-									</TextField>
+											}}
+										>
+											<MenuItem value="">All Blocks</MenuItem>
+											{blocks.map((block) => (
+												<MenuItem key={block} value={block}>
+													{capitalizeFirstLetter(block)}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
 
 									{/* Reset Button */}
 									<div className="flex justify-start w-full sm:w-auto mr-13">
