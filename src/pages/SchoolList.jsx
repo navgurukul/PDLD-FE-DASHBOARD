@@ -423,7 +423,7 @@ export default function SchoolList() {
 												backgroundColor: "#fff",
 												borderRadius: "8px",
 												height: "48px",
-												minWidth: "250px",
+												minWidth: "150px",
 												width: "385px",
 											},
 											startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
@@ -444,7 +444,7 @@ export default function SchoolList() {
 										onChange={(e) => setSelectedCluster(e.target.value)}
 										sx={{
 											width: { xs: "calc(50% - 4px)", md: "150px" },
-											minWidth: "120px",
+											minWidth: "100px",
 											"& .MuiSelect-select": {
 												color: "#2F4F4F",
 												fontWeight: "600",
@@ -495,7 +495,7 @@ export default function SchoolList() {
 										onChange={(e) => setSelectedBlock(e.target.value)}
 										sx={{
 											width: { xs: "calc(50% - 4px)", md: "150px" },
-											minWidth: "120px",
+											minWidth: "100px",
 											"& .MuiSelect-select": {
 												color: "#2F4F4F",
 												fontWeight: "600",
@@ -537,7 +537,7 @@ export default function SchoolList() {
 									</TextField>
 
 									{/* Reset Button */}
-									<div className="flex justify-start w-full sm:w-auto">
+									<div className="flex justify-start w-full sm:w-auto mr-13">
 										<Tooltip title="Reset Filters" placement="top">
 											<div
 												onClick={resetFilters}
@@ -555,31 +555,33 @@ export default function SchoolList() {
 											</div>
 										</Tooltip>
 									</div>
+
+									<ButtonCustom
+										imageName={addSymbolBtn}
+										text={"Add School"}
+										onClick={handleAddSchool}
+									/>
+									<Button
+										variant="outlined"
+										sx={{
+											borderColor: "#2F4F4F",
+											color: "#2F4F4F",
+											borderRadius: "8px",
+											textTransform: "none",
+											fontSize: "18px",
+											"&:hover": {
+												borderColor: "#1E3535",
+												backgroundColor: "rgba(47, 79, 79, 0.1)",
+											},
+											width: { xs: "100%", sm: "auto" },
+										}}
+										onClick={handleBulkUpload}
+									>
+										<UploadFileIcon sx={{ mr: 1 }} />
+										Bulk Upload
+									</Button>
 								</div>
 							</div>
-						</div>
-
-						<div className="flex flex-col sm:flex-row gap-3 mt-4 lg:mt-0">
-							<ButtonCustom imageName={addSymbolBtn} text={"Add School"} onClick={handleAddSchool} />
-							<Button
-								variant="outlined"
-								sx={{
-									borderColor: "#2F4F4F",
-									color: "#2F4F4F",
-									borderRadius: "8px",
-									textTransform: "none",
-									fontSize: "18px",
-									"&:hover": {
-										borderColor: "#1E3535",
-										backgroundColor: "rgba(47, 79, 79, 0.1)",
-									},
-									width: { xs: "100%", sm: "auto" },
-								}}
-								onClick={handleBulkUpload}
-							>
-								<UploadFileIcon sx={{ mr: 1 }} />
-								Bulk Upload
-							</Button>
 						</div>
 					</div>
 
