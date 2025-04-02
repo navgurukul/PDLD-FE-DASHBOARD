@@ -311,7 +311,7 @@ export default function SchoolList() {
 									handleCopy(`UDISE: ${udiseCode}, Password: ${value}`, "UDISE and Password")
 								}
 							>
-								<ContentCopyIcon style={{ fontSize: "18px", color: "#1976d2" }} />
+								<ContentCopyIcon style={{ fontSize: "18px", color: "#2F4F4F" }} />
 							</Button>
 						</div>
 					);
