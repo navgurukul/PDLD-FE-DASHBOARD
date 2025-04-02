@@ -150,6 +150,12 @@ export default function SchoolList() {
 		setCurrentPage(1);
 	};
 
+	// Function to capitalize only the first letter and make rest lowercase
+	const capitalizeFirstLetter = (string) => {
+		if (!string) return "";
+		return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+	};
+
 	// Filter schools based on all criteria
 	const filteredSchools = schools.filter((school) => {
 		// Search query filter
@@ -230,12 +236,12 @@ export default function SchoolList() {
 
 	const tableData = filteredSchools.map((school) => ({
 		id: school.id,
-		schoolName: school.schoolName,
+		schoolName: capitalizeFirstLetter(school.schoolName),
 		udiseCode: school.udiseCode,
-		cluster: school.clusterName,
-		block: school.blockName,
+		cluster: capitalizeFirstLetter(school.clusterName),
+		block: capitalizeFirstLetter(school.blockName),
 		username: generateUsername(school.schoolName), // Generate username from school name
-		password: school.passwordHash,
+		password: school.passwordHash, // Keep password as is
 		actions: "Actions",
 		schoolObj: school, // Pass the entire school object for the delete modal
 	}));
@@ -250,7 +256,20 @@ export default function SchoolList() {
 		{
 			name: "schoolName",
 			label: "School Name",
-			options: { filter: false, sort: true },
+			options: {
+				filter: false,
+				sort: true,
+				setCellProps: () => ({
+					style: {
+						minWidth: "300px",
+						maxWidth: "300px",
+						overflow: "hidden",
+						// textOverflow: "ellipsis",
+						// whiteSpace: "nowrap",
+						// paddingLeft: "16px",
+					},
+				}),
+			},
 		},
 		{
 			name: "udiseCode",
@@ -267,24 +286,6 @@ export default function SchoolList() {
 			label: "Cluster",
 			options: { filter: false, sort: true },
 		},
-		// {
-		//   name: "username",
-		//   label: "Username",
-		//   options: { filter: false, sort: true },
-		//   customBodyRender: (value) => (
-		//     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-		//       <span>{value}</span>
-		//       <Button
-		//         variant="text"
-		//         size="small"
-		//         sx={{ minWidth: "30px", marginLeft: "5px" }}
-		//         onClick={() => handleCopy(value, "Username")}
-		//       >
-		//         <ContentCopyIcon style={{ fontSize: "18px", color: "#1976d2" }} />
-		//       </Button>
-		//     </div>
-		//   ),
-		// },
 		{
 			name: "password",
 			label: "Password",
@@ -478,7 +479,7 @@ export default function SchoolList() {
 								<MenuItem value="">All Clusters</MenuItem>
 								{clusters.map((cluster) => (
 									<MenuItem key={cluster} value={cluster}>
-										{cluster}
+										{capitalizeFirstLetter(cluster)}
 									</MenuItem>
 								))}
 							</TextField>
@@ -527,7 +528,7 @@ export default function SchoolList() {
 								<MenuItem value="">All Blocks</MenuItem>
 								{blocks.map((block) => (
 									<MenuItem key={block} value={block}>
-										{block}
+										{capitalizeFirstLetter(block)}
 									</MenuItem>
 								))}
 							</TextField>
@@ -580,17 +581,7 @@ export default function SchoolList() {
 					>
 						<MUIDataTable
 							data={tableData}
-							columns={columns.map((column) => ({
-								...column,
-								options: {
-									...column.options,
-									setCellProps: () => ({
-										style: {
-											paddingLeft: "16px",
-										},
-									}),
-								},
-							}))}
+							columns={columns}
 							options={options}
 							sx={{
 								"& .MuiPaper-root": {
