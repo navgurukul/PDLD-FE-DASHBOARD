@@ -22,8 +22,8 @@ export const AuthContext = createContext(null);
 function App() {
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
 	const [user, setUser] = useState(null);
+	const [authChecked, setAuthChecked] = useState(false);
 
-	// Check if user is already logged in on component mount
 	useEffect(() => {
 		const token = localStorage.getItem("authToken");
 		const userData = localStorage.getItem("userData");
@@ -34,6 +34,7 @@ function App() {
 				setUser(JSON.parse(userData));
 			}
 		}
+		setAuthChecked(true); // Mark auth check as complete
 	}, []);
 
 	// Login function to be passed to login form
@@ -58,6 +59,10 @@ function App() {
 		}
 		return children;
 	};
+
+	if (!authChecked) {
+		return null; // or a loading spinner
+	}
 
 	return (
 		<AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
@@ -101,7 +106,12 @@ function App() {
 					</Route>
 
 					{/* Redirect to login if trying to access any other route without authentication */}
-					<Route path="*" element={<Navigate to="/login" replace />} />
+					<Route
+						path="*"
+						element={
+							isAuthenticated ? <Navigate to="/allTest" replace /> : <Navigate to="/login" replace />
+						}
+					/>
 				</Routes>
 			</Router>
 		</AuthContext.Provider>
