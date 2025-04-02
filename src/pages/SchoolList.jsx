@@ -264,9 +264,6 @@ export default function SchoolList() {
 						minWidth: "300px",
 						maxWidth: "300px",
 						overflow: "hidden",
-						// textOverflow: "ellipsis",
-						// whiteSpace: "nowrap",
-						// paddingLeft: "16px",
 					},
 				}),
 			},
@@ -405,149 +402,164 @@ export default function SchoolList() {
 	// Default view - List of schools
 	return (
 		<ThemeProvider theme={theme}>
-			<div className="main-page-wrapper" style={{ position: "relative" }}>
+			<div className="main-page-wrapper px-3 sm:px-4" style={{ position: "relative" }}>
 				<div className="header-container">
 					<h5 className="text-lg font-bold text-[#2F4F4F]">School Management</h5>
 				</div>
 
 				<div className="school-list-container mt-1 bg-white rounded-lg">
-					<div className="flex justify-between items-center">
-						<div className="flex gap-2 my-[10px] mx-0">
-							<TextField
-								variant="outlined"
-								placeholder="Search by School name, UDISE, Cluster, Block Name..."
-								size="small"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								InputProps={{
-									style: {
-										backgroundColor: "#fff",
-										borderRadius: "8px",
+					<div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4">
+						<div className="w-full lg:flex-1">
+							<div className="flex flex-col md:flex-row md:flex-wrap gap-2 my-[10px] mx-0">
+								<div className="flex w-full flex-wrap gap-2">
+									<TextField
+										variant="outlined"
+										placeholder="Search by School name, UDISE, Cluster, Block Name..."
+										size="small"
+										value={searchQuery}
+										onChange={(e) => setSearchQuery(e.target.value)}
+										InputProps={{
+											style: {
+												backgroundColor: "#fff",
+												borderRadius: "8px",
+												height: "48px",
+												minWidth: "250px",
+												width: "385px",
+											},
+											startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
+										}}
+										sx={{
+											width: { xs: "100%", md: "385px" },
+											marginBottom: { xs: "8px", md: "0" },
+										}}
+									/>
 
-										height: "48px",
-										minWidth: "250px",
-										width: "385px",
-									},
-									startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
-								}}
-							/>
-							{/* Cluster Dropdown */}
-							<TextField
-								select
-								size="small"
-								variant="outlined"
-								label="Cluster"
-								value={selectedCluster}
-								onChange={(e) => setSelectedCluster(e.target.value)}
-								sx={{
-									width: 150,
-									"& .MuiSelect-select": {
-										color: "#2F4F4F",
-										fontWeight: "600",
-										padding: "12px 16px",
-									},
-									"& .MuiOutlinedInput-root": {
-										borderRadius: "8px",
-										backgroundColor: "#fff",
-									},
-								}}
-								SelectProps={{
-									MenuProps: {
-										PaperProps: {
-											sx: {
-												maxHeight: 200,
-												overflowY: "auto",
-												"&::-webkit-scrollbar": {
-													width: "5px",
-												},
-												"&::-webkit-scrollbar-thumb": {
-													backgroundColor: "#B0B0B0",
-													borderRadius: "5px",
-												},
-												"&::-webkit-scrollbar-track": {
-													backgroundColor: "#F0F0F0",
+									{/* Cluster Dropdown */}
+									<TextField
+										select
+										size="small"
+										variant="outlined"
+										label="Cluster"
+										value={selectedCluster}
+										onChange={(e) => setSelectedCluster(e.target.value)}
+										sx={{
+											width: { xs: "calc(50% - 4px)", md: "150px" },
+											minWidth: "120px",
+											"& .MuiSelect-select": {
+												color: "#2F4F4F",
+												fontWeight: "600",
+												padding: "12px 16px",
+											},
+											"& .MuiOutlinedInput-root": {
+												borderRadius: "8px",
+												backgroundColor: "#fff",
+											},
+											marginBottom: { xs: "8px", md: "0" },
+										}}
+										SelectProps={{
+											MenuProps: {
+												PaperProps: {
+													sx: {
+														maxHeight: 200,
+														overflowY: "auto",
+														"&::-webkit-scrollbar": {
+															width: "5px",
+														},
+														"&::-webkit-scrollbar-thumb": {
+															backgroundColor: "#B0B0B0",
+															borderRadius: "5px",
+														},
+														"&::-webkit-scrollbar-track": {
+															backgroundColor: "#F0F0F0",
+														},
+													},
 												},
 											},
-										},
-									},
-								}}
-							>
-								<MenuItem value="">All Clusters</MenuItem>
-								{clusters.map((cluster) => (
-									<MenuItem key={cluster} value={cluster}>
-										{capitalizeFirstLetter(cluster)}
-									</MenuItem>
-								))}
-							</TextField>
+										}}
+									>
+										<MenuItem value="">All Clusters</MenuItem>
+										{clusters.map((cluster) => (
+											<MenuItem key={cluster} value={cluster}>
+												{capitalizeFirstLetter(cluster)}
+											</MenuItem>
+										))}
+									</TextField>
 
-							{/* Block Dropdown */}
-							<TextField
-								select
-								size="small"
-								variant="outlined"
-								label="Block"
-								value={selectedBlock}
-								onChange={(e) => setSelectedBlock(e.target.value)}
-								sx={{
-									width: 150,
-									"& .MuiSelect-select": {
-										color: "#2F4F4F",
-										fontWeight: "600",
-										padding: "12px 16px",
-									},
-									"& .MuiOutlinedInput-root": {
-										borderRadius: "8px",
-										backgroundColor: "#fff",
-									},
-								}}
-								SelectProps={{
-									MenuProps: {
-										PaperProps: {
-											sx: {
-												maxHeight: 200,
-												overflowY: "auto",
-												"&::-webkit-scrollbar": {
-													width: "5px",
-												},
-												"&::-webkit-scrollbar-thumb": {
-													backgroundColor: "#B0B0B0",
-													borderRadius: "5px",
-												},
-												"&::-webkit-scrollbar-track": {
-													backgroundColor: "#F0F0F0",
+									{/* Block Dropdown */}
+									<TextField
+										select
+										size="small"
+										variant="outlined"
+										label="Block"
+										value={selectedBlock}
+										onChange={(e) => setSelectedBlock(e.target.value)}
+										sx={{
+											width: { xs: "calc(50% - 4px)", md: "150px" },
+											minWidth: "120px",
+											"& .MuiSelect-select": {
+												color: "#2F4F4F",
+												fontWeight: "600",
+												padding: "12px 16px",
+											},
+											"& .MuiOutlinedInput-root": {
+												borderRadius: "8px",
+												backgroundColor: "#fff",
+											},
+											marginBottom: { xs: "8px", md: "0" },
+										}}
+										SelectProps={{
+											MenuProps: {
+												PaperProps: {
+													sx: {
+														maxHeight: 200,
+														overflowY: "auto",
+														"&::-webkit-scrollbar": {
+															width: "5px",
+														},
+														"&::-webkit-scrollbar-thumb": {
+															backgroundColor: "#B0B0B0",
+															borderRadius: "5px",
+														},
+														"&::-webkit-scrollbar-track": {
+															backgroundColor: "#F0F0F0",
+														},
+													},
 												},
 											},
-										},
-									},
-								}}
-							>
-								<MenuItem value="">All Blocks</MenuItem>
-								{blocks.map((block) => (
-									<MenuItem key={block} value={block}>
-										{capitalizeFirstLetter(block)}
-									</MenuItem>
-								))}
-							</TextField>
+										}}
+									>
+										<MenuItem value="">All Blocks</MenuItem>
+										{blocks.map((block) => (
+											<MenuItem key={block} value={block}>
+												{capitalizeFirstLetter(block)}
+											</MenuItem>
+										))}
+									</TextField>
 
-							<Tooltip title="Reset Filters" placement="top">
-								<div
-									onClick={resetFilters}
-									style={{
-										cursor: "pointer",
-										display: "flex",
-										alignItems: "center",
-										backgroundColor: "#f5f5f5",
-										padding: "6px 12px",
-										borderRadius: "4px",
-										height: "48px",
-									}}
-								>
-									<RestartAltIcon color="action" />
+									{/* Reset Button */}
+									<div className="flex justify-start w-full sm:w-auto">
+										<Tooltip title="Reset Filters" placement="top">
+											<div
+												onClick={resetFilters}
+												style={{
+													cursor: "pointer",
+													display: "flex",
+													alignItems: "center",
+													backgroundColor: "#f5f5f5",
+													padding: "6px 12px",
+													borderRadius: "4px",
+													height: "48px",
+												}}
+											>
+												<RestartAltIcon color="action" />
+											</div>
+										</Tooltip>
+									</div>
 								</div>
-							</Tooltip>
+							</div>
 						</div>
 
-						<div className="flex gap-3">
+						<div className="flex flex-col sm:flex-row gap-3 mt-4 lg:mt-0">
 							<ButtonCustom imageName={addSymbolBtn} text={"Add School"} onClick={handleAddSchool} />
 							<Button
 								variant="outlined"
@@ -561,6 +573,7 @@ export default function SchoolList() {
 										borderColor: "#1E3535",
 										backgroundColor: "rgba(47, 79, 79, 0.1)",
 									},
+									width: { xs: "100%", sm: "auto" },
 								}}
 								onClick={handleBulkUpload}
 							>
@@ -573,13 +586,9 @@ export default function SchoolList() {
 					{/* Data Table */}
 					<div
 						style={{ borderRadius: "8px", position: "relative", minHeight: "300px" }}
-						className="rounded-lg overflow-hidden border border-gray-200"
+						className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
 					>
-						<MUIDataTable
-							data={tableData}
-							columns={columns}
-							options={options}
-						/>
+						<MUIDataTable data={tableData} columns={columns} options={options} />
 					</div>
 
 					<div
