@@ -234,30 +234,32 @@ export default function BulkUploadSchools() {
 	return (
 		<ThemeProvider theme={theme}>
 			<Box sx={{ p: 2, maxWidth: "800px", margin: "0 auto" }}>
-				<div className="flex justify-between">
-					<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
-					<Button
-						variant="outlined"
-						startIcon={<GetAppIcon />}
-						onClick={downloadSampleCSV}
-						sx={{
-							color: "#2F4F4F",
-							borderRadius: "8px",
-							border: "1px solid #2F4F4F",
-							height: "44px",
-							"&:hover": {
-								backgroundColor: "#2F4F4F",
-								color: "white",
-							},
-						}}
-					>
-						Sample csv
-					</Button>
-				</div>
+				<div style={{padding:"0px 20px"}} >
+					<div className="flex justify-between">
+						<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
+						<Button
+							variant="outlined"
+							startIcon={<GetAppIcon />}
+							onClick={downloadSampleCSV}
+							sx={{
+								color: "#2F4F4F",
+								borderRadius: "8px",
+								border: "1px solid #2F4F4F",
+								height: "44px",
+								"&:hover": {
+									backgroundColor: "#2F4F4F",
+									color: "white",
+								},
+							}}
+						>
+							Sample csv
+						</Button>
+					</div>
 
-				<Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
-					Upload a CSV file with multiple schools to add them at once
-				</Typography>
+					<Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
+						Upload a CSV file with multiple schools to add them at once
+					</Typography>
+				</div>
 
 				<Box sx={{ p: 2 }}>
 					<Box

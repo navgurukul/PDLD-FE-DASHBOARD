@@ -760,7 +760,7 @@ const Reports = () => {
 			<div className="max-w-7xl mx-auto">
 				{/* Header with dark mode toggle and view mode selection */}
 				<div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-					<h1 className="text-2xl font-bold">School Performance Analytics</h1>
+					<h5 className="text-lg font-bold text-[#2F4F4F]">School Performance Analytics</h5>
 
 					<div className="flex gap-4">
 						{/* <div className="flex rounded-md overflow-hidden">
