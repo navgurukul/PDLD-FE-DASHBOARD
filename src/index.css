@@ -1,52 +1,49 @@
 @import url("https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
 
-@import url('https://fonts.googleapis.com/css2?family=Philosopher:ital,wght@0,200..800;1,200..800&family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
- 
-@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Philosopher:ital,wght@0,200..800;1,200..800&family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
 
+@import url("https://fonts.googleapis.com/css2?family=Work+Sans:wght@100..900&display=swap");
 
-html{
-  overflow-y: hidden;
+html {
+	overflow-y: hidden;
 }
 
-button{
-  cursor: pointer;
+button {
+	cursor: pointer;
 }
 
 .Toastify__toast {
-  font-family: 'Karla', sans-serif !important;
+	font-family: "Karla", sans-serif !important;
 	font-size: 16px;
 }
 
 body {
-  padding: 0;
-  margin: 0;
-  /* height: calc(100vh - 40px); */
-  box-sizing: border-box;
-  font-family: 'Karla', sans-serif; 
+	padding: 0;
+	margin: 0;
+	/* height: calc(100vh - 40px); */
+	box-sizing: border-box;
+	font-family: "Karla", sans-serif;
 }
 
-
-
-.main-page-wrapper{
-  padding: 0px 80px 48px 80px;
-  /* margin-top: 75px;   */
+.main-page-wrapper {
+	padding: 0px 80px 48px 80px;
+	/* margin-top: 75px;   */
 }
 
 h5 {
-    color: var(--Text-Primary, #2F4F4F);
-    font-family: "Philosopher";
-    font-size: 32px;
-    font-style: normal;
-    font-weight: 700;
-    line-height: 150%;
-  }
+	color: var(--Text-Primary, #2f4f4f);
+	font-family: "Philosopher";
+	font-size: 32px;
+	font-style: normal;
+	font-weight: 700;
+	line-height: 150%;
+}
 
-  h6 {
-    color: var(--Text-Primary, #2F4F4F);
-    font-family: "Philosopher"; 
-    font-style: normal;
-    font-weight: 700;
-    line-height: 150%; 
-    font-size: 24px; 
-  }
+h6 {
+	color: var(--Text-Primary, #2f4f4f);
+	font-family: "Philosopher";
+	font-style: normal;
+	font-weight: 700;
+	line-height: 150%;
+	font-size: 24px;
+}
