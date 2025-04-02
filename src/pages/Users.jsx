@@ -198,7 +198,7 @@ export default function Users() {
 			month: "short",
 			year: "numeric",
 		}),
-		schoolsMapped: `${getSchoolCount(user)} Schools`,
+		schoolsMapped: `${user.role == ('DISTRICT_OFFICER' || 'district_officer') ? 'All' : getSchoolCount(user)} Schools`,
 		password: user.password || "default123",
 		status: user.isActive ? "Active" : "Inactive",
 		actions: "Manage User",

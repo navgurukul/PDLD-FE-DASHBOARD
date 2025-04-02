@@ -107,18 +107,26 @@ export default function TestListTable() {
 			}
 
 			// Build your URL with all applicable filters, including status
-			let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&page=${currentPage}&pageSize=${pageSize}`;
+			// let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&page=${currentPage}&pageSize=${pageSize}`;
+			let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
 
+			if(!selectedClass && !selectedSubject && !selectedStatus){
+				url += `&page=${currentPage}`;
+			}
+			
 			if (selectedClass) {
 				url += `&testClass=${selectedClass}`;
+				url += `&page=1`;
 			}
 			if (selectedSubject) {
 				url += `&subject=${selectedSubject}`;
+				url += `&page=1`;
 			}
 			if (selectedStatus) {
 				url += `&testStatus=${selectedStatus}`;
+				url += `&page=1`;
 			}
-
+			
 			const response = await apiInstance.get(url);
 			if (response.data && response.data.data) {
 				setTests(response.data.data.data);
@@ -446,7 +454,12 @@ export default function TestListTable() {
 			<div className="main-page-wrapper">
 				<h5 className="text-lg font-bold text-[#2F4F4F]">All Tests</h5>
 				{/* Search Bar */}
-				<TextField
+
+
+				{/* Filters */}
+				<div className="flex justify-between items-center">
+					<div className="flex gap-2 my-[10px] mx-0">
+					<TextField
 					variant="outlined"
 					placeholder="Search by Test Name"
 					size="small"
@@ -462,10 +475,6 @@ export default function TestListTable() {
 					}}
 					sx={{ marginBottom: "10px" }}
 				/>
-
-				{/* Filters */}
-				<div className="flex justify-between items-center">
-					<div className="flex gap-2 my-[10px] mx-0">
 						{/* Class Dropdown */}
 						<TextField
 							select
@@ -575,7 +584,7 @@ export default function TestListTable() {
 
 						{/* Date Range Dropdown (placeholder) */}
 
-						<div style={{ border: "1px solid lightgrey", borderRadius: "7px" }}>
+						<div style={{ border: "1px solid lightgrey", borderRadius: "7px", height: "48px" }}>
 							<DatePicker
 								className="my-date-picker"
 								selectsRange
@@ -587,7 +596,7 @@ export default function TestListTable() {
 								}}
 								placeholderText="Date Range"
 								dateFormat="dd/MM/YYYY "
-								style={{ width: "220px" }}
+								style={{ width: "220px"}}
 							/>
 						</div>
 

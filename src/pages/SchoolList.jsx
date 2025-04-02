@@ -415,6 +415,11 @@ export default function SchoolList() {
 				<div className="school-list-container mt-1 bg-white rounded-lg">
 					{/* Search Bar */}
 					<div className="flex justify-between items-center mb-2">
+						
+					</div>
+
+					<div className="flex justify-between items-center mb-2">
+						<div className="flex gap-2 my-[10px] mx-0">
 						<TextField
 							variant="outlined"
 							placeholder="Search by School name, UDISE, Cluster, Block Name..."
@@ -431,10 +436,6 @@ export default function SchoolList() {
 								startAdornment: <SearchIcon sx={{ mr: 1, color: "#757575" }} />,
 							}}
 						/>
-					</div>
-
-					<div className="flex justify-between items-center mb-2">
-						<div className="flex gap-2 my-[10px] mx-0">
 							{/* Cluster Dropdown */}
 							<TextField
 								select
