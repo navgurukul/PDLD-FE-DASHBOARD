@@ -754,6 +754,8 @@ export default function BulkUploadSchools() {
                   mb: 3,
                   display: "flex",
                   alignItems: "center",
+				  justifyContent: "center", 
+				  width: "100%"
                 }}
               >
                 <Box textAlign="center">
@@ -762,7 +764,7 @@ export default function BulkUploadSchools() {
                   </Typography>
                   <Typography variant="body2" sx={{ color: "#555" }}>
                     Upload a CSV file with school data. The file should contain School Name, UDISE Code,
-                    Cluster Name, and Block Name.
+                    Cluster Name, and Block Name. Download Sample CSV for reference.
                   </Typography>
                 </Box>
               </Box>
