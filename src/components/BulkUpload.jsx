@@ -27,6 +27,7 @@ import {
   Tabs,
   Card,
   CardContent,
+  Pagination,
 } from "@mui/material";
 import { createTheme, ThemeProvider, alpha } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -50,7 +51,8 @@ const getLoginDetails = () => {
   // Default values as specified
   let defaultDetails = {
     username: "mahendra-shah",
-    currentDateTime: "2025-04-03 06:25:18"
+    name: "mahendra-shah",
+    currentDateTime: "2025-04-03 11:12:22"
   };
   
   try {
@@ -90,6 +92,114 @@ const theme = createTheme({
     },
   },
 });
+
+// Paper Plane Flight Path Style DoodleArrow Component
+const DoodleArrow = ({ textRef, buttonRef }) => {
+	const [path, setPath] = useState("");
+	const svgRef = useRef(null);
+	const [initialized, setInitialized] = useState(false);
+  
+	useEffect(() => {
+	  // Function to calculate and update the path
+	  const updatePath = () => {
+		if (!textRef.current || !buttonRef.current || !svgRef.current) return;
+  
+		const textRect = textRef.current.getBoundingClientRect();
+		const buttonRect = buttonRef.current.getBoundingClientRect();
+		const svgRect = svgRef.current.getBoundingClientRect();
+  
+		// Starting point at the end of the text
+		const startX = textRect.right - svgRect.left;
+		const startY = textRect.top + (textRect.height / 2) - svgRect.top;
+  
+		// Ending point at the button
+		const endX = buttonRect.left + (buttonRect.width / 4) - svgRect.left;
+		const endY = buttonRect.top + (buttonRect.height / 2) - svgRect.top;
+  
+		// Calculate distance and direction
+		const dx = endX - startX;
+		const dy = endY - startY;
+		
+		// Create a natural paper plane flight path with a single flip
+		// Use fewer control points for a cleaner path
+		const flipX = startX + dx * 0.6;  // Position of the flip (60% of the way)
+		const flipY = startY + dy * 0.3;  // Slight vertical offset
+		
+		// Simple path with just enough points to create a natural looking flip
+		const paperPlanePath = `
+		  M ${startX},${startY}
+		  Q ${startX + dx*0.9},${startY - 30} ${flipX - 40},${flipY - 5}
+		  C ${flipX - 70},${flipY - 90} ${flipX},${flipY - 20} ${flipX + 20},${flipY}
+		  C ${flipX + 40},${flipY + 30} ${flipX + 90},${flipY + 70} ${endX},${endY}		  
+		`;
+  
+		setPath(paperPlanePath);
+		setInitialized(true);
+	  };
+  
+	  // Update immediately and after a short delay
+	  updatePath();
+	  const timer = setTimeout(updatePath, 300);
+  
+	  // Update on window resize
+	  window.addEventListener('resize', updatePath);
+	  
+	  return () => {
+		window.removeEventListener('resize', updatePath);
+		clearTimeout(timer);
+	  };
+	}, [textRef, buttonRef]);
+  
+	// Ensure the arrow reappears after refresh
+	useEffect(() => {
+	  if (!initialized && textRef.current && buttonRef.current) {
+		const timer = setTimeout(() => {
+		  const event = new Event('resize');
+		  window.dispatchEvent(event);
+		}, 500);
+		
+		return () => clearTimeout(timer);
+	  }
+	}, [initialized, textRef, buttonRef]);
+  
+	return (
+	  <svg 
+		ref={svgRef}
+		style={{ 
+		  position: "absolute",
+		  top: 0,
+		  left: 0, 
+		  width: "100%", 
+		  height: "100%", 
+		  pointerEvents: "none", 
+		  zIndex: 10,
+		  overflow: "visible"
+		}}
+	  >
+		<defs>
+		  <marker
+			id="arrowhead"
+			markerWidth="10"
+			markerHeight="7"
+			refX="9"
+			refY="3.5"
+			orient="auto"
+		  >
+			<polygon points="0 0, 10 3.5, 0 7" fill="#2d8a60" />
+		  </marker>
+		</defs>
+		
+		<path
+		  d={path}
+		  fill="none"
+		  stroke="#2d8a60"
+		  strokeWidth="2"
+		  strokeDasharray="5,3"
+		  markerEnd="url(#arrowhead)"
+		/>
+	  </svg>
+	);
+};
 
 // Delete Confirmation Modal Component
 const DeleteConfirmationModal = ({
@@ -427,6 +537,8 @@ export default function BulkUploadSchools() {
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorData, setErrorData] = useState([]);
   const fileInputRef = useRef(null);
+  const textRef = useRef(null);
+  const buttonRef = useRef(null);
   const navigate = useNavigate();
 
   // Define steps for the upload process
@@ -459,6 +571,16 @@ export default function BulkUploadSchools() {
       setActiveStep(1);
     }
   };
+
+  const [renderKey, setRenderKey] = useState(Date.now());
+
+  // Force re-render on component mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setRenderKey(Date.now());
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleMappingComplete = (mapping, editedData) => {
     setMappingConfig(mapping);
@@ -604,7 +726,7 @@ export default function BulkUploadSchools() {
   const handleDoneUpload = () => {
     // Reset everything and go back to step 1
     handleRemoveFile();
-	navigate("/schools");
+    navigate("/schools");
   };
 
   const getUploadStatusColor = () => {
@@ -620,10 +742,17 @@ export default function BulkUploadSchools() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ p: 2, maxWidth: "95rem", margin: "0 auto" }}>
-        <div className="flex justify-between">
+      <Box sx={{ p: 2, maxWidth: "95rem", margin: "0 auto", position: "relative" }}>
+		<DoodleArrow 
+			key={renderKey} 
+			textRef={textRef} 
+			buttonRef={buttonRef} 
+		/>
+		<div className="flex justify-between">
           <h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
           <Button
+            id="sample-csv-button"
+            ref={buttonRef}
             variant="outlined"
             startIcon={<GetAppIcon />}
             onClick={openSampleCSVModal}
@@ -656,7 +785,12 @@ export default function BulkUploadSchools() {
         </Stepper>
 
         {activeStep === 0 && (
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2, position: "relative" }}>
+            {/* Add dynamic doodle arrow only on first step */}
+            {textRef.current && buttonRef.current && (
+              <DoodleArrow textRef={textRef} buttonRef={buttonRef} />
+            )}
+            
             <Box
               sx={{
                 border: "2px dashed #ccc",
@@ -754,17 +888,33 @@ export default function BulkUploadSchools() {
                   mb: 3,
                   display: "flex",
                   alignItems: "center",
-				  justifyContent: "center", 
-				  width: "100%"
+                  justifyContent: "center", 
+                  width: "100%",
+                  position: "relative"
                 }}
               >
-                <Box textAlign="center">
+                <Box textAlign="center" sx={{ maxWidth: "90%" }}>
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
                     CSV Format
                   </Typography>
                   <Typography variant="body2" sx={{ color: "#555" }}>
                     Upload a CSV file with school data. The file should contain School Name, UDISE Code,
-                    Cluster Name, and Block Name. Download Sample CSV for reference.
+                    Cluster Name, and Block Name. {" "}
+                    <Box 
+                      component="span" 
+                      id="download-csv-text"
+                      ref={textRef}
+                      sx={{ 
+                        color: "#0d6efd", 
+                        cursor: "pointer",
+                        fontWeight: "500",
+                        position: "relative",
+                        '&:hover': { textDecoration: "underline" }
+                      }}
+                    //   onClick={openSampleCSVModal}
+                    >
+                      Download Sample CSV for reference.
+                    </Box>
                   </Typography>
                 </Box>
               </Box>
