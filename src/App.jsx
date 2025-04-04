@@ -95,7 +95,7 @@ function App() {
 						<Route path="/reports" element={<Reports />} />
 						<Route path="/schools" element={<Schools />} />
 						<Route path="/schools/add-school" element={<AddSchool />} />
-						<Route path="/school-detail/:schoolId" element={<SchoolDetailView />} />
+						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} />
 						<Route path="/schools/update/:schoolId" element={<AddSchool />} />
 						<Route path="/schools/bulk-upload" element={<BulkUploadSchools />} />
 						<Route path="/bulk-Upload-Summary" element={<UploadSummary />} />
