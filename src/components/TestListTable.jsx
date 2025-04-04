@@ -465,7 +465,7 @@ export default function TestListTable() {
 						<div className="flex flex-col md:flex-row md:flex-wrap gap-2 my-[10px] mx-0">
 							{/* Filter Container - Wrap on mobile */}
 							<div className="flex justify-between w-full   gap-2">
-								<div className="flex   w-full flex-wrap gap-2">
+								<div className="flex flex-wrap gap-2">
 									<TextField
 										variant="outlined"
 										placeholder="Search by Test Name"
