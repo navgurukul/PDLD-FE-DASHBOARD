@@ -464,190 +464,197 @@ export default function TestListTable() {
 					<div className="w-full lg:flex-1">
 						<div className="flex flex-col md:flex-row md:flex-wrap gap-2 my-[10px] mx-0">
 							{/* Filter Container - Wrap on mobile */}
-							<div className="flex w-full flex-wrap gap-2">
-								<TextField
-									variant="outlined"
-									placeholder="Search by Test Name"
-									size="small"
-									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
-									InputProps={{
-										style: {
-											backgroundColor: "#fff",
-											borderRadius: "8px",
-											height: "48px",
-											minWidth: "250px",
-											width: "385px",
-										},
-									}}
-									sx={{ marginBottom: { xs: "10px", md: "0" } }}
-								/>
-								{/* Class Dropdown */}
-								<FormControl
-									sx={{
-										height: "48px",
-										display: "flex",
-										width: "150px",
-									}}
-								>
-									<InputLabel
-										id="class-select-label"
-										sx={{
-											transform: "translate(14px, 14px) scale(1)",
-											"&.Mui-focused, &.MuiFormLabel-filled": {
-												transform: "translate(14px, -9px) scale(0.75)",
-											},
-										}}
-									>
-										Class
-									</InputLabel>
-									<Select
-										labelId="class-select-label"
-										id="class-select"
-										value={selectedClass}
-										label="Class"
-										onChange={(e) => setSelectedClass(e.target.value)}
-										sx={{
-											height: "100%",
-											borderRadius: "8px",
-											"& .MuiOutlinedInput-notchedOutline": {
+							<div className="flex justify-between w-full   gap-2">
+								<div className="flex   w-full flex-wrap gap-2">
+									<TextField
+										variant="outlined"
+										placeholder="Search by Test Name"
+										size="small"
+										value={searchQuery}
+										onChange={(e) => setSearchQuery(e.target.value)}
+										InputProps={{
+											style: {
+												backgroundColor: "#fff",
 												borderRadius: "8px",
-											},
-											"& .MuiSelect-select": {
-												paddingTop: "12px",
-												paddingBottom: "12px",
-												display: "flex",
-												alignItems: "center",
-											},
-										}}
-									>
-										<MenuItem value="">Class</MenuItem>
-										{CLASS_OPTIONS.map((option) => (
-											<MenuItem key={option} value={parseInt(option.replace("Class ", ""), 10)}>
-												{option}
-											</MenuItem>
-										))}
-									</Select>
-								</FormControl>
-
-								{/* Subject Dropdown */}
-								<FormControl
-									sx={{
-										height: "48px",
-										display: "flex",
-										width: { xs: "calc(50% - 4px)", sm: "150px" },
-										minWidth: "120px",
-										marginBottom: { xs: "8px", md: "0" },
-									}}
-								>
-									<InputLabel
-										id="subject-select-label"
-										sx={{
-											transform: "translate(14px, 14px) scale(1)",
-											"&.Mui-focused, &.MuiFormLabel-filled": {
-												transform: "translate(14px, -9px) scale(0.75)",
-											},
-										}}
-									>
-										Subject
-									</InputLabel>
-									<Select
-										labelId="subject-select-label"
-										id="subject-select"
-										value={selectedSubject}
-										label="Subject"
-										onChange={(e) => setSelectedSubject(e.target.value)}
-										sx={{
-											height: "100%",
-											borderRadius: "8px",
-											backgroundColor: "#fff",
-											"& .MuiOutlinedInput-notchedOutline": {
-												borderRadius: "8px",
-											},
-											"& .MuiSelect-select": {
-												paddingTop: "12px",
-												paddingBottom: "12px",
-												display: "flex",
-												alignItems: "center",
-												color: "#2F4F4F",
-												fontWeight: "600",
-											},
-										}}
-										MenuProps={{
-											PaperProps: {
-												sx: {
-													maxHeight: 200,
-													overflowY: "auto",
-													"&::-webkit-scrollbar": {
-														width: "5px",
-													},
-													"&::-webkit-scrollbar-thumb": {
-														backgroundColor: "#B0B0B0",
-														borderRadius: "5px",
-													},
-													"&::-webkit-scrollbar-track": {
-														backgroundColor: "#F0F0F0",
-													},
-												},
-											},
-										}}
-									>
-										<MenuItem value="">All Subjects</MenuItem>
-										{SUBJECT_OPTIONS.map((subject) => (
-											<MenuItem key={subject} value={subject}>
-												{subject}
-											</MenuItem>
-										))}
-									</Select>
-								</FormControl>
-
-								{/* Date Range Picker */}
-								<div
-									style={{
-										border: "1px solid lightgrey",
-										borderRadius: "7px",
-										height: "48px",
-									}}
-									className="w-full sm:w-auto min-w-[120px] mb-2 sm:mb-0"
-								>
-									<DatePicker
-										className="my-date-picker w-full"
-										selectsRange
-										startDate={startDate}
-										endDate={endDate}
-										onChange={(dates) => {
-											setDateRange(dates);
-										}}
-										placeholderText="Date Range"
-										dateFormat="dd/MM/YYYY"
-									/>
-								</div>
-
-								{/* Reset Button */}
-								<div className="flex justify-end sm:justify-start w-full sm:w-auto">
-									<Tooltip title="Reset Filters" placement="top">
-										<div
-											onClick={resetFilters}
-											style={{
-												cursor: "pointer",
-												display: "flex",
-												alignItems: "center",
-												backgroundColor: "#f5f5f5",
-												padding: "6px 12px",
-												borderRadius: "4px",
 												height: "48px",
+												minWidth: "250px",
+												width: "360px",
+											},
+										}}
+										sx={{ marginBottom: { xs: "10px", md: "0" } }}
+									/>
+									{/* Class Dropdown */}
+									<FormControl
+										sx={{
+											height: "48px",
+											display: "flex",
+											width: "150px",
+										}}
+									>
+										<InputLabel
+											id="class-select-label"
+											sx={{
+												transform: "translate(14px, 14px) scale(1)",
+												"&.Mui-focused, &.MuiFormLabel-filled": {
+													transform: "translate(14px, -9px) scale(0.75)",
+												},
 											}}
 										>
-											<RestartAltIcon color="action" />
-										</div>
-									</Tooltip>
+											Class
+										</InputLabel>
+										<Select
+											labelId="class-select-label"
+											id="class-select"
+											value={selectedClass}
+											label="Class"
+											onChange={(e) => setSelectedClass(e.target.value)}
+											sx={{
+												height: "100%",
+												borderRadius: "8px",
+												"& .MuiOutlinedInput-notchedOutline": {
+													borderRadius: "8px",
+												},
+												"& .MuiSelect-select": {
+													paddingTop: "12px",
+													paddingBottom: "12px",
+													display: "flex",
+													alignItems: "center",
+												},
+											}}
+										>
+											<MenuItem value="">Class</MenuItem>
+											{CLASS_OPTIONS.map((option) => (
+												<MenuItem
+													key={option}
+													value={parseInt(option.replace("Class ", ""), 10)}
+												>
+													{option}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
+
+									{/* Subject Dropdown */}
+									<FormControl
+										sx={{
+											height: "48px",
+											display: "flex",
+											width: { xs: "calc(50% - 4px)", sm: "150px" },
+											minWidth: "120px",
+											marginBottom: { xs: "8px", md: "0" },
+										}}
+									>
+										<InputLabel
+											id="subject-select-label"
+											sx={{
+												transform: "translate(14px, 14px) scale(1)",
+												"&.Mui-focused, &.MuiFormLabel-filled": {
+													transform: "translate(14px, -9px) scale(0.75)",
+												},
+											}}
+										>
+											Subject
+										</InputLabel>
+										<Select
+											labelId="subject-select-label"
+											id="subject-select"
+											value={selectedSubject}
+											label="Subject"
+											onChange={(e) => setSelectedSubject(e.target.value)}
+											sx={{
+												height: "100%",
+												borderRadius: "8px",
+												backgroundColor: "#fff",
+												"& .MuiOutlinedInput-notchedOutline": {
+													borderRadius: "8px",
+												},
+												"& .MuiSelect-select": {
+													paddingTop: "12px",
+													paddingBottom: "12px",
+													display: "flex",
+													alignItems: "center",
+													color: "#2F4F4F",
+													fontWeight: "600",
+												},
+											}}
+											MenuProps={{
+												PaperProps: {
+													sx: {
+														maxHeight: 200,
+														overflowY: "auto",
+														"&::-webkit-scrollbar": {
+															width: "5px",
+														},
+														"&::-webkit-scrollbar-thumb": {
+															backgroundColor: "#B0B0B0",
+															borderRadius: "5px",
+														},
+														"&::-webkit-scrollbar-track": {
+															backgroundColor: "#F0F0F0",
+														},
+													},
+												},
+											}}
+										>
+											<MenuItem value="">All Subjects</MenuItem>
+											{SUBJECT_OPTIONS.map((subject) => (
+												<MenuItem key={subject} value={subject}>
+													{subject}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
+
+									{/* Date Range Picker */}
+									<div
+										style={{
+											border: "1px solid lightgrey",
+											borderRadius: "7px",
+											height: "48px",
+										}}
+										className="w-full sm:w-auto min-w-[120px] mb-2 sm:mb-0"
+									>
+										<DatePicker
+											className="my-date-picker w-full"
+											selectsRange
+											startDate={startDate}
+											endDate={endDate}
+											onChange={(dates) => {
+												setDateRange(dates);
+											}}
+											placeholderText="Date Range"
+											dateFormat="dd/MM/YYYY"
+										/>
+									</div>
+
+									{/* Reset Button */}
+									<div className="flex justify-end sm:justify-start w-full sm:w-auto">
+										<Tooltip title="Reset Filters" placement="top">
+											<div
+												onClick={resetFilters}
+												style={{
+													cursor: "pointer",
+													display: "flex",
+													alignItems: "center",
+													backgroundColor: "#f5f5f5",
+													padding: "6px 12px",
+													borderRadius: "4px",
+													height: "48px",
+												}}
+											>
+												<RestartAltIcon color="action" />
+											</div>
+										</Tooltip>
+									</div>
 								</div>
 
-								<ButtonCustom
-									imageName={addSymbolBtn}
-									text={"Create Test"}
-									onClick={handleCreateTest}
-								/>
+								<div className="  ">
+									<ButtonCustom
+										imageName={addSymbolBtn}
+										text={"Create Test"}
+										onClick={handleCreateTest}
+									/>
+								</div>
 							</div>
 						</div>
 					</div>

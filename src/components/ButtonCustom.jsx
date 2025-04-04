@@ -3,7 +3,7 @@ const ButtonCustom = ({ text, onClick, imageName, disabled, btnWidth }) => {
 	const buttonStyle = btnWidth ? { width: `${btnWidth}px` } : {};
 
 	return (
-		<div className="flex justify-center" >
+		<div className="flex  w-[160px]">
 			<button
 				className={`flex justify-center h-12 px-4 py-2 ${
 					disabled ? "bg-gray-300" : "bg-[#FFD700]"
