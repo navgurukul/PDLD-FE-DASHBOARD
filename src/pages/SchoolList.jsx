@@ -269,6 +269,28 @@ export default function SchoolList() {
 						overflow: "hidden",
 					},
 				}),
+				customBodyRender: (value, tableMeta) => {
+					const schoolId = tableMeta.rowData[0]; // Get the ID from the first column
+					const schoolObj = tableMeta.rowData[6]; // Get the full school object
+
+					return (
+						<div
+							onClick={() =>
+								navigate(`/school-detail/${schoolId}`, {
+									state: { schoolData: schoolObj },
+								})
+							}
+							style={{
+								cursor: "pointer",
+								color: "#1976d2",
+								fontWeight: "500",
+								"&:hover": { textDecoration: "underline" },
+							}}
+						>
+							{value}
+						</div>
+					);
+				},
 			},
 		},
 		{
