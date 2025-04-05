@@ -10,6 +10,7 @@ import TableList from "./pages/TableList";
 import Schools from "./pages/Schools";
 import PageNotFound from "./pages/PageNotFound";
 import BulkUploadSchools from "./components/BulkUpload";
+import BulkUploadStudent from "./components/student/bulkUploadStudent/BulkUploadStudent"
 import AddSchool from "./components/AddSchool";
 import UserCreationForm from "./components/UserCreationForm";
 import LoginForm from "./components/LoginForm";
@@ -100,6 +101,7 @@ function App() {
 						<Route path="/schools/schoolDetail/addStudents" element={<AddStudent />} />
 						<Route path="/schools/update/:schoolId" element={<AddSchool />} />
 						<Route path="/schools/bulk-upload" element={<BulkUploadSchools />} />
+						<Route path="/schools/bulk-upload/student" element={<BulkUploadStudent />} />
 						<Route path="/bulk-Upload-Summary" element={<UploadSummary />} />
 						<Route path="/testCreationForm" element={<TestCreationForm />} />
 						<Route path="/editTest/:Id" element={<TestCreationForm />} />

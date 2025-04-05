@@ -1,20 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-	Typography,
-	Box,
-	FormControl,
-	Select,
-	MenuItem,
-	TextField,
-	CircularProgress,
-	Button, 
-} from "@mui/material";
+import { Typography, Box, FormControl, Select, MenuItem, TextField, CircularProgress, Button } from "@mui/material";
 import MUIDataTable from "mui-datatables";
-import SearchIcon from "@mui/icons-material/Search"; 
+import SearchIcon from "@mui/icons-material/Search";
 import { toast, ToastContainer } from "react-toastify";
 import ButtonCustom from "../components/ButtonCustom";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
+
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 
 const StudentDetails = ({ schoolId, schoolName }) => {
 	const navigate = useNavigate();
@@ -306,6 +299,10 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		},
 	};
 
+	const handleBulkUploadStudent = () => {
+		navigate("/schools/bulk-upload/student");
+	};
+
 	return (
 		<Box>
 			<div className="flex justify-between items-center mb-2">
@@ -364,13 +361,32 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 					</FormControl>
 				</div>
 
-				<div>
+				<div className="flex gap-2 sm:mt-0">
 					<ButtonCustom
 						imageName={addSymbolBtn}
 						text={"Add Student"}
 						// onClick={() => navigate(`/students/add?schoolId=${schoolId}`)}
 						onClick={() => navigate(`/schools/schoolDetail/addStudents`)}
 					/>
+					<Button
+						variant="outlined"
+						sx={{
+							borderColor: "#2F4F4F",
+							color: "#2F4F4F",
+							borderRadius: "8px",
+							textTransform: "none",
+							fontSize: "18px",
+							"&:hover": {
+								borderColor: "#1E3535",
+								backgroundColor: "rgba(47, 79, 79, 0.1)",
+							},
+							width: { xs: "100%", sm: "auto" },
+						}}
+						onClick={handleBulkUploadStudent}
+					>
+						<UploadFileIcon sx={{ mr: 1 }} />
+						Bulk Upload
+					</Button>
 				</div>
 			</div>
 
