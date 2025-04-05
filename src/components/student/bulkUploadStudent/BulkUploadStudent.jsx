@@ -278,7 +278,7 @@ export default function BulkUploadStudents() {
   const handleDoneUpload = () => {
     // Reset everything and go back to step 1
     handleRemoveFile();
-    navigate("/students");
+    navigate("/schools");
   };
 
   const getUploadStatusColor = () => {
