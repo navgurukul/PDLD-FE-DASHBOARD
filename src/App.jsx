@@ -13,6 +13,7 @@ import BulkUploadSchools from "./components/BulkUpload";
 import AddSchool from "./components/AddSchool";
 import UserCreationForm from "./components/UserCreationForm";
 import LoginForm from "./components/LoginForm";
+import AddStudent from "./components/student/AddStudent"
 
 // Auth context to manage authentication state
 import { createContext } from "react";
@@ -96,6 +97,7 @@ function App() {
 						<Route path="/schools" element={<Schools />} />
 						<Route path="/schools/add-school" element={<AddSchool />} />
 						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} />
+						<Route path="/schools/schoolDetail/addStudents" element={<AddStudent />} />
 						<Route path="/schools/update/:schoolId" element={<AddSchool />} />
 						<Route path="/schools/bulk-upload" element={<BulkUploadSchools />} />
 						<Route path="/bulk-Upload-Summary" element={<UploadSummary />} />
