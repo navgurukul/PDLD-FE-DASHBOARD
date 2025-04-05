@@ -170,6 +170,7 @@ export default function TestListTable() {
 			name: "class",
 			label: "Class",
 			options: { filter: true, sort: true },
+			
 		},
 		{
 			name: "dateOfTest",
@@ -244,7 +245,7 @@ export default function TestListTable() {
 				customHeadRender: (columnMeta) => {
 					return (
 						<th style={{ textAlign: "center" }} scope="col">
-							<div style={{ textAlign: "center" }}>{columnMeta.label}</div>
+							<div style={{ textAlign: "center", fontSize: "14px",  borderBottom: "1px solid #ccc",}}>{columnMeta.label}</div>
 						</th>
 					);
 				},
