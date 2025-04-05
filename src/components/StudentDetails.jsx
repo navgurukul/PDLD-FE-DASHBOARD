@@ -300,7 +300,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 	};
 
 	const handleBulkUploadStudent = () => {
-		navigate("/schools/bulk-upload/student");
+		navigate("/schools/schoolDetail/studentBulkUpload");
 	};
 
 	return (
