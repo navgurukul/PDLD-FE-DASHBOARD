@@ -368,7 +368,8 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 					<ButtonCustom
 						imageName={addSymbolBtn}
 						text={"Add Student"}
-						onClick={() => navigate(`/students/add?schoolId=${schoolId}`)}
+						// onClick={() => navigate(`/students/add?schoolId=${schoolId}`)}
+						onClick={() => navigate(`/schools/schoolDetail/addStudents`)}
 					/>
 				</div>
 			</div>
