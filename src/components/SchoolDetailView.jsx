@@ -11,6 +11,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import StudentDetails from "./StudentDetails";
+import ButtonCustom from "./ButtonCustom";
 
 const theme = createTheme({
 	typography: {
@@ -120,14 +121,7 @@ export default function SchoolDetailView() {
 		return (
 			<Box sx={{ p: 3, textAlign: "center" }}>
 				<Typography variant="h5">School not found</Typography>
-				<Button
-					startIcon={<ArrowBackIcon />}
-					variant="contained"
-					sx={{ mt: 2, bgcolor: "#2F4F4F", "&:hover": { bgcolor: "#1E3535" } }}
-					onClick={handleBack}
-				>
-					Back to Schools
-				</Button>
+				<ButtonCustom text={"Back to Schools"} startIcon={<ArrowBackIcon />} variant="contained" onClick={handleBack} />
 			</Box>
 		);
 	}
