@@ -276,7 +276,7 @@ export default function SchoolList() {
 					return (
 						<div
 							onClick={() =>
-								navigate(`/schools/schoolDetail`, {
+								navigate(`/schools/schoolDetail/${schoolId}`, {
 									state: { schoolData: schoolObj },
 								})
 							}
