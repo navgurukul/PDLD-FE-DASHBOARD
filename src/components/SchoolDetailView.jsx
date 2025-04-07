@@ -84,7 +84,7 @@ export default function SchoolDetailView() {
 			schoolData = state.schoolData;
 			// Store in localStorage for persistence
 			localStorage.setItem("currentSchoolData", JSON.stringify(schoolData));
-		} 
+		}
 		// If not in state, try localStorage
 		else {
 			const storedData = localStorage.getItem("currentSchoolData");
@@ -136,6 +136,22 @@ export default function SchoolDetailView() {
 		});
 	};
 
+	// Get CAC name from school data
+	const getCACName = () => {
+		if (school.assignedCAC && school.assignedCAC.name) {
+			return school.assignedCAC.name;
+		}
+		return "Not Assigned";
+	};
+
+	// Get CP name from school data
+	const getCPName = () => {
+		if (school.assignedCP && typeof school.assignedCP === "object" && school.assignedCP.name) {
+			return school.assignedCP.name;
+		}
+		return "Not Assigned";
+	};
+
 	// Render loading state
 	if (isLoading) {
 		return <SpinnerPageOverlay isLoading={isLoading} />;
@@ -146,7 +162,12 @@ export default function SchoolDetailView() {
 		return (
 			<Box sx={{ p: 3, textAlign: "center" }}>
 				<Typography variant="h5">School not found</Typography>
-				<ButtonCustom text={"Back to Schools"} startIcon={<ArrowBackIcon />} variant="contained" onClick={handleBack} />
+				<ButtonCustom
+					text={"Back to Schools"}
+					startIcon={<ArrowBackIcon />}
+					variant="contained"
+					onClick={handleBack}
+				/>
 			</Box>
 		);
 	}
@@ -265,9 +286,7 @@ export default function SchoolDetailView() {
 													</Typography>
 												</Grid>
 												<Grid item xs={5} md={6}>
-													<Typography variant="body1">
-														{school.academicCoordinator || "Assigned CAC"}
-													</Typography>
+													<Typography variant="body1">{getCACName()}</Typography>
 												</Grid>
 											</Grid>
 										</Grid>
@@ -280,9 +299,7 @@ export default function SchoolDetailView() {
 													</Typography>
 												</Grid>
 												<Grid item xs={5} md={6}>
-													<Typography variant="body1">
-														{school.clusterPrincipal || "Assigned CP"}
-													</Typography>
+													<Typography variant="body1">{getCPName()}</Typography>
 												</Grid>
 											</Grid>
 										</Grid>

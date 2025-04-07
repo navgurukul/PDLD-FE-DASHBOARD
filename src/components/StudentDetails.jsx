@@ -108,7 +108,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 	}, [schoolId]);
 
 	const handleEditStudent = (studentId, student) => {
-		navigate(`/schools/schoolDetail/${schoolId}/updateStudent/${studentId}`, {
+		navigate(`/schools/schoolDetail/${schoolId}/updateStudent`, {
 			state: {
 				schoolId: schoolId,
 				studentId: studentId,
