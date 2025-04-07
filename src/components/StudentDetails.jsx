@@ -1,15 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-	Typography,
-	Box,
-	FormControl,
-	Select,
-	MenuItem,
-	TextField,
-	CircularProgress,
-	Button,
-} from "@mui/material";
+import { Typography, Box, FormControl, Select, MenuItem, TextField, CircularProgress, Button } from "@mui/material";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
@@ -116,12 +107,14 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		}
 	}, [schoolId]);
 
-	// Function to handle editing a student
-	const handleEditStudent = (studentId) => {
-		navigate(`/students/edit/${studentId}`, {
+	const handleEditStudent = (studentId, student) => {
+		navigate(`/schools/schoolDetail/${schoolId}/updateStudent/${studentId}`, {
 			state: {
 				schoolId: schoolId,
 				studentId: studentId,
+				udiseCode: schoolInfo.udiseCode,
+				isEditMode: true,
+				studentData: student, // Pass the complete student object
 			},
 		});
 	};
@@ -292,7 +285,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 									padding: "2px",
 									minWidth: "unset",
 								}}
-								onClick={() => handleEditStudent(studentId)}
+								onClick={() => handleEditStudent(studentId, student)} 
 							>
 								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
 							</Button>
@@ -337,11 +330,21 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		navigate("/schools/schoolDetail/studentBulkUpload");
 	};
 
+	const handleAddStudent = () => {
+		// () => navigate(`/schools/schoolDetail/addStudents`)
+		navigate(`/schools/schoolDetail/${schoolId}/addStudents`, {
+			state: {
+				schoolId: schoolId,
+				udiseCode: schoolInfo.udiseCode,
+			},
+		});
+	};
+
 	return (
 		<Box>
 			<div className="flex justify-between items-center mb-2">
 				<Typography variant="h6" className="text-xl font-bold">
-					<span>Total Student Count({schoolInfo.totalStudentsInSchool})</span>
+					<span>Total Student Count ({schoolInfo.totalStudentsInSchool})</span>
 				</Typography>
 			</div>
 
@@ -396,11 +399,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 				</div>
 
 				<div className="flex gap-2 sm:mt-0">
-					<ButtonCustom
-						imageName={addSymbolBtn}
-						text={"Add Student"}
-						onClick={() => navigate(`/schools/schoolDetail/addStudents`)}
-					/>
+					<ButtonCustom imageName={addSymbolBtn} text={"Add Student"} onClick={handleAddStudent} />
 					<Button
 						variant="outlined"
 						sx={{
