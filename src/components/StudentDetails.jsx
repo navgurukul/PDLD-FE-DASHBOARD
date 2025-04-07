@@ -9,21 +9,21 @@ import {
 	TextField,
 	CircularProgress,
 	Button,
-	Grid,
-	Paper,
 } from "@mui/material";
+import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
 import { toast, ToastContainer } from "react-toastify";
 import ButtonCustom from "../components/ButtonCustom";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
 import apiInstance from "../../api";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 
 const StudentDetails = ({ schoolId, schoolName }) => {
 	const navigate = useNavigate();
-	const [selectedClass, setSelectedClass] = useState("1"); // Changed default to class 1
+	const [selectedClass, setSelectedClass] = useState("1");
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isLoadingStudents, setIsLoadingStudents] = useState(false);
 	const [students, setStudents] = useState([]);
@@ -36,6 +36,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		assignedCAC: { name: "" },
 		assignedCP: "NA",
 	});
+
+	// Delete confirmation modal state - separated like SchoolList
+	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	const [studentToDelete, setStudentToDelete] = useState(null);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	// Handle class change
 	const handleClassChange = (event) => {
@@ -121,15 +126,43 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		});
 	};
 
-	// Function to handle deleting a student
-	const handleDeleteStudent = (studentId, studentName) => {
-		// In a real implementation, this would show a confirmation modal
-		// and then make an API call to delete the student
-		if (window.confirm(`Are you sure you want to delete ${studentName}?`)) {
-			// Simulate API call success
-			toast.success(`Student ${studentName} has been deleted successfully!`);
-			// Remove student from the list
-			setStudents(students.filter((student) => student.id !== studentId));
+	// Open delete confirmation modal - similar to SchoolList
+	const openDeleteModal = (student) => {
+		setStudentToDelete(student);
+		setDeleteModalOpen(true);
+	};
+
+	// Close delete confirmation modal - similar to SchoolList
+	const closeDeleteModal = () => {
+		setDeleteModalOpen(false);
+		setStudentToDelete(null);
+	};
+
+	// Function to handle deleting a student - similar to SchoolList's confirmDeleteSchool
+	const confirmDeleteStudent = async () => {
+		if (!studentToDelete) return;
+
+		setIsDeleting(true);
+		try {
+			// Call the delete API endpoint
+			const response = await apiInstance.delete(`/dev/student/delete/${studentToDelete.id}`);
+
+			if (response.data && response.data.success) {
+				// Remove student from the list
+				setStudents(students.filter((student) => student.id !== studentToDelete.id));
+				
+				// Show success toast
+				toast.success(`Student ${studentToDelete.fullName} has been deleted successfully!`);
+			} else {
+				// Show error toast if the API returns an error message
+				toast.error(response.data?.message || "Failed to delete student. Please try again.");
+			}
+		} catch (error) {
+			console.error("Error deleting student:", error);
+			toast.error("Failed to delete student. Please try again later.");
+		} finally {
+			setIsDeleting(false);
+			closeDeleteModal(); // Close modal after operation completes
 		}
 	};
 
@@ -150,6 +183,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		student.motherName || "N/A",
 		student.aparId || "N/A", // AparId shown as the last visible column
 		student.id, // Hidden column for ID reference
+		student, // Add the full student object for actions
 	]);
 
 	// Define columns for MUIDataTable
@@ -231,13 +265,22 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
+			name: "studentObj", // Hidden column for full student object
+			options: {
+				display: false,
+				filter: false,
+			},
+		},
+		{
 			name: "Actions",
 			options: {
 				filter: false,
 				sort: false,
 				empty: true,
 				customBodyRenderLite: (dataIndex) => {
-					const student = filteredStudents[dataIndex];
+					const studentId = tableData[dataIndex][7]; // Get ID from tableData
+					const student = tableData[dataIndex][8]; // Get full student object
+
 					return (
 						<div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
 							<Button
@@ -249,7 +292,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 									padding: "2px",
 									minWidth: "unset",
 								}}
-								onClick={() => handleEditStudent(student.id)}
+								onClick={() => handleEditStudent(studentId)}
 							>
 								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
 							</Button>
@@ -262,7 +305,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 									padding: "2px",
 									minWidth: "unset",
 								}}
-								onClick={() => handleDeleteStudent(student.id, student.fullName)}
+								onClick={() => openDeleteModal(student)}
 							>
 								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
 							</Button>
@@ -416,6 +459,21 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 					<Typography variant="body1">Click "Add Student" to register a new student.</Typography>
 				</Box>
 			)}
+
+			{/* Delete Confirmation Modal - Following SchoolList approach exactly */}
+			<DeleteConfirmationModal
+				open={deleteModalOpen}
+				onClose={closeDeleteModal}
+				onConfirm={confirmDeleteStudent}
+				title="Delete Student"
+				confirmText="Delete"
+				cancelText="Cancel"
+				message="Are you sure you want to delete this student: "
+				entityName={studentToDelete ? studentToDelete.fullName : ""}
+				isProcessing={isDeleting}
+				confirmButtonColor="error"
+				icon={<DeleteOutlineIcon fontSize="large" />}
+			/>
 
 			<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
 		</Box>
