@@ -1,25 +1,47 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Typography, Box, FormControl, Select, MenuItem, TextField, CircularProgress, Button } from "@mui/material";
+import {
+	Typography,
+	Box,
+	FormControl,
+	Select,
+	MenuItem,
+	TextField,
+	CircularProgress,
+	Button,
+	Grid,
+	Paper,
+} from "@mui/material";
 import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
 import { toast, ToastContainer } from "react-toastify";
 import ButtonCustom from "../components/ButtonCustom";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
+import apiInstance from "../../api";
 
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 
 const StudentDetails = ({ schoolId, schoolName }) => {
 	const navigate = useNavigate();
-	const [selectedClass, setSelectedClass] = useState("2");
+	const [selectedClass, setSelectedClass] = useState("1"); // Changed default to class 1
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isLoadingStudents, setIsLoadingStudents] = useState(false);
 	const [students, setStudents] = useState([]);
+	const [classes, setClasses] = useState([]);
+	const [schoolInfo, setSchoolInfo] = useState({
+		udiseCode: "",
+		blockName: "",
+		clusterName: "",
+		totalStudentsInSchool: 0,
+		assignedCAC: { name: "" },
+		assignedCP: "NA",
+	});
 
 	// Handle class change
 	const handleClassChange = (event) => {
 		setSelectedClass(event.target.value);
-		fetchStudents(event.target.value);
+		// Filter students based on class
+		filterStudentsByClass(event.target.value);
 	};
 
 	// Handle search query change
@@ -27,97 +49,66 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		setSearchQuery(event.target.value);
 	};
 
-	// Generate dummy student data based on class
-	const generateDummyStudents = (classValue) => {
-		const studentCount = 10;
-		const genders = ["Male", "Female"];
-		const firstNames = [
-			"John",
-			"Jane",
-			"David",
-			"Sarah",
-			"Michael",
-			"Emily",
-			"Robert",
-			"Olivia",
-			"William",
-			"Sophia",
-			"James",
-			"Emma",
-			"Daniel",
-			"Ava",
-			"Matthew",
-			"Mia",
-			"Joseph",
-			"Charlotte",
-			"Andrew",
-			"Amelia",
-		];
-		const lastNames = [
-			"Smith",
-			"Johnson",
-			"Williams",
-			"Jones",
-			"Brown",
-			"Davis",
-			"Miller",
-			"Wilson",
-			"Moore",
-			"Taylor",
-			"Anderson",
-			"Thomas",
-			"Jackson",
-			"White",
-			"Harris",
-			"Martin",
-			"Thompson",
-			"Garcia",
-			"Martinez",
-			"Robinson",
-		];
-
-		const dummyStudents = [];
-
-		for (let i = 0; i < studentCount; i++) {
-			const gender = genders[Math.floor(Math.random() * genders.length)];
-			const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-			const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-
-			dummyStudents.push({
-				id: i + 1,
-				rollNumber: `${classValue}${String(i + 1).padStart(3, "0")}`,
-				name: `${firstName} ${lastName}`,
-				gender: gender,
-				class: classValue,
-				dob: `${2010 + Math.floor(Math.random() * 5)}-${String(Math.floor(Math.random() * 12) + 1).padStart(
-					2,
-					"0"
-				)}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, "0")}`,
-				fatherName: `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastName}`,
-				motherName: `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastName}`,
-				address: `${Math.floor(Math.random() * 999) + 1} Main St, City`,
-			});
+	// Filter students by selected class
+	const filterStudentsByClass = (classValue) => {
+		const selectedClassData = classes.find((classData) => classData.class.toString() === classValue);
+		if (selectedClassData) {
+			setStudents(selectedClassData.students || []);
+		} else {
+			setStudents([]);
 		}
-
-		return dummyStudents;
 	};
 
-	// Simulate fetching students for this school (without API)
-	const fetchStudents = async (classValue = selectedClass) => {
+	// Fetch students from the API
+	const fetchStudents = async () => {
 		setIsLoadingStudents(true);
+		try {
+			const response = await apiInstance.get(`/dev/student/school/${schoolId}`);
+			const result = response.data;
 
-		// Simulate API delay
-		setTimeout(() => {
-			// Generate dummy data for the selected class
-			const dummyStudents = generateDummyStudents(classValue);
-			setStudents(dummyStudents);
+			if (result.success && result.data && result.data.data) {
+				const schoolData = result.data.data;
+
+				// Set school information
+				setSchoolInfo({
+					udiseCode: schoolData.udiseCode || "",
+					blockName: schoolData.blockName || "",
+					clusterName: schoolData.clusterName || "",
+					totalStudentsInSchool: schoolData.totalStudentsInSchool || 0,
+					assignedCAC: schoolData.assignedCAC || { name: "" },
+					assignedCP: schoolData.assignedCP || "NA",
+				});
+
+				// Store the list of classes
+				setClasses(schoolData.classes || []);
+
+				// Initialize with class 1 if available, else first available class
+				const class1Data = schoolData.classes.find((classData) => classData.class.toString() === "1");
+
+				if (class1Data) {
+					setStudents(class1Data.students || []);
+				} else if (schoolData.classes.length > 0) {
+					// If class 1 doesn't exist, default to first available class
+					setSelectedClass(schoolData.classes[0].class.toString());
+					setStudents(schoolData.classes[0].students || []);
+				}
+			} else {
+				console.error("API response format unexpected:", result);
+				setStudents([]);
+			}
+		} catch (error) {
+			console.error("Error fetching students:", error);
+			toast.error("Failed to load students. Please try again later.");
+			setStudents([]);
+		} finally {
 			setIsLoadingStudents(false);
-		}, 1000);
+		}
 	};
 
 	useEffect(() => {
-		// Load students when component mounts
-		fetchStudents();
+		if (schoolId) {
+			fetchStudents();
+		}
 	}, [schoolId]);
 
 	// Function to handle editing a student
@@ -145,31 +136,24 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 	// Filter students based on search query
 	const filteredStudents = students.filter(
 		(student) =>
-			student?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			student?.rollNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+			student?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			(student?.aparId && student.aparId.toLowerCase().includes(searchQuery.toLowerCase()))
 	);
 
-	// Prepare data for MUIDataTable
+	// Prepare data for MUIDataTable, with aparId as the last column before actions
 	const tableData = filteredStudents.map((student) => [
-		student.rollNumber,
-		student.name,
-		student.gender,
-		`Class ${student.class}`,
-		student.dob,
-		student.fatherName,
-		student.motherName,
+		student.fullName || "N/A",
+		student.gender || "N/A",
+		`Class ${student.class}` || "N/A",
+		student.dob || "N/A",
+		student.fatherName || "N/A",
+		student.motherName || "N/A",
+		student.aparId || "N/A", // AparId shown as the last visible column
 		student.id, // Hidden column for ID reference
 	]);
 
 	// Define columns for MUIDataTable
 	const columns = [
-		{
-			name: "Roll Number",
-			options: {
-				filter: false,
-				sort: true,
-			},
-		},
 		{
 			name: "Name",
 			options: {
@@ -233,6 +217,13 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
+			name: "Apar ID",
+			options: {
+				filter: false,
+				sort: true,
+			},
+		},
+		{
 			name: "ID",
 			options: {
 				display: false,
@@ -271,7 +262,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 									padding: "2px",
 									minWidth: "unset",
 								}}
-								onClick={() => handleDeleteStudent(student.id, student.name)}
+								onClick={() => handleDeleteStudent(student.id, student.fullName)}
 							>
 								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
 							</Button>
@@ -307,7 +298,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		<Box>
 			<div className="flex justify-between items-center mb-2">
 				<Typography variant="h6" className="text-xl font-bold">
-					Students List
+					<span>Total Student Count({schoolInfo.totalStudentsInSchool})</span>
 				</Typography>
 			</div>
 
@@ -352,11 +343,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 							displayEmpty
 							renderValue={(value) => `Class ${value}`}
 						>
-							<MenuItem value="1">Class 1</MenuItem>
-							<MenuItem value="2">Class 2</MenuItem>
-							<MenuItem value="3">Class 3</MenuItem>
-							<MenuItem value="4">Class 4</MenuItem>
-							<MenuItem value="5">Class 5</MenuItem>
+							{classes.map((classData) => (
+								<MenuItem key={classData.class} value={classData.class.toString()}>
+									Class {classData.class}
+								</MenuItem>
+							))}
 						</Select>
 					</FormControl>
 				</div>
@@ -365,7 +356,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 					<ButtonCustom
 						imageName={addSymbolBtn}
 						text={"Add Student"}
-						// onClick={() => navigate(`/students/add?schoolId=${schoolId}`)}
 						onClick={() => navigate(`/schools/schoolDetail/addStudents`)}
 					/>
 					<Button
