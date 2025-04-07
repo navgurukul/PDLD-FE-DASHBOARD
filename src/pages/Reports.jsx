@@ -782,14 +782,14 @@ const Reports = () => {
 							</button>
 						</div> */}
 
-						<button
+						{/* <button
 							onClick={() => setDarkMode(!darkMode)}
 							className={`px-4 py-2 rounded-md ${
 								darkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-gray-800"
 							}`}
 						>
 							{darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-						</button>
+						</button> */}
 					</div>
 				</div>
 
