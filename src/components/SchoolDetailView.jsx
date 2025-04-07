@@ -72,21 +72,46 @@ export default function SchoolDetailView() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [tabValue, setTabValue] = useState(0);
 
-	// Get the school data from location state instead of API
+	// Get the school data from location state or localStorage
 	const { state } = useLocation();
 
 	useEffect(() => {
-		// Check if we have school data in the navigation state
+		// Try to get school data from different sources
+		let schoolData = null;
+
+		// First, check if we have data in location state
 		if (state && state.schoolData) {
-			setSchool(state.schoolData);
+			schoolData = state.schoolData;
+			// Store in localStorage for persistence
+			localStorage.setItem("currentSchoolData", JSON.stringify(schoolData));
+		} 
+		// If not in state, try localStorage
+		else {
+			const storedData = localStorage.getItem("currentSchoolData");
+			if (storedData) {
+				try {
+					schoolData = JSON.parse(storedData);
+				} catch (e) {
+					console.error("Error parsing stored school data", e);
+				}
+			}
+		}
+
+		if (schoolData) {
+			setSchool(schoolData);
 			setIsLoading(false);
 		} else {
-			// If no data in navigation state, this is a direct access or refresh
-			// In a real app, you'd fetch from API, but here we'll just show an error
+			// In a real app, you would fetch the data from API using the schoolId
+			// For now, we'll show an error
 			toast.error("School data not available");
 			setIsLoading(false);
 		}
-	}, [state]);
+
+		// Store the schoolId in localStorage for breadcrumb use
+		if (schoolId) {
+			localStorage.setItem("lastSchoolId", schoolId);
+		}
+	}, [state, schoolId]);
 
 	// Handle tab change
 	const handleTabChange = (event, newValue) => {
