@@ -63,7 +63,7 @@ export default function SchoolList() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pagination, setPagination] = useState({
 		currentPage: 1,
-		pageSize: 30,
+		pageSize: 20,
 		totalSchools: 0,
 		totalPages: 1,
 	});
@@ -82,9 +82,16 @@ export default function SchoolList() {
 	const fetchSchools = async () => {
 		setIsLoading(true);
 		try {
-			const response = await apiInstance.get(`/dev/school/all?page=${currentPage}`);
+			// Ensure we're explicitly requesting only 20 records per page
+			const response = await apiInstance.get(`/dev/school/all?page=${currentPage}&limit=20`);
 			if (response.data.success) {
-				setSchools(response.data.data.schools);
+				// console.log("API Response:", response.data.data); // Debug: Log the full response
+				
+				// Check if we're getting the expected 20 records max
+				const schoolsData = response.data.data.schools;
+				// console.log("Schools count from API:", schoolsData.length);
+				
+				setSchools(schoolsData);
 				setPagination(response.data.data.pagination);
 			} else {
 				toast.error("Failed to fetch schools");
@@ -177,6 +184,10 @@ export default function SchoolList() {
 
 		return matchesSearch && matchesCluster && matchesBlock;
 	});
+	
+	// Debug: Log the response data and filtered results
+	// console.log("Total schools from API:", schools.length);
+	// console.log("Filtered schools count:", filteredSchools.length);
 
 	// Open delete confirmation modal
 	const openDeleteModal = (school) => {
@@ -237,7 +248,12 @@ export default function SchoolList() {
 		return `admin_${schoolPrefix}${randomNum}`;
 	};
 
-	const tableData = filteredSchools.map((school) => ({
+	// Make sure we're only showing 20 schools in the table per page
+	// This is a safeguard if the API isn't respecting the limit parameter
+	const limitedFilteredSchools = filteredSchools.slice(0, pagination.pageSize);
+	// console.log("Limited filtered schools:", limitedFilteredSchools.length);
+	
+	const tableData = limitedFilteredSchools.map((school) => ({
 		id: school.id,
 		schoolName: capitalizeFirstLetter(school.schoolName),
 		udiseCode: school.udiseCode,

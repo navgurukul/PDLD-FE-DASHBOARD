@@ -97,9 +97,8 @@ function App() {
 						<Route path="/reports" element={<Reports />} />
 						<Route path="/schools" element={<Schools />} />
 						<Route path="/schools/add-school" element={<AddSchool />} />
-						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} />
-						{/* <Route path="/schools/schoolDetail/addStudents" element={<AddStudent />} /> */} 
-						<Route path="/schools/schoolDetail/:schoolId/updateStudent/:studentId" element={<AddStudent isEditMode={true} />} />
+						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} /> 
+						<Route path="/schools/schoolDetail/:schoolId/updateStudent" element={<AddStudent isEditMode={true} />} />
 						<Route path="/schools/schoolDetail/:schoolId/addStudents" element={<AddStudent />} />
 						<Route path="/schools/update/:schoolId" element={<AddSchool />} />
 						<Route path="/schools/schoolDetail/studentBulkUpload" element={<BulkUploadStudent />} />
