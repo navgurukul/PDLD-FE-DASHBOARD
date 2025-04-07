@@ -24,6 +24,7 @@ import ButtonCustom from "../../components/ButtonCustom";
 import { toast, ToastContainer } from "react-toastify";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { format } from "date-fns";
 
 const theme = createTheme({
 	typography: {
@@ -78,6 +79,7 @@ export default function AddStudent() {
 	const isEditMode = !!studentId;
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [schoolUdiseCode, setSchoolUdiseCode] = useState("");
 
 	const [formData, setFormData] = useState({
 		name: "",
@@ -98,6 +100,33 @@ export default function AddStudent() {
 		dateOfBirth: "",
 		udiseCode: "",
 	});
+
+	// Fetch school UDISE code if we have schoolId
+	useEffect(() => {
+		if (schoolId) {
+			const fetchSchoolDetails = async () => {
+				try {
+					setIsLoading(true);
+					const response = await apiInstance.get(`/dev/school/${schoolId}`);
+					if (response.data && response.data.success) {
+						const schoolData = response.data.data;
+						setSchoolUdiseCode(schoolData.udiseCode || "");
+						setFormData(prev => ({
+							...prev,
+							udiseCode: schoolData.udiseCode || ""
+						}));
+					}
+				} catch (error) {
+					console.error("Error fetching school details:", error);
+					toast.error("Failed to fetch school details");
+				} finally {
+					setIsLoading(false);
+				}
+			};
+
+			fetchSchoolDetails();
+		}
+	}, [schoolId]);
 
 	// Handle input change
 	const handleInputChange = (event) => {
@@ -207,45 +236,48 @@ export default function AddStudent() {
 		setIsSubmitting(true);
 
 		try {
-			// Format date to DD-MM-YYYY
-			const formattedDate = formData.dateOfBirth ? format(new Date(formData.dateOfBirth), "dd-MM-yyyy") : "";
+			// Format date to D-MM-YYYY format as expected by the API
+			const formattedDate = formData.dateOfBirth 
+				? `${format(new Date(formData.dateOfBirth), "d-MM-yyyy")}`
+				: "";
 
-			// Prepare data for API
+			// Prepare data for API according to the required payload structure
 			const studentData = {
 				name: formData.name,
-				gender: formData.gender,
 				fatherName: formData.fatherName,
 				motherName: formData.motherName,
-				dateOfBirth: formattedDate,
-				uniqueId: formData.uniqueId || undefined, // Only include if provided
-				hostel: formData.hostel || undefined, // Only include if provided
-				udiseCode: formData.udiseCode,
+				dob: formattedDate,
 				class: formData.class,
-				schoolId: schoolId, // Include schoolId for association
+				gender: formData.gender,
+				schoolUdiseCode: formData.udiseCode,
+				aparId: formData.uniqueId || "",
+				hostel: formData.hostel || "",
 			};
 
 			if (isEditMode) {
 				// Update existing student
-				// Simulating API call success since we don't have an actual API
-				// await apiInstance.put(`/api/students/${studentId}`, studentData);
+				await apiInstance.put(`/dev/student/update/${studentId}`, studentData);
+				toast.success("Student updated successfully!");
 				setTimeout(() => {
-					toast.success("Student updated successfully!");
-					setIsSubmitting(false);
-					navigate(`/schools/${schoolId}`, { state: { tabIndex: 1 } });
-				}, 1000);
+					navigate(`/schools/schoolDetail/${schoolId}`);
+				}, 1500);
 			} else {
 				// Create new student
-				// Simulating API call success since we don't have an actual API
-				// await apiInstance.post('/api/students', studentData);
-				setTimeout(() => {
+				const response = await apiInstance.post('/dev/student/add', studentData);
+				
+				if (response.data && response.data.success) {
 					toast.success("Student added successfully!");
-					setIsSubmitting(false);
-					navigate(`/schools/${schoolId}`, { state: { tabIndex: 1 } });
-				}, 1000);
+					setTimeout(() => {
+						navigate(`/schools/schoolDetail/${schoolId}`);
+					}, 1500);
+				} else {
+					throw new Error(response.data?.message || "Failed to add student");
+				}
 			}
 		} catch (error) {
 			console.error("Error saving student data:", error);
-			toast.error(error.response?.data?.message || "Failed to save student data");
+			toast.error(error.response?.data?.message || error.message || "Failed to save student data");
+		} finally {
 			setIsSubmitting(false);
 		}
 	};
@@ -263,9 +295,7 @@ export default function AddStudent() {
 	];
 
 	// Handle back navigation
-	const handleBack = () => {
-		navigate(`/schools/${schoolId}`, { state: { tabIndex: 1 } });
-	};
+	 
 
 	return (
 		<ThemeProvider theme={theme}>
@@ -392,23 +422,17 @@ export default function AddStudent() {
 							{/* Date of Birth */}
 							<Grid item xs={12} md={6}>
 								<DatePicker
-									label="Date of Birth *"
-									value={formData.dateOfBirth}
+									selected={formData.dateOfBirth}
 									onChange={handleDateChange}
-									renderInput={(params) => (
-										<TextField
-											{...params}
-											fullWidth
-											error={!!errors.dateOfBirth}
-											helperText={errors.dateOfBirth}
-											sx={{
-												"& .MuiOutlinedInput-root": {
-													height: "48px",
-												},
-											}}
-										/>
-									)}
+									dateFormat="dd/MM/yyyy"
+									placeholderText="Select date of birth"
+									className={`w-full h-[48px] rounded-lg border ${
+										errors.dateOfBirth ? "border-red-500" : "border-gray-300"
+									} px-3`}
 								/>
+								{errors.dateOfBirth && (
+									<FormHelperText error>{errors.dateOfBirth}</FormHelperText>
+								)}
 							</Grid>
 
 							{/* UDISE Code */}
@@ -434,12 +458,12 @@ export default function AddStudent() {
 							{/* Unique ID (Optional) */}
 							<Grid item xs={12} md={6}>
 								<TextField
-									label="Unique ID (Optional)"
+									label="APAR ID (Optional)"
 									name="uniqueId"
 									value={formData.uniqueId}
 									onChange={handleInputChange}
 									fullWidth
-									placeholder="Enter student's unique ID if available"
+									placeholder="Enter student's APAR ID if available"
 									variant="outlined"
 									sx={{
 										"& .MuiOutlinedInput-root": {
