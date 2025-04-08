@@ -289,7 +289,7 @@ export default function AddStudent({ isEditMode = false }) {
 
 			// Prepare data for API according to the required payload structure
 			const studentData = {
-				name: formData.name,
+				fullName: formData.name,
 				fatherName: formData.fatherName,
 				motherName: formData.motherName,
 				dob: formattedDate,
