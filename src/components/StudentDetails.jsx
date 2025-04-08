@@ -143,7 +143,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			if (response.data && response.data.success) {
 				// Remove student from the list
 				setStudents(students.filter((student) => student.id !== studentToDelete.id));
-				
+
 				// Show success toast
 				toast.success(`Student ${studentToDelete.fullName} has been deleted successfully!`);
 			} else {
@@ -166,17 +166,37 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			(student?.aparId && student.aparId.toLowerCase().includes(searchQuery.toLowerCase()))
 	);
 
-	// Prepare data for MUIDataTable, with aparId as the last column before actions
+	const formatDate = (dateString) => {
+		if (!dateString) return "N/A";
+
+		try {
+			const date = new Date(dateString);
+
+			// Check if date is valid
+			if (isNaN(date.getTime())) return dateString;
+
+			// Format to dd-mm-yyyy
+			const day = date.getDate().toString().padStart(2, "0");
+			const month = (date.getMonth() + 1).toString().padStart(2, "0");
+			const year = date.getFullYear();
+
+			return `${day}-${month}-${year}`;
+		} catch (error) {
+			console.error("Error formatting date:", error);
+			return dateString;
+		}
+	};
+
 	const tableData = filteredStudents.map((student) => [
 		student.fullName || "N/A",
 		student.gender || "N/A",
 		`Class ${student.class}` || "N/A",
-		student.dob || "N/A",
+		formatDate(student.dob), // Format the date here
 		student.fatherName || "N/A",
 		student.motherName || "N/A",
-		student.aparId || "N/A", // AparId shown as the last visible column
-		student.id, // Hidden column for ID reference
-		student, // Add the full student object for actions
+		student.aparId || "N/A",
+		student.id,
+		student,
 	]);
 
 	// Define columns for MUIDataTable
@@ -285,7 +305,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 									padding: "2px",
 									minWidth: "unset",
 								}}
-								onClick={() => handleEditStudent(studentId, student)} 
+								onClick={() => handleEditStudent(studentId, student)}
 							>
 								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
 							</Button>
@@ -327,7 +347,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 	};
 
 	const handleBulkUploadStudent = () => {
-		navigate("/schools/schoolDetail/studentBulkUpload");
+		navigate(`/schools/schoolDetail/${schoolId}/studentBulkUpload`);
 	};
 
 	const handleAddStudent = () => {
