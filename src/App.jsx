@@ -101,7 +101,7 @@ function App() {
 						<Route path="/schools/schoolDetail/:schoolId/updateStudent" element={<AddStudent isEditMode={true} />} />
 						<Route path="/schools/schoolDetail/:schoolId/addStudents" element={<AddStudent />} />
 						<Route path="/schools/update/:schoolId" element={<AddSchool />} />
-						<Route path="/schools/schoolDetail/studentBulkUpload" element={<BulkUploadStudent />} />
+						<Route path="/schools/schoolDetail/:schoolId/studentBulkUpload" element={<BulkUploadStudent />} />
 						<Route path="/schools/bulk-upload" element={<BulkUploadSchools />} />
 						<Route path="/bulk-Upload-Summary" element={<UploadSummary />} />
 						<Route path="/testCreationForm" element={<TestCreationForm />} />

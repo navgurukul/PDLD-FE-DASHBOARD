@@ -312,7 +312,7 @@ export default function UserCreationForm() {
 							name: cluster.name,
 							totalSchool: cluster.totalSchool,
 							isCPAssigned: cluster.isCPAssigned,
-							isCACAssigned: cluster.isCACAssigned
+							isCACAssigned: cluster.isCACAssigned,
 						}));
 						setAvailableClusters(clusters);
 					}
@@ -457,7 +457,7 @@ export default function UserCreationForm() {
 	};
 
 	const capitalizeFirstLetter = (str) => {
-		if (!str) return ''; // Handle undefined/null values
+		if (!str) return ""; // Handle undefined/null values
 		return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 	};
 
@@ -492,14 +492,16 @@ export default function UserCreationForm() {
 					totalSchool: cluster.totalSchool || 0,
 					// Explicitly convert to boolean to prevent undefined issues
 					isCPAssigned: cluster.isCPAssigned === true,
-					isCACAssigned: cluster.isCACAssigned === true
+					isCACAssigned: cluster.isCACAssigned === true,
 				};
 			});
-			
+
 			// Log the clusters to help with debugging
-			console.log("Processed clusters with assignment data:", 
-				clusters.map(c => `${c.name} (CP: ${c.isCPAssigned}, CAC: ${c.isCACAssigned})`));
-			
+			console.log(
+				"Processed clusters with assignment data:",
+				clusters.map((c) => `${c.name} (CP: ${c.isCPAssigned}, CAC: ${c.isCACAssigned})`)
+			);
+
 			setAvailableClusters(clusters);
 		} else {
 			console.log("No matching block found for:", blockName);
@@ -589,6 +591,23 @@ export default function UserCreationForm() {
 			}
 		}
 	}, [blocksData, formData.block]);
+
+	// Add this function to restore previously selected clusters
+	const handleRestoreClusters = () => {
+		// If in edit mode and we have user data, restore from original user data
+		if (isEditMode && userData && userData.assignedClusters) {
+			setSelectedEntities({
+				...selectedEntities,
+				clusters: userData.assignedClusters,
+			});
+		} else {
+			// For non-edit mode, simply clear the selection
+			setSelectedEntities({
+				...selectedEntities,
+				clusters: [],
+			});
+		}
+	};
 
 	return (
 		<ThemeProvider theme={theme}>
@@ -729,6 +748,26 @@ export default function UserCreationForm() {
 					{hierarchyFields.showCluster && formData.block && (
 						<>
 							<div className="mb-6">
+								<div className="flex justify-between items-center mb-2">
+									<Typography variant="subtitle1">Select Clusters in {formData.block}</Typography>
+									<Button
+										variant="outlined"
+										size="small"
+										onClick={handleRestoreClusters}
+										sx={{
+											backgroundColor: "transparent !important",
+											borderColor: "#2F4F4F !important",
+											color: "#2F4F4F !important",
+											"&:hover": {
+												borderColor: "#2F4F4F !important",
+												backgroundColor: "#2F4F4F !important",
+												color: "white !important",
+											},
+										}}
+									>
+										Restore Previous Cluster
+									</Button>
+								</div>
 								<FormControl fullWidth required>
 									<InputLabel>Select Clusters in {formData.block}</InputLabel>
 									<Select
@@ -750,7 +789,7 @@ export default function UserCreationForm() {
 													selected.map((clusterName) => (
 														<Chip
 															key={clusterName}
-															label={capitalizeFirstLetter(clusterName || '')}
+															label={capitalizeFirstLetter(clusterName || "")}
 															onDelete={() => handleRemoveCluster(clusterName)}
 															onMouseDown={(event) => {
 																event.stopPropagation();
@@ -780,25 +819,29 @@ export default function UserCreationForm() {
 										{availableClusters.map((cluster) => {
 											// Check if this cluster is already assigned based on the role
 											const isAssigned = isClusterAlreadyAssigned(cluster);
-											
+
 											// Need to use a different wrapper for disabled items vs. enabled items
 											// MUI doesn't allow disabled MenuItems in Tooltips directly
 											return isAssigned ? (
-												<Tooltip 
+												<Tooltip
 													key={cluster.id}
-													title={`This cluster already has a ${formData.role === "CP" ? "Cluster Principal" : "Cluster Academic Coordinator"} assigned`}
+													title={`This cluster already has a ${
+														formData.role === "CP"
+															? "Cluster Principal"
+															: "Cluster Academic Coordinator"
+													} assigned`}
 													arrow
 												>
 													<div>
 														<MenuItem
 															value={cluster.id}
 															disabled={true}
-															sx={{ 
-																display: "flex", 
+															sx={{
+																display: "flex",
 																alignItems: "center",
 																opacity: 0.5,
 																color: "#888888",
-																cursor: "not-allowed"
+																cursor: "not-allowed",
 															}}
 														>
 															<input
@@ -813,12 +856,12 @@ export default function UserCreationForm() {
 																}}
 															/>
 															{capitalizeFirstLetter(cluster.name)}
-															<Typography 
-																variant="caption" 
-																sx={{ 
-																	ml: 1, 
-																	color: "#888", 
-																	fontStyle: "italic" 
+															<Typography
+																variant="caption"
+																sx={{
+																	ml: 1,
+																	color: "#888",
+																	fontStyle: "italic",
 																}}
 															>
 																(Assigned)
@@ -831,9 +874,9 @@ export default function UserCreationForm() {
 												<MenuItem
 													key={cluster.id}
 													value={cluster.id}
-													sx={{ 
-														display: "flex", 
-														alignItems: "center"
+													sx={{
+														display: "flex",
+														alignItems: "center",
 													}}
 												>
 													<input
@@ -842,7 +885,7 @@ export default function UserCreationForm() {
 														readOnly
 														style={{
 															marginRight: "10px",
-															accentColor: "#2F4F4F"
+															accentColor: "#2F4F4F",
 														}}
 													/>
 													{capitalizeFirstLetter(cluster.name)}
