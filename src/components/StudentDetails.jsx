@@ -347,8 +347,10 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 	};
 
 	const handleBulkUploadStudent = () => {
-		navigate(`/schools/schoolDetail/${schoolId}/studentBulkUpload`);
-	};
+		navigate(`/schools/schoolDetail/${schoolId}/studentBulkUpload`, {
+		  state: { schoolId: schoolId }
+		});
+	  };
 
 	const handleAddStudent = () => {
 		// () => navigate(`/schools/schoolDetail/addStudents`)

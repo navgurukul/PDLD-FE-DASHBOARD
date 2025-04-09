@@ -1,647 +1,757 @@
 import { useState, useEffect } from "react";
 import {
-	Box,
-	Typography,
-	Paper,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	FormControl,
-	MenuItem,
-	Select,
-	Button,
-	Alert,
-	Tabs,
-	Tab,
-	Chip,
-	IconButton,
-	Tooltip,
-	CircularProgress,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  FormControl,
+  Select,
+  MenuItem,
+  Button,
+  CircularProgress,
+  TextField,
+  IconButton,
+  Tooltip,
+  Card,
+  CardContent,
+  Chip,
+  Snackbar,
+  Slide,
 } from "@mui/material";
+import MuiAlert from "@mui/material/Alert";
+import { alpha } from "@mui/material/styles";
+import { toast } from "react-toastify";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import SaveIcon from "@mui/icons-material/Save";
+import CancelIcon from "@mui/icons-material/Cancel";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import WarningIcon from "@mui/icons-material/Warning";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
-import InfoIcon from "@mui/icons-material/Info";
-import EditIcon from "@mui/icons-material/Edit";
-import { alpha } from "@mui/material/styles";
+import { addSymbolBtn, EditPencilIcon, trash } from "../../../utils/imagePath";
 import ButtonCustom from "../../../components/ButtonCustom";
 
-const CSVMapper = ({ file, onMappingComplete, entityType = "student", apiResponse = null }) => {
-	const [csvData, setCsvData] = useState([]);
-	const [csvHeaders, setCsvHeaders] = useState([]);
-	const [mappingConfig, setMappingConfig] = useState({});
-	const [previewData, setPreviewData] = useState([]);
-	const [validationErrors, setValidationErrors] = useState([]);
-	const [isValidating, setIsValidating] = useState(false);
-	const [activeTab, setActiveTab] = useState(0);
-	const [isEditing, setIsEditing] = useState(false);
-	const [editedData, setEditedData] = useState([]);
-	const [isDataLoading, setIsDataLoading] = useState(true);
-	const [showErrorDialog, setShowErrorDialog] = useState(false);
-	const [selectedError, setSelectedError] = useState(null);
-	const [apiErrors, setApiErrors] = useState([]);
-
-	// System fields based on the provided CSV headers
-	const systemFields = [
-		{ value: "fullName", label: "Fullname", required: true },
-		{ value: "fatherName", label: "Father Name", required: true },
-		{ value: "motherName", label: "Mother Name", required: true },
-		{ value: "dob", label: "Date of Birth", required: true },
-		{ value: "class", label: "Class", required: true },
-		{ value: "gender", label: "Gender", required: true },
-		{ value: "schoolUdiseCode", label: "School UDISE Code", required: true },
-		{ value: "aparId", label: "APAR ID", required: false },
-		{ value: "hostel", label: "Hostel", required: false },
-		{ value: "", label: "-- Skip Column --", required: false },
-	];
-
-	useEffect(() => {
-		if (file) {
-			setIsDataLoading(true);
-			// Parse CSV file using FileReader
-			const reader = new FileReader();
-
-			reader.onload = (event) => {
-				const text = event.target.result;
-				// Process the CSV
-				processCSV(text);
-			};
-
-			reader.onerror = (error) => {
-				console.error("Error reading CSV file:", error);
-				setIsDataLoading(false);
-			};
-
-			reader.readAsText(file);
-		}
-	}, [file]);
-
-	// Process API response if it exists
-	useEffect(() => {
-		if (apiResponse && apiResponse.data && apiResponse.data.errors) {
-			setApiErrors(apiResponse.data.errors);
-
-			// If there are errors, switch to the errors tab
-			if (apiResponse.data.errorCount > 0) {
-				setActiveTab(2); // Assuming we'll add a new tab for errors
-			}
-		}
-	}, [apiResponse]);
-
-	// CSV parsing function
-	const processCSV = (text) => {
-		try {
-			// Split the text by newline
-			const lines = text.split(/\r\n|\n/);
-			if (lines.length === 0) {
-				setIsDataLoading(false);
-				return;
-			}
-
-			// Parse headers (first line)
-			const headerLine = lines[0];
-			// Handle standard CSV format with potential quoted values
-			const headers = parseCSVLine(headerLine);
-			setCsvHeaders(headers);
-
-			// Parse data rows
-			const parsedData = [];
-			for (let i = 1; i < lines.length; i++) {
-				if (lines[i].trim() === "") continue; // Skip empty lines
-
-				const values = parseCSVLine(lines[i]);
-				const rowData = {};
-
-				// Create object with headers as keys
-				headers.forEach((header, index) => {
-					// Attempt to convert numeric values
-					let value = values[index] || "";
-					if (!isNaN(value) && value !== "") {
-						const num = parseFloat(value);
-						if (Number.isFinite(num)) {
-							value = num;
-						}
-					}
-					rowData[header] = value;
-				});
-
-				parsedData.push(rowData);
-			}
-
-			setCsvData(parsedData);
-			setPreviewData(parsedData.slice(0, 5));
-			setEditedData(parsedData);
-
-			// Create initial mapping based on header names
-			const initialMapping = {};
-			headers.forEach((header) => {
-				// Try to match CSV headers with system fields
-				const matchedField = systemFields.find(
-					(field) =>
-						field.label.toLowerCase() === header.toLowerCase() ||
-						field.value.toLowerCase() === header.toLowerCase()
-				);
-
-				initialMapping[header] = matchedField ? matchedField.value : "";
-			});
-
-			setMappingConfig(initialMapping);
-			setIsDataLoading(false);
-		} catch (error) {
-			console.error("Error processing CSV:", error);
-			setIsDataLoading(false);
-		}
-	};
-
-	// Handle CSV line parsing with respect to quoted fields
-	const parseCSVLine = (line) => {
-		const result = [];
-		let currentField = "";
-		let inQuotes = false;
-
-		for (let i = 0; i < line.length; i++) {
-			const char = line[i];
-
-			if (char === '"' && (i === 0 || line[i - 1] !== "\\")) {
-				inQuotes = !inQuotes;
-			} else if (char === "," && !inQuotes) {
-				result.push(currentField.trim());
-				currentField = "";
-			} else {
-				currentField += char;
-			}
-		}
-
-		// Add the last field
-		result.push(currentField.trim());
-
-		return result.map((field) => {
-			// Remove surrounding quotes if they exist
-			if (field.startsWith('"') && field.endsWith('"')) {
-				return field.slice(1, -1).replace(/""/g, '"');
-			}
-			return field;
-		});
-	};
-
-	const handleMappingChange = (csvHeader, systemField) => {
-		setMappingConfig((prev) => ({
-			...prev,
-			[csvHeader]: systemField,
-		}));
-	};
-
-	const validateMapping = () => {
-		// Check if all required fields are mapped
-		const errors = [];
-
-		// Get all mapped system fields
-		const mappedFields = Object.values(mappingConfig);
-
-		// Check if all required system fields are mapped
-		systemFields.forEach((field) => {
-			if (field.required && !mappedFields.includes(field.value)) {
-				errors.push(`Required field "${field.label}" is not mapped to any CSV column`);
-			}
-		});
-
-		// Check if any field is mapped more than once (duplicate mappings)
-		const fieldCounts = {};
-		mappedFields.forEach((field) => {
-			if (field && field !== "") {
-				fieldCounts[field] = (fieldCounts[field] || 0) + 1;
-			}
-		});
-
-		Object.entries(fieldCounts).forEach(([field, count]) => {
-			if (count > 1) {
-				const fieldLabel = systemFields.find((f) => f.value === field)?.label || field;
-				errors.push(`Field "${fieldLabel}" is mapped to multiple columns`);
-			}
-		});
-
-		return errors;
-	};
-
-	const handleSubmitMapping = () => {
-		setIsValidating(true);
-
-		// Validate the mapping
-		const validationErrors = validateMapping();
-		setValidationErrors(validationErrors);
-
-		if (validationErrors.length === 0) {
-			// If there are no validation errors, proceed
-			onMappingComplete(mappingConfig, isEditing ? editedData : null);
-		}
-
-		setIsValidating(false);
-	};
-
-	const handleTabChange = (event, newValue) => {
-		setActiveTab(newValue);
-	};
-
-	const handleOpenErrorDetails = (error) => {
-		setSelectedError(error);
-		setShowErrorDialog(true);
-	};
-
-	const handleCloseErrorDialog = () => {
-		setShowErrorDialog(false);
-	};
-
-	const toggleEditMode = () => {
-		setIsEditing(!isEditing);
-	};
-
-	const handleCellEdit = (rowIndex, header, value) => {
-		const updatedData = [...editedData];
-		updatedData[rowIndex][header] = value;
-		setEditedData(updatedData);
-	};
-
-	const getMappingStatus = () => {
-		// Count mapped fields
-		const mappedFieldsCount = Object.values(mappingConfig).filter((field) => field && field !== "").length;
-		const totalRequiredFields = systemFields.filter((field) => field.required).length;
-
-		// Check if all required fields are mapped
-		const requiredFieldsMapped = systemFields
-			.filter((field) => field.required)
-			.every((field) => Object.values(mappingConfig).includes(field.value));
-
-		if (mappedFieldsCount === 0) {
-			return { status: "not_started", message: "No columns mapped yet" };
-		} else if (!requiredFieldsMapped) {
-			return {
-				status: "incomplete",
-				message: `${mappedFieldsCount} of ${totalRequiredFields} required fields mapped`,
-			};
-		} else {
-			return { status: "complete", message: "All required fields mapped" };
-		}
-	};
-
-	const mappingStatus = getMappingStatus();
-
-	return (
-		<Box>
-			{isDataLoading ? (
-				<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 4 }}>
-					<CircularProgress size={40} />
-					<Typography variant="body1" sx={{ ml: 2 }}>
-						Processing CSV data...
-					</Typography>
-				</Box>
-			) : (
-				<>
-					<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-						<Typography variant="h6">Map CSV Columns to System Fields</Typography>
-
-						<Box>
-							<Chip
-								icon={
-									mappingStatus.status === "complete" ? (
-										<CheckCircleIcon />
-									) : mappingStatus.status === "incomplete" ? (
-										<InfoIcon />
-									) : (
-										<ErrorIcon />
-									)
-								}
-								label={mappingStatus.message}
-								color={
-									mappingStatus.status === "complete"
-										? "success"
-										: mappingStatus.status === "incomplete"
-										? "info"
-										: "error"
-								}
-								sx={{ mr: 2 }}
-							/>
-						</Box>
-					</Box>
-
-					{validationErrors.length > 0 && (
-						<Alert severity="error" sx={{ mb: 2 }}>
-							<Typography variant="subtitle2">Please fix the following errors:</Typography>
-							<ul style={{ margin: 0, paddingLeft: 20 }}>
-								{validationErrors.map((error, index) => (
-									<li key={`error-${index}`}>{error}</li>
-								))}
-							</ul>
-						</Alert>
-					)}
-
-					<Box sx={{ mb: 2 }}>
-						<Tabs value={activeTab} onChange={handleTabChange}>
-							<Tab label="Column Mapping" />
-							<Tab label="Preview Data" />
-							{apiErrors.length > 0 && (
-								<Tab
-									label={
-										<Box sx={{ display: "flex", alignItems: "center" }}>
-											<ErrorIcon fontSize="small" sx={{ mr: 1, color: "error.main" }} />
-											Errors ({apiErrors.length})
-										</Box>
-									}
-								/>
-							)}
-						</Tabs>
-					</Box>
-
-					{activeTab === 0 && (
-						// Column Mapping Tab
-						<TableContainer component={Paper} sx={{ mb: 3 }}>
-							<Table size="small">
-								<TableHead>
-									<TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-										<TableCell>CSV Column</TableCell>
-										<TableCell>System Field</TableCell>
-										<TableCell>Preview Values</TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{csvHeaders.map((header, index) => (
-										<TableRow key={`header-${index}`}>
-											<TableCell width="30%">
-												<Typography fontWeight="medium">{header}</Typography>
-											</TableCell>
-											<TableCell width="30%">
-												<FormControl fullWidth size="small">
-													<Select
-														value={mappingConfig[header] || ""}
-														onChange={(e) => handleMappingChange(header, e.target.value)}
-														displayEmpty
-													>
-														{systemFields.map((field) => (
-															<MenuItem key={`field-${field.value}`} value={field.value}>
-																{field.label} {field.required && " *"}
-															</MenuItem>
-														))}
-													</Select>
-												</FormControl>
-											</TableCell>
-											<TableCell>
-												<Box
-													sx={{ maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis" }}
-												>
-													{previewData.slice(0, 2).map((row, rowIndex) => (
-														<Typography
-															key={`preview-${header}-${rowIndex}`}
-															variant="body2"
-															sx={{
-																whiteSpace: "nowrap",
-																overflow: "hidden",
-																textOverflow: "ellipsis",
-																color: "#666",
-																"&:not(:last-child)": { mb: 0.5 },
-															}}
-														>
-															{row[header] || "(empty)"}
-														</Typography>
-													))}
-												</Box>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</TableContainer>
-					)}
-
-					{activeTab === 1 && (
-						// Preview Data Tab
-						<Box>
-							<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-								<Typography variant="subtitle1">
-									Data Preview {isEditing ? "(Editing Mode)" : ""}
-								</Typography>
-
-								<Tooltip title={isEditing ? "Save changes" : "Edit data"}>
-									<Button
-										variant={isEditing ? "contained" : "outlined"}
-										size="small"
-										startIcon={<EditIcon />}
-										onClick={toggleEditMode}
-									>
-										{isEditing ? "Finish Editing" : "Edit Data"}
-									</Button>
-								</Tooltip>
-							</Box>
-
-							<TableContainer component={Paper} sx={{ mb: 3, maxHeight: 400 }}>
-								<Table size="small" stickyHeader>
-									<TableHead>
-										<TableRow>
-											<TableCell width="60">Row</TableCell>
-											{csvHeaders.map((header, index) => (
-												<TableCell key={`header-preview-${index}`}>
-													<Typography variant="subtitle2">{header}</Typography>
-													{mappingConfig[header] && (
-														<Typography variant="caption" color="primary">
-															→{" "}
-															{systemFields.find((f) => f.value === mappingConfig[header])
-																?.label || mappingConfig[header]}
-														</Typography>
-													)}
-												</TableCell>
-											))}
-										</TableRow>
-									</TableHead>
-									<TableBody>
-										{(isEditing ? editedData : csvData).slice(0, 20).map((row, rowIndex) => (
-											<TableRow
-												key={`row-${rowIndex}`}
-												sx={
-													rowIndex % 2 === 0 ? { backgroundColor: alpha("#f5f5f5", 0.3) } : {}
-												}
-											>
-												<TableCell>{rowIndex + 1}</TableCell>
-												{csvHeaders.map((header, cellIndex) => (
-													<TableCell key={`cell-${rowIndex}-${cellIndex}`}>
-														{isEditing ? (
-															<input
-																type="text"
-																value={row[header] || ""}
-																onChange={(e) =>
-																	handleCellEdit(rowIndex, header, e.target.value)
-																}
-																style={{
-																	width: "100%",
-																	padding: "4px",
-																	border: "1px solid #ddd",
-																	borderRadius: "4px",
-																}}
-															/>
-														) : (
-															row[header] || ""
-														)}
-													</TableCell>
-												))}
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
-							</TableContainer>
-
-							{csvData.length > 20 && (
-								<Typography variant="caption" color="text.secondary">
-									Showing first 20 rows of {csvData.length} total rows
-								</Typography>
-							)}
-						</Box>
-					)}
-
-					{activeTab === 2 && apiErrors.length > 0 && (
-						// Errors Tab
-						<Box>
-							<Box sx={{ mb: 2 }}>
-								<Alert severity="error">
-									<Typography variant="subtitle2">
-										There were {apiErrors.length} errors in your data upload. Please review the
-										details below.
-									</Typography>
-								</Alert>
-							</Box>
-
-							<TableContainer component={Paper} sx={{ mb: 3, maxHeight: 400 }}>
-								<Table size="small" stickyHeader>
-									<TableHead>
-										<TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-											<TableCell width="80">Row</TableCell>
-											<TableCell>Error Type</TableCell>
-											<TableCell>Details</TableCell>
-											<TableCell width="100">Actions</TableCell>
-										</TableRow>
-									</TableHead>
-									<TableBody>
-										{apiErrors.map((error, index) => (
-											<TableRow
-												key={`error-${index}`}
-												sx={{ backgroundColor: alpha("#ffebee", 0.3) }}
-											>
-												<TableCell>{error.row || "N/A"}</TableCell>
-												<TableCell>
-													{error.error && error.error.includes("Duplicate")
-														? "Duplicate Entry"
-														: error.error && error.error.includes("authorized")
-														? "Authorization Error"
-														: "Validation Error"}
-												</TableCell>
-												<TableCell>
-													<Typography variant="body2" noWrap sx={{ maxWidth: 400 }}>
-														{error.error || "Unknown error"}
-													</Typography>
-												</TableCell>
-												<TableCell>
-													<Button
-														size="small"
-														variant="outlined"
-														color="primary"
-														onClick={() => handleOpenErrorDetails(error)}
-													>
-														View
-													</Button>
-												</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
-							</TableContainer>
-						</Box>
-					)}
-
-					<Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-						<ButtonCustom
-							text={isValidating ? "Validating..." : "Continue"}
-							onClick={handleSubmitMapping}
-							disabled={isValidating || Object.keys(mappingConfig).length === 0}
-							btnWidth="140"
-						/>
-					</Box>
-
-					{/* Error Details Dialog */}
-					<Dialog open={showErrorDialog} onClose={handleCloseErrorDialog} maxWidth="md" fullWidth>
-						<DialogTitle sx={{ backgroundColor: "#f8f8f8" }}>
-							<Typography variant="h6" component="div">
-								Error Details - Row {selectedError?.row || "N/A"}
-							</Typography>
-						</DialogTitle>
-						<DialogContent dividers>
-							{selectedError && (
-								<>
-									<Box sx={{ mb: 3 }}>
-										<Typography variant="subtitle1" color="error" gutterBottom>
-											Error Message:
-										</Typography>
-										<Paper sx={{ p: 2, backgroundColor: alpha("#ffebee", 0.3) }}>
-											<Typography variant="body2">
-												{selectedError.error || "Unknown error"}
-											</Typography>
-										</Paper>
-									</Box>
-
-									{selectedError.data && (
-										<Box>
-											<Typography variant="subtitle1" gutterBottom>
-												Row Data:
-											</Typography>
-											<TableContainer component={Paper} variant="outlined">
-												<Table size="small">
-													<TableHead>
-														<TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-															<TableCell width="30%">Field</TableCell>
-															<TableCell>Value</TableCell>
-														</TableRow>
-													</TableHead>
-													<TableBody>
-														{Object.entries(selectedError.data).map(([key, value], idx) => (
-															<TableRow
-																key={`detail-${idx}`}
-																sx={
-																	idx % 2 === 0
-																		? { backgroundColor: alpha("#f5f5f5", 0.3) }
-																		: {}
-																}
-															>
-																<TableCell>
-																	<Typography variant="body2" fontWeight="medium">
-																		{key}
-																	</Typography>
-																</TableCell>
-																<TableCell>
-																	<Typography variant="body2">
-																		{value !== null && value !== undefined
-																			? value.toString()
-																			: "(empty)"}
-																	</Typography>
-																</TableCell>
-															</TableRow>
-														))}
-													</TableBody>
-												</Table>
-											</TableContainer>
-										</Box>
-									)}
-								</>
-							)}
-						</DialogContent>
-						<DialogActions>
-							<Button onClick={handleCloseErrorDialog}>Close</Button>
-						</DialogActions>
-					</Dialog>
-				</>
-			)}
-		</Box>
-	);
+// Function to get login details from localStorage with fallback
+const getLoginDetails = () => {
+  // Default values as specified
+  let defaultDetails = {
+    username: "mahendra-shah",
+    currentDateTime: "2025-04-03 06:25:18"
+  };
+  
+  try {
+    // Get user data from localStorage
+    const userDataString = localStorage.getItem('userData');
+    if (userDataString) {
+      const userData = JSON.parse(userDataString);
+      if (userData?.username || userData?.name || userData?.email) {
+        defaultDetails.name = userData.name || userData.username || userData.email;
+      }
+    }
+  } catch (error) {
+    console.error("Error parsing user data from localStorage:", error);
+  }
+  
+  return defaultDetails;
 };
 
-export default CSVMapper;
+// Get login details
+const loginDetails = getLoginDetails();
+
+export default function StudentCSVMapper({ file, onMappingComplete }) {
+  const [csvData, setCsvData] = useState([]);
+  const [headers, setHeaders] = useState([]);
+  const [mapping, setMapping] = useState({});
+  const [systemFields, setSystemFields] = useState([]);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showError, setShowError] = useState(false);
+  const [editingRowIndex, setEditingRowIndex] = useState(null);
+  const [editingValues, setEditingValues] = useState({});
+  const [editingErrors, setEditingErrors] = useState({});
+  const [addingNewRow, setAddingNewRow] = useState(false);
+  const [newRowValues, setNewRowValues] = useState({});
+  const [newRowErrors, setNewRowErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // States for deletion functionality
+  const [deletingRowIndex, setDeletingRowIndex] = useState(null);
+  const [showUndoSnackbar, setShowUndoSnackbar] = useState(false);
+  const [deletedRow, setDeletedRow] = useState(null);
+  const [deletedRowIndex, setDeletedRowIndex] = useState(null);
+
+  // Set up student system fields
+  useEffect(() => {
+    // Updated with the correct required fields for student upload
+    setSystemFields([
+      { id: "fullName", label: "Full Name", required: true },
+      { id: "fatherName", label: "Father Name", required: true },
+      { id: "motherName", label: "Mother Name", required: true },
+      { id: "dob", label: "Date of Birth", required: true },
+      { id: "class", label: "Class", required: true },
+      { id: "gender", label: "Gender", required: true },
+      { id: "schoolUdiseCode", label: "School UDISE Code", required: true },
+      { id: "aparId", label: "APAR ID", required: false },
+      { id: "hostel", label: "Hostel", required: false },
+      // Add any other fields that might be optional
+    ]);
+  }, []);
+
+  // Parse CSV file when it's selected
+  useEffect(() => {
+    if (!file) return;
+
+    setIsLoading(true);
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const content = e.target.result;
+      const rows = content.split("\n");
+      
+      // Parse headers (first row)
+      const headerRow = rows[0].split(",").map(h => h.trim());
+      setHeaders(headerRow);
+      
+      // Create initial mapping - attempt to match headers to system fields
+      const initialMapping = {};
+      headerRow.forEach(header => {
+        // Try to find a matching system field by normalizing and comparing the names
+        const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const matchedField = systemFields.find(field => {
+          const normalizedField = field.label.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return normalizedField === normalizedHeader || 
+                 normalizedField.includes(normalizedHeader) || 
+                 normalizedHeader.includes(normalizedField);
+        });
+        
+        if (matchedField) {
+          initialMapping[header] = matchedField.id;
+        }
+      });
+      setMapping(initialMapping);
+      
+      // Parse all data rows
+      const dataRows = [];
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i].trim()) {
+          const rowData = rows[i].split(",").map(cell => cell.trim());
+          const rowObj = {};
+          headerRow.forEach((header, index) => {
+            rowObj[header] = rowData[index] || "";
+          });
+          dataRows.push(rowObj);
+        }
+      }
+      
+      setCsvData(dataRows);
+      setIsLoading(false);
+    };
+    
+    reader.readAsText(file);
+  }, [file, systemFields]);
+
+  // Update a single field mapping
+  const handleMappingChange = (csvHeader, systemFieldId) => {
+    setMapping(prev => ({
+      ...prev,
+      [csvHeader]: systemFieldId
+    }));
+    
+    // Clear error message when user updates mapping
+    if (showError) {
+      setShowError(false);
+    }
+  };
+
+  // Check if all required fields are mapped
+  const areAllRequiredFieldsMapped = () => {
+    const requiredFieldIds = systemFields
+      .filter(field => field.required)
+      .map(field => field.id);
+    
+    const mappedFieldIds = Object.values(mapping).filter(Boolean);
+    
+    return requiredFieldIds.every(fieldId => mappedFieldIds.includes(fieldId));
+  };
+
+  // Get missing required fields
+  const getMissingRequiredFields = () => {
+    const requiredFieldIds = systemFields
+      .filter(field => field.required)
+      .map(field => field.id);
+    
+    const mappedFieldIds = Object.values(mapping).filter(Boolean);
+    
+    return systemFields
+      .filter(field => field.required && !mappedFieldIds.includes(field.id))
+      .map(field => field.label);
+  };
+
+  // Handle button click when disabled
+  const handleDisabledButtonClick = () => {
+    const missingFields = getMissingRequiredFields();
+    setErrorMessage(`Missing required fields: ${missingFields.join(", ")}`);
+    setShowError(true);
+  };
+
+  // Complete mapping and pass data back to parent
+  const completeMapping = () => {
+    if (areAllRequiredFieldsMapped()) {
+      // Include the edited data in the mapping completion
+      onMappingComplete(mapping, csvData);
+    } else {
+      const missingFields = getMissingRequiredFields();
+      setErrorMessage(`Missing required fields: ${missingFields.join(", ")}`);
+      setShowError(true);
+    }
+  };
+
+  // Validate a single row against required fields
+  const validateRow = (rowData) => {
+    const errors = {};
+    let hasError = false;
+    
+    // Check each required field based on mapping
+    Object.entries(mapping).forEach(([csvHeader, systemFieldId]) => {
+      const field = systemFields.find(f => f.id === systemFieldId);
+      if (field && field.required && (!rowData[csvHeader] || rowData[csvHeader].trim() === '')) {
+        errors[csvHeader] = `${field.label} is required`;
+        hasError = true;
+      }
+    });
+    
+    return { errors, isValid: !hasError };
+  };
+
+  // Start editing a row
+  const startEditRow = (index) => {
+    setEditingRowIndex(index);
+    setEditingValues({...csvData[index]});
+    setEditingErrors({});
+  };
+
+  // Cancel editing
+  const cancelEdit = () => {
+    setEditingRowIndex(null);
+    setEditingValues({});
+    setEditingErrors({});
+  };
+
+  // Save edited row
+  const saveEditedRow = () => {
+    // Validate data before saving
+    const { errors, isValid } = validateRow(editingValues);
+    
+    if (!isValid) {
+      setEditingErrors(errors);
+      toast.error("Please fill all required fields");
+      return;
+    }
+    
+    const newData = [...csvData];
+    newData[editingRowIndex] = {...editingValues};
+    setCsvData(newData);
+    setEditingRowIndex(null);
+    setEditingValues({});
+    setEditingErrors({});
+    toast.success("Row updated successfully");
+  };
+
+  // Handle changes in editing values
+  const handleEditChange = (header, value) => {
+    setEditingValues(prev => ({
+      ...prev,
+      [header]: value
+    }));
+    
+    // Clear error for this field if it exists
+    if (editingErrors[header]) {
+      setEditingErrors(prev => {
+        const updated = {...prev};
+        delete updated[header];
+        return updated;
+      });
+    }
+  };
+
+  // Add new row
+  const startAddRow = () => {
+    const emptyRow = {};
+    headers.forEach(header => {
+      emptyRow[header] = "";
+    });
+    setNewRowValues(emptyRow);
+    setNewRowErrors({});
+    setAddingNewRow(true);
+  };
+
+  // Cancel adding new row
+  const cancelAddRow = () => {
+    setAddingNewRow(false);
+    setNewRowValues({});
+    setNewRowErrors({});
+  };
+
+  // Save new row
+  const saveNewRow = () => {
+    // Validate data before saving
+    const { errors, isValid } = validateRow(newRowValues);
+    
+    if (!isValid) {
+      setNewRowErrors(errors);
+      toast.error("Please fill all required fields");
+      return;
+    }
+    
+    const newData = [...csvData, {...newRowValues}];
+    setCsvData(newData);
+    setAddingNewRow(false);
+    setNewRowValues({});
+    setNewRowErrors({});
+    toast.success("New row added successfully");
+  };
+
+  // Handle changes in new row values
+  const handleNewRowChange = (header, value) => {
+    setNewRowValues(prev => ({
+      ...prev,
+      [header]: value
+    }));
+    
+    // Clear error for this field if it exists
+    if (newRowErrors[header]) {
+      setNewRowErrors(prev => {
+        const updated = {...prev};
+        delete updated[header];
+        return updated;
+      });
+    }
+  };
+
+  // Delete row with animation
+  const deleteRow = (index) => {
+    // Set the row as being deleted to trigger animation
+    setDeletingRowIndex(index);
+    
+    // Store the row for potential undo
+    setDeletedRow(csvData[index]);
+    setDeletedRowIndex(index);
+    
+    // Use setTimeout to allow animation to complete before removing from data
+    setTimeout(() => {
+      const newData = [...csvData];
+      newData.splice(index, 1);
+      setCsvData(newData);
+      setDeletingRowIndex(null);
+      setShowUndoSnackbar(true);
+      
+      // Log deletion with user info
+      console.log(`Row deleted by ${loginDetails.name} at ${loginDetails.currentDateTime}`);
+    }, 500); // 500ms for the animation to complete
+  };
+
+  // Handle undo of deletion
+  const handleUndo = () => {
+    if (deletedRow && deletedRowIndex !== null) {
+      const newData = [...csvData];
+      // Insert the deleted row back at its original position or at the end if index is out of bounds
+      if (deletedRowIndex >= newData.length) {
+        newData.push(deletedRow);
+      } else {
+        newData.splice(deletedRowIndex, 0, deletedRow);
+      }
+      setCsvData(newData);
+      toast.info("Deletion undone");
+    }
+    setShowUndoSnackbar(false);
+  };
+
+  if (isLoading) {
+    return (
+      <Box sx={{ p: 2, textAlign: "center" }}>
+        <CircularProgress size={24} />
+        <Typography variant="body1" sx={{ mt: 2 }}>
+          Processing CSV file...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Check if button should be disabled
+  const isButtonDisabled = !areAllRequiredFieldsMapped();
+
+  // Determine which fields are already mapped and which are unmapped
+  const unmappedRequiredFieldLabels = getMissingRequiredFields();
+
+  return (
+    <Box sx={{ mt: 3, mb: 3 }}>
+      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+        Map CSV Columns to Student Fields
+      </Typography>
+
+      {/* Mapping Configuration at the top */}
+      <Card variant="outlined" sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap" }}>
+            {/* Left side: Required fields status */}
+            <Box sx={{ minWidth: 300, mb: 2, mr: 3 }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+                Required Fields Status
+              </Typography>
+              
+              {unmappedRequiredFieldLabels.length > 0 ? (
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <ErrorIcon color="error" sx={{ mr: 1 }} />
+                  <Typography variant="body2" color="error">
+                    {unmappedRequiredFieldLabels.length} required field(s) not mapped
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <CheckCircleIcon color="success" sx={{ mr: 1 }} />
+                  <Typography variant="body2" color="success.main">
+                    All required fields are mapped
+                  </Typography>
+                </Box>
+              )}
+              
+              {showError && (
+                <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                  {errorMessage}
+                </Typography>
+              )}
+              
+              {unmappedRequiredFieldLabels.length > 0 && (
+                <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                  {unmappedRequiredFieldLabels.map((fieldLabel, index) => (
+                    <Chip 
+                      key={`unmapped-${index}-${fieldLabel}`}
+                      label={fieldLabel}
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+              )}
+            </Box>
+            
+            {/* Middle: Current Mapping */}
+            <Box sx={{ flexGrow: 1, minWidth: 300, mb: 2, mr: 3 }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+                Current Mapping
+              </Typography>
+              
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {Object.entries(mapping).length > 0 ? (
+                  Object.entries(mapping).map(([csvColumn, systemFieldId]) => {
+                    // Find the system field label
+                    const field = systemFields.find(f => f.id === systemFieldId);
+                    return field ? (
+                      <Chip
+                        key={`mapping-${csvColumn}-${systemFieldId}`}
+                        label={
+                          <Box component="span" sx={{ display: "flex", alignItems: "center" }}>
+                            <Typography variant="caption" sx={{ mr: 0.5 }}>{csvColumn}</Typography>
+                            <ArrowForwardIcon sx={{ fontSize: 10, mx: 0.5 }} />
+                            <Typography variant="caption" fontWeight={field.required ? "bold" : "normal"}>
+                              {field.label} {field.required ? "*" : ""}
+                            </Typography>
+                          </Box>
+                        }
+                        variant="outlined"
+                        color="primary"
+                        size="small"
+                      />
+                    ) : null;
+                  })
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No columns mapped yet
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+            
+            {/* Right side: Confirm button */}
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", minWidth: 180 }}>
+              <Button
+                variant="contained"
+                onClick={isButtonDisabled ? handleDisabledButtonClick : completeMapping}
+                disabled={isButtonDisabled}
+                fullWidth
+                sx={{
+                  backgroundColor: isButtonDisabled ? "#cccccc" : "#0d6efd",
+                  "&:hover": { backgroundColor: isButtonDisabled ? "#cccccc" : "#0b5ed7" },
+                  "&.Mui-disabled": {
+                    backgroundColor: "#cccccc",
+                    color: "#666666",
+                    cursor: "pointer", // Keep pointer cursor for disabled button
+                    pointerEvents: "auto" // Allow clicks on disabled button
+                  }
+                }}
+              >
+                Confirm Mapping
+              </Button>
+              
+              <Typography variant="caption" sx={{ color: "#666", display: "block", mt: 1 }}>
+                * Required fields
+              </Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Data Preview with full width */}
+      <Card variant="outlined">
+        <CardContent>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Box>
+              <Typography variant="subtitle1" fontWeight="bold">
+                Data Preview and Editing
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Showing {csvData.length} rows
+              </Typography>
+            </Box>
+            
+            <ButtonCustom
+              text={"Add Row"}
+              onClick={startAddRow}
+              disabled={addingNewRow}
+              size="small"
+              imageName={addSymbolBtn}
+            />
+          </Box>
+          
+          <TableContainer sx={{ maxHeight: 600 }}>
+            <Table stickyHeader size="small">
+              <TableHead>
+                <TableRow>
+                  {headers.map((header) => (
+                    <TableCell key={`header-${header}`} align="center">
+                      <Box>
+                        <Typography variant="body2" fontWeight="bold">
+                          {header}
+                        </Typography>
+                        <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                          <Select
+                            value={mapping[header] || ""}
+                            onChange={(e) => handleMappingChange(header, e.target.value)}
+                            displayEmpty
+                            sx={{ minWidth: 120 }}
+                          >
+                            <MenuItem value="">
+                              <em>Skip</em>
+                            </MenuItem>
+                            {systemFields.map((field) => (
+                              <MenuItem key={`field-${field.id}`} value={field.id}>
+                                {field.label} {field.required ? "*" : ""}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Box>
+                    </TableCell>
+                  ))}
+                  {/* Actions column on the far right and sticky */}
+                  <TableCell 
+                    align="center" 
+                    sx={{ 
+                      position: 'sticky', 
+                      right: 0, 
+                      backgroundColor: '#f5f5f5',
+                      zIndex: 3,
+                      width: 100,
+                      borderLeft: '1px solid #e0e0e0'
+                    }}
+                  >
+                    <Typography variant="body2" fontWeight="bold">
+                      Actions
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {csvData.map((row, index) => (
+                  <TableRow 
+                    key={`row-${index}`}
+                    sx={{ 
+                      ...(deletingRowIndex === index && {
+                        animation: 'highlight-and-fade 0.5s',
+                        '@keyframes highlight-and-fade': {
+                          '0%': {
+                            backgroundColor: alpha('#f44336', 0.1),
+                            opacity: 1
+                          },
+                          '100%': {
+                            backgroundColor: alpha('#f44336', 0.2),
+                            opacity: 0
+                          }
+                        },
+                        pointerEvents: 'none'
+                      })
+                    }}
+                  >
+                    {headers.map((header) => (
+                      <TableCell key={`cell-${index}-${header}`} align="center">
+                        {editingRowIndex === index ? (
+                          <Box>
+                            <TextField
+                              size="small"
+                              value={editingValues[header] || ""}
+                              onChange={(e) => handleEditChange(header, e.target.value)}
+                              fullWidth
+                              error={Boolean(editingErrors[header])}
+                              helperText={editingErrors[header] || ""}
+                            />
+                            {editingErrors[header] && (
+                              <Tooltip title={editingErrors[header]}>
+                                <WarningIcon color="error" fontSize="small" sx={{ ml: 1 }} />
+                              </Tooltip>
+                            )}
+                          </Box>
+                        ) : (
+                          row[header] || ""
+                        )}
+                      </TableCell>
+                    ))}
+                    {/* Actions cell - sticky to the right */}
+                    <TableCell 
+                      align="center"
+                      sx={{ 
+                        position: 'sticky', 
+                        right: 0,
+                        backgroundColor: deletingRowIndex === index 
+                          ? 'transparent' // Make background transparent during deletion animation
+                          : '#ffffff',
+                        zIndex: 2,
+                        borderLeft: '1px solid #e0e0e0'
+                      }}
+                    >
+                      {editingRowIndex === index ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                          <Tooltip title="Save changes">
+                            <IconButton size="small" color="primary" onClick={saveEditedRow}>
+                              <SaveIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Cancel">
+                            <IconButton size="small" color="error" onClick={cancelEdit}>
+                              <CancelIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      ) : (
+                        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                          <Tooltip title="Edit row">
+                            <IconButton size="small" color="primary" onClick={() => startEditRow(index)}>
+                              <EditIcon fontSize="small" sx={{color: "#2F4F4F"}} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete row">
+                            <IconButton 
+                              size="small" 
+                              color="error" 
+                              onClick={() => deleteRow(index)}
+                              sx={{
+                                color: "#2F4F4F",
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  backgroundColor: alpha('#f44336', 0.1),
+                                  transform: 'scale(1.1)'
+                                }
+                              }}
+                            >
+                              <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {addingNewRow && (
+                  <TableRow key="new-row">
+                    {headers.map((header) => (
+                      <TableCell key={`new-cell-${header}`} align="center">
+                        <Box>
+                          <TextField
+                            size="small"
+                            value={newRowValues[header] || ""}
+                            onChange={(e) => handleNewRowChange(header, e.target.value)}
+                            fullWidth
+                            error={Boolean(newRowErrors[header])}
+                            helperText={newRowErrors[header] || ""}
+                          />
+                          {newRowErrors[header] && (
+                            <Tooltip title={newRowErrors[header]}>
+                              <WarningIcon color="error" fontSize="small" sx={{ ml: 1 }} />
+                            </Tooltip>
+                          )}
+                        </Box>
+                      </TableCell>
+                    ))}
+                    {/* Actions cell for new row */}
+                    <TableCell 
+                      align="center"
+                      sx={{ 
+                        position: 'sticky', 
+                        right: 0,
+                        backgroundColor: '#ffffff',
+                        zIndex: 2,
+                        borderLeft: '1px solid #e0e0e0'
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <Tooltip title="Save new row">
+                          <IconButton size="small" color="primary" onClick={saveNewRow}>
+                            <SaveIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Cancel">
+                          <IconButton size="small" color="error" onClick={cancelAddRow}>
+                            <CancelIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+      
+      {/* Undo Snackbar */}
+      <Snackbar
+        open={showUndoSnackbar}
+        autoHideDuration={6000}
+        onClose={() => setShowUndoSnackbar(false)}
+        TransitionComponent={Slide}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <MuiAlert 
+          elevation={6} 
+          variant="filled" 
+          severity="info"
+          action={
+            <Button color="inherit" size="small" onClick={handleUndo}>
+              UNDO
+            </Button>
+          }
+          onClose={() => setShowUndoSnackbar(false)}
+        >
+          Row deleted by {loginDetails.name}
+        </MuiAlert>
+      </Snackbar>
+    </Box>
+  );
+}
