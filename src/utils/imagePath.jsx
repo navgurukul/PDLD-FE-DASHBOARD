@@ -19,11 +19,14 @@ import UNSelReports from "../assets/unselectedReports.png"
 import addSymbolBtn from "../assets/addSymbolBtn.svg"
 import closeCross from "../assets/closeCross.svg"
 import deadlineSummaryModal from "../assets/deadlineSummaryModal.svg"
+import school from "../assets/school.svg"
+import unselectedschool from "../assets/unselectedschool.svg"
+import trash from "../assets/trash.svg"
 
 export {
   SelReports,SelTests,SelUsers,UNSelUsers,UNSelTests,UNSelReports,
     BrandGoogleAnalytics,addSymbolBtn,closeCross,deadlineSummaryModal,
-    ChevronLeft,
+    ChevronLeft,school,unselectedschool,trash,
     CreateTestImg,
     DocScanner,
     EditPencilIcon,

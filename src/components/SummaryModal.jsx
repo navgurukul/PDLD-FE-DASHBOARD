@@ -113,7 +113,8 @@ const ModalSummary = ({
 									return (
 										<div
 											key={`${grade}-${test.subject}-${idx}`}
-											className="border-b pb-2 last:border-b-0"
+											// className="border-b pb-2 last:border-b-0"
+											className="pb-2"
 										>
 											{/* You can name the test however you want; the image 
                                             in your question had something like “Maths_Class8” */}

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, DocScanner } from "../utils/imagePath";
-import { Button, TextField, MenuItem } from "@mui/material";
+import { Button, TextField, MenuItem, CircularProgress } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -10,10 +10,16 @@ import { useNavigate } from "react-router-dom";
 import "./TestListTable.css";
 import { ToastContainer, toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import Tooltip from "@mui/material/Tooltip";
 
 import apiInstance from "../../api";
 import { CLASS_OPTIONS, SUBJECT_OPTIONS, STATUS_LABELS } from "../data/testData";
 import ButtonCustom from "./ButtonCustom";
+import SpinnerPageOverlay from "./SpinnerPageOverlay";
+import { FormControl } from "@mui/material";
+import { Select } from "@mui/material";
+import { InputLabel } from "@mui/material";
 
 const theme = createTheme({
 	typography: {
@@ -51,6 +57,7 @@ export default function TestListTable() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [dateRange, setDateRange] = useState([null, null]);
 	const [startDate, endDate] = dateRange;
+	const [isLoading, setIsLoading] = useState(false);
 
 	// Track dropdown selections
 	const [selectedClass, setSelectedClass] = useState("");
@@ -62,7 +69,7 @@ export default function TestListTable() {
 
 	const [currentPage, setCurrentPage] = useState(1);
 	const location = useLocation();
-  const navigate = useNavigate();
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		if (location.state?.successMessage) {
@@ -73,7 +80,6 @@ export default function TestListTable() {
 	}, [location, navigate]);
 
 	const pageSize = 20; // The fixed page size
-
 
 	const handleCreateTest = () => {
 		navigate("/testCreationForm"); // Replace with your target route
@@ -89,6 +95,7 @@ export default function TestListTable() {
 
 	// Fetch data from API
 	const fetchData = async () => {
+		setIsLoading(true);
 		try {
 			let startDateFormatted;
 			let endDateFormatted;
@@ -103,16 +110,24 @@ export default function TestListTable() {
 			}
 
 			// Build your URL with all applicable filters, including status
-			let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&page=${currentPage}&pageSize=${pageSize}`;
+			// let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&page=${currentPage}&pageSize=${pageSize}`;
+			let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
+
+			if (!selectedClass && !selectedSubject && !selectedStatus) {
+				url += `&page=${currentPage}`;
+			}
 
 			if (selectedClass) {
 				url += `&testClass=${selectedClass}`;
+				url += `&page=1`;
 			}
 			if (selectedSubject) {
 				url += `&subject=${selectedSubject}`;
+				url += `&page=1`;
 			}
 			if (selectedStatus) {
 				url += `&testStatus=${selectedStatus}`;
+				url += `&page=1`;
 			}
 
 			const response = await apiInstance.get(url);
@@ -122,6 +137,8 @@ export default function TestListTable() {
 			}
 		} catch (error) {
 			console.error("Error fetching data:", error);
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
@@ -133,7 +150,49 @@ export default function TestListTable() {
 	// Filter tests based on search query (local filter for "testName")
 	const filteredTests = tests?.filter((test) => test.testName?.toLowerCase().includes(searchQuery.toLowerCase()));
 
-	const tableData = filteredTests?.map((test) => ({
+	// Add this sort function at the component level
+	// Sort function
+	const sortByClassNumber = (data, order = "asc") => {
+		return [...data].sort((a, b) => {
+			const aClassNum = parseInt(a.testClass || 0, 10);
+			const bClassNum = parseInt(b.testClass || 0, 10);
+			return order === "asc" ? aClassNum - bClassNum : bClassNum - aClassNum;
+		});
+	};
+
+	// State to track sorting
+	const [sortConfig, setSortConfig] = useState({
+		key: null,
+		direction: "asc",
+	});
+
+	// Add this sort function for dates
+	const sortByDateTimestamp = (data, order = "asc") => {
+		return [...data].sort((a, b) => {
+			// Use the timestamp for proper date sorting
+			const aTimestamp = new Date(a.testDate).getTime();
+			const bTimestamp = new Date(b.testDate).getTime();
+
+			return order === "asc" ? aTimestamp - bTimestamp : bTimestamp - aTimestamp;
+		});
+	};
+
+	// Apply sorting based on which column is being sorted
+	const sortedTests = useMemo(() => {
+		if (!sortConfig.key) return filteredTests;
+
+		switch (sortConfig.key) {
+			case "class":
+				return sortByClassNumber(filteredTests, sortConfig.direction);
+			case "date":
+				return sortByDateTimestamp(filteredTests, sortConfig.direction);
+			default:
+				return filteredTests;
+		}
+	}, [filteredTests, sortConfig]);
+
+	// Then proceed with mapping to tableData as before
+	const tableData = sortedTests?.map((test) => ({
 		id: test.id,
 		testName: test.testName,
 		subject: test.subject || "N/A",
@@ -143,7 +202,7 @@ export default function TestListTable() {
 			month: "short",
 			year: "numeric",
 		}),
-		schoolsSubmitted: 30,
+		schoolsSubmitted: test.totalSubmittedSchools || 0,
 		// <-- Use testStatus directly instead of getStatus
 		status: test.testStatus,
 		actions: "View Report",
@@ -168,72 +227,133 @@ export default function TestListTable() {
 		},
 		{
 			name: "class",
-			label: "Class",
-			options: { filter: true, sort: true },
-			
+			label: "CLASS",
+			options: {
+				filter: true,
+				sort: false, // Disable built-in sorting
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{
+								cursor: "pointer",
+								borderBottom: "1px solid lightgray",
+								fontSize: "14px",
+								textTransform: "uppercase", // Keep it capitalized
+							}}
+							onClick={() => {
+								// Toggle sort direction if already sorting by class
+								setSortConfig({
+									key: "class",
+									direction:
+										sortConfig.key === "class" && sortConfig.direction === "asc" ? "desc" : "asc",
+								});
+							}}
+						>
+							<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									// justifyContent: "center",
+									paddingLeft: "16px",
+								}}
+							>
+								{columnMeta.label}
+								<span style={{ marginLeft: "5px" }}>
+									{sortConfig.key === "class" ? (sortConfig.direction === "asc" ? "" : "") : ""}
+								</span>
+							</div>
+						</th>
+					);
+				},
 		},
+	},
 		{
 			name: "dateOfTest",
-			label: "Date of Test",
-			options: { filter: true, sort: true },
-			customBodyRender: (value) => (
-				<div style={{ whiteSpace: "nowrap" }}>{value}</div>
-			  ),
+			label: "DATE OF TEST",
+			options: {
+				filter: true,
+				sort: false, // Disable built-in sorting
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{
+								// textAlign: "center",
+								cursor: "pointer",
+								borderBottom: "1px solid lightgray",
+								fontSize: "14px", // Smaller font size for this specific header
+								textTransform: "uppercase", // Keep it capitalized
+							}}
+							onClick={() => {
+								// Toggle sort direction if already sorting by date
+								setSortConfig({
+									key: "date",
+									direction:
+										sortConfig.key === "date" && sortConfig.direction === "asc" ? "desc" : "asc",
+								});
+							}}
+						>
+							<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									// justifyContent: "center",
+									paddingLeft: "16px",
+								}}
+							>
+								{columnMeta.label}
+								<span style={{ marginLeft: "5px" }}>
+									{sortConfig.key === "date" ? (sortConfig.direction === "asc" ? "" : "") : ""}
+								</span>
+							</div>
+						</th>
+					);
+				},
+				customBodyRender: (value) => <div style={{ whiteSpace: "nowrap" }}>{value}</div>,
+			},
 		},
 		{
 			name: "schoolsSubmitted",
-			label: "Schools Submitted",
+			label: "SCHOOLS SUBMITTED",
 			options: {
 				filter: false,
 				sort: true,
-				customBodyRender: (value) => {
-					return <div style={{ textAlign: "center" }}>{value}</div>;
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{
+								borderBottom: "1px solid lightgray",
+								fontSize: "14px",
+								width: "120px",
+								maxWidth: "120px",
+							}}
+							scope="col"
+						>
+							{columnMeta.label}
+						</th>
+					);
 				},
-				setHeaderProps: () => ({
+				customBodyRender: (value) => {
+					return (
+						<div
+							style={{
+								textAlign: "center",
+								paddingLeft: "0px",
+								width: "120px",
+								maxWidth: "120px",
+							}}
+						>
+							{value}
+						</div>
+					);
+				},
+				setCellProps: () => ({
 					style: {
-						textAlign: "center",
+						width: "100px",
+						maxWidth: "100px",
 					},
 				}),
 			},
 		},
-		// {
-		//   name: "status",
-		//   label: "Status",
-		//   options: {
-		//     filter: true,
-		//     sort: true,
-
-		//     // 1️⃣ Center the header text using customHeadRender
-		//     customHeadRender: (columnMeta) => {
-		//       return (
-		//         <th style={{ textAlign: "center" }} scope="col">
-		//           <div style={{ textAlign: "center" }}>{columnMeta.label}</div>
-		//         </th>
-		//       );
-		//     },
-
-		//     customBodyRender: (value) => (
-		//       <span
-		//         style={{
-		//           padding: "4px 8px",
-		//           borderRadius: "6px",
-		//           // Example style logic: color red if CANCELLED or DEADLINE_MISSED; green otherwise
-		//           color:
-		//             value === "DEADLINE_MISSED" || value === "CANCELLED"
-		//               ? "#D9534F"
-		//               : "#28A745",
-		//           backgroundColor:
-		//             value === "DEADLINE_MISSED" || value === "CANCELLED"
-		//               ? "#FADBD8"
-		//               : "#D4EDDA",
-		//           fontWeight: "bold",
-		//         }}
-		//       >
-		//         {value}
-		//       </span>
-		//     ),
-		//   },
-		// },
 		{
 			name: "actions",
 			label: "ACTIONS",
@@ -241,20 +361,38 @@ export default function TestListTable() {
 				filter: false,
 				sort: false,
 
-				// 1️⃣ Center the header text using customHeadRender
+				// Center the header text using customHeadRender with small font size
 				customHeadRender: (columnMeta) => {
 					return (
-						<th style={{ textAlign: "center" }} scope="col">
-							<div style={{ textAlign: "center", fontSize: "14px",  borderBottom: "1px solid #ccc",}}>{columnMeta.label}</div>
+						<th
+							style={{
+								// textAlign: "center",
+								borderBottom: "1px solid lightgray",
+							}}
+							scope="col"
+						>
+							<div
+								style={{
+									// textAlign: "center",
+									fontSize: "14px",
+								}}
+							>
+								{columnMeta.label}
+							</div>
 						</th>
 					);
 				},
 
-				// 2️⃣ Keep your existing onClick/edit/view-report buttons
+				// The rest of your customBodyRender code remains the same
 				customBodyRender: (value, tableMeta) => {
-					const testId = tableMeta.rowData[0]; // Now the ID is in the first column
+					const testId = tableMeta.rowData[0];
 					return (
-						<div style={{ display: "flex", gap: "8px" }}>
+						<div
+							style={{
+								display: "flex",
+								justifyContent: "center",
+							}}
+						>
 							<Button
 								variant="outlined"
 								size="small"
@@ -264,8 +402,7 @@ export default function TestListTable() {
 									"&:hover": { borderColor: "transparent" },
 								}}
 								onClick={() => {
-									console.log("Test ID:", testId);
-									navigate(`/edit/testCreation/${testId}`);
+									navigate(`/editTest/${testId}`);
 								}}
 							>
 								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
@@ -274,9 +411,9 @@ export default function TestListTable() {
 							<Button
 								variant="outlined"
 								size="small"
-								color="secondary"
 								sx={{
 									borderColor: "transparent",
+									color: "#2F4F4F",
 									"&:hover": { borderColor: "transparent" },
 								}}
 							>
@@ -306,194 +443,233 @@ export default function TestListTable() {
 		pagination: false,
 	};
 
+	const resetFilters = () => {
+		setSelectedClass("");
+		setSelectedSubject("");
+		setSelectedStatus("");
+		setDateRange([null, null]);
+		setSearchQuery("");
+		setCurrentPage(1);
+	};
+
 	return (
 		<ThemeProvider theme={theme}>
-			<div className="main-page-wrapper">
+			{/* Main container with responsive adjustments */}
+			<div className="main-page-wrapper px-3 sm:px-4">
 				<h5 className="text-lg font-bold text-[#2F4F4F]">All Tests</h5>
 
-				{/* Search Bar */}
-				<TextField
-					variant="outlined"
-					placeholder="Search by Test Name"
-					size="small"
-					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
-					InputProps={{
-						style: {
-							backgroundColor: "#fff",
-							borderRadius: "8px",
-							width: "420px",
-							height: "48px",
-						},
-					}}
-					sx={{ marginBottom: "10px" }}
-				/>
-
-				{/* Filters */}
-				<div className="flex justify-between items-center">
-					<div className="flex gap-2 my-[10px] mx-0">
-						{/* Class Dropdown */}
-						<TextField
-							select
-							size="small"
-							variant="outlined"
-							label="Class"
-							value={selectedClass}
-							onChange={(e) => setSelectedClass(e.target.value)}
-							sx={{
-								width: 150,
-								"& .MuiSelect-select": {
-									color: "#2F4F4F",
-									fontWeight: "600",
-									padding: "12px 16px",
-								},
-								"& .MuiOutlinedInput-root": {
-									borderRadius: "8px",
-									backgroundColor: "#fff",
-								},
-							}}
-						>
-							<MenuItem value="">Class</MenuItem>
-							{CLASS_OPTIONS.map((option) => (
-								<MenuItem key={option} value={parseInt(option.replace("Class ", ""), 10)}>
-									{option}
-								</MenuItem>
-							))}
-						</TextField>
-
-						{/* Subject Dropdown */}
-						<TextField
-							select
-							size="small"
-							variant="outlined"
-							label="Subject"
-							value={selectedSubject}
-							onChange={(e) => setSelectedSubject(e.target.value)}
-							sx={{
-								width: 150,
-								"& .MuiSelect-select": {
-									color: "#2F4F4F",
-									fontWeight: "600",
-									padding: "12px 16px",
-								},
-								"& .MuiOutlinedInput-root": {
-									borderRadius: "8px",
-									backgroundColor: "#fff",
-								},
-							}}
-							SelectProps={{
-								MenuProps: {
-									PaperProps: {
-										sx: {
-											maxHeight: 200, // Set the maximum height of the dropdown
-											overflowY: "auto", // Add scroll functionality
-											"&::-webkit-scrollbar": {
-												width: "5px", // Make the scrollbar 5px wide
+				{/* Filters and Action Button - Stack on mobile */}
+				<div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
+					{/* Search and Filters - Takes full width on mobile */}
+					<div className="w-full lg:flex-1">
+						<div className="flex flex-col md:flex-row md:flex-wrap gap-2 my-[10px] mx-0">
+							{/* Filter Container - Wrap on mobile */}
+							<div className="flex justify-between w-full   gap-2">
+								<div className="flex flex-wrap gap-2">
+									<TextField
+										variant="outlined"
+										placeholder="Search by Test Name"
+										size="small"
+										value={searchQuery}
+										onChange={(e) => setSearchQuery(e.target.value)}
+										InputProps={{
+											style: {
+												backgroundColor: "#fff",
+												borderRadius: "8px",
+												height: "48px",
+												minWidth: "250px",
+												width: "360px",
 											},
-											"&::-webkit-scrollbar-thumb": {
-												backgroundColor: "#B0B0B0", // Set scrollbar thumb to grey
-												borderRadius: "5px",
-											},
-											"&::-webkit-scrollbar-track": {
-												backgroundColor: "#F0F0F0", // Optional: lighter grey for the track
-											},
-										},
-									},
-								},
-							}}
-						>
-							<MenuItem value="">Subject</MenuItem>
-							{SUBJECT_OPTIONS.map((subject) => (
-								<MenuItem key={subject} value={subject}>
-									{subject}
-								</MenuItem>
-							))}
-						</TextField>
+										}}
+										sx={{ marginBottom: { xs: "10px", md: "0" } }}
+									/>
+									{/* Class Dropdown */}
+									<FormControl
+										sx={{
+											height: "48px",
+											display: "flex",
+											width: "150px",
+										}}
+									>
+										<InputLabel
+											id="class-select-label"
+											sx={{
+												transform: "translate(14px, 14px) scale(1)",
+												"&.Mui-focused, &.MuiFormLabel-filled": {
+													transform: "translate(14px, -9px) scale(0.75)",
+												},
+											}}
+										>
+											Class
+										</InputLabel>
+										<Select
+											labelId="class-select-label"
+											id="class-select"
+											value={selectedClass}
+											label="Class"
+											onChange={(e) => setSelectedClass(e.target.value)}
+											sx={{
+												height: "100%",
+												borderRadius: "8px",
+												"& .MuiOutlinedInput-notchedOutline": {
+													borderRadius: "8px",
+												},
+												"& .MuiSelect-select": {
+													paddingTop: "12px",
+													paddingBottom: "12px",
+													display: "flex",
+													alignItems: "center",
+												},
+											}}
+										>
+											<MenuItem value="">Class</MenuItem>
+											{CLASS_OPTIONS.map((option) => (
+												<MenuItem
+													key={option}
+													value={parseInt(option.replace("Class ", ""), 10)}
+												>
+													{option}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
 
-						{/* Status Dropdown */}
-						<TextField
-							select
-							size="small"
-							variant="outlined"
-							label="Status"
-							value={selectedStatus}
-							onChange={(e) => setSelectedStatus(e.target.value)}
-							sx={{
-								width: 150,
-								"& .MuiSelect-select": {
-									color: "#2F4F4F",
-									fontWeight: "600",
-									padding: "12px 16px",
-								},
-								"& .MuiOutlinedInput-root": {
-									borderRadius: "8px",
-									backgroundColor: "#fff",
-								},
-							}}
-						>
-							<MenuItem value="">Status</MenuItem>
-							{Object.keys(STATUS_LABELS).map((status) => (
-								<MenuItem key={status} value={status}>
-									{STATUS_LABELS[status]}
-								</MenuItem>
-							))}
-						</TextField>
+									{/* Subject Dropdown */}
+									<FormControl
+										sx={{
+											height: "48px",
+											display: "flex",
+											width: { xs: "calc(50% - 4px)", sm: "150px" },
+											minWidth: "120px",
+											marginBottom: { xs: "8px", md: "0" },
+										}}
+									>
+										<InputLabel
+											id="subject-select-label"
+											sx={{
+												transform: "translate(14px, 14px) scale(1)",
+												"&.Mui-focused, &.MuiFormLabel-filled": {
+													transform: "translate(14px, -9px) scale(0.75)",
+												},
+											}}
+										>
+											Subject
+										</InputLabel>
+										<Select
+											labelId="subject-select-label"
+											id="subject-select"
+											value={selectedSubject}
+											label="Subject"
+											onChange={(e) => setSelectedSubject(e.target.value)}
+											sx={{
+												height: "100%",
+												borderRadius: "8px",
+												backgroundColor: "#fff",
+												"& .MuiOutlinedInput-notchedOutline": {
+													borderRadius: "8px",
+												},
+												"& .MuiSelect-select": {
+													paddingTop: "12px",
+													paddingBottom: "12px",
+													display: "flex",
+													alignItems: "center",
+													color: "#2F4F4F",
+													fontWeight: "600",
+												},
+											}}
+											MenuProps={{
+												PaperProps: {
+													sx: {
+														maxHeight: 200,
+														overflowY: "auto",
+														"&::-webkit-scrollbar": {
+															width: "5px",
+														},
+														"&::-webkit-scrollbar-thumb": {
+															backgroundColor: "#B0B0B0",
+															borderRadius: "5px",
+														},
+														"&::-webkit-scrollbar-track": {
+															backgroundColor: "#F0F0F0",
+														},
+													},
+												},
+											}}
+										>
+											<MenuItem value="">All Subjects</MenuItem>
+											{SUBJECT_OPTIONS.map((subject) => (
+												<MenuItem key={subject} value={subject}>
+													{subject}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
 
-						{/* Date Range Dropdown (placeholder) */}
+									{/* Date Range Picker */}
+									<div
+										style={{
+											border: "1px solid lightgrey",
+											borderRadius: "7px",
+											height: "48px",
+										}}
+										className="w-full sm:w-auto min-w-[120px] mb-2 sm:mb-0"
+									>
+										<DatePicker
+											className="my-date-picker w-full"
+											selectsRange
+											startDate={startDate}
+											endDate={endDate}
+											onChange={(dates) => {
+												setDateRange(dates);
+											}}
+											placeholderText="Date Range"
+											dateFormat="dd/MM/YYYY"
+										/>
+									</div>
 
-						<div style={{ border: "1px solid lightgrey", borderRadius: "7px" }}>
-							<DatePicker
-								className="my-date-picker"
-								selectsRange
-								startDate={startDate}
-								endDate={endDate}
-								onChange={(dates) => { 
-									const [start, end] = dates; 
-									setDateRange(dates);
-								}}
-								placeholderText="Date Range"
-								dateFormat="dd/MM/YYYY "
-								style={{ width: "220px" }}
-							/>
+									{/* Reset Button */}
+									<div className="flex justify-end sm:justify-start w-full sm:w-auto">
+										<Tooltip title="Reset Filters" placement="top">
+											<div
+												onClick={resetFilters}
+												style={{
+													cursor: "pointer",
+													display: "flex",
+													alignItems: "center",
+													backgroundColor: "#f5f5f5",
+													padding: "6px 12px",
+													borderRadius: "4px",
+													height: "48px",
+												}}
+											>
+												<RestartAltIcon color="action" />
+											</div>
+										</Tooltip>
+									</div>
+								</div>
+
+								<div className="  ">
+									<ButtonCustom
+										imageName={addSymbolBtn}
+										text={"Create Test"}
+										onClick={handleCreateTest}
+									/>
+								</div>
+							</div>
 						</div>
 					</div>
-
-					<ButtonCustom imageName={addSymbolBtn} text={"Create Test"} onClick={handleCreateTest} />
 				</div>
 
-				{/* Data Table */}
-				<div style={{ borderRadius: "8px" }}>
-					<MUIDataTable
-						data={tableData}
-						columns={columns.map((column) => ({
-							...column,
-							options: {
-								...column.options,
-								setCellProps: () => ({
-									style: {
-										paddingLeft: "30px",
-										paddingRight: "30px",
-									},
-								}),
-							},
-						}))}
-						options={options}
-						sx={{
-							"& .MuiPaper-root": {
-								boxShadow: "none",
-							},
-							"& .MuiTableCell-root": {
-								textAlign: "center",
-							},
-						}}
-					/>
-				</div>
+				{/* Data Table (rest of the code remains the same) */}
 				<div
-					style={{
-						width: "max-content",
-						margin: "25px auto",
-					}}
+					style={{ borderRadius: "8px" }}
+					className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
 				>
+					<MUIDataTable data={tableData} columns={columns} options={options} />
+				</div>
+
+				{/* Pagination - centered */}
+				<div style={{ width: "max-content", margin: "25px auto" }}>
 					<Pagination
 						count={Math.ceil(totalRecords / pageSize)}
 						page={currentPage}
@@ -502,8 +678,11 @@ export default function TestListTable() {
 						showLastButton
 					/>
 				</div>
-				{/* <ToastContainer /> */}
+
 				<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
+
+				{/* Loading Overlay */}
+				{isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
 			</div>
 		</ThemeProvider>
 	);
