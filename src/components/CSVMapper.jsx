@@ -381,9 +381,9 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 			showNotification(
 				`Row deleted by ${loginDetails.name}`,
 				"info",
-				<Button color="inherit" size="small" onClick={handleUndo}>
-					UNDO
-				</Button>
+				// <Button color="inherit" size="small" onClick={handleUndo}>
+				// 	UNDO
+				// </Button>
 			);
 			// Log deletion with user info
 			console.log(`Row deleted by ${loginDetails.name} at ${loginDetails.currentDateTime}`);

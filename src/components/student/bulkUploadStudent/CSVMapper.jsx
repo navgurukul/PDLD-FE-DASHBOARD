@@ -102,7 +102,7 @@ export default function StudentCSVMapper({ file, onMappingComplete }) {
 			{ id: "fullName", label: "Full Name", required: true },
 			{ id: "fatherName", label: "Father Name", required: true },
 			{ id: "motherName", label: "Mother Name", required: true },
-			{ id: "dob", label: "Date of Birth", required: true },
+			{ id: "dob", label: "DOB", required: true },
 			{ id: "class", label: "Class", required: true },
 			{ id: "gender", label: "Gender", required: true },
 			{ id: "schoolUdiseCode", label: "School UDISE Code", required: true },
@@ -434,9 +434,9 @@ export default function StudentCSVMapper({ file, onMappingComplete }) {
 			showNotification(
 				`Row deleted by ${loginDetails.name}`,
 				"info",
-				<Button color="inherit" size="small" onClick={handleUndo}>
-					UNDO
-				</Button>
+				// <Button color="inherit" size="small" onClick={handleUndo}>
+				// 	UNDO
+				// </Button>
 			);
 
 			// Log deletion with user info
