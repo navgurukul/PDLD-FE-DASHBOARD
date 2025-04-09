@@ -466,31 +466,31 @@ export default function AddStudent({ isEditMode = false }) {
 								</FormControl>
 							</Grid>
 
-							{/* Date of Birth */}
+							{/* Date of Birth */} 
 							<Grid item xs={12} md={6}>
-								{/* <DatePicker
-									selected={formData.dateOfBirth}
-									onChange={handleDateChange}
-									dateFormat="dd/MM/yyyy"
-									placeholderText="Select date of birth"
-									className={`w-full h-[48px] rounded-lg border ${
-										errors.dateOfBirth ? "border-red-500" : "border-gray-300"
-									} px-3`}
-								/> */}
-								<DatePicker
-									selected={
+								<TextField
+									type="date"
+									label="Date of Birth *"
+									name="dateOfBirth"
+									value={
 										formData.dateOfBirth instanceof Date && !isNaN(formData.dateOfBirth)
-											? formData.dateOfBirth
-											: null
+											? formData.dateOfBirth.toISOString().split("T")[0]
+											: ""
 									}
-									onChange={handleDateChange}
-									dateFormat="dd/MM/yyyy"
-									placeholderText="Select date of birth"
-									className={`w-full h-[48px] rounded-lg border ${
-										errors.dateOfBirth ? "border-red-500" : "border-gray-300"
-									} px-3`}
+									onChange={(e) => {
+										const newDate = e.target.value ? new Date(e.target.value) : null;
+										handleDateChange(newDate);
+									}}
+									fullWidth
+									InputLabelProps={{ shrink: true }}
+									error={!!errors.dateOfBirth}
+									helperText={errors.dateOfBirth}
+									sx={{
+										"& .MuiOutlinedInput-root": {
+											height: "48px",
+										},
+									}}
 								/>
-								{errors.dateOfBirth && <FormHelperText error>{errors.dateOfBirth}</FormHelperText>}
 							</Grid>
 
 							{/* UDISE Code */}
