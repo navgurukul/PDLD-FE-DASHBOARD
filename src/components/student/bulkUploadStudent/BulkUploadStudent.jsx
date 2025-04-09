@@ -96,7 +96,7 @@ export default function BulkUploadStudents() {
   const [editedCsvData, setEditedCsvData] = useState(null);
   const [uploadResult, setUploadResult] = useState(null);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
-  const [errorData, setErrorData] = useState([]);
+  const [errorData, setErrorData] = useState([]); 
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const { schoolId } = useParams();
