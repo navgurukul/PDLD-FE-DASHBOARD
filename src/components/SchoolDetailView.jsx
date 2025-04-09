@@ -70,13 +70,11 @@ export default function SchoolDetailView() {
 	const navigate = useNavigate();
 	const [school, setSchool] = useState(null);
 	const [isLoading, setIsLoading] = useState(true);
-	const [tabValue, setTabValue] = useState(0);
-
-	// Get the school data from location state or localStorage
+	// const [tabValue, setTabValue] = useState(0);
 	const { state } = useLocation();
+	const [tabValue, setTabValue] = useState(state?.selectedTab || 0);
 
 	useEffect(() => {
-		// Try to get school data from different sources
 		let schoolData = null;
 
 		// First, check if we have data in location state

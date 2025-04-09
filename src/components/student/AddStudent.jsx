@@ -305,7 +305,9 @@ export default function AddStudent({ isEditMode = false }) {
 				await apiInstance.put(`/dev/student/update/${studentId}`, studentData);
 				toast.success("Student updated successfully!");
 				setTimeout(() => {
-					navigate(`/schools/schoolDetail/${schoolId}`);
+					navigate(`/schools/schoolDetail/${schoolId}`, {
+						state: { selectedTab: 1 }, // Set to Students tab
+					});
 				}, 1200);
 			} else {
 				// Create new student
