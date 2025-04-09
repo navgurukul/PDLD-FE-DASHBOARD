@@ -173,7 +173,7 @@ export default function SchoolDetailView() {
 	return (
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper sm:px-4">
-				<div className="header-container flex items-center justify-between mb-4">
+				<div className="header-container flex items-center justify-between mb-1">
 					<div className="flex items-center">
 						<h5 className="text-lg font-bold text-[#2F4F4F]">{capitalizeFirstLetter(school.schoolName)}</h5>
 					</div>
