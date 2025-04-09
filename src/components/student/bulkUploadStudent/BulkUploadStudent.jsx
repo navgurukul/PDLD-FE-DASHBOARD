@@ -278,7 +278,9 @@ export default function BulkUploadStudents() {
 	const handleDoneUpload = () => {
 		// Reset everything and go back to step 1
 		handleRemoveFile();
-		navigate(`/schools/schoolDetail/${schoolId}`);
+		navigate(`/schools/schoolDetail/${schoolId}`, {
+			state: { selectedTab: 1 }, // Set to Students tab
+		});
 	};
 
 	const getUploadStatusColor = () => {
