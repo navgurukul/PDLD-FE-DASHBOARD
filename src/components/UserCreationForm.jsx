@@ -750,23 +750,25 @@ export default function UserCreationForm() {
 							<div className="mb-6">
 								<div className="flex justify-between items-center mb-2">
 									<Typography variant="subtitle1">Select Clusters in {formData.block}</Typography>
-									<Button
-										variant="outlined"
-										size="small"
-										onClick={handleRestoreClusters}
-										sx={{
-											backgroundColor: "transparent !important",
-											borderColor: "#2F4F4F !important",
-											color: "#2F4F4F !important",
-											"&:hover": {
+									{isEditMode && (
+										<Button
+											variant="outlined"
+											size="small"
+											onClick={handleRestoreClusters}
+											sx={{
+												backgroundColor: "transparent !important",
 												borderColor: "#2F4F4F !important",
-												backgroundColor: "#2F4F4F !important",
-												color: "white !important",
-											},
-										}}
-									>
-										Restore Previous Cluster
-									</Button>
+												color: "#2F4F4F !important",
+												"&:hover": {
+													borderColor: "#2F4F4F !important",
+													backgroundColor: "#2F4F4F !important",
+													color: "white !important",
+												},
+											}}
+										>
+											Restore Previous Cluster
+										</Button>
+									)}
 								</div>
 								<FormControl fullWidth required>
 									<InputLabel>Select Clusters in {formData.block}</InputLabel>
