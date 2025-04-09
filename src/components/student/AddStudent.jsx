@@ -316,8 +316,10 @@ export default function AddStudent({ isEditMode = false }) {
 				if (response.data && response.data.success) {
 					toast.success("New Student added successfully!");
 					setTimeout(() => {
-						navigate(`/schools/schoolDetail/${schoolId}`);
-					}, 1500);
+						navigate(`/schools/schoolDetail/${schoolId}`, {
+							state: { selectedTab: 1 }, // Set to Students tab
+						});
+					}, 1200);
 				} else {
 					throw new Error(response.data?.message || "Failed to add student");
 				}
@@ -468,7 +470,7 @@ export default function AddStudent({ isEditMode = false }) {
 								</FormControl>
 							</Grid>
 
-							{/* Date of Birth */} 
+							{/* Date of Birth */}
 							<Grid item xs={12} md={6}>
 								<TextField
 									type="date"
