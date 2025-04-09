@@ -36,6 +36,7 @@ import StudentSampleCSVModal from "./SampleCSVModal";
 import StudentDeleteConfirmationModal from "../../../components/DeleteConfirmationModal";
 import StudentErrorDetailsDialog from "./ErrorDetailsDialog";
 import { useParams } from "react-router-dom";
+import OutlinedButton from "../../button/OutlinedButton";
 
 // Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
@@ -471,9 +472,7 @@ export default function BulkUploadStudents() {
 						<StudentCSVMapper file={file} onMappingComplete={handleMappingComplete} />
 
 						<Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2 }}>
-							<Button variant="outlined" onClick={handleBackStep} sx={{ mr: 2 }}>
-								Back
-							</Button>
+							<OutlinedButton text={"Back"} onClick={handleBackStep} />
 						</Box>
 					</Box>
 				)}
@@ -745,9 +744,7 @@ export default function BulkUploadStudents() {
 								</TableContainer>
 
 								<Box sx={{ display: "flex", justifyContent: "space-between" }}>
-									<Button variant="outlined" onClick={handleBackStep}>
-										Back to Mapping
-									</Button>
+									<OutlinedButton text={"Back to Mapping"} onClick={handleBackStep} />
 
 									<ButtonCustom
 										text={isUploading ? "Uploading..." : "Upload Students"}
