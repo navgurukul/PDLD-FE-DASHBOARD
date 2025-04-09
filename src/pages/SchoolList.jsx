@@ -444,7 +444,7 @@ export default function SchoolList() {
 	return (
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper px-3 sm:px-4" style={{ position: "relative" }}>
-				<div className="header-container">
+				<div className="header-container mb-1">
 					<h5 className="text-lg font-bold text-[#2F4F4F]">School Management</h5>
 				</div>
 
