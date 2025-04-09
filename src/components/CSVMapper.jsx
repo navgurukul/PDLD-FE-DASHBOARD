@@ -407,117 +407,138 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 
       {/* Mapping Configuration at the top */}
       <Card variant="outlined" sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap" }}>
-            {/* Left side: Required fields status */}
-            <Box sx={{ minWidth: 300, mb: 2, mr: 3 }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-                Required Fields Status
-              </Typography>
-              
-              {unmappedRequiredFieldLabels.length > 0 ? (
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <ErrorIcon color="error" sx={{ mr: 1 }} />
-                  <Typography variant="body2" color="error">
-                    {unmappedRequiredFieldLabels.length} required field(s) not mapped
-                  </Typography>
-                </Box>
-              ) : (
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <CheckCircleIcon color="success" sx={{ mr: 1 }} />
-                  <Typography variant="body2" color="success.main">
-                    All required fields are mapped
-                  </Typography>
-                </Box>
-              )}
-              
-              {showError && (
-                <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-                  {errorMessage}
-                </Typography>
-              )}
-              
-              {unmappedRequiredFieldLabels.length > 0 && (
-                <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                  {/* Fixed: Use proper string keys for chips and render only text in label */}
-                  {unmappedRequiredFieldLabels.map((fieldLabel, index) => (
-                    <Chip 
-                      key={`unmapped-${index}-${fieldLabel}`}
-                      label={fieldLabel}
-                      size="small"
-                      color="error"
-                      variant="outlined"
-                    />
-                  ))}
-                </Box>
-              )}
-            </Box>
-            
-            {/* Middle: Current Mapping */}
-            <Box sx={{ flexGrow: 1, minWidth: 300, mb: 2, mr: 3 }}>
-              <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-                Current Mapping
-              </Typography>
-              
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                {Object.entries(mapping).length > 0 ? (
-                  Object.entries(mapping).map(([csvColumn, systemFieldId]) => {
-                    // Find the system field label
-                    const field = systemFields.find(f => f.id === systemFieldId);
-                    return field ? (
-                      <Chip
-                        key={`mapping-${csvColumn}-${systemFieldId}`}
-                        label={
-                          <Box component="span" sx={{ display: "flex", alignItems: "center" }}>
-                            <Typography variant="caption" sx={{ mr: 0.5 }}>{csvColumn}</Typography>
-                            <ArrowForwardIcon sx={{ fontSize: 10, mx: 0.5 }} />
-                            <Typography variant="caption" fontWeight={field.required ? "bold" : "normal"}>
-                              {field.label} {field.required ? "*" : ""}
-                            </Typography>
-                          </Box>
-                        }
-                        variant="outlined"
-                        color="primary"
-                        size="small"
-                      />
-                    ) : null;
-                  })
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No columns mapped yet
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-            
-            {/* Right side: Confirm button */}
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", minWidth: 180 }}>
-              <Button
-                variant="contained"
-                onClick={isButtonDisabled ? handleDisabledButtonClick : completeMapping}
-                disabled={isButtonDisabled}
-                fullWidth
-                sx={{
-                  backgroundColor: isButtonDisabled ? "#cccccc" : "#0d6efd",
-                  "&:hover": { backgroundColor: isButtonDisabled ? "#cccccc" : "#0b5ed7" },
-                  "&.Mui-disabled": {
-                    backgroundColor: "#cccccc",
-                    color: "#666666",
-                    cursor: "pointer", // Keep pointer cursor for disabled button
-                    pointerEvents: "auto" // Allow clicks on disabled button
-                  }
-                }}
-              >
-                Confirm Mapping
-              </Button>
-              
-              <Typography variant="caption" sx={{ color: "#666", display: "block", mt: 1 }}>
-                * Required fields
-              </Typography>
-            </Box>
+  <CardContent>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        flexWrap: { xs: "wrap", md: "nowrap" }, // Wrap content on smaller screens and keep it inline on larger screens
+        gap: 2, // Add spacing between items
+      }}
+    >
+      {/* Left Side: Required Fields Status */}
+      <Box sx={{ flex: 1, minWidth: 300, mb: { xs: 2, md: 0 } }}>
+        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+          Required Fields Status
+        </Typography>
+
+        {unmappedRequiredFieldLabels.length > 0 ? (
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <ErrorIcon color="error" sx={{ mr: 1 }} />
+            <Typography variant="body2" color="error">
+              {unmappedRequiredFieldLabels.length} required field(s) not mapped
+            </Typography>
           </Box>
-        </CardContent>
-      </Card>
+        ) : (
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <CheckCircleIcon color="success" sx={{ mr: 1 }} />
+            <Typography variant="body2" color="success.main">
+              All required fields are mapped
+            </Typography>
+          </Box>
+        )}
+
+        {showError && (
+          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+            {errorMessage}
+          </Typography>
+        )}
+
+        {unmappedRequiredFieldLabels.length > 0 && (
+          <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+            {unmappedRequiredFieldLabels.map((fieldLabel, index) => (
+              <Chip
+                key={`unmapped-${index}-${fieldLabel}`}
+                label={fieldLabel}
+                size="small"
+                color="error"
+                variant="outlined"
+              />
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      {/* Middle: Current Mapping */}
+      <Box
+        sx={{
+          flex: 2,
+          minWidth: 300,
+        }}
+      >
+        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+          Current Mapping
+        </Typography>
+
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          {Object.entries(mapping).length > 0 ? (
+            Object.entries(mapping).map(([csvColumn, systemFieldId]) => {
+              const field = systemFields.find((f) => f.id === systemFieldId);
+              return field ? (
+                <Chip
+                  key={`mapping-${csvColumn}-${systemFieldId}`}
+                  label={
+                    <Box component="span" sx={{ display: "flex", alignItems: "center" }}>
+                      <Typography variant="caption" sx={{ mr: 0.5 }}>
+                        {csvColumn}
+                      </Typography>
+                      <ArrowForwardIcon sx={{ fontSize: 10, mx: 0.5 }} />
+                      <Typography variant="caption" fontWeight={field.required ? "bold" : "normal"}>
+                        {field.label} {field.required ? "*" : ""}
+                      </Typography>
+                    </Box>
+                  }
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                />
+              ) : null;
+            })
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No columns mapped yet
+            </Typography>
+          )}
+        </Box>
+      </Box>
+
+      {/* Right Side: Confirm Button */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: { xs: "center", md: "flex-end" }, // Center align on smaller screens, right align on larger screens
+          minWidth: { xs: "100%", md: 180 }, // Full width on smaller screens, fixed width on larger screens
+          mt: { xs: 2, md: 0 }, // Add margin on smaller screens for spacing
+        }}
+      >
+        <Button
+          variant="contained"
+          onClick={isButtonDisabled ? handleDisabledButtonClick : completeMapping}
+          disabled={isButtonDisabled}
+          fullWidth
+          sx={{
+            backgroundColor: isButtonDisabled ? "#cccccc" : "#0d6efd",
+            "&:hover": { backgroundColor: isButtonDisabled ? "#cccccc" : "#0b5ed7" },
+            "&.Mui-disabled": {
+              backgroundColor: "#cccccc",
+              color: "#666666",
+              cursor: "pointer", // Keep pointer cursor for disabled button
+              pointerEvents: "auto", // Allow clicks on disabled button
+            },
+          }}
+        >
+          Confirm Mapping
+        </Button>
+
+        <Typography variant="caption" sx={{ color: "#666", mt: 1 }}>
+          * Required fields
+        </Typography>
+      </Box>
+    </Box>
+  </CardContent>
+</Card>
 
       {/* Data Preview with full width */}
       <Card variant="outlined">

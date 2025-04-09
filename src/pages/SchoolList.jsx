@@ -83,7 +83,7 @@ export default function SchoolList() {
 		setIsLoading(true);
 		try {
 			// Ensure we're explicitly requesting only 20 records per page
-			const response = await apiInstance.get(`/dev/school/all?page=${currentPage}&limit=20`);
+			const response = await apiInstance.get(`/dev/school/all?page=${currentPage}&pageSize=20`);
 			if (response.data.success) {
 				// console.log("API Response:", response.data.data); // Debug: Log the full response
 				
