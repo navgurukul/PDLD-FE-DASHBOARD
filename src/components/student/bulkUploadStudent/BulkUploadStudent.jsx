@@ -289,7 +289,7 @@ export default function BulkUploadStudents() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ p: 2, maxWidth: "75rem", margin: "0 auto" }}>
+      <Box sx={{ p: 2, maxWidth: "75rem",margin: "0 auto" }}>
         <div className="flex justify-between">
           <h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Students</h5>
           <Button
