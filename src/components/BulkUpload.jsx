@@ -388,18 +388,13 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
 			</DialogContent>
 
 			<DialogActions sx={{ p: 2 }}>
-				<Button variant="outlined" onClick={onClose}>
-					Close
-				</Button>
+				<OutlinedButton text={"Close"} onClick={onClose} />
 
-				<Button
-					variant="contained"
-					startIcon={<FileDownloadIcon />}
+				<ButtonCustom
+					text={"Download Errors CSV"}
+					imageName={<FileDownloadIcon />}
 					onClick={downloadErrorsCSV}
-					color="primary"
-				>
-					Download Errors CSV
-				</Button>
+				/>
 			</DialogActions>
 		</Dialog>
 	);
@@ -922,6 +917,7 @@ export default function BulkUploadSchools() {
 																color="error"
 																variant="outlined"
 																size="small"
+																sx={{ borderRadius: "8px", height: "48px" }}
 															>
 																View Errors
 															</Button>
@@ -1013,6 +1009,7 @@ export default function BulkUploadSchools() {
 														startIcon={<FileDownloadIcon />}
 														onClick={handleViewErrorData}
 														color="error"
+														sx={{ borderRadius: "8px", height: "48px" }}
 													>
 														Download Errors
 													</Button>
