@@ -539,6 +539,65 @@ export const STUDENT_PERFORMANCE_DATA = {
 	],
 };
 
+// Updated sample data to match the required format
+export const STUDENT_SAMPLE_DATA = [
+	{
+		fullName: "Andrew Anderson",
+		fatherName: "Ryan Bailey",
+		motherName: "Elizabeth Fuentes",
+		dob: "21-05-2010",
+		class: "1",
+		gender: "M",
+		schoolUdiseCode: "22162244501",
+		aparId: "440640644",
+		hostel: "A Wing",
+	},
+	{
+		fullName: "Scott Jones",
+		fatherName: "Steven Smith",
+		motherName: "Amanda Hobbs",
+		dob: "08-09-2011",
+		class: "1",
+		gender: "M",
+		schoolUdiseCode: "22162244501",
+		aparId: "442610246",
+		hostel: "C Wing",
+	},
+	{
+		fullName: "Terry Hensley",
+		fatherName: "Joseph Martin",
+		motherName: "Laura Hickman",
+		dob: "04-02-2013",
+		class: "1",
+		gender: "M",
+		schoolUdiseCode: "22162244501",
+		aparId: "724406485",
+		hostel: "B Wing",
+	},
+	{
+		fullName: "Mark Robinson",
+		fatherName: "Robert Torres PhD",
+		motherName: "Christina Wu",
+		dob: "20-02-2009",
+		class: "1",
+		gender: "M",
+		schoolUdiseCode: "22162244501",
+		aparId: "267484256",
+		hostel: "A Wing",
+	},
+	{
+		fullName: "Teresa Sutton",
+		fatherName: "Michael Kelley",
+		motherName: "Marcia Morton",
+		dob: "30-04-2011",
+		class: "1",
+		gender: "F",
+		schoolUdiseCode: "22162244501",
+		aparId: "765501577",
+		hostel: "B Wing",
+	},
+];
+
 export const YEARS = [2023, 2024, 2025];
 export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const SUBJECTS = ["Hindi", "English", "Sanskrit", "Science", "SocialScience", "Math"];

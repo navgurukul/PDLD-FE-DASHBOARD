@@ -132,7 +132,7 @@ export default function SampleCSVModal({ open, onClose, entityType = "school" })
         
         {entityType === "school" && (
           <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-            <Tab label="Required Fields" />
+            {/* <Tab label="Required Fields" /> */}
             <Tab label="All Fields" />
           </Tabs>
         )}
@@ -206,7 +206,7 @@ export default function SampleCSVModal({ open, onClose, entityType = "school" })
                 "&:hover": { backgroundColor: "#0b5ed7" },
               }}
             >
-              Download CSV Template
+              Download CSV Template AA
             </Button>
           </Box>
         </Box>
