@@ -662,7 +662,7 @@ export default function BulkUploadStudents() {
 																minWidth: 150,
 															}}
 														>
-															<Button
+															{/* <Button
 																onClick={handleViewErrorData}
 																startIcon={<ErrorOutlineIcon />}
 																color="error"
@@ -671,7 +671,7 @@ export default function BulkUploadStudents() {
 																sx={{ borderRadius: "8px", height: "48px" }}
 															>
 																View Errors
-															</Button>
+															</Button> */}
 														</Box>
 													</>
 												)}
