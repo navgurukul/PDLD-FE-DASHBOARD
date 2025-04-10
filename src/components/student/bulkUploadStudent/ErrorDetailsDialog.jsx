@@ -145,14 +145,14 @@ const StudentErrorDetailsDialog = ({ open, onClose, errorData }) => {
 						}}
 					/>
 
-					<Button
+					{/* <Button
 						variant="outlined"
 						startIcon={<GetAppIcon />}
 						onClick={downloadErrorsCSV}
 						sx={{ borderRadius: "8px", height: "40px" }}
 					>
 						Download Errors as CSV
-					</Button>
+					</Button> */}
 				</Box>
 
 				<Box sx={{ mb: 1 }}>
