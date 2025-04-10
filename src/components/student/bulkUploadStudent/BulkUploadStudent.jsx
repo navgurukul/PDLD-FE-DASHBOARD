@@ -71,6 +71,11 @@ const theme = createTheme({
 		fontFamily: "'Karla', sans-serif",
 		color: "#2F4F4F",
 	},
+	palette: {
+		primary: {
+			main: "#2F4F4F",
+		},
+	},
 	components: {
 		MuiButton: {
 			styleOverrides: {
@@ -193,9 +198,9 @@ export default function BulkUploadStudents() {
 
 			// Process error data from the actual API response (matching the specific format)
 			if (response.data?.data?.errors?.length > 0) {
-				setErrorData(response.data.data.errors);
+				setErrorData(transformErrorData(response.data.data.errors));
 			} else if (response.data?.errors?.length > 0) {
-				setErrorData(response.data.errors);
+				setErrorData(transformErrorData(response.data.errors));
 			} else {
 				// Clear error data if there are no errors
 				setErrorData([]);
@@ -294,9 +299,51 @@ export default function BulkUploadStudents() {
 		return "warning";
 	};
 
+	// Add this function to your component
+	const transformErrorData = (apiErrors) => {
+		if (!apiErrors || !Array.isArray(apiErrors)) {
+			return [];
+		}
+
+		return apiErrors.map((errorItem) => {
+			const studentData = errorItem.data || {};
+
+			return {
+				studentName: studentData.name || "",
+				enrollmentId: studentData.aparID || "",
+				grade: `Class ${studentData.class || ""}`,
+				schoolId: studentData.schoolUdiseCode || "",
+				reason: errorItem.error || "Unknown error",
+				// Include all original data for CSV export
+				row: errorItem.row,
+				error: errorItem.error,
+				...studentData,
+			};
+		});
+	};
+
+	const errorDialogHeaders = [
+		"studentName",
+		"enrollmentId",
+		"grade",
+		"schoolId",
+		"reason",
+		"name",
+		"fatherName",
+		"motherName",
+		"dob",
+		"class",
+		"gender",
+		"schoolUdiseCode",
+		"aparID",
+		"hostel",
+		"error",
+		"row",
+	];
+
 	return (
 		<ThemeProvider theme={theme}>
-			<Box sx={{ p: 2, px:2, maxWidth: "75rem", margin: "0 auto", }}>
+			<Box sx={{ p: 2, px: 2, maxWidth: "75rem", margin: "0 auto" }}>
 				<div className="flex justify-between">
 					<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Students</h5>
 					<Button
@@ -596,6 +643,7 @@ export default function BulkUploadStudents() {
 																color="error"
 																variant="outlined"
 																size="small"
+																sx={{ borderRadius: '8px', height:"48px" }}
 															>
 																View Errors
 															</Button>
@@ -657,6 +705,7 @@ export default function BulkUploadStudents() {
 																			size="small"
 																			onClick={handleViewErrorData}
 																			startIcon={<InfoIcon />}
+																			color="primary"
 																		>
 																			View all {errorData.length} errors
 																		</Button>
@@ -687,6 +736,7 @@ export default function BulkUploadStudents() {
 														startIcon={<FileDownloadIcon />}
 														onClick={handleViewErrorData}
 														color="error"
+														sx={{ borderRadius: '8px', height:"48px" }}
 													>
 														Download Errors
 													</Button>
@@ -786,7 +836,7 @@ export default function BulkUploadStudents() {
 						open={errorDialogOpen}
 						onClose={() => setErrorDialogOpen(false)}
 						errorData={errorData}
-						headers={["studentName", "enrollmentId", "grade", "schoolId"]}
+						headers={errorDialogHeaders}
 					/>
 				)}
 			</Box>
