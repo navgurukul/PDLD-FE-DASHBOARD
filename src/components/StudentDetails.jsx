@@ -368,8 +368,8 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 				</Typography>
 			</div>
 
-			<div className="flex justify-between sm:flex-row mb-2">
-				<div className="flex gap-2">
+			<div className="flex flex-wrap justify-between sm:flex-row mb-2">
+				<div className="flex   gap-2">
 					{/* Search Field */}
 					<TextField
 						placeholder="Search students..."
@@ -418,7 +418,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 					</FormControl>
 				</div>
 
-				<div className="flex gap-2 sm:mt-0">
+				<div className="flex   gap-2 sm:mt-2">
 					<ButtonCustom imageName={addSymbolBtn} text={"Add Student"} onClick={handleAddStudent} />
 					<Button
 						variant="outlined"
