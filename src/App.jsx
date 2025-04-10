@@ -86,8 +86,8 @@ function App() {
 							</ProtectedRoute>
 						}
 					>
-						{/* Default Route (renders TableList by default) */}
-						<Route index element={<TableList />} />
+						{/* Default Route - redirect to allTest */}
+						<Route index element={<Navigate to="/allTest" replace />} />
 
 						{/* Nested Routes within Layout */}
 						<Route path="/allTest" element={<TableList />} />
@@ -112,7 +112,7 @@ function App() {
 						<Route path="*" element={<PageNotFound />} />
 					</Route>
 
-					{/* Redirect to login if trying to access any other route without authentication */}
+					{/* Redirect to allTest if logged in, otherwise redirect to login */}
 					<Route
 						path="*"
 						element={

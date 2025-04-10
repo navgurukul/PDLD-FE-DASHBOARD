@@ -51,14 +51,16 @@ const Sidebar = () => {
 	// Function to determine if a menu item should be active
 	const isMenuItemActive = (path) => {
 		if (path === "/allTest") {
-			// For Test menu item, also check for testCreationForm and edit paths
-			return location.pathname === path || 
-				   location.pathname === "/testCreationForm" || 
-				   location.pathname.includes("/testCreationForm") || 
-				   location.pathname.includes("/edit");
+			// For Test menu item, check for these paths
+			return (
+				location.pathname === "/allTest" ||
+				location.pathname === "/" || // Also match root path
+				location.pathname === "/testCreationForm" ||
+				location.pathname.includes("/editTest/")
+			);
 		}
-		
-		// For other items, just check if the path matches
+
+		// For other items, check if the path starts with the menu path
 		return location.pathname.startsWith(path);
 	};
 
@@ -88,7 +90,7 @@ const Sidebar = () => {
 			<nav className="mt-4 flex flex-col space-y-2 px-2">
 				{menuItems.map((item) => {
 					const isActive = isMenuItemActive(item.to);
-					
+
 					return (
 						<Link key={item.to} to={item.to}>
 							<li
