@@ -299,47 +299,72 @@ export default function BulkUploadStudents() {
 		return "warning";
 	};
 
-	// Add this function to your component
 	const transformErrorData = (apiErrors) => {
 		if (!apiErrors || !Array.isArray(apiErrors)) {
 			return [];
 		}
 
-		return apiErrors.map((errorItem) => {
+		return apiErrors.map((errorItem, index) => {
 			const studentData = errorItem.data || {};
 
+			// Return a clean object without duplication
 			return {
-				studentName: studentData.name || "",
-				enrollmentId: studentData.aparID || "",
-				grade: `Class ${studentData.class || ""}`,
-				schoolId: studentData.schoolUdiseCode || "",
-				reason: errorItem.error || "Unknown error",
-				// Include all original data for CSV export
-				row: errorItem.row,
-				error: errorItem.error,
+				// All original data from the API response
 				...studentData,
+				// Error details
+				error: errorItem.error || "Unknown error",
+				row: errorItem.row || index + 1,
 			};
 		});
 	};
 
-	const errorDialogHeaders = [
-		"studentName",
-		"enrollmentId",
-		"grade",
-		"schoolId",
-		"reason",
-		"name",
-		"fatherName",
-		"motherName",
-		"dob",
-		"class",
-		"gender",
-		"schoolUdiseCode",
-		"aparID",
-		"hostel",
-		"error",
-		"row",
-	];
+	// Add this function to your BulkUploadStudents component
+	const downloadErrorsCSV = () => {
+		// Define headers for the CSV
+		const csvHeaders = [
+			{ id: "name", label: "Student Name" },
+			{ id: "fatherName", label: "Father's Name" },
+			{ id: "motherName", label: "Mother's Name" },
+			{ id: "dob", label: "dob" },
+			{ id: "gender", label: "Gender" },
+			{ id: "class", label: "Grade" },
+			{ id: "schoolUdiseCode", label: "School ID" }, 
+			{ id: "aparID", label: "Apar ID" },
+			{ id: "hostel", label: "Hostel" }, 
+			{ id: "error", label: "Error" },
+		];
+
+		// Create CSV header row
+		const csvHeader = csvHeaders.map((header) => header.label).join(",");
+
+		// Create CSV rows from error data
+		const csvRows = errorData.map((error) => {
+			return csvHeaders
+				.map((header) => {
+					let value = error[header.id] !== undefined ? error[header.id] : "";
+
+					// Handle commas and quotes in CSV properly
+					if (typeof value === "string" && (value.includes(",") || value.includes('"'))) {
+						return `"${value.replace(/"/g, '""')}"`;
+					}
+					return value;
+				})
+				.join(",");
+		});
+
+		// Combine header and rows
+		const csvContent = [csvHeader, ...csvRows].join("\n");
+
+		// Create blob and download
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.setAttribute("href", url);
+		link.setAttribute("download", "student_upload_errors.csv");
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
 
 	return (
 		<ThemeProvider theme={theme}>
@@ -643,7 +668,7 @@ export default function BulkUploadStudents() {
 																color="error"
 																variant="outlined"
 																size="small"
-																sx={{ borderRadius: '8px', height:"48px" }}
+																sx={{ borderRadius: "8px", height: "48px" }}
 															>
 																View Errors
 															</Button>
@@ -668,20 +693,32 @@ export default function BulkUploadStudents() {
 													<Table size="small">
 														<TableHead>
 															<TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-																<TableCell width="40%">Student Name</TableCell>
-																<TableCell width="20%">Enrollment ID</TableCell>
-																<TableCell width="40%">Error</TableCell>
+																<TableCell>Name</TableCell>
+																<TableCell>Apar ID</TableCell>
+																<TableCell>Class</TableCell>
+																<TableCell>School Code</TableCell>
+																<TableCell>Father Name</TableCell>
+																<TableCell>Mother Name</TableCell>
+																<TableCell>Gender</TableCell>
+																<TableCell>Hostel</TableCell>
+																<TableCell>Error</TableCell>
 															</TableRow>
 														</TableHead>
 														<TableBody>
 															{errorData.slice(0, 3).map((error, index) => (
 																<TableRow key={`preview-error-${index}`}>
-																	<TableCell>{error.studentName || ""}</TableCell>
-																	<TableCell>{error.enrollmentId || ""}</TableCell>
+																	<TableCell>{error.name || ""}</TableCell>
+																	<TableCell>{error.aparID || ""}</TableCell>
 																	<TableCell>
-																		<Tooltip
-																			title={error.reason || "Unknown error"}
-																		>
+																		{error.class ? `Class ${error.class}` : ""}
+																	</TableCell>
+																	<TableCell>{error.schoolUdiseCode || ""}</TableCell>
+																	<TableCell>{error.fatherName || ""}</TableCell>
+																	<TableCell>{error.motherName || ""}</TableCell>
+																	<TableCell>{error.gender || ""}</TableCell>
+																	<TableCell>{error.hostel || ""}</TableCell>
+																	<TableCell>
+																		<Tooltip title={error.error || "Unknown error"}>
 																			<Typography
 																				variant="body2"
 																				color="error"
@@ -689,10 +726,10 @@ export default function BulkUploadStudents() {
 																					whiteSpace: "nowrap",
 																					overflow: "hidden",
 																					textOverflow: "ellipsis",
-																					maxWidth: 200,
+																					maxWidth: 150,
 																				}}
 																			>
-																				{error.reason || "Unknown error"}
+																				{error.error || "Unknown error"}
 																			</Typography>
 																		</Tooltip>
 																	</TableCell>
@@ -700,7 +737,7 @@ export default function BulkUploadStudents() {
 															))}
 															{errorData.length > 3 && (
 																<TableRow>
-																	<TableCell colSpan={3} align="center">
+																	<TableCell colSpan={9} align="center">
 																		<Button
 																			size="small"
 																			onClick={handleViewErrorData}
@@ -734,9 +771,9 @@ export default function BulkUploadStudents() {
 													<Button
 														variant="outlined"
 														startIcon={<FileDownloadIcon />}
-														onClick={handleViewErrorData}
+														onClick={downloadErrorsCSV}
 														color="error"
-														sx={{ borderRadius: '8px', height:"48px" }}
+														sx={{ borderRadius: "8px", height: "48px" }}
 													>
 														Download Errors
 													</Button>
@@ -836,7 +873,6 @@ export default function BulkUploadStudents() {
 						open={errorDialogOpen}
 						onClose={() => setErrorDialogOpen(false)}
 						errorData={errorData}
-						headers={errorDialogHeaders}
 					/>
 				)}
 			</Box>
