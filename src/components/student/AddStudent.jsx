@@ -94,7 +94,7 @@ export default function AddStudent({ isEditMode = false }) {
 	});
 
 	// Fix for the AddStudent component's date handling
-	// Focus on the useEffect where the date is being set
+	// Fix for useEffect in AddStudent component
 
 	useEffect(() => {
 		if ((location.state?.isEditMode || isEditMode) && location.state?.studentData) {
@@ -104,34 +104,30 @@ export default function AddStudent({ isEditMode = false }) {
 			let dob = null;
 			if (student.dob) {
 				try {
-					// Check if the date is in "DD-MM-YYYY" format
-					if (typeof student.dob === "string" && student.dob.includes("-")) {
-						const parts = student.dob.split("-");
-						// Make sure we have 3 parts (day, month, year)
-						if (parts.length === 3) {
-							const [day, month, year] = parts;
-							// Create a valid date string in YYYY-MM-DD format for the Date constructor
-							const dateStr = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-							dob = new Date(dateStr);
-
-							// Validate the date object
-							if (isNaN(dob.getTime())) {
-								console.error("Invalid date created from string:", student.dob);
-								dob = null;
-							}
-						} else {
-							console.error("Date string doesn't have 3 parts:", student.dob);
-							dob = null;
-						}
-					} else {
-						// If it's already a Date object or other format, try direct conversion
+					// First, check if it's already in YYYY-MM-DD format (like "2011-06-21")
+					if (typeof student.dob === "string" && /^\d{4}-\d{2}-\d{2}$/.test(student.dob)) {
+						console.log("Date is in YYYY-MM-DD format, using directly");
 						dob = new Date(student.dob);
+					}
+					// Then check if it's in DD-MM-YYYY format
+					else if (typeof student.dob === "string" && /^\d{2}-\d{2}-\d{4}$/.test(student.dob)) {
+						 
+						const parts = student.dob.split("-");
+						// Create a valid date string in YYYY-MM-DD format
+						dob = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+					}
+					// Fallback to direct date parsing
+					else {
+						console.log("Trying direct date parsing");
+						dob = new Date(student.dob);
+					}
 
-						// Validate the date object
-						if (isNaN(dob.getTime())) {
-							console.error("Invalid date created from value:", student.dob);
-							dob = null;
-						}
+					// Validate the date object
+					if (isNaN(dob.getTime())) {
+						console.error("Invalid date created:", student.dob);
+						dob = null;
+					} else {
+						console.log("Successfully parsed date:", dob);
 					}
 				} catch (error) {
 					console.error("Error parsing date:", error, student.dob);
@@ -141,7 +137,7 @@ export default function AddStudent({ isEditMode = false }) {
 
 			// Set form data from the passed student object
 			setFormData({
-				name: student.fullName || student.name || "",
+				name: student.fullName || "",
 				fatherName: student.fatherName || "",
 				motherName: student.motherName || "",
 				dateOfBirth: dob, // Now this will be either a valid Date object or null
@@ -153,28 +149,6 @@ export default function AddStudent({ isEditMode = false }) {
 			});
 		}
 	}, [isEditMode, location]);
-
-	// Updated handleEditStudent function in StudentDetails component to ensure proper data passing
-	const handleEditStudent = (studentId, student) => {
-		// Make sure we're not passing any problematic date formats
-		const cleanStudent = { ...student };
-
-		// If there's a date of birth, make sure it's in the expected format
-		if (cleanStudent.dob) {
-			// Just pass the string format to the edit page, let it handle the parsing
-			// Don't try to convert it to a Date object here
-		}
-
-		navigate(`/schools/schoolDetail/updateStudent`, {
-			state: {
-				schoolId: schoolId,
-				studentId: studentId,
-				udiseCode: schoolInfo.udiseCode,
-				isEditMode: true,
-				studentData: cleanStudent, // Pass the cleaned student object
-			},
-		});
-	};
 
 	// Handle input change
 	const handleInputChange = (event) => {
