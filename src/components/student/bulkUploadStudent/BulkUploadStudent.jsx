@@ -322,15 +322,15 @@ export default function BulkUploadStudents() {
 	const downloadErrorsCSV = () => {
 		// Define headers for the CSV
 		const csvHeaders = [
-			{ id: "name", label: "Student Name" },
-			{ id: "fatherName", label: "Father's Name" },
-			{ id: "motherName", label: "Mother's Name" },
+			{ id: "name", label: "fullName" },
+			{ id: "fatherName", label: "fatherName" },
+			{ id: "motherName", label: "motherName" },
 			{ id: "dob", label: "dob" },
-			{ id: "gender", label: "Gender" },
-			{ id: "class", label: "Grade" },
-			{ id: "schoolUdiseCode", label: "School ID" }, 
-			{ id: "aparID", label: "Apar ID" },
-			{ id: "hostel", label: "Hostel" }, 
+			{ id: "gender", label: "gender" },
+			{ id: "class", label: "class" },
+			{ id: "schoolUdiseCode", label: "schoolUdiseCode"}, 
+			{ id: "aparID", label: "aparID" },
+			{ id: "hostel", label: "hostel" }, 
 			{ id: "error", label: "Error" },
 		];
 
