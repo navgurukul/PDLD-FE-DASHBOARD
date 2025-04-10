@@ -105,16 +105,18 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		if (schoolId) {
 			fetchStudents();
 		}
-	}, [schoolId]);
+	}, [schoolId, location.key]);
 
 	const handleEditStudent = (studentId, student) => {
+		// Create a copy of the student object to avoid modifying the original
+		const studentForEdit = { ...student };
 		navigate(`/schools/schoolDetail/${schoolId}/updateStudent`, {
 			state: {
 				schoolId: schoolId,
 				studentId: studentId,
 				udiseCode: schoolInfo.udiseCode,
 				isEditMode: true,
-				studentData: student, // Pass the complete student object
+				studentData: studentForEdit,
 			},
 		});
 	};
@@ -137,17 +139,13 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
 		setIsDeleting(true);
 		try {
-			// Call the delete API endpoint
 			const response = await apiInstance.delete(`/dev/student/delete/${studentToDelete.id}`);
 
 			if (response.data && response.data.success) {
-				// Remove student from the list
-				setStudents(students.filter((student) => student.id !== studentToDelete.id));
-
-				// Show success toast
 				toast.success(`Student ${studentToDelete.fullName} has been deleted successfully!`);
+				// Refresh data instead of just updating local state
+				fetchStudents();
 			} else {
-				// Show error toast if the API returns an error message
 				toast.error(response.data?.message || "Failed to delete student. Please try again.");
 			}
 		} catch (error) {
@@ -155,7 +153,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			toast.error("Failed to delete student. Please try again later.");
 		} finally {
 			setIsDeleting(false);
-			closeDeleteModal(); // Close modal after operation completes
+			closeDeleteModal();
 		}
 	};
 
@@ -348,9 +346,9 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
 	const handleBulkUploadStudent = () => {
 		navigate(`/schools/schoolDetail/${schoolId}/studentBulkUpload`, {
-		  state: { schoolId: schoolId }
+			state: { schoolId: schoolId },
 		});
-	  };
+	};
 
 	const handleAddStudent = () => {
 		// () => navigate(`/schools/schoolDetail/addStudents`)
