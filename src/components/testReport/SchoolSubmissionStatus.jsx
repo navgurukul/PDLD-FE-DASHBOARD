@@ -80,36 +80,7 @@ const SchoolSubmissionStatus = ({ schoolsSubmitted, totalSchools, pendingSchools
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {pendingSchools.map(school => (
-              <div key={school.id} className="flex items-center bg-gray-50 p-2 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
-                <div className="flex-1">
-                  <span className="text-sm font-medium">{school.name || school.schoolName}</span>
-                </div>
-                <Tooltip title="Send reminder email" placement="top">
-                  <Button 
-                    variant="outlined"
-                    size="small"
-                    startIcon={<MailOutlineIcon />}
-                    onClick={() => handleSendReminder(school.id)}
-                    sx={{ 
-                      borderRadius: '8px',
-                      borderColor: '#e0e0e0',
-                      color: '#2F4F4F',
-                      textTransform: 'none',
-                      fontSize: '0.75rem',
-                      '&:hover': {
-                        borderColor: '#2F4F4F',
-                        backgroundColor: 'rgba(47, 79, 79, 0.04)'
-                      }
-                    }}
-                  >
-                    Remind
-                  </Button>
-                </Tooltip>
-              </div>
-            ))}
-          </div>
+          
         </div>
       )}
     </div>
