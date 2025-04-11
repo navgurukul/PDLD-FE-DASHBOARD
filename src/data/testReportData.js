@@ -14,8 +14,8 @@ export const MOCK_TESTS = [
 	  testClass: "1", 
 	  testDate: "2025-04-19T00:00:00.000Z", 
 	  date: "19 Apr 2025",
-	  schoolsSubmitted: 2, 
-	  totalSchools: 5, 
+	  schoolsSubmitted: 20,
+	  totalSchools: 50,
 	  overallPassRate: 72,
 	  schools: [
 		{ 
