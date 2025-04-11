@@ -6,6 +6,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import DocScannerIcon from "@mui/icons-material/DocumentScanner";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
 
 // Create MUI theme to match TestListTable
 const theme = createTheme({
@@ -46,8 +47,9 @@ const theme = createTheme({
  * @param {Object} props - Component props
  * @param {Array} props.schools - Array of school objects with performance data
  * @param {Function} props.onSchoolSelect - Callback when "View Details" is clicked for a school
+ * @param {Function} props.onSendReminder - Callback when "Remind" is clicked for a school
  */
-const SchoolPerformanceTable = ({ schools, onSchoolSelect }) => {
+const SchoolPerformanceTable = ({ schools, onSchoolSelect, onSendReminder }) => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [statusFilter, setStatusFilter] = useState("");
 	const [sortConfig, setSortConfig] = useState({
@@ -102,13 +104,20 @@ const SchoolPerformanceTable = ({ schools, onSchoolSelect }) => {
 		passRate: school.passRate ? `${school.passRate}%` : "-",
 		avgScore: school.avgScore || "-",
 		vsPrev: school.vsPrev !== undefined ? `${school.vsPrev > 0 ? "+" : ""}${school.vsPrev}%` : "-",
-		hasDetails: school.submitted,
+		submitted: school.submitted,
 	}));
 
 	const resetFilters = () => {
 		setSearchQuery("");
 		setStatusFilter("");
 		setSortConfig({ key: null, direction: "asc" });
+	};
+
+	// Handler for sending reminder
+	const handleSendReminder = (schoolId) => {
+		if (onSendReminder) {
+			onSendReminder(schoolId);
+		}
 	};
 
 	// MUI DataTable columns configuration
@@ -191,9 +200,9 @@ const SchoolPerformanceTable = ({ schools, onSchoolSelect }) => {
 				},
 			},
 		},
-		// Inside the columns definition, in the "actions" column:
+		// Updated actions column to show different buttons based on submission status
 		{
-			name: "hasDetails",
+			name: "submitted",
 			label: "Actions",
 			options: {
 				filter: false,
@@ -201,14 +210,16 @@ const SchoolPerformanceTable = ({ schools, onSchoolSelect }) => {
 				customBodyRenderLite: (dataIndex) => {
 					const rowData = tableData[dataIndex];
 					const schoolId = rowData.id;
+					const isSubmitted = rowData.submitted;
 
-					if (rowData.hasDetails) {
+					if (isSubmitted) {
+						// Show View Details button for submitted schools
 						return (
 							<div style={{ display: "flex", justifyContent: "center" }}>
 								<Button
 									variant="outlined"
 									size="small"
-									onClick={() => onSchoolSelect(schoolId)} // This calls the parent function
+									onClick={() => onSchoolSelect(schoolId)}
 									sx={{
 										borderColor: "transparent",
 										color: "#2F4F4F",
@@ -221,14 +232,36 @@ const SchoolPerformanceTable = ({ schools, onSchoolSelect }) => {
 							</div>
 						);
 					} else {
-						return <div className="text-center text-gray-400">-</div>;
+						// Show Remind button for pending schools
+						return (
+							<div style={{ display: "flex", justifyContent: "center" }}>
+								<Button 
+									variant="outlined"
+									size="small"
+									onClick={() => handleSendReminder(schoolId)}
+									sx={{ 
+										borderRadius: '8px',
+										borderColor: '#e0e0e0',
+										color: '#2F4F4F',
+										textTransform: 'none',
+										fontSize: '0.75rem',
+										padding: '4px 10px',
+										'&:hover': {
+											borderColor: '#2F4F4F',
+											backgroundColor: 'rgba(47, 79, 79, 0.04)'
+										}
+									}}
+								>
+									<MailOutlineIcon style={{ width: "16px", height: "16px", marginRight: "4px" }} />
+									Remind
+								</Button>
+							</div>
+						);
 					}
 				},
 			},
 		},
 	];
-
- 
 
 	// MUI DataTable options
 	const options = {
@@ -359,10 +392,12 @@ const SchoolPerformanceTable = ({ schools, onSchoolSelect }) => {
 SchoolPerformanceTable.propTypes = {
 	schools: PropTypes.array.isRequired,
 	onSchoolSelect: PropTypes.func.isRequired,
+	onSendReminder: PropTypes.func,
 };
 
 SchoolPerformanceTable.defaultProps = {
 	schools: [],
+	onSendReminder: () => {},
 };
 
 export default SchoolPerformanceTable;

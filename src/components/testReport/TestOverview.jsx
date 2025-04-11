@@ -2,15 +2,25 @@ import React from "react";
 import PropTypes from "prop-types";
 
 /**
- * Component to display summary metrics about a test
+ * Component to display summary metrics about a test, including pending schools
  * 
  * @param {Object} props - Component props
  * @param {number} props.totalSchools - Total number of schools assigned to the test
  * @param {number} props.schoolsSubmitted - Number of schools that have submitted results
  * @param {number} props.submissionRate - Percentage of schools that have submitted (0-100)
  * @param {number} props.overallPassRate - Overall pass rate across all schools (0-100)
+ * @param {number} props.pendingSchools - Number of schools that haven't submitted yet
  */
-const TestOverview = ({ totalSchools, schoolsSubmitted, submissionRate, overallPassRate }) => {
+const TestOverview = ({ 
+  totalSchools, 
+  schoolsSubmitted, 
+  submissionRate, 
+  overallPassRate,
+  pendingSchools
+}) => {
+  // Calculate pending schools if not provided
+  const pendingCount = pendingSchools !== undefined ? pendingSchools : (totalSchools - schoolsSubmitted);
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <div className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow">
@@ -24,8 +34,11 @@ const TestOverview = ({ totalSchools, schoolsSubmitted, submissionRate, overallP
       </div>
       
       <div className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow">
-        <div className="text-sm text-gray-500">Submission Rate</div>
-        <div className="text-2xl font-bold text-[#2F4F4F]">{submissionRate.toFixed(1)}%</div>
+        <div className="text-sm text-gray-500">Pending Schools</div>
+        <div className="text-2xl font-bold text-red-500">{pendingCount}</div>
+        <div className="text-xs text-gray-400 mt-1">
+          {pendingCount > 0 ? 'Reminder needed' : 'All schools submitted'}
+        </div>
       </div>
       
       <div className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow">
@@ -39,8 +52,9 @@ const TestOverview = ({ totalSchools, schoolsSubmitted, submissionRate, overallP
 TestOverview.propTypes = {
   totalSchools: PropTypes.number.isRequired,
   schoolsSubmitted: PropTypes.number.isRequired,
-  submissionRate: PropTypes.number.isRequired,
-  overallPassRate: PropTypes.number.isRequired
+  submissionRate: PropTypes.number,
+  overallPassRate: PropTypes.number.isRequired,
+  pendingSchools: PropTypes.number
 };
 
 TestOverview.defaultProps = {

@@ -71,6 +71,21 @@ const TestReportPage = () => {
 		navigate("/allTest");
 	};
 
+	const handleSendReminder = (schoolId) => {
+		// Show notification
+		toast.info(`Sending reminder to school ID: ${schoolId}`);
+
+		// Call API to send reminder
+		apiInstance
+			.post(`/dev/test/${testId}/school/${schoolId}/remind`)
+			.then(() => {
+				toast.success("Reminder sent successfully");
+			})
+			.catch((err) => {
+				toast.error("Failed to send reminder");
+				console.error(err);
+			});
+	};
 	// In TestReportPage.jsx
 	const handleSchoolSelect = (schoolId) => {
 		navigate(`/allTest/test-report/${testId}/school/${schoolId}`);
@@ -114,17 +129,26 @@ const TestReportPage = () => {
 							schoolsSubmitted={testData.schoolsSubmitted}
 							submissionRate={(testData.schoolsSubmitted / testData.totalSchools) * 100}
 							overallPassRate={testData.overallPassRate}
+							pendingSchools={testData.pendingSchoolsols} 
 						/>
 
+						
+
 						{/* School Submission Status Component */}
-						<SchoolSubmissionStatus
+						{/* <SchoolSubmissionStatus
 							schoolsSubmitted={testData.schoolsSubmitted}
 							totalSchools={testData.totalSchools}
 							pendingSchools={testData.schools.filter((school) => !school.submitted)}
-						/>
+						/> */}
 
 						{/* School Performance Table Component */}
-						<SchoolPerformanceTable schools={testData.schools} onSchoolSelect={handleSchoolSelect} />
+						{/* <SchoolPerformanceTable schools={testData.schools} onSchoolSelect={handleSchoolSelect} /> */}
+
+						<SchoolPerformanceTable
+							schools={testData.schools}
+							onSchoolSelect={(schoolId) => navigate(`/allTest/test-report/${testId}/school/${schoolId}`)}
+							onSendReminder={handleSendReminder}
+						/>
 					</>
 				)}
 
