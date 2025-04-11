@@ -115,10 +115,6 @@ const TestReportPage = () => {
 						<div className="mb-6">
 							<h2 className="text-2xl font-bold text-[#2F4F4F]">{testData.testName}</h2>
 							<div className="flex flex-wrap gap-3 text-sm text-gray-600 mt-1">
-								<span>{testData.subject}</span>
-								<span>•</span>
-								<span>Class {testData.testClass}</span>
-								<span>•</span>
 								<span>Test Date: {formatDate(testData.testDate)}</span>
 							</div>
 						</div>
@@ -129,20 +125,8 @@ const TestReportPage = () => {
 							schoolsSubmitted={testData.schoolsSubmitted}
 							submissionRate={(testData.schoolsSubmitted / testData.totalSchools) * 100}
 							overallPassRate={testData.overallPassRate}
-							pendingSchools={testData.pendingSchoolsols} 
+							pendingSchools={testData.pendingSchoolsols}
 						/>
-
-						
-
-						{/* School Submission Status Component */}
-						{/* <SchoolSubmissionStatus
-							schoolsSubmitted={testData.schoolsSubmitted}
-							totalSchools={testData.totalSchools}
-							pendingSchools={testData.schools.filter((school) => !school.submitted)}
-						/> */}
-
-						{/* School Performance Table Component */}
-						{/* <SchoolPerformanceTable schools={testData.schools} onSchoolSelect={handleSchoolSelect} /> */}
 
 						<SchoolPerformanceTable
 							schools={testData.schools}

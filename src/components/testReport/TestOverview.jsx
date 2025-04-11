@@ -1,16 +1,6 @@
-import React from "react";
 import PropTypes from "prop-types";
 
-/**
- * Component to display summary metrics about a test, including pending schools
- * 
- * @param {Object} props - Component props
- * @param {number} props.totalSchools - Total number of schools assigned to the test
- * @param {number} props.schoolsSubmitted - Number of schools that have submitted results
- * @param {number} props.submissionRate - Percentage of schools that have submitted (0-100)
- * @param {number} props.overallPassRate - Overall pass rate across all schools (0-100)
- * @param {number} props.pendingSchools - Number of schools that haven't submitted yet
- */
+ 
 const TestOverview = ({ 
   totalSchools, 
   schoolsSubmitted, 
