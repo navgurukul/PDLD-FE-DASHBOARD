@@ -30,6 +30,7 @@ const SchoolReportPage = () => {
 	const [schoolData, setSchoolData] = useState(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState(null);
+	const [activeTab, setActiveTab] = useState("visualizations"); // Default active tab
 
 	// Fetch school-specific performance data
 	useEffect(() => {
@@ -80,10 +81,6 @@ const SchoolReportPage = () => {
 		fetchData();
 	}, [testId, schoolId]);
 
-	// const handleBackToTestReport = () => {
-	// 	navigate(`/test-report/${testId}`);
-	// };
-
 	const handleViewProfile = (studentId) => {
 		// Show a toast notification
 		toast.info(`Viewing profile for student ID: ${studentId}`);
@@ -133,6 +130,70 @@ const SchoolReportPage = () => {
 	const scoreDistribution =
 		schoolData.scoreDistribution || (schoolData.students ? calculateScoreDistribution(schoolData.students) : []);
 
+	// Component for the Visualizations Tab
+	const VisualizationsTab = () => (
+		<>
+			{/* Visualizations */}
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+				{/* Pass/Fail ratio chart */}
+				<div className="bg-white p-4 rounded shadow">
+					<h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Performance Summary</h3>
+					<div className="h-64 flex items-center justify-center">
+						<div className="text-center">
+							{/* Using the PieChart with single color theme */}
+							<PieChart
+								percentage={schoolData.passRate}
+								primaryColor={THEME_COLOR}
+								secondaryColor={SECONDARY_COLOR}
+							/>
+							<div className="mt-4">
+								<div className="flex items-center justify-center">
+									<span className="w-4 h-4 bg-[#2F4F4F] inline-block mr-2"></span>
+									<span>ACHIEVED TARGET: {schoolData.passRate}%</span>
+								</div>
+								<div className="flex items-center justify-center mt-1">
+									<span className="w-4 h-4 bg-[#FFEBEB] inline-block mr-2"></span>
+									<span>NEEDS IMPROVEMENT: {100 - schoolData.passRate}%</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{/* Score distribution chart */}
+				<div className="bg-white p-4 rounded shadow">
+					<h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Score Distribution</h3>
+					<div className="h-64 flex items-center justify-center">
+						{/* Using the BarChart with the same theme color */}
+						<BarChart data={scoreDistribution} primaryColor={THEME_COLOR} />
+					</div>
+				</div>
+			</div>
+
+			{/* Line Chart - Full width */}
+			<div className="bg-white p-4 rounded shadow mb-6">
+				<h3 className="text-lg font-semibold mb-1 text-[#2F4F4F]">Student Score Analysis</h3>
+				<div className="h-80 flex items-center justify-center">
+					<LineChart
+						data={schoolData.students}
+						averageScore={schoolData.avgScore}
+						primaryColor={THEME_COLOR}
+					/>
+				</div>
+			</div>
+		</>
+	);
+
+	// Component for the Students Tab
+	const StudentsTab = () => (
+		<StudentPerformanceTable
+			students={schoolData.students}
+			classAvg={schoolData.avgScore}
+			onViewProfile={handleViewProfile}
+			onExport={handleExportStudentData}
+		/>
+	);
+
 	return (
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper px-3 sm:px-4">
@@ -151,7 +212,7 @@ const SchoolReportPage = () => {
 						<div className="text-2xl font-bold text-[#2F4F4F]">{schoolData.studentsTested}</div>
 					</div>
 					<div className="bg-white p-4 rounded shadow">
-						<div className="text-sm text-gray-500">Pass Rate</div>
+						<div className="text-sm text-gray-500">Success Rate</div>
 						<div className="text-2xl font-bold text-[#2F4F4F]">{schoolData.passRate}%</div>
 					</div>
 					<div className="bg-white p-4 rounded shadow">
@@ -160,62 +221,35 @@ const SchoolReportPage = () => {
 					</div>
 				</div>
 
-				{/* Visualizations */}
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-					{/* Pass/Fail ratio chart */}
-					<div className="bg-white p-4 rounded shadow">
-						<h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Performance Summary</h3>
-						<div className="h-64 flex items-center justify-center">
-							<div className="text-center">
-								{/* Using the PieChart with single color theme */}
-								<PieChart
-									percentage={schoolData.passRate}
-									primaryColor={THEME_COLOR}
-									secondaryColor={SECONDARY_COLOR}
-								/>
-								<div className="mt-4">
-									<div className="flex items-center justify-center">
-										<span className="w-4 h-4 bg-[#2F4F4F] inline-block mr-2"></span>
-										<span>ACHIEVED TARGET: {schoolData.passRate}%</span>
-									</div>
-									<div className="flex items-center justify-center mt-1">
-										<span className="w-4 h-4 bg-[#FFEBEB] inline-block mr-2"></span>
-										<span>NEEDS IMPROVEMENT: {100 - schoolData.passRate}%</span>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					{/* Score distribution chart */}
-					<div className="bg-white p-4 rounded shadow">
-						<h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Score Distribution</h3>
-						<div className="h-64 flex items-center justify-center">
-							{/* Using the BarChart with the same theme color */}
-							<BarChart data={scoreDistribution} primaryColor={THEME_COLOR} />
-						</div>
-					</div>
-				</div>
- 
-				{/* Line Chart - Full width */}
-				<div className="bg-white p-4 rounded shadow mb-6">
-					<h3 className="text-lg font-semibold mb-1 text-[#2F4F4F]">Student Score Analysis</h3>
-					<div className="h-80 flex items-center justify-center">
-						<LineChart
-							data={schoolData.students}
-							averageScore={schoolData.avgScore}
-							primaryColor={THEME_COLOR}
-						/>
-					</div>
+				{/* Tabs Navigation */}
+				<div className="flex border-b mb-6">
+					<button
+						className={`py-2 px-4 font-medium ${
+							activeTab === "visualizations" 
+								? "border-b-2 border-[#2F4F4F] text-[#2F4F4F]" 
+								: "text-gray-500 hover:text-[#2F4F4F]"
+						}`}
+						onClick={() => setActiveTab("visualizations")}
+					>
+						Data Visualizations
+					</button>
+					<button
+						className={`py-2 px-4 font-medium ${
+							activeTab === "students" 
+								? "border-b-2 border-[#2F4F4F] text-[#2F4F4F]" 
+								: "text-gray-500 hover:text-[#2F4F4F]"
+						}`}
+						onClick={() => setActiveTab("students")}
+					>
+						Student Performance
+					</button>
 				</div>
 
-				{/* Student Performance Table */}
-				<StudentPerformanceTable
-					students={schoolData.students}
-					classAvg={schoolData.avgScore}
-					onViewProfile={handleViewProfile}
-					onExport={handleExportStudentData}
-				/>
+				{/* Tab Content */}
+				<div className="tab-content">
+					{activeTab === "visualizations" && <VisualizationsTab />}
+					{activeTab === "students" && <StudentsTab />}
+				</div>
 
 				<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
 			</div>
