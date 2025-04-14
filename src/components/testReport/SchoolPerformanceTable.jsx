@@ -40,15 +40,7 @@ const theme = createTheme({
 	},
 });
 
-/**
- * Enhanced component to display school performance data in a table
- * Styled to exactly match TestListTable component
- *
- * @param {Object} props - Component props
- * @param {Array} props.schools - Array of school objects with performance data
- * @param {Function} props.onSchoolSelect - Callback when "View Details" is clicked for a school
- * @param {Function} props.onSendReminder - Callback when "Remind" is clicked for a school
- */
+ 
 const SchoolPerformanceTable = ({ schools, onSchoolSelect, onSendReminder }) => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [statusFilter, setStatusFilter] = useState("");

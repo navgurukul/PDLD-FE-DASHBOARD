@@ -98,8 +98,8 @@ function App() {
 						<Route path="/users/update-user/:userId" element={<UserCreationForm isEditMode={true} />} />
 						<Route path="/reports" element={<Reports />} />
 						<Route path="/schools" element={<Schools />} />
-						<Route path="/allTest/test-report/:testId" element={<TestReportPage />} />
-						<Route path="/allTest/test-report/:testId/school/:schoolId" element={<SchoolReportPage />} />
+						<Route path="/allTest/schoolSubmission/:testId" element={<TestReportPage />} />
+						<Route path="/allTest/schoolSubmission/:testId/testDetails/:schoolId" element={<SchoolReportPage />} />
 						<Route path="/schools/add-school" element={<AddSchool />} />
 						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} />
 						<Route
