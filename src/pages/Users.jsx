@@ -390,7 +390,7 @@ export default function Users() {
 					<th
 						style={{
 							textAlign: "center",
-							borderBottom: "2px solid lightgray",
+							borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
 						}}
 						scope="col"
 					>

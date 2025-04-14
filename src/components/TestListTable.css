@@ -114,8 +114,8 @@ th,
 }
 
 .MuiTableHead-root .MuiTableCell-head {
-	border-bottom: 2px solid lightgray !important;
-}
+	border-bottom: 2px solid rgba(0, 0, 0, 0.12) !important;
+  }
 
 th > span {
 	display: flex;
