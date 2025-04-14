@@ -374,7 +374,8 @@ export default function SchoolList() {
 						<th
 							style={{
 								textAlign: "center",
-								borderBottom: "1px solid lightgray",
+								// borderBottom: "1px solid lightgray",
+								borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
 							}}
 							scope="col"
 						>

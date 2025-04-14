@@ -257,7 +257,7 @@ export default function TestListTable() {
 						<th
 							style={{
 								cursor: "pointer",
-								borderBottom: "1px solid lightgray",
+								borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
 								fontSize: "14px",
 								textTransform: "uppercase", // Keep it capitalized
 							}}
@@ -300,7 +300,8 @@ export default function TestListTable() {
 							style={{
 								// textAlign: "center",
 								cursor: "pointer",
-								borderBottom: "1px solid lightgray",
+								// borderBottom: "1px solid lightgray",
+								borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
 								fontSize: "14px", // Smaller font size for this specific header
 								textTransform: "uppercase", // Keep it capitalized
 							}}
@@ -342,7 +343,7 @@ export default function TestListTable() {
 					return (
 						<th
 							style={{
-								borderBottom: "1px solid lightgray",
+								borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
 								fontSize: "14px",
 								width: "120px",
 								maxWidth: "120px",
@@ -388,7 +389,7 @@ export default function TestListTable() {
 						<th
 							style={{
 								// textAlign: "center",
-								borderBottom: "1px solid lightgray",
+								borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
 							}}
 							scope="col"
 						>
