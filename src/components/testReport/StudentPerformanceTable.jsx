@@ -1,12 +1,12 @@
-import React, { useState, useMemo } from "react";
+import   { useState, useMemo } from "react";
 import PropTypes from "prop-types";
-import { Button, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, Tooltip } from "@mui/material";
-import MUIDataTable from "mui-datatables";
-import SearchIcon from "@mui/icons-material/Search";
+import { Button, TextField,  FormControl, InputLabel, Select, MenuItem, Tooltip } from "@mui/material";
+import MUIDataTable from "mui-datatables"; 
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import PersonIcon from "@mui/icons-material/Person";
-import ButtonCustom from "../ButtonCustom"; // Adjust the import path as needed
+import ButtonCustom from "../ButtonCustom";
+import { Pagination } from "@mui/material";
 
 // Create MUI theme to match TestListTable
 const theme = createTheme({
@@ -40,18 +40,11 @@ const theme = createTheme({
 	},
 });
 
-/**
- * Component to display student performance data - styled like TestListTable
- *
- * @param {Object} props - Component props
- * @param {Array} props.students - Array of student objects with performance data
- * @param {number} props.classAvg - The class average score
- * @param {Function} props.onViewProfile - Callback when "View Profile" is clicked for a student
- * @param {Function} props.onExport - Optional callback when "Export" is clicked
- */
 const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }) => {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filterStatus, setFilterStatus] = useState("");
+	const [currentPage, setCurrentPage] = useState(1);
+	const pageSize = 10; // Items per page
 	const [sortConfig, setSortConfig] = useState({
 		key: null,
 		direction: "asc",
@@ -108,6 +101,12 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 		originalScore: student.score,
 	}));
 
+	const paginatedTableData = useMemo(() => {
+		const startIndex = (currentPage - 1) * pageSize;
+		const endIndex = startIndex + pageSize;
+		return tableData.slice(startIndex, endIndex);
+	}, [tableData, currentPage, pageSize]);
+	
 	const resetFilters = () => {
 		setSearchQuery("");
 		setFilterStatus("");
@@ -225,9 +224,10 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 		viewColumns: false,
 		selectableRows: "none",
 		responsive: "standard",
-		rowsPerPage: 10,
-		rowsPerPageOptions: [10, 20, 30],
-		pagination: false,
+		rowsPerPage: pageSize,
+		rowsPerPageOptions: [pageSize],
+		pagination: false, // We're handling pagination ourselves
+		count: tableData.length,
 	};
 
 	return (
@@ -343,6 +343,16 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 					className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
 				>
 					<MUIDataTable data={tableData} columns={columns} options={options} />
+				</div>
+
+				<div style={{ width: "max-content", margin: "25px auto" }}>
+					<Pagination
+						count={Math.ceil(tableData.length / pageSize)}
+						page={currentPage}
+						onChange={(e, page) => setCurrentPage(page)}
+						showFirstButton
+						showLastButton
+					/>
 				</div>
 			</div>
 		</ThemeProvider>

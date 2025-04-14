@@ -10,6 +10,7 @@ import StudentPerformanceTable from "../components/testReport/StudentPerformance
 import apiInstance from "../../api";
 import theme from "../theme/theme";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
+import LineChart from "../components/testReport/charts/LineChart";
 
 // Import mock data and helper functions
 import { MOCK_TESTS, formatDate, calculateScoreDistribution, PASS_THRESHOLD } from "../data/testReportData";
@@ -167,9 +168,9 @@ const SchoolReportPage = () => {
 						<div className="h-64 flex items-center justify-center">
 							<div className="text-center">
 								{/* Using the PieChart with single color theme */}
-								<PieChart 
-									percentage={schoolData.passRate} 
-									primaryColor={THEME_COLOR} 
+								<PieChart
+									percentage={schoolData.passRate}
+									primaryColor={THEME_COLOR}
 									secondaryColor={SECONDARY_COLOR}
 								/>
 								<div className="mt-4">
@@ -191,11 +192,20 @@ const SchoolReportPage = () => {
 						<h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Score Distribution</h3>
 						<div className="h-64 flex items-center justify-center">
 							{/* Using the BarChart with the same theme color */}
-							<BarChart 
-								data={scoreDistribution}
-								primaryColor={THEME_COLOR}
-							/>
+							<BarChart data={scoreDistribution} primaryColor={THEME_COLOR} />
 						</div>
+					</div>
+				</div>
+ 
+				{/* Line Chart - Full width */}
+				<div className="bg-white p-4 rounded shadow mb-6">
+					<h3 className="text-lg font-semibold mb-1 text-[#2F4F4F]">Student Score Analysis</h3>
+					<div className="h-80 flex items-center justify-center">
+						<LineChart
+							data={schoolData.students}
+							averageScore={schoolData.avgScore}
+							primaryColor={THEME_COLOR}
+						/>
 					</div>
 				</div>
 
