@@ -17,6 +17,10 @@ import { MOCK_TESTS, formatDate, calculateScoreDistribution, PASS_THRESHOLD } fr
 // Flag to toggle between mock data and API calls
 const USE_MOCK_DATA = true;
 
+// Define the theme color to use consistently across components
+const THEME_COLOR = "#2F4F4F";
+const SECONDARY_COLOR = "#FFEBEB";
+
 const SchoolReportPage = () => {
 	const { testId, schoolId } = useParams();
 	const navigate = useNavigate();
@@ -166,14 +170,19 @@ const SchoolReportPage = () => {
 						<h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Performance Summary</h3>
 						<div className="h-64 flex items-center justify-center">
 							<div className="text-center">
-								<PieChart percentage={schoolData.passRate} />
+								{/* Using the PieChart with single color theme */}
+								<PieChart 
+									percentage={schoolData.passRate} 
+									primaryColor={THEME_COLOR} 
+									secondaryColor={SECONDARY_COLOR}
+								/>
 								<div className="mt-4">
 									<div className="flex items-center justify-center">
-										<span className="w-4 h-4 bg-green-500 inline-block mr-2"></span>
+										<span className="w-4 h-4 bg-[#2F4F4F] inline-block mr-2"></span>
 										<span>ACHIEVED TARGET: {schoolData.passRate}%</span>
 									</div>
 									<div className="flex items-center justify-center mt-1">
-										<span className="w-4 h-4 bg-red-100 inline-block mr-2"></span>
+										<span className="w-4 h-4 bg-[#FFEBEB] inline-block mr-2"></span>
 										<span>NEEDS IMPROVEMENT: {100 - schoolData.passRate}%</span>
 									</div>
 								</div>
@@ -185,7 +194,11 @@ const SchoolReportPage = () => {
 					<div className="bg-white p-4 rounded shadow">
 						<h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Score Distribution</h3>
 						<div className="h-64 flex items-center justify-center">
-							<BarChart data={schoolData.scoreDistribution} />
+							{/* Using the BarChart with the same theme color */}
+							<BarChart 
+								data={scoreDistribution}
+								primaryColor={THEME_COLOR}
+							/>
 						</div>
 					</div>
 				</div>

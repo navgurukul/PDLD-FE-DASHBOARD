@@ -1,10 +1,10 @@
-import   { useState } from "react";
+import { useState } from "react";
 import PropTypes from "prop-types";
 
 const BarChart = ({
 	data,
 	primaryColor = "#2F4F4F",  
-	secondaryColor = "#5F9EA0",
+	secondaryColor = "#2F4F4F33", // Using same color with transparency
 	height = 200,
 	showValues = true,
 	className = "",
@@ -73,20 +73,18 @@ const BarChart = ({
 								</div>
 							)}
 
-							{/* The bar */}
+							{/* The bar - solid color with no highlight */}
 							<div
 								className="w-full rounded-t transition-all duration-300 ease-in-out"
 								style={{
 									height: `${barHeight}%`,
 									minHeight: item.value > 0 ? "2px" : "0",
-									background: `linear-gradient(to bottom, ${primaryColor}, ${secondaryColor})`,
+									backgroundColor: primaryColor,
 									transform: hoveredIndex === index ? "scaleY(1.03)" : "scaleY(1)",
 									transformOrigin: "bottom",
-									boxShadow: hoveredIndex === index ? `0 0 8px rgba(36, 242, 79, 0.5)` : "none",
+									boxShadow: hoveredIndex === index ? `0 0 8px ${primaryColor}66` : "none",
 								}}
 							>
-								{/* Reflection effect */}
-								<div className="h-1/4 w-full bg-white opacity-30 rounded-t"></div>
 							</div>
 
 							{/* Always visible value on top of the bar */}
