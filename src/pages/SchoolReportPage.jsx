@@ -80,9 +80,9 @@ const SchoolReportPage = () => {
 		fetchData();
 	}, [testId, schoolId]);
 
-	const handleBackToTestReport = () => {
-		navigate(`/test-report/${testId}`);
-	};
+	// const handleBackToTestReport = () => {
+	// 	navigate(`/test-report/${testId}`);
+	// };
 
 	const handleViewProfile = (studentId) => {
 		// Show a toast notification

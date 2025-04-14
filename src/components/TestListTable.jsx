@@ -441,7 +441,7 @@ export default function TestListTable() {
 									"&:hover": { borderColor: "transparent" },
 								}}
 							 
-								onClick={() => navigate(`/allTest/test-report/${testId}`)}
+								onClick={() => navigate(`/allTest/schoolSubmission/${testId}`)}
 							>
 								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
 								&nbsp; View Report

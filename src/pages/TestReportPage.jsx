@@ -130,7 +130,7 @@ const TestReportPage = () => {
 
 						<SchoolPerformanceTable
 							schools={testData.schools}
-							onSchoolSelect={(schoolId) => navigate(`/allTest/test-report/${testId}/school/${schoolId}`)}
+							onSchoolSelect={(schoolId) => navigate(`/allTest/schoolSubmission/${testId}/testDetails/${schoolId}`)}
 							onSendReminder={handleSendReminder}
 						/>
 					</>
