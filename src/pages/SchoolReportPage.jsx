@@ -231,7 +231,7 @@ const SchoolReportPage = () => {
 						}`}
 						onClick={() => setActiveTab("visualizations")}
 					>
-						Data Visualizations
+						Performance Metrics
 					</button>
 					<button
 						className={`py-2 px-4 font-medium ${

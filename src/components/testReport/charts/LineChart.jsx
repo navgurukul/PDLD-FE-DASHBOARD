@@ -131,7 +131,7 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
 						stroke="red"
 						strokeWidth={2}
 						label={{
-							value: `Mean: ${stats.mean}`,
+							value: `Average: ${stats.mean}`,
 							position: "top",
 							fill: "red",
 							fontSize: 12,
@@ -176,8 +176,8 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
 
 			{/* Stats display */}
 			<div className="flex justify-between text-sm mt-2 px-4">
-				<div className="text-red-500">Below Mean: {stats.belowAvg} students</div>
-				<div className="text-green-500">Above Mean: {stats.aboveAvg} students</div>
+				<div className="text-red-500">Below Average: {stats.belowAvg} students</div>
+				<div className="text-green-500">Above Average: {stats.aboveAvg} students</div>
 			</div>
 
 			{/* Hidden element to help debug - you can remove this after confirming it works */}
