@@ -140,10 +140,6 @@ const SchoolReportPage = () => {
 					<h2 className="text-2xl font-bold text-[#2F4F4F]">{schoolData.name || schoolData.schoolName}</h2>
 					<div className="flex flex-wrap gap-3 text-sm text-gray-600 mt-1">
 						<span>{testData?.testName || "Test Details"}</span>
-						<span>•</span>
-						<span>{testData?.subject || schoolData.subject}</span>
-						<span>•</span>
-						<span>Class {testData?.testClass || schoolData.class}</span>
 					</div>
 				</div>
 
