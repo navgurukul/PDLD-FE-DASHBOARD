@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
-import { Button, TextField, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, IconButton } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -11,6 +11,7 @@ import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
 const theme = createTheme({
 	typography: {
@@ -206,6 +207,19 @@ export default function Users() {
 		}
 	};
 
+	// Function to handle copying username and password
+	const handleCopyCredentials = (user) => {
+		const text = `Username: ${user.username}\nPassword: ${user.password}`;
+		navigator.clipboard.writeText(text)
+			.then(() => {
+				toast.success("Username and password copied to clipboard");
+			})
+			.catch((error) => {
+				console.error("Failed to copy: ", error);
+				toast.error("Failed to copy to clipboard");
+			});
+	};
+
 	const getSchoolCount = (user) => {
 		// First check if schoolsMapped is directly provided
 		if (typeof user.schoolsMapped === "number") {
@@ -234,8 +248,14 @@ export default function Users() {
 		} Schools`,
 		password: user.password || "default123",
 		status: user.isActive ? "Active" : "Inactive",
-		blockName: user.assignedBlocks?.join(", ") || "N/A", // Block Name
-		assignedCluster: user.assignedClusters?.join(", ") || "N/A", // Assigned Cluster
+		// blockName: user.assignedBlocks?.join(", ") || "N/A", // Block Name
+		blockName: `${
+			user.role == ("DISTRICT_OFFICER" || "district_officer") ? "All" : user.assignedBlocks?.join(", ") 
+		}`,
+		// assignedCluster: user.assignedClusters?.join(", ") || "N/A", // Assigned Cluster
+		assignedCluster: `${
+			user.role == ("DISTRICT_OFFICER" || "district_officer") ? "All" : user.assignedClusters?.join(", ") 
+		}`,
 		actions: "Manage User",
 		userObj: user, // Pass the entire user object for the delete modal
 	}));
@@ -261,12 +281,12 @@ export default function Users() {
 
 		{
 			name: "blockName", // New column for Block Name
-			label: "Block Name",
+			label: "Block",
 			options: { sort: true },
 		},
 		{
 			name: "assignedCluster", // New column for Assigned Cluster
-			label: "Assigned Cluster",
+			label: "Cluster",
 			options: { sort: true },
 		},
 		{
@@ -277,16 +297,39 @@ export default function Users() {
 		{
 			name: "username",
 			label: "Username",
-			options: { sort: true },
+			options: { 
+				sort: true,
+				customBodyRender: (value, tableMeta) => {
+					const userIndex = tableMeta.rowIndex;
+					const user = filteredUsers[userIndex];
+					
+					return (
+						<div className="flex items-center gap-2">
+							<span>{value}</span>
+							<Tooltip title="Copy username and password" arrow>
+								<IconButton 
+									size="small" 
+									onClick={() => handleCopyCredentials(user)}
+									sx={{ color: '#2F4F4F', padding: '2px' }}
+								>
+									<ContentCopyIcon fontSize="small" />
+								</IconButton>
+							</Tooltip>
+						</div>
+					);
+				}
+			},
 		},
 		{
 			name: "password",
 			label: "Password",
-			options: { sort: true },
+			options: { 
+				display: false,  // Hide the password column
+			},
 		},
 		{
 			name: "dateJoined",
-			label: "Date Joined",
+			label: "Joined On",
 			options: { sort: true },
 		},
 		// {
@@ -329,7 +372,7 @@ export default function Users() {
 				),
 				customBodyRender: (value, tableMeta) => {
 					const userId = tableMeta.rowData[0];
-					const userObj = tableMeta.rowData[8]; // Index of userObj in the rowData array
+					const userObj = tableMeta.rowData[10]; // Index of userObj in the rowData array
 
 					return (
 						<div className="flex gap-2 justify-center">
