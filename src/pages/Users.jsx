@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
-import { Button, TextField } from "@mui/material";
+import { Button, TextField, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -49,6 +49,8 @@ export default function Users() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filteredUsers, setFilteredUsers] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [availableRoles, setAvailableRoles] = useState([]);
+	const [selectedRole, setSelectedRole] = useState("");
 	const location = useLocation();
 	const navigate = useNavigate();
 	const pageSize = 20;
@@ -64,21 +66,35 @@ export default function Users() {
 		}
 	}, [location, navigate]);
 
+	// Extract unique roles from users
 	useEffect(() => {
-		if (!searchQuery.trim()) {
-			setFilteredUsers(users);
-			return;
+		if (users.length > 0) {
+			const roles = [...new Set(users.map(user => user.role))].filter(Boolean);
+			setAvailableRoles(roles);
+		}
+	}, [users]);
+
+	// Filter users based on search query and selected role
+	useEffect(() => {
+		let filtered = users;
+
+		// Apply search filter
+		if (searchQuery.trim()) {
+			const lowercaseQuery = searchQuery.toLowerCase();
+			filtered = filtered.filter(
+				(user) =>
+					user.name?.toLowerCase().includes(lowercaseQuery) ||
+					formatRoleName(user.role)?.toLowerCase().includes(lowercaseQuery)
+			);
 		}
 
-		const lowercaseQuery = searchQuery.toLowerCase();
-		const filtered = users.filter(
-			(user) =>
-				user.name?.toLowerCase().includes(lowercaseQuery) ||
-				formatRoleName(user.role)?.toLowerCase().includes(lowercaseQuery)
-		);
+		// Apply role filter
+		if (selectedRole) {
+			filtered = filtered.filter(user => user.role === selectedRole);
+		}
 
 		setFilteredUsers(filtered);
-	}, [searchQuery, users]);
+	}, [searchQuery, selectedRole, users]);
 
 	const handleCreateUser = () => {
 		navigate("/users/userCreationForm");
@@ -93,9 +109,24 @@ export default function Users() {
 			BLOCK_OFFICER: "Block Officer",
 			CLUSTER_PRINCIPAL: "Cluster Principal",
 			CLUSTER_ACADEMIC_COORDINATOR: "Cluster Academic Coordinator",
+			CAC: "Cluster Academic Coordinator",
 		};
 
 		return roleMap[role] || role.replace(/_/g, " ");
+	};
+
+	// Function to get short form of role names for dropdown
+	const getRoleShortForm = (role) => {
+		if (!role) return "";
+
+		const roleShortFormMap = {
+			DISTRICT_OFFICER: "District Officer",
+			BLOCK_OFFICER: "Block Officer",
+			CLUSTER_PRINCIPAL: "Cluster Principal",
+			CLUSTER_ACADEMIC_COORDINATOR: "CAC",
+		};
+
+		return roleShortFormMap[role] || role.replace(/_/g, " ");
 	};
 
 	const fetchData = async () => {
@@ -329,6 +360,10 @@ export default function Users() {
 		pagination: false,
 	};
 
+	const handleRoleChange = (e) => {
+		setSelectedRole(e.target.value);
+	};
+
 	return (
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper bg-white rounded-lg shadow-sm">
@@ -336,21 +371,93 @@ export default function Users() {
 					<h5 className="text-lg font-bold text-[#2F4F4F]">All Users</h5>
 				</div>
 				<div className="flex justify-between mb-2">
-					<TextField
-						variant="outlined"
-						placeholder="Search by Name or Role..."
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						InputProps={{
-							style: {
-								backgroundColor: "#fff",
-								borderRadius: "8px",
-								width: "420px",
+					<div className="flex flex-wrap gap-2">
+						<TextField
+							variant="outlined"
+							placeholder="Search by Name or Role..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							InputProps={{
+								style: {
+									backgroundColor: "#fff",
+									borderRadius: "8px",
+									width: "420px",
+									height: "48px",
+								},
+							}}
+							sx={{ marginBottom: "10px" }}
+						/>
+						
+						{/* Role Dropdown with Shortform */}
+						<FormControl
+							sx={{
 								height: "48px",
-							},
-						}}
-						sx={{ marginBottom: "10px" }}
-					/>
+								display: "flex",
+								width: "200px", // Increased width for longer text
+								minWidth: "120px",
+							}}
+						>
+							<InputLabel
+								id="role-select-label"
+								sx={{
+									transform: "translate(14px, 14px) scale(1)",
+									"&.Mui-focused, &.MuiFormLabel-filled": {
+										transform: "translate(14px, -9px) scale(0.75)",
+									},
+								}}
+							>
+								Role
+							</InputLabel>
+							<Select
+								labelId="role-select-label"
+								id="role-select"
+								value={selectedRole}
+								label="Role"
+								onChange={handleRoleChange}
+								sx={{
+									height: "100%",
+									borderRadius: "8px",
+									backgroundColor: "#fff",
+									"& .MuiOutlinedInput-notchedOutline": {
+										borderRadius: "8px",
+									},
+									"& .MuiSelect-select": {
+										paddingTop: "12px",
+										paddingBottom: "12px",
+										display: "flex",
+										alignItems: "center",
+										color: "#2F4F4F",
+										fontWeight: "600",
+									},
+								}}
+								MenuProps={{
+									PaperProps: {
+										sx: {
+											maxHeight: 200,
+											overflowY: "auto",
+											"&::-webkit-scrollbar": {
+												width: "5px",
+											},
+											"&::-webkit-scrollbar-thumb": {
+												backgroundColor: "#B0B0B0",
+												borderRadius: "5px",
+											},
+											"&::-webkit-scrollbar-track": {
+												backgroundColor: "#F0F0F0",
+											},
+										},
+									},
+								}}
+							>
+								<MenuItem value="">All Roles</MenuItem>
+								{availableRoles.map((role) => (
+									<MenuItem key={role} value={role}>
+										{getRoleShortForm(role)}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+					</div>
 					<ButtonCustom imageName={addSymbolBtn} text="Create User" onClick={handleCreateUser} />
 				</div>
 
