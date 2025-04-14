@@ -185,21 +185,21 @@ const SchoolPerformanceTable = ({ schools, onSchoolSelect, onSendReminder }) => 
 				sortThirdClickReset: true,
 			},
 		},
-		{
-			name: "vsPrev",
-			label: "vs Prev",
-			options: {
-				filter: false,
-				sort: true,
-				sortThirdClickReset: true,
-				customBodyRenderLite: (dataIndex) => {
-					const value = tableData[dataIndex].vsPrev;
-					const isPositive = value && value.startsWith("+");
+		// {
+		// 	name: "vsPrev",
+		// 	label: "vs Prev",
+		// 	options: {
+		// 		filter: false,
+		// 		sort: true,
+		// 		sortThirdClickReset: true,
+		// 		customBodyRenderLite: (dataIndex) => {
+		// 			const value = tableData[dataIndex].vsPrev;
+		// 			const isPositive = value && value.startsWith("+");
 
-					return <div style={{ color: isPositive ? "#2e7d32" : "#c62828" }}>{value}</div>;
-				},
-			},
-		},
+		// 			return <div style={{ color: isPositive ? "#2e7d32" : "#c62828" }}>{value}</div>;
+		// 		},
+		// 	},
+		// },
 		// Updated actions column to show different buttons based on submission status
 		{
 			name: "submitted",
@@ -235,25 +235,26 @@ const SchoolPerformanceTable = ({ schools, onSchoolSelect, onSendReminder }) => 
 						// Show Remind button for pending schools
 						return (
 							<div style={{ display: "flex", justifyContent: "center" }}>
-								<Button 
+								<Button
 									variant="outlined"
-									size="small"
-									onClick={() => handleSendReminder(schoolId)}
-									sx={{ 
-										borderRadius: '8px',
-										borderColor: '#e0e0e0',
-										color: '#2F4F4F',
-										textTransform: 'none',
-										fontSize: '0.75rem',
-										padding: '4px 10px',
-										'&:hover': {
-											borderColor: '#2F4F4F',
-											backgroundColor: 'rgba(47, 79, 79, 0.04)'
-										}
+									size="small" 
+									sx={{
+										borderRadius: "8px",
+										borderColor: "rgba(224, 224, 224, 0.6)", // Faded border color
+										color: "rgba(47, 79, 79, 0.6)", // Faded text color
+										opacity: 0.7, // Faded appearance
+										textTransform: "none",
+										fontSize: "0.75rem",
+										padding: "4px 10px",
+										"&:hover": {
+											borderColor: "#2F4F4F",
+											backgroundColor: "rgba(47, 79, 79, 0.08)",
+											opacity: 1, // Full opacity on hover
+										},
 									}}
 								>
-									<MailOutlineIcon style={{ width: "16px", height: "16px", marginRight: "4px" }} />
-									Remind
+									<DocScannerIcon style={{ width: "20px", height: "20px" }} />
+									&nbsp; View Details
 								</Button>
 							</div>
 						);
@@ -280,7 +281,7 @@ const SchoolPerformanceTable = ({ schools, onSchoolSelect, onSendReminder }) => 
 	return (
 		<ThemeProvider theme={theme}>
 			<div className=" ">
-				<h5 className="text-lg font-bold text-[#2F4F4F]">School Performance</h5>
+				<h5 className="text-lg font-bold text-[#2F4F4F]">School Submission</h5>
 
 				{/* Filters - Exact match to TestListTable */}
 				<div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
