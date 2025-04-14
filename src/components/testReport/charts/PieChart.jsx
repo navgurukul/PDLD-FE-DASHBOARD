@@ -59,16 +59,16 @@ const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, s
 			{/* SVG Definitions */}
 			<svg width="0" height="0" className="absolute">
 				<defs>
-					{/* Primary color gradient */}
+					{/* Primary color solid fill (no gradient to avoid artifacts) */}
 					<linearGradient id={primaryGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
 						<stop offset="0%" style={{ stopColor: primaryColor, stopOpacity: 1 }} />
-						<stop offset="100%" style={{ stopColor: `${primaryColor}dd`, stopOpacity: 0.9 }} />
+						<stop offset="100%" style={{ stopColor: primaryColor, stopOpacity: 1 }} />
 					</linearGradient>
 
-					{/* Secondary color gradient */}
+					{/* Secondary color solid fill (no gradient to avoid artifacts) */}
 					<linearGradient id={secondaryGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
 						<stop offset="0%" style={{ stopColor: secondaryColor, stopOpacity: 1 }} />
-						<stop offset="100%" style={{ stopColor: `${secondaryColor}dd`, stopOpacity: 0.7 }} />
+						<stop offset="100%" style={{ stopColor: secondaryColor, stopOpacity: 1 }} />
 					</linearGradient>
 
 					{/* Filter for inner shadow */}
@@ -82,7 +82,6 @@ const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, s
 			<div
 				className="absolute inset-0 rounded-full transition-all duration-500"
 				style={{
-					background: `url(#${secondaryGradientId})`,
 					backgroundColor: secondaryColor,
 					boxShadow: `inset 0 2px 8px rgba(0, 0, 0, 0.1)`,
 				}}
@@ -104,8 +103,7 @@ const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, s
 				<div
 					className="absolute inset-0 rounded-full transition-all duration-700"
 					style={{
-						background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
-						boxShadow: `0 0 15px ${primaryColor}33`,
+						backgroundColor: primaryColor,
 					}}
 				></div>
 			</div>
@@ -115,7 +113,7 @@ const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, s
 				<div
 					className="absolute inset-0 rounded-full overflow-hidden transition-all duration-700"
 					style={{
-						clipPath: `polygon(50% 50%, 100% 0, ${50 + 50 * Math.sin(((angle - 180) * Math.PI) / 180)}% ${
+						clipPath: `polygon(50% 50%, 100% 0, 100% 100%, ${50 + 50 * Math.sin(((angle - 180) * Math.PI) / 180)}% ${
 							50 + 50 * Math.cos(((angle - 180) * Math.PI) / 180)
 						}%, 50% 50%)`,
 					}}
@@ -123,8 +121,7 @@ const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, s
 					<div
 						className="absolute inset-0 rounded-full transition-all duration-700"
 						style={{
-							background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
-							boxShadow: `0 0 15px ${primaryColor}33`,
+							backgroundColor: primaryColor,
 						}}
 					></div>
 				</div>
@@ -190,8 +187,8 @@ PieChart.propTypes = {
 
 PieChart.defaultProps = {
 	percentage: 0,
-	primaryColor: "#2F4F4F", // Changed to dark slate gray (theme color)
-	secondaryColor: "#A3BFBF", // Lighter complementary color to dark slate gray
+	primaryColor: "#2F4F4F", // Dark slate gray (theme color)
+	secondaryColor: "#FFEBEB", // Light pink for "Needs Improvement"
 	animation: true,
 	size: 160, // Default size in pixels
 	showAnimation: true,
