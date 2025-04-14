@@ -25,7 +25,7 @@ import {
 } from "@mui/material";
 import MuiAlert from "@mui/material/Alert";
 import { alpha } from "@mui/material/styles";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -35,11 +35,11 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import WarningIcon from "@mui/icons-material/Warning";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
-import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
-import ButtonCustom from "./ButtonCustom";
+import { addSymbolBtn, EditPencilIcon, trash } from "../../../utils/imagePath";
+import ButtonCustom from "../../../components/ButtonCustom";
 import { ThemeProvider } from "@mui/material/styles";
-import theme from "../theme/theme";
-import OutlinedButton from "./button/OutlinedButton";
+import theme from "../../../theme/theme";
+import OutlinedButton from "../../../components/button/OutlinedButton";
 
 // Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
@@ -68,7 +68,7 @@ const getLoginDetails = () => {
 // Get login details
 const loginDetails = getLoginDetails();
 
-export default function CSVMapper({ file, onMappingComplete, entityType = "school" }) {
+export default function StudentCSVMapper({ file, onMappingComplete }) {
 	const [csvData, setCsvData] = useState([]);
 	const [headers, setHeaders] = useState([]);
 	const [mapping, setMapping] = useState({});
@@ -83,7 +83,7 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 	const [newRowErrors, setNewRowErrors] = useState({});
 	const [isLoading, setIsLoading] = useState(true);
 
-	// New states for improved deletion
+	// States for deletion functionality
 	const [deletingRowIndex, setDeletingRowIndex] = useState(null);
 	const [showUndoSnackbar, setShowUndoSnackbar] = useState(false);
 	const [deletedRow, setDeletedRow] = useState(null);
@@ -95,6 +95,42 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 	const [snackbarSeverity, setSnackbarSeverity] = useState("info");
 	const [snackbarAction, setSnackbarAction] = useState(null);
 
+	// Set up student system fields
+	useEffect(() => {
+		// Updated with the correct required fields for student upload
+		setSystemFields([
+			{ id: "fullName", label: "Full Name", required: true },
+			{ id: "fatherName", label: "Father Name", required: true },
+			{ id: "motherName", label: "Mother Name", required: true },
+			{ id: "dob", label: "DOB", required: true },
+			{ id: "class", label: "Class", required: true },
+			{ id: "gender", label: "Gender", required: true },
+			{ id: "schoolUdiseCode", label: "School UDISE Code", required: true },
+			{ id: "aparId", label: "APAR ID", required: false },
+			{ id: "hostel", label: "Hostel", required: false },
+			// Add any other fields that might be optional
+		]);
+	}, []);
+
+	// Validate a single row against required fields
+	const validateRow = (rowData) => {
+		// For partial edits, we should check only the fields that have been changed
+		// or if we're creating a new row
+		const errors = {};
+		let hasError = false;
+
+		// Check each required field based on mapping
+		Object.entries(mapping).forEach(([csvHeader, systemFieldId]) => {
+			const field = systemFields.find((f) => f.id === systemFieldId);
+			if (field && field.required && (!rowData[csvHeader] || rowData[csvHeader].trim() === "")) {
+				errors[csvHeader] = `${field.label} is required`;
+				hasError = true;
+			}
+		});
+
+		return { errors, isValid: !hasError };
+	};
+
 	// Add this function to show notifications consistently
 	const showNotification = (message, severity = "info", action = null) => {
 		setSnackbarMessage(message);
@@ -103,33 +139,7 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 		setSnackbarOpen(true);
 	};
 
-	// Load system fields based on entity type
-	useEffect(() => {
-		// These would ideally come from an API endpoint
-		if (entityType === "school") {
-			setSystemFields([
-				{ id: "schoolName", label: "School Name", required: true },
-				{ id: "udiseCode", label: "UDISE Code", required: true },
-				{ id: "clusterName", label: "Cluster Name", required: true },
-				{ id: "blockName", label: "Block Name", required: true },
-				{ id: "address", label: "Address", required: false },
-				{ id: "pincode", label: "Pincode", required: false },
-				{ id: "district", label: "District", required: false },
-				{ id: "state", label: "State", required: false },
-			]);
-		} else if (entityType === "student") {
-			// Future use for student upload
-			setSystemFields([
-				{ id: "studentName", label: "Student Name", required: true },
-				{ id: "enrollmentId", label: "Enrollment ID", required: true },
-				{ id: "grade", label: "Grade", required: true },
-				{ id: "schoolId", label: "School ID", required: true },
-				// Add more student fields as needed
-			]);
-		}
-	}, [entityType]);
-
-	// Parse CSV file when it's selected - load ALL rows
+	// Parse CSV file when it's selected
 	useEffect(() => {
 		if (!file) return;
 
@@ -140,15 +150,37 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 			const content = e.target.result;
 			const rows = content.split("\n");
 
-			// Parse headers (first row)
+			// Parse headers (first row) with duplicate handling
 			const headerRow = rows[0].split(",").map((h) => h.trim());
-			setHeaders(headerRow);
+
+			// Create a map to track duplicate headers
+			const headerCounts = {};
+			const uniqueHeaders = [];
+
+			// Process each header to identify duplicates
+			headerRow.forEach((header) => {
+				if (!headerCounts[header]) {
+					headerCounts[header] = 1;
+					uniqueHeaders.push(header);
+				} else {
+					// If duplicate, append a number to make it unique
+					const newHeader = `${header} (${headerCounts[header]})`;
+					headerCounts[header]++;
+					uniqueHeaders.push(newHeader);
+				}
+			});
+
+			// Use uniqueHeaders for the component state
+			setHeaders(uniqueHeaders);
 
 			// Create initial mapping - attempt to match headers to system fields
 			const initialMapping = {};
-			headerRow.forEach((header) => {
+			uniqueHeaders.forEach((header) => {
+				// Get the base header name without any duplicate counter
+				const baseHeader = header.includes(" (") ? header.substring(0, header.indexOf(" (")) : header;
+
 				// Try to find a matching system field by normalizing and comparing the names
-				const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, "");
+				const normalizedHeader = baseHeader.toLowerCase().replace(/[^a-z0-9]/g, "");
 				const matchedField = systemFields.find((field) => {
 					const normalizedField = field.label.toLowerCase().replace(/[^a-z0-9]/g, "");
 					return (
@@ -162,17 +194,21 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 					initialMapping[header] = matchedField.id;
 				}
 			});
+
 			setMapping(initialMapping);
 
-			// Parse ALL data rows
+			// Parse all data rows using the uniqueHeaders
 			const dataRows = [];
 			for (let i = 1; i < rows.length; i++) {
 				if (rows[i].trim()) {
 					const rowData = rows[i].split(",").map((cell) => cell.trim());
 					const rowObj = {};
-					headerRow.forEach((header, index) => {
-						rowObj[header] = rowData[index] || "";
+
+					// Handle potential mismatch in column count
+					uniqueHeaders.forEach((header, index) => {
+						rowObj[header] = index < rowData.length ? rowData[index] : "";
 					});
+
 					dataRows.push(rowObj);
 				}
 			}
@@ -237,21 +273,6 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 	};
 
 	// Validate a single row against required fields
-	const validateRow = (rowData) => {
-		const errors = {};
-		let hasError = false;
-
-		// Check each required field based on mapping
-		Object.entries(mapping).forEach(([csvHeader, systemFieldId]) => {
-			const field = systemFields.find((f) => f.id === systemFieldId);
-			if (field && field.required && (!rowData[csvHeader] || rowData[csvHeader].trim() === "")) {
-				errors[csvHeader] = `${field.label} is required`;
-				hasError = true;
-			}
-		});
-
-		return { errors, isValid: !hasError };
-	};
 
 	// Start editing a row
 	const startEditRow = (index) => {
@@ -267,26 +288,60 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 		setEditingErrors({});
 	};
 
-	// Save edited row
+	// Save edited row with improved error handling
 	const saveEditedRow = () => {
-		// Validate data before saving
-		const { errors, isValid } = validateRow(editingValues);
+		try {
+			// Get the existing data for this row
+			const originalRow = csvData[editingRowIndex];
 
-		if (!isValid) {
-			setEditingErrors(errors);
+			// Create a merged version with just the edited fields
+			const mergedData = { ...originalRow };
+
+			// Only check fields that the user has actually modified
+			const modifiedFields = {};
+			let hasEmptyRequired = false;
+
+			// Check edited fields
+			Object.keys(editingValues).forEach((header) => {
+				// Only consider fields that have been modified
+				if (editingValues[header] !== originalRow[header]) {
+					modifiedFields[header] = editingValues[header];
+
+					// Check if it's a required field and is empty
+					const systemFieldId = mapping[header];
+					const field = systemFields.find((f) => f.id === systemFieldId);
+					if (field && field.required && (!editingValues[header] || editingValues[header].trim() === "")) {
+						hasEmptyRequired = true;
+						editingErrors[header] = `${field.label} is required`;
+					}
+				}
+			});
+
+			// If any of the modified required fields are empty, show error
+			if (hasEmptyRequired) {
+				setEditingErrors(editingErrors);
+				showNotification("Please fill all required fields", "error");
+				return;
+			}
+
+			// Merge changes with original row
+			Object.assign(mergedData, editingValues);
+
+			// Update the row
+			const newData = [...csvData];
+			newData[editingRowIndex] = mergedData;
+			setCsvData(newData);
+			setEditingRowIndex(null);
+			setEditingValues({});
+			setEditingErrors({});
+			showNotification("Row updated successfully", "success");
+		} catch (error) {
+			console.error("Error saving edited row:", error);
 			showNotification("Please fill all required fields", "error");
-			return;
 		}
-
-		const newData = [...csvData];
-		newData[editingRowIndex] = { ...editingValues };
-		setCsvData(newData);
-		setEditingRowIndex(null);
-		setEditingValues({});
-		setEditingErrors({});
-		// toast.success("Row updated successfully");
-		showNotification("Row updated successfully", "success");
 	};
+
+	// Similar pattern for saveNewRow
 
 	// Handle changes in editing values
 	const handleEditChange = (header, value) => {
@@ -324,7 +379,6 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 	};
 
 	// Save new row
-	// Save new row
 	const saveNewRow = () => {
 		// Validate data before saving
 		const { errors, isValid } = validateRow(newRowValues);
@@ -340,7 +394,7 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 		setAddingNewRow(false);
 		setNewRowValues({});
 		setNewRowErrors({});
-		showNotification("New row added successfully", "success");
+		showNotification("Row updated successfully", "success");
 	};
 
 	// Handle changes in new row values
@@ -360,7 +414,7 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 		}
 	};
 
-	// Improved delete row with animation
+	// Delete row with animation and snackbar
 	const deleteRow = (index) => {
 		// Set the row as being deleted to trigger animation
 		setDeletingRowIndex(index);
@@ -375,7 +429,6 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 			newData.splice(index, 1);
 			setCsvData(newData);
 			setDeletingRowIndex(null);
-			setShowUndoSnackbar(true);
 
 			// Show notification with Undo button
 			showNotification(
@@ -385,11 +438,19 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 				// 	UNDO
 				// </Button>
 			);
+
 			// Log deletion with user info
 			console.log(`Row deleted by ${loginDetails.name} at ${loginDetails.currentDateTime}`);
 		}, 500); // 500ms for the animation to complete
 	};
 
+	// Handle Snackbar close
+	const handleSnackbarClose = (event, reason) => {
+		if (reason === "clickaway") {
+			return;
+		}
+		setSnackbarOpen(false);
+	};
 	// Handle undo of deletion
 	const handleUndo = () => {
 		if (deletedRow && deletedRowIndex !== null) {
@@ -434,8 +495,7 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 								display: "flex",
 								justifyContent: "space-between",
 								alignItems: "flex-start",
-								flexWrap: { xs: "wrap", md: "nowrap" }, // Wrap content on smaller screens and keep it inline on larger screens
-								gap: 2, // Add spacing between items
+								flexWrap: { xs: "wrap", md: "nowrap" },
 							}}
 						>
 							{/* Left Side: Required Fields Status */}
@@ -482,12 +542,7 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 							</Box>
 
 							{/* Middle: Current Mapping */}
-							<Box
-								sx={{
-									flex: 2,
-									minWidth: 300,
-								}}
-							>
+							<Box sx={{ flexGrow: 1, minWidth: 300, mb: 2, mr: 3 }}>
 								<Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
 									Current Mapping
 								</Typography>
@@ -495,6 +550,7 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 								<Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
 									{Object.entries(mapping).length > 0 ? (
 										Object.entries(mapping).map(([csvColumn, systemFieldId]) => {
+											// Find the system field label
 											const field = systemFields.find((f) => f.id === systemFieldId);
 											return field ? (
 												<Chip
@@ -539,14 +595,15 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 						<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
 							<Box>
 								<Typography variant="subtitle1" fontWeight="bold">
-									Schools Data Preview and Editing
+									Student Data Preview and Editing
 								</Typography>
 								<Typography variant="caption" color="text.secondary">
 									Showing {csvData.length} rows
 								</Typography>
 							</Box>
 
-							<Box sx={{ display: "flex", justifyContent: "end", gap: 2 }}>
+							{/* Right side: Confirm button */}
+							<Box sx={{ display: "flex", gap: 2 }}>
 								<ButtonCustom
 									text={"Add Row"}
 									onClick={startAddRow}
@@ -556,6 +613,7 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 								/>
 								<OutlinedButton
 									variant="contained"
+									btnWidth={220}
 									text={"Confirm Mapping"}
 									onClick={isButtonDisabled ? handleDisabledButtonClick : completeMapping}
 									disabled={isButtonDisabled}
@@ -566,8 +624,8 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 										"&.Mui-disabled": {
 											backgroundColor: "#cccccc",
 											color: "#666666",
-											cursor: "pointer",
-											pointerEvents: "auto",
+											cursor: "pointer", // Keep pointer cursor for disabled button
+											pointerEvents: "auto", // Allow clicks on disabled button
 										},
 									}}
 								/>
@@ -680,17 +738,14 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 																fullWidth
 																error={Boolean(editingErrors[header])}
 																helperText={editingErrors[header] || ""}
-																InputProps={{
-																	style: { fontSize: "0.85rem" }, // This makes the input text smaller
-																}}
 																inputProps={{
-																	style: { textAlign: "center" }, // This centers the text inside the input
+																	style: { fontSize: "0.8rem", textAlign: "center" },
 																}}
-																InputLabelProps={{
-																	style: { fontSize: "0.85rem" }, // This makes any label text smaller
-																}}
-																FormHelperTextProps={{
-																	style: { fontSize: "0.75rem" }, // This makes error messages smaller
+																sx={{
+																	"& .MuiFormHelperText-root": {
+																		fontSize: "0.7rem",
+																		textAlign: "center",
+																	},
 																}}
 															/>
 															{editingErrors[header] && (
@@ -729,6 +784,7 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 																size="small"
 																color="primary"
 																onClick={saveEditedRow}
+																data-testid="save-edit-button"
 															>
 																<SaveIcon fontSize="small" />
 															</IconButton>
@@ -788,6 +844,15 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 															fullWidth
 															error={Boolean(newRowErrors[header])}
 															helperText={newRowErrors[header] || ""}
+															inputProps={{
+																style: { fontSize: "0.8rem", textAlign: "center" },
+															}}
+															sx={{
+																"& .MuiFormHelperText-root": {
+																	fontSize: "0.7rem",
+																	textAlign: "center",
+																},
+															}}
 														/>
 														{newRowErrors[header] && (
 															<Tooltip title={newRowErrors[header]}>
@@ -833,40 +898,17 @@ export default function CSVMapper({ file, onMappingComplete, entityType = "schoo
 					</CardContent>
 				</Card>
 
-				{/* Undo Snackbar */}
-				{/* <Snackbar
-					open={showUndoSnackbar}
-					autoHideDuration={6000}
-					onClose={() => setShowUndoSnackbar(false)}
-					TransitionComponent={Slide}
-					anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-				>
-					<MuiAlert
-						elevation={6}
-						variant="filled"
-						severity="info"
-						action={
-							<Button color="inherit" size="small" onClick={handleUndo}>
-								UNDO
-							</Button>
-						}
-						onClose={() => setShowUndoSnackbar(false)}
-					>
-						Row deleted by {loginDetails.name}
-					</MuiAlert>
-				</Snackbar> */}
-
 				{/* Snackbar for all notifications */}
 				<Snackbar
 					open={snackbarOpen}
 					autoHideDuration={6000}
-					onClose={() => setSnackbarOpen(false)}
+					onClose={handleSnackbarClose}
 					anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
 				>
 					<MuiAlert
 						elevation={6}
 						variant="filled"
-						onClose={() => setSnackbarOpen(false)}
+						onClose={handleSnackbarClose}
 						severity={snackbarSeverity}
 						action={snackbarAction}
 					>

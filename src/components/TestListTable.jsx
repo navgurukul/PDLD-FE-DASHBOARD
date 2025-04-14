@@ -58,6 +58,7 @@ export default function TestListTable() {
 	const [dateRange, setDateRange] = useState([null, null]);
 	const [startDate, endDate] = dateRange;
 	const [isLoading, setIsLoading] = useState(false);
+	const [userRole, setUserRole] = useState("");
 
 	// Track dropdown selections
 	const [selectedClass, setSelectedClass] = useState("");
@@ -78,6 +79,26 @@ export default function TestListTable() {
 			navigate(location.pathname, { replace: true });
 		}
 	}, [location, navigate]);
+
+	useEffect(() => {
+		try {
+			// Changed from userdata to userData with capital D
+			const rawData = localStorage.getItem("userData");
+
+			if (!rawData) {
+				console.log("No userData found in localStorage");
+				setUserRole("");
+				return;
+			}
+
+			const userData = JSON.parse(rawData);
+			setUserRole(userData.role || "");
+			console.log(userData.role, "ROLE");
+		} catch (error) {
+			console.error("Error parsing user data from localStorage:", error);
+			setUserRole("");
+		}
+	}, []);
 
 	const pageSize = 20; // The fixed page size
 
@@ -393,21 +414,23 @@ export default function TestListTable() {
 								justifyContent: "center",
 							}}
 						>
-							<Button
-								variant="outlined"
-								size="small"
-								color="primary"
-								sx={{
-									borderColor: "transparent",
-									"&:hover": { borderColor: "transparent" },
-								}}
-								onClick={() => {
-									navigate(`/editTest/${testId}`);
-								}}
-							>
-								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
-								&nbsp;
-							</Button>
+							{userRole === "DISTRICT_OFFICER" && (
+								<Button
+									variant="outlined"
+									size="small"
+									color="primary"
+									sx={{
+										borderColor: "transparent",
+										"&:hover": { borderColor: "transparent" },
+									}}
+									onClick={() => {
+										navigate(`/editTest/${testId}`);
+									}}
+								>
+									<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
+									&nbsp;
+								</Button>
+							)}
 							<Button
 								variant="outlined"
 								size="small"
@@ -649,11 +672,13 @@ export default function TestListTable() {
 								</div>
 
 								<div className="  ">
-									<ButtonCustom
-										imageName={addSymbolBtn}
-										text={"Create Test"}
-										onClick={handleCreateTest}
-									/>
+									{userRole === "DISTRICT_OFFICER" && (
+										<ButtonCustom
+											imageName={addSymbolBtn}
+											text={"Create Test"}
+											onClick={handleCreateTest}
+										/>
+									)}
 								</div>
 							</div>
 						</div>

@@ -11,6 +11,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import StudentDetails from "./StudentDetails";
+import ButtonCustom from "./ButtonCustom";
 
 const theme = createTheme({
 	typography: {
@@ -69,23 +70,46 @@ export default function SchoolDetailView() {
 	const navigate = useNavigate();
 	const [school, setSchool] = useState(null);
 	const [isLoading, setIsLoading] = useState(true);
-	const [tabValue, setTabValue] = useState(0);
-
-	// Get the school data from location state instead of API
+	// const [tabValue, setTabValue] = useState(0);
 	const { state } = useLocation();
+	const [tabValue, setTabValue] = useState(state?.selectedTab || 0);
 
 	useEffect(() => {
-		// Check if we have school data in the navigation state
+		let schoolData = null;
+
+		// First, check if we have data in location state
 		if (state && state.schoolData) {
-			setSchool(state.schoolData);
+			schoolData = state.schoolData;
+			// Store in localStorage for persistence
+			localStorage.setItem("currentSchoolData", JSON.stringify(schoolData));
+		}
+		// If not in state, try localStorage
+		else {
+			const storedData = localStorage.getItem("currentSchoolData");
+			if (storedData) {
+				try {
+					schoolData = JSON.parse(storedData);
+				} catch (e) {
+					console.error("Error parsing stored school data", e);
+				}
+			}
+		}
+
+		if (schoolData) {
+			setSchool(schoolData);
 			setIsLoading(false);
 		} else {
-			// If no data in navigation state, this is a direct access or refresh
-			// In a real app, you'd fetch from API, but here we'll just show an error
+			// In a real app, you would fetch the data from API using the schoolId
+			// For now, we'll show an error
 			toast.error("School data not available");
 			setIsLoading(false);
 		}
-	}, [state]);
+
+		// Store the schoolId in localStorage for breadcrumb use
+		if (schoolId) {
+			localStorage.setItem("lastSchoolId", schoolId);
+		}
+	}, [state, schoolId]);
 
 	// Handle tab change
 	const handleTabChange = (event, newValue) => {
@@ -110,6 +134,22 @@ export default function SchoolDetailView() {
 		});
 	};
 
+	// Get CAC name from school data
+	const getCACName = () => {
+		if (school.assignedCAC && school.assignedCAC.name) {
+			return school.assignedCAC.name;
+		}
+		return "Not Assigned";
+	};
+
+	// Get CP name from school data
+	const getCPName = () => {
+		if (school.assignedCP && typeof school.assignedCP === "object" && school.assignedCP.name) {
+			return school.assignedCP.name;
+		}
+		return "Not Assigned";
+	};
+
 	// Render loading state
 	if (isLoading) {
 		return <SpinnerPageOverlay isLoading={isLoading} />;
@@ -120,14 +160,12 @@ export default function SchoolDetailView() {
 		return (
 			<Box sx={{ p: 3, textAlign: "center" }}>
 				<Typography variant="h5">School not found</Typography>
-				<Button
+				<ButtonCustom
+					text={"Back to Schools"}
 					startIcon={<ArrowBackIcon />}
 					variant="contained"
-					sx={{ mt: 2, bgcolor: "#2F4F4F", "&:hover": { bgcolor: "#1E3535" } }}
 					onClick={handleBack}
-				>
-					Back to Schools
-				</Button>
+				/>
 			</Box>
 		);
 	}
@@ -135,7 +173,7 @@ export default function SchoolDetailView() {
 	return (
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper sm:px-4">
-				<div className="header-container flex items-center justify-between mb-4">
+				<div className="header-container flex items-center justify-between mb-1">
 					<div className="flex items-center">
 						<h5 className="text-lg font-bold text-[#2F4F4F]">{capitalizeFirstLetter(school.schoolName)}</h5>
 					</div>
@@ -246,9 +284,7 @@ export default function SchoolDetailView() {
 													</Typography>
 												</Grid>
 												<Grid item xs={5} md={6}>
-													<Typography variant="body1">
-														{school.academicCoordinator || "Assigned CAC"}
-													</Typography>
+													<Typography variant="body1">{getCACName()}</Typography>
 												</Grid>
 											</Grid>
 										</Grid>
@@ -261,9 +297,7 @@ export default function SchoolDetailView() {
 													</Typography>
 												</Grid>
 												<Grid item xs={5} md={6}>
-													<Typography variant="body1">
-														{school.clusterPrincipal || "Assigned CP"}
-													</Typography>
+													<Typography variant="body1">{getCPName()}</Typography>
 												</Grid>
 											</Grid>
 										</Grid>

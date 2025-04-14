@@ -10,9 +10,11 @@ import TableList from "./pages/TableList";
 import Schools from "./pages/Schools";
 import PageNotFound from "./pages/PageNotFound";
 import BulkUploadSchools from "./components/BulkUpload";
+import BulkUploadStudent from "./components/student/bulkUploadStudent/BulkUploadStudent";
 import AddSchool from "./components/AddSchool";
 import UserCreationForm from "./components/UserCreationForm";
 import LoginForm from "./components/LoginForm";
+import AddStudent from "./components/student/AddStudent";
 
 // Auth context to manage authentication state
 import { createContext } from "react";
@@ -95,8 +97,11 @@ function App() {
 						<Route path="/reports" element={<Reports />} />
 						<Route path="/schools" element={<Schools />} />
 						<Route path="/schools/add-school" element={<AddSchool />} />
-						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} />
+						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} /> 
+						<Route path="/schools/schoolDetail/:schoolId/updateStudent" element={<AddStudent isEditMode={true} />} />
+						<Route path="/schools/schoolDetail/:schoolId/addStudents" element={<AddStudent />} />
 						<Route path="/schools/update/:schoolId" element={<AddSchool />} />
+						<Route path="/schools/schoolDetail/:schoolId/studentBulkUpload" element={<BulkUploadStudent />} />
 						<Route path="/schools/bulk-upload" element={<BulkUploadSchools />} />
 						<Route path="/bulk-Upload-Summary" element={<UploadSummary />} />
 						<Route path="/testCreationForm" element={<TestCreationForm />} />

@@ -175,20 +175,83 @@ export default function AddSchool({ onClose, onSave }) {
 		}
 	};
 
-	// Handle block selection changes
-	const handleBlockChange = (event, newValue) => {
-		// newValue can be a string (from freeSolo) or an object from the options
-		if (typeof newValue === "string") {
-			// User entered a custom block name
+	// Handle creating a new block
+	const handleCreateNewBlock = (newBlockName) => {
+		// Trimming to ensure clean data
+		const trimmedBlockName = newBlockName.trim();
+		if (trimmedBlockName) {
 			setFormData({
 				...formData,
-				blockName: newValue.trim(), // Use the string value directly
+				blockName: trimmedBlockName,
+				clusterName: "", // Reset cluster when block changes
+			});
+			setBlockInput(trimmedBlockName);
+			setClusterInput("");
+
+			// Show success toast when a new block is created
+			toast.success(`New block "${trimmedBlockName}" added successfully!`);
+
+			// Clear error
+			setErrors({
+				...errors,
+				blockName: false,
+			});
+		}
+	};
+
+	// Handle creating a new cluster
+	const handleCreateNewCluster = (newClusterName) => {
+		// Trimming to ensure clean data
+		const trimmedClusterName = newClusterName.trim();
+		if (trimmedClusterName) {
+			setFormData({
+				...formData,
+				clusterName: trimmedClusterName,
+			});
+			setClusterInput(trimmedClusterName);
+
+			// Show success toast when a new cluster is created
+			toast.success(`New cluster "${trimmedClusterName}" added successfully!`);
+
+			// Clear error
+			setErrors({
+				...errors,
+				clusterName: false,
+			});
+		}
+	};
+
+	// Handle block selection changes
+	const handleBlockChange = (event, newValue) => {
+		// If newValue is a string with "Create new: " prefix, extract actual block name
+		if (typeof newValue === "string" && newValue.startsWith("Create new: ")) {
+			const newBlockName = newValue.replace("Create new: ", "");
+			handleCreateNewBlock(newBlockName);
+		}
+		// Handle special option for creating new block
+		else if (newValue && newValue.isCreateNew) {
+			handleCreateNewBlock(newValue.blockName);
+		}
+		// For regular string input (direct typing + enter)
+		else if (typeof newValue === "string") {
+			setFormData({
+				...formData,
+				blockName: newValue.trim(),
 				clusterName: "", // Reset cluster when block changes
 			});
 			setBlockInput(newValue.trim());
 			setClusterInput("");
-		} else if (newValue && newValue.blockName) {
-			// User selected an existing block
+
+			// Clear error
+			if (newValue.trim()) {
+				setErrors({
+					...errors,
+					blockName: false,
+				});
+			}
+		}
+		// User selected an existing block from dropdown
+		else if (newValue && newValue.blockName) {
 			setFormData({
 				...formData,
 				blockName: newValue.blockName,
@@ -196,8 +259,15 @@ export default function AddSchool({ onClose, onSave }) {
 			});
 			setBlockInput(newValue.blockName);
 			setClusterInput("");
-		} else {
-			// User cleared the selection
+
+			// Clear error
+			setErrors({
+				...errors,
+				blockName: false,
+			});
+		}
+		// User cleared the selection
+		else {
 			setFormData({
 				...formData,
 				blockName: "",
@@ -206,48 +276,56 @@ export default function AddSchool({ onClose, onSave }) {
 			setBlockInput("");
 			setClusterInput("");
 		}
-
-		// Clear error when user selects or types something
-		if (newValue) {
-			setErrors({
-				...errors,
-				blockName: false,
-			});
-		}
 	};
 
 	// Handle cluster selection changes
 	const handleClusterChange = (event, newValue) => {
-		// newValue can be a string (from freeSolo) or an object from the options
-		if (typeof newValue === "string") {
-			// User entered a custom cluster name
+		// If newValue is a string with "Create new: " prefix, extract actual cluster name
+		if (typeof newValue === "string" && newValue.startsWith("Create new: ")) {
+			const newClusterName = newValue.replace("Create new: ", "");
+			handleCreateNewCluster(newClusterName);
+		}
+		// Handle special option for creating new cluster
+		else if (newValue && newValue.isCreateNew) {
+			handleCreateNewCluster(newValue.name);
+		}
+		// For regular string input (direct typing + enter)
+		else if (typeof newValue === "string") {
 			setFormData({
 				...formData,
-				clusterName: newValue.trim(), // Use the string value directly
+				clusterName: newValue.trim(),
 			});
 			setClusterInput(newValue.trim());
-		} else if (newValue && newValue.name) {
-			// User selected an existing cluster
+
+			// Clear error
+			if (newValue.trim()) {
+				setErrors({
+					...errors,
+					clusterName: false,
+				});
+			}
+		}
+		// User selected an existing cluster from dropdown
+		else if (newValue && newValue.name) {
 			setFormData({
 				...formData,
 				clusterName: newValue.name,
 			});
 			setClusterInput(newValue.name);
-		} else {
-			// User cleared the selection
+
+			// Clear error
+			setErrors({
+				...errors,
+				clusterName: false,
+			});
+		}
+		// User cleared the selection
+		else {
 			setFormData({
 				...formData,
 				clusterName: "",
 			});
 			setClusterInput("");
-		}
-
-		// Clear error when user selects or types something
-		if (newValue) {
-			setErrors({
-				...errors,
-				clusterName: false,
-			});
 		}
 	};
 
@@ -386,6 +464,70 @@ export default function AddSchool({ onClose, onSave }) {
 		);
 	}
 
+	// Filter function for autocomplete - only shows "Create new" when no partial matches exist
+	const filterBlockOptions = (options, params) => {
+		if (!params.inputValue) {
+			return options;
+		}
+
+		const inputValue = params.inputValue.toLowerCase().trim();
+
+		// Check for any partial matches (case-insensitive)
+		const partialMatches = options.filter((option) => option.blockName.toLowerCase().includes(inputValue));
+
+		// If we have any partial matches, just return those without adding "Create new"
+		if (partialMatches.length > 0) {
+			return partialMatches;
+		}
+
+		// Check if there's an exact match (case-insensitive)
+		const exactMatch = options.some((option) => option.blockName.toLowerCase() === inputValue);
+
+		// Only add "Create new" option if there are no partial matches and no exact match
+		if (!exactMatch && inputValue) {
+			return [
+				{
+					blockName: params.inputValue,
+					isCreateNew: true,
+				},
+			];
+		}
+
+		return []; // Return empty array if no matches and input is not valid for creation
+	};
+
+	// Filter function for cluster autocomplete - only shows "Create new" when no partial matches exist
+	const filterClusterOptions = (options, params) => {
+		if (!params.inputValue) {
+			return options;
+		}
+
+		const inputValue = params.inputValue.toLowerCase().trim();
+
+		// Check for any partial matches (case-insensitive)
+		const partialMatches = options.filter((option) => option.name.toLowerCase().includes(inputValue));
+
+		// If we have any partial matches, just return those without adding "Create new"
+		if (partialMatches.length > 0) {
+			return partialMatches;
+		}
+
+		// Check if there's an exact match (case-insensitive)
+		const exactMatch = options.some((option) => option.name.toLowerCase() === inputValue);
+
+		// Only add "Create new" option if there are no partial matches and no exact match
+		if (!exactMatch && inputValue) {
+			return [
+				{
+					name: params.inputValue,
+					isCreateNew: true,
+				},
+			];
+		}
+
+		return []; // Return empty array if no matches and input is not valid for creation
+	};
+
 	return (
 		<Box sx={{ py: 3, px: 1, maxWidth: "700px", margin: "0 auto" }}>
 			<h5 className="text-lg font-bold text-[#2F4F4F]">{schoolId ? "Edit School" : "Add New School"}</h5>
@@ -455,9 +597,13 @@ export default function AddSchool({ onClose, onSave }) {
 						<Autocomplete
 							freeSolo
 							options={blocksData}
+							filterOptions={filterBlockOptions}
 							getOptionLabel={(option) => {
 								if (typeof option === "string") {
 									return option;
+								}
+								if (option.isCreateNew) {
+									return `Create new: ${option.blockName}`;
 								}
 								return option.blockName || "";
 							}}
@@ -476,20 +622,6 @@ export default function AddSchool({ onClose, onSave }) {
 								}
 							}}
 							onChange={handleBlockChange}
-							onKeyDown={(event) => {
-								if (event.key === 'Enter' && blockInput.trim()) {
-									// Check if this is a new block that doesn't exist in blocksData
-									const trimmedValue = blockInput.trim();
-									const isNewBlock = blocksData.findIndex(
-										(block) => block.blockName.toLowerCase() === trimmedValue.toLowerCase()
-									) === -1;
-									
-									// Show success toast if Enter key was pressed and it's a new block
-									if (isNewBlock && trimmedValue) {
-										toast.success(`New block "${trimmedValue}" added successfully!`);
-									}
-								}
-							}}
 							renderInput={(params) => (
 								<TextField
 									{...params}
@@ -500,7 +632,7 @@ export default function AddSchool({ onClose, onSave }) {
 									helperText={
 										errors.blockName
 											? "Block name is required"
-											: "Type to search, or enter a new block name and press Enter"
+											: "Type to search, or select 'Create new' option for a new block"
 									}
 									sx={{
 										"& .MuiOutlinedInput-root": {
@@ -517,8 +649,17 @@ export default function AddSchool({ onClose, onSave }) {
 								/>
 							)}
 							renderOption={(props, option) => (
-								<li style={{ fontSize: "16px" }} {...props}>
-									{capitalizeFirstLetter(option.blockName)}
+								<li
+									style={{
+										fontSize: "16px",
+										fontWeight: option.isCreateNew ? "bold" : "normal",
+										color: option.isCreateNew ? "#2F4F4F" : "inherit",
+									}}
+									{...props}
+								>
+									{option.isCreateNew
+										? `Create new: ${capitalizeFirstLetter(option.blockName)}`
+										: capitalizeFirstLetter(option.blockName)}
 								</li>
 							)}
 						/>
@@ -529,9 +670,13 @@ export default function AddSchool({ onClose, onSave }) {
 							freeSolo
 							disabled={!formData.blockName}
 							options={availableClusters.length > 0 ? availableClusters : allClusters}
+							filterOptions={filterClusterOptions}
 							getOptionLabel={(option) => {
 								if (typeof option === "string") {
 									return option;
+								}
+								if (option.isCreateNew) {
+									return `Create new: ${option.name}`;
 								}
 								return option.name || "";
 							}}
@@ -549,21 +694,6 @@ export default function AddSchool({ onClose, onSave }) {
 								}
 							}}
 							onChange={handleClusterChange}
-							onKeyDown={(event) => {
-								if (event.key === 'Enter' && clusterInput.trim()) {
-									// Check if this is a new cluster
-									const trimmedValue = clusterInput.trim();
-									const availableOptions = availableClusters.length > 0 ? availableClusters : allClusters;
-									const isNewCluster = availableOptions.findIndex(
-										(cluster) => cluster.name.toLowerCase() === trimmedValue.toLowerCase()
-									) === -1;
-									
-									// Show success toast if Enter key was pressed and it's a new cluster
-									if (isNewCluster && trimmedValue) {
-										toast.success(`New cluster "${trimmedValue}" added successfully!`);
-									}
-								}
-							}}
 							renderInput={(params) => (
 								<TextField
 									{...params}
@@ -574,7 +704,7 @@ export default function AddSchool({ onClose, onSave }) {
 									helperText={
 										errors.clusterName
 											? "Cluster name is required"
-											: "Type to search, or enter a new cluster name and press Enter"
+											: "Type to search, or select 'Create new' option for a new cluster"
 									}
 									sx={{
 										"& .MuiOutlinedInput-root": {
@@ -591,14 +721,23 @@ export default function AddSchool({ onClose, onSave }) {
 								/>
 							)}
 							renderOption={(props, option) => (
-								<li style={{ fontSize: "16px" }} {...props}>
-									{capitalizeFirstLetter(option.name)}
+								<li
+									style={{
+										fontSize: "16px",
+										fontWeight: option.isCreateNew ? "bold" : "normal",
+										color: option.isCreateNew ? "#2F4F4F" : "inherit",
+									}}
+									{...props}
+								>
+									{option.isCreateNew
+										? `Create new: ${capitalizeFirstLetter(option.name)}`
+										: capitalizeFirstLetter(option.name)}
 								</li>
 							)}
 						/>
 					</Box>
 				</Box>
-				<div style={{ display: "flex", justifyContent: "center", marginTop: "130px" }}>
+				<div style={{ display: "flex", justifyContent: "center", marginTop: "65px" }}>
 					<ButtonCustom
 						text={
 							loading

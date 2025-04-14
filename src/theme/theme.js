@@ -153,6 +153,7 @@ theme = createTheme(theme, {
 		},
 		body2: {
 			fontFamily: "Karla",
+			color:"#2F4F4F",
 			fontSize: "0.875rem",
 			fontWeight: 500,
 			lineHeight: "170%",
