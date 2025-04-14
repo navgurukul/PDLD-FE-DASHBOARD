@@ -155,12 +155,12 @@ const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, s
 				<span
 					className="text-gray-400 transition-all duration-300"
 					style={{
-						fontSize: `${size * 0.07}px`,
+						fontSize: `${size * 0.05}px`,
 						opacity: hovered ? 1 : 0.7,
 						transform: `translateY(${size * 0.02}px)`,
 					}}
 				>
-					{percentage >= 50 ? "PASS RATE" : "NEEDS IMPROVEMENT"}
+					{percentage >= 50 ? "ACHIEVED TARGET" : "NEEDS IMPROVEMENT"}
 				</span>
 			</div>
 

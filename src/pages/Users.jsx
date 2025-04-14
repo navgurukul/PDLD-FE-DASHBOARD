@@ -69,7 +69,7 @@ export default function Users() {
 	// Extract unique roles from users
 	useEffect(() => {
 		if (users.length > 0) {
-			const roles = [...new Set(users.map(user => user.role))].filter(Boolean);
+			const roles = [...new Set(users.map((user) => user.role))].filter(Boolean);
 			setAvailableRoles(roles);
 		}
 	}, [users]);
@@ -90,7 +90,7 @@ export default function Users() {
 
 		// Apply role filter
 		if (selectedRole) {
-			filtered = filtered.filter(user => user.role === selectedRole);
+			filtered = filtered.filter((user) => user.role === selectedRole);
 		}
 
 		setFilteredUsers(filtered);
@@ -223,7 +223,7 @@ export default function Users() {
 		id: user.userId || user.id,
 		name: user.name || "N/A",
 		username: user.username || "N/A",
-		role: formatRoleName(user.role) || "N/A",
+		role: getRoleShortForm(user.role) || "N/A", // Use short form for role
 		dateJoined: new Date(user.createdAt).toLocaleDateString("en-GB", {
 			day: "2-digit",
 			month: "short",
@@ -234,10 +234,13 @@ export default function Users() {
 		} Schools`,
 		password: user.password || "default123",
 		status: user.isActive ? "Active" : "Inactive",
+		blockName: user.assignedBlocks?.join(", ") || "N/A", // Block Name
+		assignedCluster: user.assignedClusters?.join(", ") || "N/A", // Assigned Cluster
 		actions: "Manage User",
 		userObj: user, // Pass the entire user object for the delete modal
 	}));
 
+	// Add new columns for Block Name and Assigned Cluster
 	const columns = [
 		{
 			name: "id",
@@ -249,19 +252,21 @@ export default function Users() {
 			label: "Name",
 			options: { sort: true },
 		},
-		{
-			name: "username",
-			label: "Username",
-			options: { sort: true },
-		},
+
 		{
 			name: "role",
 			label: "Role",
 			options: { sort: true },
 		},
+
 		{
-			name: "dateJoined",
-			label: "Date Joined",
+			name: "blockName", // New column for Block Name
+			label: "Block Name",
+			options: { sort: true },
+		},
+		{
+			name: "assignedCluster", // New column for Assigned Cluster
+			label: "Assigned Cluster",
 			options: { sort: true },
 		},
 		{
@@ -270,34 +275,43 @@ export default function Users() {
 			options: { sort: true },
 		},
 		{
+			name: "username",
+			label: "Username",
+			options: { sort: true },
+		},
+		{
 			name: "password",
 			label: "Password",
 			options: { sort: true },
 		},
 		{
-			name: "status",
-			label: "Status",
-			options: {
-				customBodyRender: (value) => (
-					<span
-						className={`px-2 py-1 rounded-full ${
-							value === "Active"
-								? "bg-green-100 text-green-800"
-								: value === "Inactive"
-								? "bg-red-100 text-red-800"
-								: "bg-yellow-100 text-yellow-800"
-						}`}
-					>
-						{value}
-					</span>
-				),
-			},
+			name: "dateJoined",
+			label: "Date Joined",
+			options: { sort: true },
 		},
+		// {
+		// 	name: "status",
+		// 	label: "Status",
+		// 	options: {
+		// 		customBodyRender: (value) => (
+		// 			<span
+		// 				className={`px-2 py-1 rounded-full ${
+		// 					value === "Active"
+		// 						? "bg-green-100 text-green-800"
+		// 						: value === "Inactive"
+		// 						? "bg-red-100 text-red-800"
+		// 						: "bg-yellow-100 text-yellow-800"
+		// 				}`}
+		// 			>
+		// 				{value}
+		// 			</span>
+		// 		),
+		// 	},
+		// },
 		{
 			name: "userObj", // Hidden column to store user object
 			options: { display: false },
 		},
-		// Inside the Users component, modify the actions column renderer
 		{
 			name: "actions",
 			label: "ACTIONS",
@@ -387,7 +401,7 @@ export default function Users() {
 							}}
 							sx={{ marginBottom: "10px" }}
 						/>
-						
+
 						{/* Role Dropdown with Shortform */}
 						<FormControl
 							sx={{

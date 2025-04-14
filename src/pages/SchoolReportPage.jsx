@@ -91,11 +91,11 @@ const SchoolReportPage = () => {
 		}
 
 		// Create CSV content
-		const headers = ["Student Name", "Score", "Result", "vs Class Avg"];
+		const headers = ["Student Name", "Score", "Performance", "vs Class Avg"];
 		const csvData = schoolData.students.map((student) => [
 			student.name,
 			`${student.score}/100`,
-			student.score >= PASS_THRESHOLD ? "Pass" : "Fail",
+			student.score >= PASS_THRESHOLD ? "Achieved Target" : "Needs Improvement",
 			`${student.score > schoolData.avgScore ? "+" : ""}${(student.score - schoolData.avgScore).toFixed(1)}`,
 		]);
 
@@ -156,14 +156,6 @@ const SchoolReportPage = () => {
 					<div className="bg-white p-4 rounded shadow">
 						<div className="text-sm text-gray-500">Average Score</div>
 						<div className="text-2xl font-bold text-[#2F4F4F]">{schoolData.avgScore}/100</div>
-						{schoolData.vsPrev !== undefined && (
-							<div className="text-sm">
-								<span className={schoolData.vsPrev > 0 ? "text-green-600" : "text-red-600"}>
-									{schoolData.vsPrev > 0 ? "+" : ""}
-									{schoolData.vsPrev}% vs previous test
-								</span>
-							</div>
-						)}
 					</div>
 				</div>
 
@@ -171,18 +163,18 @@ const SchoolReportPage = () => {
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
 					{/* Pass/Fail ratio chart */}
 					<div className="bg-white p-4 rounded shadow">
-						<h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Pass/Fail Ratio</h3>
+						<h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Performance Summary</h3>
 						<div className="h-64 flex items-center justify-center">
 							<div className="text-center">
 								<PieChart percentage={schoolData.passRate} />
 								<div className="mt-4">
 									<div className="flex items-center justify-center">
 										<span className="w-4 h-4 bg-green-500 inline-block mr-2"></span>
-										<span>Pass: {schoolData.passRate}%</span>
+										<span>ACHIEVED TARGET: {schoolData.passRate}%</span>
 									</div>
 									<div className="flex items-center justify-center mt-1">
 										<span className="w-4 h-4 bg-red-100 inline-block mr-2"></span>
-										<span>Fail: {100 - schoolData.passRate}%</span>
+										<span>NEEDS IMPROVEMENT: {100 - schoolData.passRate}%</span>
 									</div>
 								</div>
 							</div>
