@@ -14,6 +14,9 @@ import LineChart from "../components/testReport/charts/LineChart";
 
 // Import mock data and helper functions
 import { MOCK_TESTS, formatDate, calculateScoreDistribution, PASS_THRESHOLD } from "../data/testReportData";
+import { Chip, Box } from "@mui/material";
+import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import PercentIcon from "@mui/icons-material/Percent";
 
 // Flag to toggle between mock data and API calls
 const USE_MOCK_DATA = true;
@@ -198,35 +201,53 @@ const SchoolReportPage = () => {
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper px-3 sm:px-4">
 				{/* School Header */}
-				<div className="mb-6">
-					<h2 className="text-2xl font-bold text-[#2F4F4F]">{schoolData.name || schoolData.schoolName}</h2>
-					<div className="flex flex-wrap gap-3 text-sm text-gray-600 mt-1">
-						<span>{testData?.testName || "Test Details"}</span>
+				<div className="mb-6 flex justify-between">
+					<div>
+						<h5 className="text-2xl font-bold text-[#2F4F4F]">
+							{schoolData.name || schoolData.schoolName}
+						</h5>
+						<div className="text-sm text-gray-600">
+							<span>{testData?.testName || "Test Details"}</span>
+						</div>
 					</div>
-				</div>
 
-				{/* Performance Metrics */}
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-					<div className="bg-white p-4 rounded shadow">
-						<div className="text-sm text-gray-500">Students Tested</div>
-						<div className="text-2xl font-bold text-[#2F4F4F]">{schoolData.studentsTested}</div>
-					</div>
-					<div className="bg-white p-4 rounded shadow">
-						<div className="text-sm text-gray-500">Success Rate</div>
-						<div className="text-2xl font-bold text-[#2F4F4F]">{schoolData.passRate}%</div>
-					</div>
-					<div className="bg-white p-4 rounded shadow">
-						<div className="text-sm text-gray-500">Average Score</div>
-						<div className="text-2xl font-bold text-[#2F4F4F]">{schoolData.avgScore}/100</div>
-					</div>
+					{/* Performance Metrics */}
+					<Box className="flex flex-wrap gap-3 items-center mb-6">
+						<Chip
+							icon={<PeopleAltIcon style={{ fontSize: "16px" }} />}
+							label={`Students Tested: ${schoolData.studentsTested}`}
+							variant="outlined"
+							size="small"
+							sx={{
+								borderRadius: "8px",
+								bgcolor: "#f5f5f5",
+								fontWeight: 600,
+								color: "#2F4F4F",
+								"& .MuiChip-icon": { color: "#2F4F4F" },
+							}}
+						/>
+						<Chip
+							icon={<PercentIcon style={{ fontSize: "16px" }} />}
+							label={`Success Rate: ${schoolData.passRate}%`}
+							variant="outlined"
+							size="small"
+							sx={{
+								borderRadius: "8px",
+								bgcolor: "#e8f5e9",
+								fontWeight: 600,
+								color: "#2e7d32",
+								"& .MuiChip-icon": { color: "#2e7d32" },
+							}}
+						/>
+					</Box>
 				</div>
 
 				{/* Tabs Navigation */}
 				<div className="flex border-b mb-6">
 					<button
-						className={`py-2 px-4 font-medium ${
-							activeTab === "visualizations" 
-								? "border-b-2 border-[#2F4F4F] text-[#2F4F4F]" 
+						className={`py-2 px-1 mr-4 font-medium ${
+							activeTab === "visualizations"
+								? "border-b-2 border-[#2F4F4F] text-[#2F4F4F]"
 								: "text-gray-500 hover:text-[#2F4F4F]"
 						}`}
 						onClick={() => setActiveTab("visualizations")}
@@ -235,8 +256,8 @@ const SchoolReportPage = () => {
 					</button>
 					<button
 						className={`py-2 px-4 font-medium ${
-							activeTab === "students" 
-								? "border-b-2 border-[#2F4F4F] text-[#2F4F4F]" 
+							activeTab === "students"
+								? "border-b-2 border-[#2F4F4F] text-[#2F4F4F]"
 								: "text-gray-500 hover:text-[#2F4F4F]"
 						}`}
 						onClick={() => setActiveTab("students")}
