@@ -23,8 +23,9 @@ const Breadcrumb = () => {
 		help: "Help & Support",
 		schoolDetail: "School Detail",
 		addStudents: "Add Students",
-		schoolSubmission: "SchoolSubmission",
-		testDetails: "TestDetails"
+		studentBulkUpload: "Student Bulk Upload",
+		schoolSubmission: "School Submission",
+		testDetails: "Test Details",
 	};
 
 	// Check if a string is a UUID
@@ -40,10 +41,20 @@ const Breadcrumb = () => {
 	// Create breadcrumb items with proper path handling
 	const breadcrumbItems = [];
 	let currentPath = "";
-	
+	let schoolDetailPath = "";
+
 	// Add Home link as the first item
 	breadcrumbItems.push(
-		<Link key="home" to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "#757575" }}>
+		<Link
+			key="home"
+			to="/"
+			style={{
+				display: "flex",
+				alignItems: "center",
+				textDecoration: "none",
+				color: "#757575",
+			}}
+		>
 			<HomeIcon sx={{ mr: 0.5, fontSize: "16px" }} />
 			Home
 		</Link>
@@ -51,32 +62,41 @@ const Breadcrumb = () => {
 
 	// Special handling for schoolSubmission path
 	let schoolSubmissionPath = "";
-	
+
 	// Process each pathname segment
 	for (let i = 0; i < pathnames.length; i++) {
 		const value = pathnames[i];
 		currentPath += `/${value}`;
-		
-		// Skip UUIDs and numeric IDs in breadcrumb display
-		if (isUUID(value) || (i === pathnames.length - 1 && isNumeric(value))) {
-			continue;
+
+		// Save schoolDetail path with its UUID
+		if (value === "schoolDetail" && i + 1 < pathnames.length && isUUID(pathnames[i + 1])) {
+			schoolDetailPath = `/schools/schoolDetail/${pathnames[i + 1]}`;
 		}
-		
+
 		// Save the path to schoolSubmission including its UUID
 		if (value === "schoolSubmission" && i + 1 < pathnames.length && isUUID(pathnames[i + 1])) {
 			schoolSubmissionPath = `/allTest/schoolSubmission/${pathnames[i + 1]}`;
 		}
-		
+
+		// Skip UUIDs and numeric IDs in breadcrumb display
+		if (isUUID(value) || (i === pathnames.length - 1 && isNumeric(value))) {
+			continue;
+		}
+
 		// Check if this is testDetails (which should be highlighted)
 		const isTestDetails = value === "testDetails";
-		
+
 		// Determine if this is the last visible item or testDetails (which should always be highlighted)
-		const isLast = isTestDetails || i === pathnames.length - 1 || 
-			(i < pathnames.length - 1 && (isUUID(pathnames[i + 1]) || isNumeric(pathnames[i + 1])) && i + 1 === pathnames.length - 1);
-		
+		const isLast =
+			isTestDetails ||
+			i === pathnames.length - 1 ||
+			(i < pathnames.length - 1 &&
+				(isUUID(pathnames[i + 1]) || isNumeric(pathnames[i + 1])) &&
+				i + 1 === pathnames.length - 1);
+
 		// Use the path map to get a friendly name, or capitalize the first letter
 		const displayName = pathMap[value] || value.charAt(0).toUpperCase() + value.slice(1);
-		
+
 		if (isLast) {
 			breadcrumbItems.push(
 				<Typography
@@ -93,9 +113,16 @@ const Breadcrumb = () => {
 				</Typography>
 			);
 		} else {
-			// For schoolSubmission, use the saved path with UUID
-			const linkTo = value === "schoolSubmission" ? schoolSubmissionPath : currentPath;
-			
+			// Determine the correct link path
+			let linkTo = currentPath;
+
+			// Use the stored paths for special cases
+			if (value === "schoolSubmission") {
+				linkTo = schoolSubmissionPath;
+			} else if (value === "schoolDetail") {
+				linkTo = schoolDetailPath;
+			}
+
 			breadcrumbItems.push(
 				<Link
 					key={currentPath}
