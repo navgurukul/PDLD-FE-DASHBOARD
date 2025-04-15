@@ -32,7 +32,7 @@ const TestOverview = ({
       </div>
       
       <div className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow">
-        <div className="text-sm text-gray-500">Overall Pass Rate</div>
+        <div className="text-sm text-gray-500">Overall Success Rate</div>
         <div className="text-2xl font-bold text-[#2F4F4F]">{overallPassRate}%</div>
       </div>
     </div>
