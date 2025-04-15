@@ -56,7 +56,8 @@ const Sidebar = () => {
 				location.pathname === "/allTest" ||
 				location.pathname === "/" || // Also match root path
 				location.pathname === "/testCreationForm" ||
-				location.pathname.includes("/editTest/")
+				location.pathname.includes("/editTest/") ||
+				location.pathname.startsWith("/allTest/")
 			);
 		}
 

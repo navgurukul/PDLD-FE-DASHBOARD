@@ -161,7 +161,7 @@ const SchoolPerformanceTable = ({ schools, onSchoolSelect, onSendReminder }) => 
 		},
 		{
 			name: "passRate",
-			label: "Pass Rate",
+			label: "Success Rate",
 			options: {
 				filter: false,
 				sort: true,
