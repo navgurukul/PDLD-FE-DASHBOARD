@@ -1,7 +1,7 @@
-import   { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import PropTypes from "prop-types";
-import { Button, TextField,  FormControl, InputLabel, Select, MenuItem, Tooltip } from "@mui/material";
-import MUIDataTable from "mui-datatables"; 
+import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip } from "@mui/material";
+import MUIDataTable from "mui-datatables";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import PersonIcon from "@mui/icons-material/Person";
@@ -106,7 +106,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 		const endIndex = startIndex + pageSize;
 		return tableData.slice(startIndex, endIndex);
 	}, [tableData, currentPage, pageSize]);
-	
+
 	const resetFilters = () => {
 		setSearchQuery("");
 		setFilterStatus("");
@@ -233,7 +233,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 	return (
 		<ThemeProvider theme={theme}>
 			<div className="">
-				<h5 className="text-lg font-bold text-[#2F4F4F]">Student Performance</h5>
+				<h3 className="text-lg font-semibold text-[#2F4F4F]">Student Performance</h3>
 
 				{/* Filters - Exact match to TestListTable */}
 				<div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">

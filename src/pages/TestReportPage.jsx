@@ -4,8 +4,6 @@ import { ThemeProvider } from "@mui/material/styles";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import TestOverview from "../components/testReport/TestOverview";
-import SchoolSubmissionStatus from "../components/testReport/SchoolSubmissionStatus";
 import SchoolPerformanceTable from "../components/testReport/SchoolPerformanceTable";
 import apiInstance from "../../api";
 import theme from "../theme/theme";
@@ -87,9 +85,6 @@ const TestReportPage = () => {
 			});
 	};
 	// In TestReportPage.jsx
-	const handleSchoolSelect = (schoolId) => {
-		navigate(`/allTest/test-report/${testId}/school/${schoolId}`);
-	};
 
 	if (isLoading) {
 		return <SpinnerPageOverlay isLoading={true} />;
@@ -111,26 +106,16 @@ const TestReportPage = () => {
 			<div className="main-page-wrapper px-3 sm:px-4">
 				{testData && (
 					<>
-						{/* Test Header */}
-						<div className="mb-6">
-							<h2 className="text-2xl font-bold text-[#2F4F4F]">{testData.testName}</h2>
-							<div className="flex flex-wrap gap-3 text-sm text-gray-600 mt-1">
-								<span>Test Date: {formatDate(testData.testDate)}</span>
-							</div>
-						</div>
-
-						{/* Test Overview Component */}
-						<TestOverview
+						<SchoolPerformanceTable
 							totalSchools={testData.totalSchools}
 							schoolsSubmitted={testData.schoolsSubmitted}
 							submissionRate={(testData.schoolsSubmitted / testData.totalSchools) * 100}
 							overallPassRate={testData.overallPassRate}
 							pendingSchools={testData.pendingSchoolsols}
-						/>
-
-						<SchoolPerformanceTable
 							schools={testData.schools}
-							onSchoolSelect={(schoolId) => navigate(`/allTest/schoolSubmission/${testId}/testDetails/${schoolId}`)}
+							onSchoolSelect={(schoolId) =>
+								navigate(`/allTest/schoolSubmission/${testId}/testDetails/${schoolId}`)
+							}
 							onSendReminder={handleSendReminder}
 						/>
 					</>
