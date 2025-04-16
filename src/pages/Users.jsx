@@ -57,7 +57,7 @@ export default function Users() {
 	const [selectedBlock, setSelectedBlock] = useState("");
 	const location = useLocation();
 	const navigate = useNavigate();
-	const pageSize = 20;
+	const pageSize = 15;
 
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [userToDelete, setUserToDelete] = useState(null);
