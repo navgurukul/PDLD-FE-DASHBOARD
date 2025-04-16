@@ -100,7 +100,7 @@ export default function TestListTable() {
 		}
 	}, []);
 
-	const pageSize = 20; // The fixed page size
+	const pageSize = 15; // The fixed page size
 
 	const handleCreateTest = () => {
 		navigate("/testCreationForm"); // Replace with your target route
