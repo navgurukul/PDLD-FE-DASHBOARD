@@ -68,9 +68,34 @@ const generateSchoolTestData = () => {
 
 				// Generate subject averages for this test
 				const subjectData = {};
+				// In the generateSchoolTestData function in Reports.jsx
 				SUBJECTS.forEach((subject) => {
-					// Random average between 60-90 for the school
-					subjectData[subject] = Math.floor(60 + Math.random() * 30);
+					// Instead of random values between 60-90
+					let baseScore;
+
+					if (year === 2023) {
+						baseScore = 60 + Math.random() * 15; // Lower baseline for 2023
+					} else if (year === 2024) {
+						// Different progression rates for different subjects
+						if (subject === "Math" || subject === "Science") {
+							baseScore = 75 + Math.random() * 10; // Big jump in Math/Science
+						} else if (subject === "Hindi") {
+							baseScore = 65 + Math.random() * 10; // Modest improvement in Hindi
+						} else {
+							baseScore = 67 + Math.random() * 8; // Small improvement in others
+						}
+					} else {
+						// 2025
+						if (subject === "Hindi" || subject === "English") {
+							baseScore = 82 + Math.random() * 10; // Big jump in languages
+						} else if (subject === "Math" || subject === "Science") {
+							baseScore = 85 + Math.random() * 10; // Continued strong in Math/Science
+						} else {
+							baseScore = 73 + Math.random() * 12; // Moderate improvement in others
+						}
+					}
+
+					subjectData[subject] = Math.floor(baseScore);
 				});
 
 				data.push({
@@ -90,95 +115,9 @@ const generateSchoolTestData = () => {
 	return data;
 };
 
-// Generate mock student data
-const generateStudentsData = () => {
-	const students = [];
+// Calculate growth rate between years
 
-	// Create 50 students
-	for (let i = 1; i <= 50; i++) {
-		const firstName = ["Aditya", "Rahul", "Priya", "Sneha", "Raj", "Ananya", "Vikram", "Neha", "Amit", "Riya"][
-			i % 10
-		];
-		const lastName = ["Sharma", "Patel", "Singh", "Kumar", "Gupta", "Verma", "Joshi", "Rao", "Reddy", "Malhotra"][
-			i % 10
-		];
-
-		students.push({
-			studentId: `STU${String(i).padStart(6, "0")}`,
-			name: `${firstName} ${lastName}`,
-			rollNo: i,
-			class: `${Math.floor(Math.random() * 5) + 6}`, // Classes 6-10
-			schoolUdise: `SCH${String(Math.floor(Math.random() * 5) + 1).padStart(6, "0")}`, // 5 different schools
-		});
-	}
-
-	return students;
-};
-
-// Generate mock schools data
-const generateSchoolsData = () => {
-	const schools = [];
-
-	for (let i = 1; i <= 5; i++) {
-		const schoolNames = [
-			"Delhi Public School",
-			"Kendriya Vidyalaya",
-			"Ryan International",
-			"DAV Public School",
-			"St. Mary's High School",
-		];
-
-		schools.push({
-			udiseCode: `SCH${String(i).padStart(6, "0")}`,
-			name: schoolNames[i - 1],
-			classes: ["Class 6", "Class 7", "Class 8", "Class 9", "Class 10"],
-		});
-	}
-
-	return schools;
-};
-
-// Generate student test performance data
-const generateStudentPerformanceData = () => {
-	const data = [];
-	const students = generateStudentsData();
-	const schoolTests = generateSchoolTestData();
-
-	students.forEach((student) => {
-		// Filter tests for student's school
-		const relevantTests = schoolTests.filter(
-			(test) => test.year === 2025 && Math.random() > 0.2 // Student takes 80% of tests (realistic absence)
-		);
-
-		relevantTests.forEach((test) => {
-			// Generate student-specific scores for this test
-			const subjectData = {};
-			SUBJECTS.forEach((subject) => {
-				// Generate a score that's within ±15 of the school average
-				const schoolAvg = test[subject];
-				const variance = Math.random() * 30 - 15;
-				subjectData[subject] = Math.min(100, Math.max(30, Math.floor(schoolAvg + variance)));
-			});
-
-			data.push({
-				id: `${student.studentId}-${test.id}`,
-				studentId: student.studentId,
-				studentName: student.name,
-				year: test.year,
-				month: test.month,
-				testId: test.id,
-				testType: test.testType,
-				testName: test.testName,
-				class: student.class,
-				schoolUdise: student.schoolUdise,
-				...subjectData,
-				overallAvg: SUBJECTS.reduce((sum, subject) => sum + subjectData[subject], 0) / SUBJECTS.length,
-			});
-		});
-	});
-
-	return data;
-};
+// Get previous year's value for comparison
 
 const Reports = () => {
 	// State variables
@@ -228,65 +167,6 @@ const Reports = () => {
 		setSearchQuery("");
 	};
 
-	// Add this function to your Reports.jsx file
-	const getSubjectTestAnalytics = (selectedSchool, selectedYear, selectedSubject) => {
-		if (!selectedSchool || !selectedYear || !selectedSubject) return null;
-
-		// Get all students for this school
-		const schoolStudents = studentsData.filter((student) => student.schoolUdise === selectedSchool.udiseCode);
-		const schoolStudentIds = schoolStudents.map((student) => student.studentId);
-
-		// Map to track unique tests
-		const testsMap = new Map();
-
-		// Process each student's test data
-		schoolStudentIds.forEach((studentId) => {
-			const studentData = STUDENT_PERFORMANCE_DATA[studentId] || [];
-
-			studentData
-				.filter((test) => test.year === selectedYear && test[selectedSubject] !== undefined)
-				.forEach((test) => {
-					if (!testsMap.has(test.testId)) {
-						testsMap.set(test.testId, {
-							testId: test.testId,
-							month: test.month,
-							testName: test.testName,
-							testType: test.testType,
-							students: [],
-							passed: 0,
-							failed: 0,
-							passingScore: 40, // Customizable passing threshold
-						});
-					}
-
-					const testEntry = testsMap.get(test.testId);
-					const score = test[selectedSubject];
-					const passed = score >= testEntry.passingScore;
-
-					testEntry.students.push({
-						studentId,
-						score,
-						passed,
-					});
-
-					if (passed) {
-						testEntry.passed++;
-					} else {
-						testEntry.failed++;
-					}
-				});
-		});
-
-		return {
-			tests: [...testsMap.values()],
-			summary: {
-				totalTests: testsMap.size,
-				totalPassed: [...testsMap.values()].reduce((sum, test) => sum + test.passed, 0),
-				totalFailed: [...testsMap.values()].reduce((sum, test) => sum + test.failed, 0),
-			},
-		};
-	};
-
 	// Handle selection of class
 	const handleSelectClass = (className) => {
 		console.log("Selected class:", className);
@@ -326,24 +206,6 @@ const Reports = () => {
 		console.log("Available classes for this school:", availableClasses);
 	};
 
-	// Filter school tests based on selected filters
-	const getFilteredSchoolTests = () => {
-		if (!selectedSchool) return [];
-
-		return schoolTestsData.filter((test) => {
-			// Filter by year
-			if (selectedYear && test.year !== selectedYear) return false;
-
-			// Filter by month (if selected)
-			if (selectedMonth && test.month !== selectedMonth) return false;
-
-			// Filter by test (if selected)
-			if (selectedTest && test.id !== selectedTest) return false;
-
-			return true;
-		});
-	};
-
 	// Get student performance data filtered by current selections
 
 	// Format data for monthly performance chart (school view)
@@ -380,28 +242,6 @@ const Reports = () => {
 		return monthlyData;
 	};
 
-	// Get subject distribution for pie chart (either school or student)
-	const getSubjectDistribution = () => {
-		if (viewMode === "school") {
-			const filteredTests = getFilteredSchoolTests();
-			if (filteredTests.length === 0) return [];
-
-			return SUBJECTS.map((subject) => {
-				const avg = Math.round(
-					filteredTests.reduce((sum, test) => sum + test[subject], 0) / filteredTests.length
-				);
-
-				return {
-					name: subject,
-					value: avg,
-				};
-			});
-		} else {
-			// Student view - use the dedicated function
-			return getStudentSubjectDistribution();
-		}
-	};
-
 	// Get year-over-year comparison data
 	const getYearOverYearData = () => {
 		if (viewMode === "school" && !selectedSchool) return [];
@@ -429,33 +269,6 @@ const Reports = () => {
 		}
 
 		return data;
-	};
-
-	// Get students in selected class
-	const getStudentsInClass = () => {
-		if (!selectedSchool || !selectedClass) {
-			console.log("No school or class selected");
-			return [];
-		}
-
-		// Add extensive logging to debug the issue
-		console.log("Selected school:", selectedSchool);
-		console.log("Selected class:", selectedClass);
-
-		// Use the data directly rather than generating it (to reduce chance of error)
-		const filteredStudents = studentsData.filter((student) => {
-			const schoolMatch = student.schoolUdise === selectedSchool.udiseCode;
-			const classMatch = student.class === selectedClass;
-
-			console.log(`Student ${student.name}: School match=${schoolMatch}, Class match=${classMatch}`);
-			console.log(`  - School: "${student.schoolUdise}" vs "${selectedSchool.udiseCode}"`);
-			console.log(`  - Class: "${student.class}" vs "${selectedClass}"`);
-
-			return schoolMatch && classMatch;
-		});
-
-		console.log("Found students:", filteredStudents);
-		return filteredStudents;
 	};
 
 	// Get test count statistics
@@ -587,44 +400,6 @@ const Reports = () => {
 		return monthlyData;
 	};
 
-	// Get subject distribution for pie chart (student view)
-	const getStudentSubjectDistribution = () => {
-		if (!selectedStudent) return [];
-
-		const studentData = getFilteredStudentPerformance();
-		if (studentData.length === 0) return [];
-
-		// Calculate averages per subject
-		const subjectSums = {};
-		const subjectCounts = {};
-
-		SUBJECTS.forEach((subject) => {
-			subjectSums[subject] = 0;
-			subjectCounts[subject] = 0;
-		});
-
-		studentData.forEach((record) => {
-			SUBJECTS.forEach((subject) => {
-				if (record[subject] !== undefined) {
-					subjectSums[subject] += record[subject];
-					subjectCounts[subject] += 1;
-				}
-			});
-		});
-
-		// Convert to array format for the chart
-		const data = SUBJECTS.map((subject) => {
-			const avg = subjectCounts[subject] > 0 ? Math.round(subjectSums[subject] / subjectCounts[subject]) : 0;
-
-			return {
-				name: subject,
-				value: avg,
-			};
-		});
-
-		return data;
-	};
-
 	// Get year-over-year comparison data for student
 	const getStudentYearOverYearData = () => {
 		if (!selectedStudent) return [];
@@ -665,89 +440,6 @@ const Reports = () => {
 
 		return data;
 	};
-
-	// This function calculates key statistics for a student
-	const getStudentPerformanceStats = () => {
-		if (!selectedStudent)
-			return {
-				avgScore: "-",
-				bestSubject: "-",
-				bestScore: "-",
-				weakestSubject: "-",
-				weakestScore: "-",
-				totalTests: 0,
-			};
-
-		const studentData = getFilteredStudentPerformance();
-
-		if (studentData.length === 0) {
-			return {
-				avgScore: "-",
-				bestSubject: "-",
-				bestScore: "-",
-				weakestSubject: "-",
-				weakestScore: "-",
-				totalTests: 0,
-			};
-		}
-
-		// Calculate average score across all subjects and tests
-		let totalScore = 0;
-		let scoreCount = 0;
-
-		// Track subject averages to find best and weakest
-		const subjectScores = {};
-		SUBJECTS.forEach((subject) => {
-			subjectScores[subject] = { total: 0, count: 0 };
-		});
-
-		// Calculate totals
-		studentData.forEach((record) => {
-			SUBJECTS.forEach((subject) => {
-				if (record[subject] !== undefined) {
-					subjectScores[subject].total += record[subject];
-					subjectScores[subject].count += 1;
-					totalScore += record[subject];
-					scoreCount += 1;
-				}
-			});
-		});
-
-		// Calculate averages
-		const subjectAverages = {};
-		SUBJECTS.forEach((subject) => {
-			if (subjectScores[subject].count > 0) {
-				subjectAverages[subject] = subjectScores[subject].total / subjectScores[subject].count;
-			}
-		});
-
-		// Find best and weakest subjects
-		let bestSubject = "-";
-		let bestScore = 0;
-		let weakestSubject = "-";
-		let weakestScore = 100;
-
-		Object.entries(subjectAverages).forEach(([subject, avg]) => {
-			if (avg > bestScore) {
-				bestScore = avg;
-				bestSubject = subject;
-			}
-			if (avg < weakestScore) {
-				weakestScore = avg;
-				weakestSubject = subject;
-			}
-		});
-
-		return {
-			avgScore: scoreCount > 0 ? totalScore / scoreCount : "-",
-			bestSubject,
-			bestScore,
-			weakestSubject,
-			weakestScore,
-			totalTests: studentData.length,
-		};
-	};
-	// MAIN RENDER FUNCTION
 
 	// First, update your handler function to accept a parameter
 	const handleSearchTypeChange = (type) => {
@@ -833,7 +525,7 @@ const Reports = () => {
 								}`}
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className={`w-full px-4 py-2 rounded-full ${cardBg} ${borderColor} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
+								className={`w-full px-4 py-2 rounded-lg h-[48px] ${cardBg} ${borderColor} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
 								onKeyUp={(e) => e.key === "Enter" && handleSearch()}
 							/>
 							{searchQuery && (
@@ -929,8 +621,8 @@ const Reports = () => {
 						<div className="flex flex-wrap items-center gap-2">
 							{selectedSchool && (
 								<div className="flex items-center">
-									<span className="font-medium">School:</span>
-									<span className="ml-2 px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-md">
+									<span className="font-medium text-gray-700">School:</span>
+									<span className="ml-2 px-3 py-1.5 bg-blue-50 text-blue-800 border border-blue-300 rounded-lg shadow-sm font-medium transition-all hover:shadow-md">
 										{selectedSchool.name} ({selectedSchool.udiseCode})
 									</span>
 								</div>
@@ -938,10 +630,10 @@ const Reports = () => {
 
 							{viewMode === "school" && selectedYear && (
 								<>
-									<span className="mx-1">→</span>
+									<span className="mx-1 text-gray-400">→</span>
 									<div className="flex items-center">
-										<span className="font-medium">Year:</span>
-										<span className="ml-2 px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-md">
+										<span className="font-medium text-gray-700">Year:</span>
+										<span className="ml-2 px-3 py-1.5 bg-purple-50 text-purple-800 border border-purple-300 rounded-lg shadow-sm font-medium transition-all hover:shadow-md">
 											{selectedYear}
 										</span>
 									</div>
@@ -950,10 +642,10 @@ const Reports = () => {
 
 							{selectedMonth && (
 								<>
-									<span className="mx-1">→</span>
+									<span className="mx-1 text-gray-400">→</span>
 									<div className="flex items-center">
-										<span className="font-medium">Month:</span>
-										<span className="ml-2 px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-md">
+										<span className="font-medium text-gray-700">Month:</span>
+										<span className="ml-2 px-3 py-1.5 bg-purple-50 text-purple-800 border border-purple-300 rounded-lg shadow-sm font-medium transition-all hover:shadow-md">
 											{selectedMonth}
 										</span>
 									</div>
@@ -962,10 +654,10 @@ const Reports = () => {
 
 							{viewMode === "school" && selectedClass && (
 								<>
-									<span className="mx-1">→</span>
+									<span className="mx-1 text-gray-400">→</span>
 									<div className="flex items-center">
-										<span className="font-medium">Class:</span>
-										<span className="ml-2 px-3 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-md">
+										<span className="font-medium text-gray-700">Class:</span>
+										<span className="ml-2 px-3 py-1.5 bg-green-50 text-green-800 border border-green-300 rounded-lg shadow-sm font-medium transition-all hover:shadow-md">
 											{selectedClass}
 										</span>
 									</div>
@@ -974,10 +666,10 @@ const Reports = () => {
 
 							{selectedStudent && (
 								<>
-									<span className="mx-1">→</span>
+									<span className="mx-1 text-gray-400">→</span>
 									<div className="flex items-center">
-										<span className="font-medium">Student:</span>
-										<span className="ml-2 px-3 py-1 bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200 rounded-md">
+										<span className="font-medium text-gray-700">Student:</span>
+										<span className="ml-2 px-3 py-1.5 bg-red-50 text-red-800 border border-red-300 rounded-lg shadow-sm font-medium transition-all hover:shadow-md">
 											{selectedStudent.name} ({selectedStudent.studentId})
 										</span>
 									</div>
@@ -986,10 +678,10 @@ const Reports = () => {
 
 							{viewMode === "student" && selectedStudentYear && (
 								<>
-									<span className="mx-1">→</span>
+									<span className="mx-1 text-gray-400">→</span>
 									<div className="flex items-center">
-										<span className="font-medium">Year:</span>
-										<span className="ml-2 px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-md">
+										<span className="font-medium text-gray-700">Year:</span>
+										<span className="ml-2 px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-300 rounded-lg shadow-sm font-medium transition-all hover:shadow-md">
 											{selectedStudentYear}
 										</span>
 									</div>
@@ -1148,21 +840,70 @@ const Reports = () => {
 						{viewMode === "school" && (
 							<div className="mb-8">
 								<h3 className="text-lg font-semibold mb-4">Test Statistics</h3>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-									<div className={`p-6 rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
-										<h4 className="font-medium mb-2">Total Tests in {selectedYear}</h4>
-										<p className="text-4xl font-bold">{getTestCountStats().total}</p>
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+									<div className="md:col-span-1">
+										<div className="grid grid-cols-1 gap-4">
+											<div className="p-5 rounded-lg bg-gray-100 flex items-center">
+												<div>
+													<h4 className="font-medium text-sm text-gray-600">
+														Total Tests in {selectedYear}
+													</h4>
+													<p className="text-3xl font-bold text-gray-800">
+														{getTestCountStats().total}
+													</p>
+												</div>
+											</div>
+
+											<div className="p-5 rounded-lg bg-gray-100">
+												<h4 className="font-medium text-sm text-gray-600 mb-2">
+													Top Testing Months
+												</h4>
+												{getTestCountStats()
+													.byMonth.sort((a, b) => b.count - a.count)
+													.slice(0, 3)
+													.map((month, idx) => (
+														<div
+															key={idx}
+															className="flex justify-between items-center mb-2"
+														>
+															<span className="font-medium">{month.month}</span>
+															<span className="px-2 py-1 bg-gray-200 rounded-md text-sm">
+																{month.count} tests
+															</span>
+														</div>
+													))}
+											</div>
+
+											
+										</div>
 									</div>
 
-									<div className="h-60">
+									<div className="md:col-span-2 h-84">
 										<ResponsiveContainer width="100%" height="100%">
 											<BarChart data={getTestCountStats().byMonth}>
-												<CartesianGrid strokeDasharray="3 3" />
-												<XAxis dataKey="month" />
-												<YAxis allowDecimals={false} />
-												<Tooltip />
-												<Legend />
-												<Bar dataKey="count" name="Number of Tests" fill="#8884d8" />
+												<CartesianGrid strokeDasharray="3 3" stroke="rgba(47, 79, 79, 0.2)" />
+												<XAxis dataKey="month" stroke="#2F4F4F" />
+												<YAxis allowDecimals={false} stroke="#2F4F4F" />
+												<Tooltip contentStyle={{ borderColor: "#2F4F4F" }} />
+												<Legend wrapperStyle={{ color: "#2F4F4F" }} />
+												<defs>
+													<linearGradient
+														id="darkSlateGrayGradient"
+														x1="0"
+														y1="0"
+														x2="0"
+														y2="1"
+													>
+														<stop offset="5%" stopColor="#2F4F4F" stopOpacity={1} />
+														<stop offset="95%" stopColor="#2F4F4F" stopOpacity={0.3} />
+													</linearGradient>
+												</defs>
+												<Bar
+													dataKey="count"
+													name="Number of Tests"
+													fill="url(#darkSlateGrayGradient)"
+													radius={[4, 4, 0, 0]}
+												/>
 											</BarChart>
 										</ResponsiveContainer>
 									</div>
@@ -1245,6 +986,12 @@ const Reports = () => {
 												return a.testName.localeCompare(b.testName);
 											})}
 										>
+											<defs>
+												<linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+													<stop offset="5%" stopColor="#2F4F4F" stopOpacity={0.8} />
+													<stop offset="95%" stopColor="#2F4F4F" stopOpacity={0.1} />
+												</linearGradient>
+											</defs>
 											<CartesianGrid strokeDasharray="3 3" />
 											<XAxis
 												dataKey="testName"
@@ -1265,8 +1012,8 @@ const Reports = () => {
 													type="monotone"
 													dataKey={selectedStudentSubject}
 													name={selectedStudentSubject}
-													fill={COLORS[0]}
-													stroke={COLORS[0]}
+													fill="url(#colorGradient)"
+													stroke="#2F4F4F"
 													activeDot={{ r: 8 }}
 												/>
 											) : (
@@ -1274,8 +1021,8 @@ const Reports = () => {
 													type="monotone"
 													dataKey="overallAvg"
 													name="Overall Average"
-													fill="#8884d8"
-													stroke="#8884d8"
+													fill="url(#colorGradient)"
+													stroke="#2F4F4F"
 													activeDot={{ r: 8 }}
 												/>
 											)}
@@ -1291,7 +1038,7 @@ const Reports = () => {
 								<div className="overflow-x-auto">
 									<table className={`w-full ${borderColor} border-collapse border`}>
 										<thead>
-											<tr className={darkMode ? "bg-gray-700" : "bg-gray-100"}>
+											<tr className="bg-gray-100">
 												<th className="p-2 text-left border">Test</th>
 												<th className="p-2 text-left border">Month</th>
 												{SUBJECTS.map((subject) => (
@@ -1330,36 +1077,38 @@ const Reports = () => {
 												.map((test, index) => (
 													<tr
 														key={index}
-														className={
-															index % 2 === 0
-																? darkMode
-																	? "bg-gray-800"
-																	: "bg-white"
-																: darkMode
-																? "bg-gray-700"
-																: "bg-gray-50"
-														}
+														className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
 													>
 														<td className="p-2 border">{test.testName}</td>
 														<td className="p-2 border">{test.month}</td>
-														{SUBJECTS.map((subject) => (
-															<td
-																key={subject}
-																className={`text-white  p-2 text-center border ${
-																	test[subject] >= 90
-																		? "bg-green-100 dark:bg-green-900"
-																		: test[subject] >= 80
-																		? "bg-green-50 dark:bg-green-800"
-																		: test[subject] >= 70
-																		? "bg-yellow-50 dark:bg-yellow-900"
-																		: test[subject] >= 60
-																		? "bg-orange-50 dark:bg-orange-900"
-																		: "bg-red-50 dark:bg-red-900"
-																}`}
-															>
-																{formatNumber(test[subject])}%
-															</td>
-														))}
+														{SUBJECTS.map((subject) => {
+															// Custom darker shades of #2F4F4F with red for low marks
+															const score = test[subject];
+															let bgColor;
+
+															if (score >= 90) {
+																bgColor = "rgba(47, 79, 79, 0.85)"; // Very dark shade
+															} else if (score >= 80) {
+																bgColor = "rgba(47, 79, 79, 0.7)";
+															} else if (score >= 70) {
+																bgColor = "rgba(47, 79, 79, 0.55)";
+															} else if (score >= 60) {
+																bgColor = "rgba(220, 53, 69, 0.4)"; // Light red for low marks
+															} else {
+																// Darker red for very low marks
+																bgColor = "rgba(220, 53, 69, 0.7)";
+															}
+
+															return (
+																<td
+																	key={subject}
+																	className="p-2 text-center border text-white"
+																	style={{ backgroundColor: bgColor }}
+																>
+																	{formatNumber(score)}%
+																</td>
+															);
+														})}
 														<td className="p-2 text-center font-bold border">
 															{formatNumber(test.overallAvg)}%
 														</td>
@@ -1379,7 +1128,7 @@ const Reports = () => {
 						darkMode ? "text-gray-400" : "text-gray-600"
 					} border-t ${borderColor}`}
 				>
-					<p>&copy; 2025 School Management System. All rights reserved.</p>
+					<p>&copy; 2025 PDLD Samyarth All rights reserved.</p>
 				</footer>
 			</div>
 		</div>
