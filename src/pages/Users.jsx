@@ -315,34 +315,34 @@ export default function Users() {
 		},
 		{
 			name: "name",
-			label: "Name",
+			label: "NAME",
 			options: { sort: true },
 		},
 
 		{
 			name: "role",
-			label: "Role",
+			label: "ROLE",
 			options: { sort: true },
 		},
 
 		{
 			name: "blockName", // New column for Block Name
-			label: "Block",
+			label: "BLOCK",
 			options: { sort: true },
 		},
 		{
 			name: "assignedCluster", // New column for Assigned Cluster
-			label: "Cluster",
+			label: "CLUSTER",
 			options: { sort: true },
 		},
 		{
 			name: "schoolsMapped",
-			label: "Schools Mapped",
+			label: "SCHOOLS MAPPED",
 			options: { sort: true },
 		},
 		{
 			name: "username",
-			label: "Username",
+			label: "USERNAME",
 			options: {
 				sort: true,
 				customBodyRender: (value, tableMeta) => {
@@ -368,14 +368,14 @@ export default function Users() {
 		},
 		{
 			name: "password",
-			label: "Password",
+			label: "PASSWORD",
 			options: {
 				display: false, // Hide the password column
 			},
 		},
 		{
 			name: "dateJoined",
-			label: "Joined On",
+			label: "JOINED ON",
 			options: { sort: true },
 		},
 		{

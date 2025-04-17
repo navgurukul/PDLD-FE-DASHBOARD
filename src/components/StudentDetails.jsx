@@ -200,7 +200,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 	// Define columns for MUIDataTable
 	const columns = [
 		{
-			name: "Name",
+			name: "NAME",
 			options: {
 				filter: false,
 				sort: true,
@@ -212,21 +212,21 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
-			name: "Gender",
+			name: "GENDER",
 			options: {
 				filter: true,
 				sort: true,
 			},
 		},
 		{
-			name: "Class",
+			name: "CLASS",
 			options: {
 				filter: true,
 				sort: true,
 			},
 		},
 		{
-			name: "Date of Birth",
+			name: "DATE OF BIRTH",
 			options: {
 				filter: false,
 				sort: true,
@@ -238,7 +238,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
-			name: "Father's Name",
+			name: "FATHER'S NAME",
 			options: {
 				filter: false,
 				sort: true,
@@ -250,7 +250,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
-			name: "Mother's Name",
+			name: "MOTHER'S NAME",
 			options: {
 				filter: false,
 				sort: true,
@@ -262,7 +262,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
-			name: "Apar ID",
+			name: "APAR ID",
 			options: {
 				filter: false,
 				sort: true,
@@ -283,7 +283,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
-			name: "Actions",
+			name: "ACTIONS",
 			options: {
 				filter: false,
 				sort: false,
