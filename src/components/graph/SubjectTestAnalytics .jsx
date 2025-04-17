@@ -95,8 +95,9 @@ export const SubjectTestAnalytics = ({ selectedSchool, selectedYear, selectedSub
 
 	// Calculate stats for the selected month
 	const monthlyStats = {
-		totalStudents: 
-			studentsData.filter((s) => s.schoolUdise === selectedSchool.udiseCode && s.class === "Class 7").length || 0,
+		totalStudents:
+			studentsData.filter((s) => s.schoolUdise === selectedSchool.udiseCode && s.class === "Class 7").length ||
+			82,
 		attended: 80,
 		passed: 64,
 		failed: 16,
@@ -115,8 +116,8 @@ export const SubjectTestAnalytics = ({ selectedSchool, selectedYear, selectedSub
 
 	// Data for the pass/fail pie chart
 	const pieData = [
-		{ name: "Pass", value: monthlyStats.passed, fill: "#4caf50" },
-		{ name: "Fail", value: monthlyStats.failed, fill: "#f44336" },
+		{ name: "Proficient", value: monthlyStats.passed, fill: "#2F4F4F" },
+		{ name: "Developing ", value: monthlyStats.failed, fill: "#f44336" },
 	];
 
 	return (
@@ -125,19 +126,22 @@ export const SubjectTestAnalytics = ({ selectedSchool, selectedYear, selectedSub
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				{/* Pass/Fail Pie Chart */}
-				<div className="h-64">
-					<h4 className="font-medium mb-2">Pass/Fail Distribution</h4>
+				<div className="h-64 pb-4">
+					<h4 className="font-medium mb-2">Proficient/Developing Distribution</h4>
 					<ResponsiveContainer width="100%" height="100%">
 						<PieChart>
 							<Pie
 								data={pieData}
 								cx="50%"
 								cy="50%"
-								innerRadius={60}
-								outerRadius={80}
+								innerRadius={55}
+								outerRadius={75}
 								paddingAngle={5}
 								dataKey="value"
 								label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+								animationBegin={0}
+								animationDuration={1200}
+								animationEasing="ease-out"
 							>
 								{pieData.map((entry, index) => (
 									<Cell key={`cell-${index}`} fill={entry.fill} />
@@ -162,11 +166,11 @@ export const SubjectTestAnalytics = ({ selectedSchool, selectedYear, selectedSub
 							<p className="text-2xl">{monthlyStats.attended}</p>
 						</div>
 						<div className="p-3 bg-green-50 rounded-md">
-							<p className="font-medium">Passed</p>
+							<p className="font-medium">Proficient</p>
 							<p className="text-2xl">{monthlyStats.passed}</p>
 						</div>
 						<div className="p-3 bg-red-50 rounded-md">
-							<p className="font-medium">Failed</p>
+							<p className="font-medium">Developing </p>
 							<p className="text-2xl">{monthlyStats.failed}</p>
 						</div>
 					</div>
