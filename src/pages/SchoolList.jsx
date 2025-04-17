@@ -274,7 +274,7 @@ export default function SchoolList() {
 		},
 		{
 			name: "schoolName",
-			label: "School Name",
+			label: "SCHOOL NAME",
 			options: {
 				filter: false,
 				sort: true,
@@ -311,22 +311,22 @@ export default function SchoolList() {
 		},
 		{
 			name: "udiseCode",
-			label: "UDISE Code",
+			label: "UDISE CODE",
 			options: { filter: false, sort: true },
 		},
 		{
 			name: "block",
-			label: "Block",
+			label: "BLOCK",
 			options: { filter: false, sort: true },
 		},
 		{
 			name: "cluster",
-			label: "Cluster",
+			label: "CLUSTER",
 			options: { filter: false, sort: true },
 		},
 		{
 			name: "password",
-			label: "Password",
+			label: "PASSWORD",
 			options: {
 				filter: false,
 				sort: true,

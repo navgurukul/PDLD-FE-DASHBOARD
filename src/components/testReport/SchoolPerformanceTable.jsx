@@ -133,7 +133,7 @@ const SchoolPerformanceTable = ({
 		},
 		{
 			name: "name",
-			label: "School Name",
+			label: "SCHOOL NAME",
 			options: {
 				filter: false,
 				sort: true,
@@ -142,7 +142,7 @@ const SchoolPerformanceTable = ({
 		},
 		{
 			name: "status",
-			label: "Status",
+			label: "STATUS",
 			options: {
 				filter: true,
 				sort: false,
@@ -164,7 +164,7 @@ const SchoolPerformanceTable = ({
 		},
 		{
 			name: "studentsTested",
-			label: "Students Tested",
+			label: "STUDENTS TESTED",
 			options: {
 				filter: false,
 				sort: true,
@@ -173,7 +173,7 @@ const SchoolPerformanceTable = ({
 		},
 		{
 			name: "passRate",
-			label: "Success Rate",
+			label: "SUCCESS RATE",
 			options: {
 				filter: false,
 				sort: true,
@@ -182,7 +182,7 @@ const SchoolPerformanceTable = ({
 		},
 		{
 			name: "avgScore",
-			label: "Avg Score",
+			label: "AVG SCORE",
 			options: {
 				filter: false,
 				sort: true,
@@ -191,7 +191,7 @@ const SchoolPerformanceTable = ({
 		},
 		{
 			name: "submitted",
-			label: "Actions",
+			label: "ACTIONS",
 			options: {
 				filter: false,
 				sort: false,

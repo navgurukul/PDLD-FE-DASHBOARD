@@ -122,7 +122,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 		},
 		{
 			name: "name",
-			label: "Student Name",
+			label: "STUDENT NAME",
 			options: {
 				filter: false,
 				sort: true,
@@ -131,7 +131,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 		},
 		{
 			name: "score",
-			label: "Score",
+			label: "SCORE",
 			options: {
 				filter: false,
 				sort: true,
@@ -143,7 +143,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 		},
 		{
 			name: "result",
-			label: "Result",
+			label: "RESULT",
 			options: {
 				filter: true,
 				sort: false,
@@ -167,7 +167,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 		},
 		{
 			name: "vsClassAvg",
-			label: "vs Class Avg",
+			label: "VS CLASS AVG",
 			options: {
 				filter: false,
 				sort: true,
@@ -186,7 +186,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 		},
 		{
 			name: "id",
-			label: "Actions",
+			label: "ACTIONS",
 			options: {
 				filter: false,
 				sort: false,

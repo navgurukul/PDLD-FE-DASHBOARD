@@ -238,12 +238,12 @@ export default function TestListTable() {
 		},
 		{
 			name: "testName",
-			label: "Test Name",
+			label: "TEST NAME",
 			options: { filter: false, sort: true },
 		},
 		{
 			name: "subject",
-			label: "Subject",
+			label: "SUBJECT",
 			options: { filter: true, sort: true },
 		},
 		{
