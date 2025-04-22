@@ -142,7 +142,7 @@ theme = createTheme(theme, {
 		},
 		body1: {
 			fontFamily: "Karla",
-			color:"#2F4F4F",
+			color: "#2F4F4F",
 			fontSize: "1.125rem",
 			fontWeight: 500,
 			lineHeight: "170%",
@@ -153,7 +153,7 @@ theme = createTheme(theme, {
 		},
 		body2: {
 			fontFamily: "Karla",
-			color:"#2F4F4F",
+			color: "#2F4F4F",
 			fontSize: "0.875rem",
 			fontWeight: 500,
 			lineHeight: "170%",
@@ -231,6 +231,19 @@ theme.components = {
 		styleOverrides: {
 			indicator: {
 				backgroundColor: "#2F4F4F",
+			},
+		},
+	},
+
+	MuiPaper: {
+		styleOverrides: {
+			root: {
+				padding: theme.spacing(3),
+				borderRadius: "8px",
+				background: "#FFF",
+				boxShadow:
+					"0px 1px 2px 0px rgba(47, 79, 79, 0.06), 0px 2px 1px 0px rgba(47, 79, 79, 0.04), 0px 1px 5px 0px rgba(47, 79, 79, 0.08)",
+				border: "none",
 			},
 		},
 	},

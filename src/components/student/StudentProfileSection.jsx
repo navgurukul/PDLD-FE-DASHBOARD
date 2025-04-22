@@ -173,11 +173,11 @@ const StudentProfileView = () => {
 	return (
 		<Box className="main-page-wrapper">
 			{/* Student Badge - Name and gender */}
-			<Box sx={{ display: "flex",justifyContent:"space-between", alignItems: "center" }}>
-				<Box sx={{display: "flex"}} >
+			<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "32px 0px" }}>
+				<Box sx={{ display: "flex" }}>
 					<h5 className="text-lg font-bold text-[#2F4F4F] mr-4">{student.fullName}</h5>
 					<Box
-						sx={{ 
+						sx={{
 							padding: "4px 8px",
 							bgcolor: "#EAEDED",
 							borderRadius: "8px",
@@ -187,7 +187,7 @@ const StudentProfileView = () => {
 							alignItems: "center",
 						}}
 					>
-						<Typography variant="body1" sx={{ }} >
+						<Typography variant="body1" sx={{}}>
 							{student.gender === "M"
 								? "Male"
 								: student.gender === "F"
@@ -217,16 +217,8 @@ const StudentProfileView = () => {
 				<Grid container spacing={4}>
 					{/* Personal Details Section */}
 					<Grid item xs={12} md={6}>
-						<Paper
-							elevation={0}
-							sx={{
-								p: 3,
-								borderRadius: "8px",
-								border: "1px solid #e0e0e0",
-								height: "100%",
-							}}
-						>
-							<h5 className="mb-4">Personal Details</h5>
+						<Paper variant="profileCard">
+							<h6 className="mb-4">Personal Details</h6>
 
 							<Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
 								<Box sx={{ display: "flex", alignItems: "start" }}>
@@ -274,16 +266,9 @@ const StudentProfileView = () => {
 
 					{/* Health Metrics Section */}
 					<Grid item xs={12} md={6}>
-						<Paper
-							elevation={0}
-							sx={{
-								p: 3,
-								borderRadius: "8px",
-								border: "1px solid #e0e0e0",
-							}}
-						>
+						<Paper variant="profileCard">
 							<Box sx={{ mb: 4 }}>
-								<h5 className="mb-4">Health Metrics</h5>
+								<h6 className="mb-4">Health Metrics</h6>
 								<Typography variant="body2" color="text.secondary">
 									Last Updated
 									<Typography
