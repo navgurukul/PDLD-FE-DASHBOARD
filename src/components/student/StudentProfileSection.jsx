@@ -188,14 +188,14 @@ const StudentProfileView = () => {
 					sx={{
 						px: 2,
 						py: 0.5,
-						bgcolor: "#E8F5E9",
+						bgcolor: "#EAEDED",
 						borderRadius: "4px",
 						color: "#2E7D32",
 						fontWeight: "medium",
 					}}
 				>
-					<Typography variant="body1" color="text.secondary">
-						{student.gender || "N/A"}
+					<Typography variant="body1">
+						{student.gender === "M" ? "Male" : student.gender === "F" ? "Female" : student.gender || "N/A"}
 					</Typography>
 				</Box>
 			</Box>
@@ -230,9 +230,7 @@ const StudentProfileView = () => {
 										<img src={person} alt="person" style={iconStyle} />
 										<Typography variant="body2">Father's Name</Typography>
 									</Box>
-									<Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
-										{student.fatherName || "N/A"}
-									</Typography>
+									<Typography variant="subtitle1"> {student.fatherName || "N/A"}</Typography>
 								</Box>
 
 								<Box sx={{ display: "flex", alignItems: "start" }}>
@@ -240,9 +238,7 @@ const StudentProfileView = () => {
 										<img src={person} alt="person" style={iconStyle} />
 										<Typography variant="body2">Mother's Name</Typography>
 									</Box>
-									<Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
-										{student.motherName || "N/A"}
-									</Typography>
+									<Typography variant="subtitle1">{student.motherName || "N/A"}</Typography>
 								</Box>
 
 								<Box sx={{ display: "flex", alignItems: "start" }}>
@@ -250,9 +246,7 @@ const StudentProfileView = () => {
 										<img src={calendar_today} alt="calendar_today" style={iconStyle} />
 										<Typography variant="body2">Date of Birth</Typography>
 									</Box>
-									<Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
-										{formatDate(student.dob)}
-									</Typography>
+									<Typography variant="subtitle1">{formatDate(student.dob)}</Typography>
 								</Box>
 
 								<Box sx={{ display: "flex", alignItems: "start" }}>
@@ -260,9 +254,7 @@ const StudentProfileView = () => {
 										<img src={house} alt="person" style={iconStyle} />
 										<Typography variant="body2">Hostel</Typography>
 									</Box>
-									<Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
-										{student.hostel || "N/A"}
-									</Typography>
+									<Typography variant="subtitle1">{student.hostel || "N/A"}</Typography>
 								</Box>
 
 								<Box sx={{ display: "flex", alignItems: "start" }}>
@@ -270,9 +262,7 @@ const StudentProfileView = () => {
 										<img src={fingerprint} alt="person" style={iconStyle} />
 										<Typography variant="body2">Apar ID</Typography>
 									</Box>
-									<Typography variant="subtitle1" sx={{ fontWeight: "medium" }}>
-										{student.aparId || "N/A"}
-									</Typography>
+									<Typography variant="subtitle1">{student.aparId || "N/A"}</Typography>
 								</Box>
 							</Box>
 						</Paper>
@@ -293,12 +283,16 @@ const StudentProfileView = () => {
 								<Typography variant="body2" color="text.secondary">
 									Last Updated
 									<Typography
-										sx={{ marginLeft: 2 }}
 										component="span"
-										variant="subtitle1"
+										variant="subtitle2"
 										display="inline"
+										sx={{
+											fontWeight: "bold",
+											color: theme.palette.primary.main,
+											ml: 1,
+										}}
 									>
-										{lastUpdated}
+										28th March 2025
 									</Typography>
 								</Typography>
 							</Box>

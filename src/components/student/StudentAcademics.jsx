@@ -11,7 +11,7 @@ import {
 	Select,
 	MenuItem,
 	FormControl,
-	InputLabel, 
+	InputLabel,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -136,7 +136,7 @@ const StudentAcademics = ({ studentData }) => {
 					<Box>
 						<Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, alignItems: "center" }}>
 							<h6 className="">Syllabus Test</h6>
-							<Button 
+							<Button
 								onClick={handleExpandCollapseAll}
 								disableRipple={true}
 								sx={{
@@ -160,6 +160,10 @@ const StudentAcademics = ({ studentData }) => {
 									onChange={handleMonthChange}
 									label="Month"
 									IconComponent={KeyboardArrowDownIcon}
+									sx={{
+										height: "48px",
+										borderRadius: "8px",
+									}}
 								>
 									<MenuItem value="All">All</MenuItem>
 									<MenuItem value="April">April</MenuItem>
@@ -168,13 +172,17 @@ const StudentAcademics = ({ studentData }) => {
 								</Select>
 							</FormControl>
 
-							<FormControl sx={{ minWidth: 120 }} size="small">
+							<FormControl sx={{ minWidth: 120, borderRadius: "8px" }} size="small">
 								<InputLabel>Subject</InputLabel>
 								<Select
 									value={subject}
 									onChange={handleSubjectChange}
 									label="Subject"
 									IconComponent={KeyboardArrowDownIcon}
+									sx={{
+										height: "48px",
+										borderRadius: "8px",
+									}}
 								>
 									<MenuItem value="All">All</MenuItem>
 									<MenuItem value="Hindi">Hindi</MenuItem>
