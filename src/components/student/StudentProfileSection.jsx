@@ -232,7 +232,7 @@ const StudentProfileView = () => {
 								<Box sx={{ display: "flex", alignItems: "start" }}>
 									<Box sx={labelBoxStyle}>
 										<img src={person} alt="person" style={iconStyle} />
-										<Typography variant="body2">Father's Name</Typography>
+										<Typography variant="body1">Father's Name</Typography>
 									</Box>
 									<Typography variant="subtitle1"> {student.fatherName || "N/A"}</Typography>
 								</Box>
@@ -240,7 +240,7 @@ const StudentProfileView = () => {
 								<Box sx={{ display: "flex", alignItems: "start" }}>
 									<Box sx={labelBoxStyle}>
 										<img src={person} alt="person" style={iconStyle} />
-										<Typography variant="body2">Mother's Name</Typography>
+										<Typography variant="body1">Mother's Name</Typography>
 									</Box>
 									<Typography variant="subtitle1">{student.motherName || "N/A"}</Typography>
 								</Box>
@@ -248,7 +248,7 @@ const StudentProfileView = () => {
 								<Box sx={{ display: "flex", alignItems: "start" }}>
 									<Box sx={labelBoxStyle}>
 										<img src={calendar_today} alt="calendar_today" style={iconStyle} />
-										<Typography variant="body2">Date of Birth</Typography>
+										<Typography variant="body1">Date of Birth</Typography>
 									</Box>
 									<Typography variant="subtitle1">{formatDate(student.dob)}</Typography>
 								</Box>
@@ -256,7 +256,7 @@ const StudentProfileView = () => {
 								<Box sx={{ display: "flex", alignItems: "start" }}>
 									<Box sx={labelBoxStyle}>
 										<img src={house} alt="person" style={iconStyle} />
-										<Typography variant="body2">Hostel</Typography>
+										<Typography variant="body1">Hostel</Typography>
 									</Box>
 									<Typography variant="subtitle1">{student.hostel || "N/A"}</Typography>
 								</Box>
@@ -264,7 +264,7 @@ const StudentProfileView = () => {
 								<Box sx={{ display: "flex", alignItems: "start" }}>
 									<Box sx={labelBoxStyle}>
 										<img src={fingerprint} alt="person" style={iconStyle} />
-										<Typography variant="body2">Apar ID</Typography>
+										<Typography variant="body1">Apar ID</Typography>
 									</Box>
 									<Typography variant="subtitle1">{student.aparId || "N/A"}</Typography>
 								</Box>
