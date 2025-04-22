@@ -210,6 +210,11 @@ const StudentAcademics = ({ studentData }) => {
 									border: "1px solid #e0e0e0",
 									borderRadius: "8px",
 									overflow: "hidden",
+									"& .MuiPaper-root": {
+										padding: 0, // Override the theme's Paper padding
+									},
+									// Override the global Paper padding
+									padding: 0, // This is critical to fix the height issue
 									"&.Mui-expanded": {
 										margin: 0,
 										mb: 1,
@@ -221,6 +226,7 @@ const StudentAcademics = ({ studentData }) => {
 									sx={{
 										backgroundColor: expanded === test.month ? "#F5F7F8" : "transparent",
 										borderBottom: expanded === test.month ? "1px solid #e0e0e0" : "none",
+										padding: "0 16px", // Add appropriate padding just for the summary
 										"&.Mui-expanded": {
 											minHeight: "48px",
 										},
@@ -230,7 +236,7 @@ const StudentAcademics = ({ studentData }) => {
 										{test.month}
 									</Typography>
 								</AccordionSummary>
-								<AccordionDetails>
+								<AccordionDetails sx={{ padding: 0 }}>
 									<Box sx={{ p: 1 }}>
 										{test.subjects
 											.filter((subj) => subject === "All" || subj.name === subject)
@@ -241,6 +247,7 @@ const StudentAcademics = ({ studentData }) => {
 														display: "flex",
 														justifyContent: "space-between",
 														py: 1.5,
+														px: 2, // Add horizontal padding here instead
 														borderBottom:
 															subIndex < filteredArray.length - 1
 																? "1px solid #f0f0f0"

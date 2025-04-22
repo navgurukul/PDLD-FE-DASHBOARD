@@ -215,6 +215,33 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			options: {
 				filter: false,
 				sort: true,
+				customBodyRenderLite: (dataIndex) => {
+					const studentName = tableData[dataIndex][0]; // Name is at index 0
+					const studentId = tableData[dataIndex][7]; // ID is at index 7
+					const student = tableData[dataIndex][8]; // Full student object at index 8
+
+					return (
+						<Button
+							sx={{
+								color: "#1976d2",
+								textTransform: "none",
+								padding: "0px",
+								fontWeight: "normal",
+								textAlign: "left",
+								"&:hover": {
+									backgroundColor: "transparent",
+									textDecoration: "underline",
+								},
+							}}
+							onClick={(e) => {
+								e.stopPropagation(); // Prevent any parent click handlers
+								handleStudentNameClick(studentId, student);
+							}}
+						>
+							{studentName}
+						</Button>
+					);
+				},
 				setCellProps: () => ({
 					style: {
 						minWidth: "150px",
@@ -357,10 +384,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		},
 	];
 
-	const handleRowClick = (rowData) => {
-		const studentId = rowData[7]; // ID is at index 7 in your table data
-		const student = rowData[8]; // Full student object is at index 8
-
+	const handleStudentNameClick = (studentId, student) => {
 		navigate(`/student-profile/${schoolId}/${studentId}`, {
 			state: {
 				studentData: student,
@@ -380,7 +404,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		pagination: false,
 		selectableRows: "none",
 		responsive: "standard",
-		onRowClick: handleRowClick, // Add this line
+		// onRowClick: handleRowClick, <-- REMOVE THIS LINE
 		textLabels: {
 			body: {
 				noMatch: "No students found",
