@@ -21,7 +21,7 @@ theme = createTheme(theme, {
 
 		secondary: {
 			main: "#F55C38",
-			light: "#FDDED7",
+			light: "#EAEDED",
 			dark: "#933722",
 			contrastText: "#ffffff",
 		},
@@ -77,7 +77,7 @@ theme = createTheme(theme, {
 
 		text: {
 			primary: "#2F4F4F",
-			secondary: "#6D6D6D",
+			secondary: "#597272", // Updated to match the specified tab text color
 			disabled: "#BDBDBD",
 			hint: "#BDBDBD",
 		},
@@ -202,6 +202,35 @@ theme.components = {
 				alignItems: "center",
 				justifyContent: "center",
 				gap: "8px",
+			},
+		},
+	},
+	// Add Tab styling
+	MuiTab: {
+		styleOverrides: {
+			root: {
+				fontFamily: "Work Sans",
+				fontSize: "18px",
+				fontStyle: "normal",
+				lineHeight: "170%",
+				textTransform: "none",
+				color: "#597272", // Unselected tab color
+				fontWeight: 400,
+				minWidth: "unset",
+				padding: "12px 2px",
+				marginRight: "24px",
+				"&.Mui-selected": {
+					color: "#2F4F4F", // Selected tab color
+					fontWeight: 600,
+				},
+			},
+		},
+	},
+	// Add Tabs indicator styling
+	MuiTabs: {
+		styleOverrides: {
+			indicator: {
+				backgroundColor: "#2F4F4F",
 			},
 		},
 	},

@@ -121,7 +121,6 @@ const generateSchoolTestData = () => {
 
 const Reports = () => {
 	// State variables
-	const [darkMode, setDarkMode] = useState(false);
 	const [viewMode, setViewMode] = useState("school"); // school, student
 
 	// School view filters
@@ -144,12 +143,6 @@ const Reports = () => {
 	const [selectedClass, setSelectedClass] = useState(null);
 
 	const [selectedStudent, setSelectedStudent] = useState(null);
-
-	// UI colors based on dark mode
-	const bgColor = darkMode ? "bg-gray-900" : "bg-gray-50";
-	const textColor = darkMode ? "text-white" : "text-gray-800";
-	const cardBg = darkMode ? "bg-gray-800" : "bg-white";
-	const borderColor = darkMode ? "border-gray-700" : "border-gray-200";
 
 	// Chart colors
 	const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#00C49F"];
@@ -192,7 +185,15 @@ const Reports = () => {
 		setSelectedMonth(null);
 		setSelectedTest(null);
 		setSelectedSubject(null);
-		setSelectedClass(null);
+
+		// Set Class 6 as default if available, otherwise set first class in list
+		if (school.classes && school.classes.length > 0) {
+			const hasClass6 = school.classes.includes("Class 6");
+			setSelectedClass(hasClass6 ? "Class 6" : school.classes[0]);
+		} else {
+			setSelectedClass(null);
+		}
+
 		setSelectedStudent(null);
 		setShowSearchResults(false);
 		setViewMode("school");
@@ -448,45 +449,15 @@ const Reports = () => {
 	};
 
 	return (
-		<div className={`min-h-screen ${bgColor} ${textColor} p-4 md:p-8 main-page-wrapper`}>
+		<div className="min-h-screen bg-gray-50 text-gray-800 p-4 md:p-8 main-page-wrapper">
 			<div className="max-w-7xl mx-auto">
-				{/* Header with dark mode toggle and view mode selection */}
+				{/* Header with view mode selection */}
 				<div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
 					<h5 className="text-lg font-bold text-[#2F4F4F]">School Performance Analytics</h5>
-
-					<div className="flex gap-4">
-						{/* <div className="flex rounded-md overflow-hidden">
-							<button
-								onClick={() => setViewMode("school")}
-								className={`px-4 py-2 ${
-									viewMode === "school" ? "bg-blue-500 text-white" : `${cardBg} ${textColor}`
-								}`}
-							>
-								School View
-							</button>
-							<button
-								onClick={() => setViewMode("student")}
-								className={`px-4 py-2 ${
-									viewMode === "student" ? "bg-blue-500 text-white" : `${cardBg} ${textColor}`
-								}`}
-							>
-								Student View
-							</button>
-						</div> */}
-
-						{/* <button
-							onClick={() => setDarkMode(!darkMode)}
-							className={`px-4 py-2 rounded-md ${
-								darkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-gray-800"
-							}`}
-						>
-							{darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-						</button> */}
-					</div>
 				</div>
 
 				{/* Search Card */}
-				<div className={`${cardBg} rounded-xl shadow-md p-6 ${borderColor} border mb-6`}>
+				<div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 mb-6">
 					<h2 className="text-xl font-bold mb-4">
 						Search for {viewMode === "school" ? "School" : "Student"}
 					</h2>
@@ -525,7 +496,7 @@ const Reports = () => {
 								}`}
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className={`w-full px-4 py-2 rounded-lg h-[48px] ${cardBg} ${borderColor} border focus:outline-none focus:ring-2 focus:ring-blue-500`}
+								className="w-full px-4 py-2 rounded-lg h-[48px] bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
 								onKeyUp={(e) => e.key === "Enter" && handleSearch()}
 							/>
 							{searchQuery && (
@@ -547,7 +518,7 @@ const Reports = () => {
 
 					{/* Search Results */}
 					{showSearchResults && (
-						<div className={`mt-4 ${cardBg} rounded-xl p-4 ${borderColor} border max-h-80 overflow-y-auto`}>
+						<div className="mt-4 bg-white rounded-xl p-4 border border-gray-200 max-h-80 overflow-y-auto">
 							<h3 className="text-lg font-bold mb-2">Search Results</h3>
 
 							{searchResults.length === 0 ? (
@@ -556,20 +527,16 @@ const Reports = () => {
 									Please try a different search term.
 								</div>
 							) : (
-								<ul className="divide-y divide-gray-200 dark:divide-gray-700">
+								<ul className="divide-y divide-gray-200">
 									{searchType === "school"
 										? searchResults.map((school) => (
 												<li
 													key={school.udiseCode}
-													className="py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-2"
+													className="py-3 flex items-center justify-between hover:bg-gray-100 rounded px-2"
 												>
 													<div>
 														<p className="font-medium">{school.name}</p>
-														<p
-															className={`text-sm ${
-																darkMode ? "text-gray-400" : "text-gray-600"
-															}`}
-														>
+														<p className="text-sm text-gray-600">
 															UDISE: {school.udiseCode}
 														</p>
 													</div>
@@ -584,15 +551,11 @@ const Reports = () => {
 										: searchResults.map((student) => (
 												<li
 													key={student.studentId}
-													className="py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-2"
+													className="py-3 flex items-center justify-between hover:bg-gray-100 rounded px-2"
 												>
 													<div>
 														<p className="font-medium">{student.name}</p>
-														<p
-															className={`text-sm ${
-																darkMode ? "text-gray-400" : "text-gray-600"
-															}`}
-														>
+														<p className="text-sm text-gray-600">
 															ID: {student.studentId} | Class: {student.class} | School:{" "}
 															{
 																schoolsData.find(
@@ -617,7 +580,7 @@ const Reports = () => {
 
 				{/* Selection Path Display */}
 				{(selectedSchool || selectedStudent) && (
-					<div className={`mb-6 ${cardBg} rounded-xl p-4 ${borderColor} border`}>
+					<div className="mb-6 bg-white rounded-xl p-4 border border-gray-200">
 						<div className="flex flex-wrap items-center gap-2">
 							{selectedSchool && (
 								<div className="flex items-center">
@@ -693,7 +656,7 @@ const Reports = () => {
 
 				{/* Filters Section */}
 				{(selectedSchool || selectedStudent) && (
-					<div className={`${cardBg} rounded-xl shadow-md p-6 ${borderColor} border mb-6`}>
+					<div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 mb-6">
 						<h2 className="text-xl font-bold mb-4">Filters</h2>
 
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -701,7 +664,7 @@ const Reports = () => {
 							<div>
 								<label className="block font-medium mb-2">Year:</label>
 								<select
-									className={`w-full px-3 py-2 rounded-md ${cardBg} ${borderColor} border`}
+									className="w-full px-3 py-2 rounded-md bg-white border border-gray-200"
 									value={viewMode === "school" ? selectedYear : selectedStudentYear}
 									onChange={(e) => {
 										if (viewMode === "school") {
@@ -726,7 +689,7 @@ const Reports = () => {
 							<div>
 								<label className="block font-medium mb-2">Month:</label>
 								<select
-									className={`w-full px-3 py-2 rounded-md ${cardBg} ${borderColor} border`}
+									className="w-full px-3 py-2 rounded-md bg-white border border-gray-200"
 									value={viewMode === "school" ? selectedMonth || "" : selectedStudentMonth || ""}
 									onChange={(e) => {
 										const value = e.target.value || null;
@@ -752,7 +715,7 @@ const Reports = () => {
 								<div>
 									<label className="block font-medium mb-2">Class:</label>
 									<select
-										className={`w-full px-3 py-2 rounded-md ${cardBg} ${borderColor} border`}
+										className="w-full px-3 py-2 rounded-md bg-white border border-gray-200"
 										value={selectedClass || ""}
 										onChange={(e) => handleSelectClass(e.target.value || null)}
 									>
@@ -769,7 +732,7 @@ const Reports = () => {
 							<div>
 								<label className="block font-medium mb-2">Subject:</label>
 								<select
-									className={`w-full px-3 py-2 rounded-md ${cardBg} ${borderColor} border`}
+									className="w-full px-3 py-2 rounded-md bg-white border border-gray-200"
 									value={viewMode === "school" ? selectedSubject || "" : selectedStudentSubject || ""}
 									onChange={(e) => {
 										const value = e.target.value || null;
@@ -792,18 +755,9 @@ const Reports = () => {
 					</div>
 				)}
 
-				{/* Add this inside your Performance Charts section */}
-				{selectedSchool && selectedYear && selectedSubject && (
-					<SubjectTestAnalytics
-						selectedSchool={selectedSchool}
-						selectedYear={selectedYear}
-						selectedSubject={selectedSubject}
-					/>
-				)}
-
 				{/* Performance Charts */}
 				{selectedSchool && (
-					<div className={`${cardBg} rounded-xl shadow-md p-6 ${borderColor} border mb-6`}>
+					<div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 mb-6">
 						<h2 className="text-xl font-bold mb-4">
 							{viewMode === "student"
 								? `Student Performance - ${selectedStudent?.name}`
@@ -873,8 +827,6 @@ const Reports = () => {
 														</div>
 													))}
 											</div>
-
-											
 										</div>
 									</div>
 
@@ -1036,7 +988,7 @@ const Reports = () => {
 							<div className="mb-8">
 								<h3 className="text-lg font-semibold mb-4">Detailed Test Results</h3>
 								<div className="overflow-x-auto">
-									<table className={`w-full ${borderColor} border-collapse border`}>
+									<table className="w-full border border-gray-200 border-collapse">
 										<thead>
 											<tr className="bg-gray-100">
 												<th className="p-2 text-left border">Test</th>
@@ -1121,15 +1073,6 @@ const Reports = () => {
 						)}
 					</div>
 				)}
-
-				{/* Footer */}
-				<footer
-					className={`p-4 text-center ${
-						darkMode ? "text-gray-400" : "text-gray-600"
-					} border-t ${borderColor}`}
-				>
-					<p>&copy; 2025 PDLD Samyarth All rights reserved.</p>
-				</footer>
 			</div>
 		</div>
 	);

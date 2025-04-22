@@ -6,10 +6,10 @@ import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
 import { toast, ToastContainer } from "react-toastify";
 import ButtonCustom from "../components/ButtonCustom";
-import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
+import { addSymbolBtn, EditPencilIcon, trash, DocScanner } from "../utils/imagePath";
 import apiInstance from "../../api";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 
 const StudentDetails = ({ schoolId, schoolName }) => {
@@ -117,6 +117,17 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 				udiseCode: schoolInfo.udiseCode,
 				isEditMode: true,
 				studentData: studentForEdit,
+			},
+		});
+	};
+
+	// Function to handle view student report
+	const handleViewStudentReport = (studentId, student) => {
+		navigate(`/student-report/${schoolId}/${studentId}`, {
+			state: {
+				studentData: student,
+				schoolName: schoolName,
+				udiseCode: schoolInfo.udiseCode,
 			},
 		});
 	};
@@ -304,9 +315,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 									minWidth: "unset",
 								}}
 								onClick={() => handleEditStudent(studentId, student)}
+								title="Edit Student"
 							>
 								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
 							</Button>
+
 							<Button
 								variant="text"
 								size="small"
@@ -317,8 +330,25 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 									minWidth: "unset",
 								}}
 								onClick={() => openDeleteModal(student)}
+								title="Delete Student"
 							>
 								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
+							</Button>
+
+							{/* View Report Button */}
+							<Button
+								variant="text"
+								size="small"
+								sx={{
+									color: "#4caf50",
+									"&:hover": { backgroundColor: "transparent" },
+									padding: "2px",
+									minWidth: "unset",
+								}}
+								onClick={() => handleViewStudentReport(studentId, student)}
+								title="View Report"
+							>
+								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
 							</Button>
 						</div>
 					);
@@ -326,6 +356,19 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 	];
+
+	const handleRowClick = (rowData) => {
+		const studentId = rowData[7]; // ID is at index 7 in your table data
+		const student = rowData[8]; // Full student object is at index 8
+
+		navigate(`/student-profile/${schoolId}/${studentId}`, {
+			state: {
+				studentData: student,
+				schoolName: schoolName,
+				udiseCode: schoolInfo.udiseCode,
+			},
+		});
+	};
 
 	// MUIDataTable options
 	const options = {
@@ -337,6 +380,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		pagination: false,
 		selectableRows: "none",
 		responsive: "standard",
+		onRowClick: handleRowClick, // Add this line
 		textLabels: {
 			body: {
 				noMatch: "No students found",
@@ -369,7 +413,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			</div>
 
 			<div className="flex flex-wrap justify-between sm:flex-row mb-2">
-				<div className="flex   gap-2">
+				<div className="flex gap-2">
 					{/* Search Field */}
 					<TextField
 						placeholder="Search students..."
@@ -418,7 +462,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 					</FormControl>
 				</div>
 
-				<div className="flex   gap-2 sm:mt-2">
+				<div className="flex gap-2 sm:mt-2">
 					<ButtonCustom imageName={addSymbolBtn} text={"Add Student"} onClick={handleAddStudent} />
 					<Button
 						variant="outlined"
