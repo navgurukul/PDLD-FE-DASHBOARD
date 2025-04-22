@@ -180,7 +180,32 @@ export default function SchoolDetailView() {
 				</div>
 
 				<Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-					<Tabs value={tabValue} onChange={handleTabChange} aria-label="school detail tabs">
+					<Tabs
+						value={tabValue}
+						onChange={handleTabChange}
+						aria-label="school detail tabs"
+						sx={{
+							"& .MuiTab-root": {
+								fontFamily: "Work Sans",
+								fontSize: "18px",
+								fontStyle: "normal",
+								lineHeight: "170%",
+								textTransform: "none",
+								color: "#597272",
+								fontWeight: 400,
+								minWidth: "unset",
+								padding: "12px 0px",
+								marginRight: "24px",
+							},
+							"& .Mui-selected": {
+								color: "#2F4F4F",
+								fontWeight: 600,
+							},
+							"& .MuiTabs-indicator": {
+								backgroundColor: "#2F4F4F",
+							},
+						}}
+					>
 						<Tab label="School Details" />
 						<Tab label="Students" />
 					</Tabs>

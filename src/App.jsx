@@ -23,6 +23,7 @@ import UploadSummary from "./components/UploadSummary";
 import SchoolDetailView from "./components/SchoolDetailView";
 import TestReportPage from "./pages/TestReportPage";
 import SchoolReportPage from "./pages/SchoolReportPage";
+import StudentProfileView from "./components/student/StudentProfileSection";
 export const AuthContext = createContext(null);
 
 function App() {
@@ -104,6 +105,7 @@ function App() {
 						<Route path="/schools/add-school" element={<AddSchool />} />
 						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} />
 						<Route path="/student-report/:schoolId/:studentId" element={<StudentReportPage />} />
+						<Route path="/student-profile/:schoolId/:studentId" element={<StudentProfileView />} />
 						<Route
 							path="/schools/schoolDetail/:schoolId/updateStudent"
 							element={<AddStudent isEditMode={true} />}

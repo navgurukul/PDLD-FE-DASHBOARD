@@ -357,6 +357,19 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		},
 	];
 
+	const handleRowClick = (rowData) => {
+		const studentId = rowData[7]; // ID is at index 7 in your table data
+		const student = rowData[8]; // Full student object is at index 8
+
+		navigate(`/student-profile/${schoolId}/${studentId}`, {
+			state: {
+				studentData: student,
+				schoolName: schoolName,
+				udiseCode: schoolInfo.udiseCode,
+			},
+		});
+	};
+
 	// MUIDataTable options
 	const options = {
 		filter: false,
@@ -367,6 +380,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		pagination: false,
 		selectableRows: "none",
 		responsive: "standard",
+		onRowClick: handleRowClick, // Add this line
 		textLabels: {
 			body: {
 				noMatch: "No students found",

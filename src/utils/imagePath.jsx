@@ -22,12 +22,19 @@ import deadlineSummaryModal from "../assets/deadlineSummaryModal.svg"
 import school from "../assets/school.svg"
 import unselectedschool from "../assets/unselectedschool.svg"
 import trash from "../assets/trash.svg"
+import bloodImage from "../assets/bloodImage.svg"
+import heightImageStudent from "../assets/heightImageStudent.svg"
+import weightScale from "../assets/weightScale.svg"
+import person from "../assets/person.svg"
+import house from "../assets/house.svg"
+import fingerprint from "../assets/fingerprint.svg"
+import calendar_today from "../assets/calendar_today.svg"
 
 export {
-  SelReports,SelTests,SelUsers,UNSelUsers,UNSelTests,UNSelReports,
+  SelReports,SelTests,SelUsers,UNSelUsers,UNSelTests,UNSelReports,bloodImage,
     BrandGoogleAnalytics,addSymbolBtn,closeCross,deadlineSummaryModal,
-    ChevronLeft,school,unselectedschool,trash,
-    CreateTestImg,
+    ChevronLeft,school,unselectedschool,trash,heightImageStudent,
+    CreateTestImg,weightScale,person,house,fingerprint,calendar_today,
     DocScanner,
     EditPencilIcon,
     HideSidebar,
