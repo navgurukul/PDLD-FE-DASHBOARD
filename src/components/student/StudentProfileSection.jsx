@@ -172,32 +172,36 @@ const StudentProfileView = () => {
 
 	return (
 		<Box className="main-page-wrapper">
-			{/* Header with navigation and actions */}
-			<Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+			{/* Student Badge - Name and gender */}
+			<Box sx={{ display: "flex",justifyContent:"space-between", alignItems: "center" }}>
+				<Box sx={{display: "flex"}} >
+					<h5 className="text-lg font-bold text-[#2F4F4F] mr-4">{student.fullName}</h5>
+					<Box
+						sx={{ 
+							padding: "4px 8px",
+							bgcolor: "#EAEDED",
+							borderRadius: "8px",
+							color: "#2E7D32",
+							height: "48px",
+							display: "flex",
+							alignItems: "center",
+						}}
+					>
+						<Typography variant="body1" sx={{ }} >
+							{student.gender === "M"
+								? "Male"
+								: student.gender === "F"
+								? "Female"
+								: student.gender || "N/A"}
+						</Typography>
+					</Box>
+				</Box>
+
 				<ButtonCustom
 					onClick={handleEditStudent}
 					startIcon={<img src={EditPencilIcon} alt="Edit" style={{ width: "18px", height: "18px" }} />}
 					text={"Edit Student"}
 				/>
-			</Box>
-
-			{/* Student Badge - Name and gender */}
-			<Box sx={{ display: "flex", alignItems: "center" }}>
-				<h5 className="text-lg font-bold text-[#2F4F4F] mr-4">{student.fullName}</h5>
-				<Box
-					sx={{
-						px: 2,
-						py: 0.5,
-						bgcolor: "#EAEDED",
-						borderRadius: "4px",
-						color: "#2E7D32",
-						fontWeight: "medium",
-					}}
-				>
-					<Typography variant="body1">
-						{student.gender === "M" ? "Male" : student.gender === "F" ? "Female" : student.gender || "N/A"}
-					</Typography>
-				</Box>
 			</Box>
 
 			{/* Tabs for navigation */}
