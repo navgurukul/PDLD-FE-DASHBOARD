@@ -108,6 +108,12 @@ const StudentAcademics = ({ studentData }) => {
 		}
 	};
 
+	// Handle clear all filters
+	const handleClearFilters = () => {
+		setMonth("All");
+		setSubject("All");
+	};
+
 	// Filter syllabus tests based on selected month
 	const filteredSyllabusTests =
 		month === "All"
@@ -138,8 +144,8 @@ const StudentAcademics = ({ studentData }) => {
 							</Button>
 						</Box>
 
-						{/* Filters */}
-						<Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+						{/* Filters with Clear All button */}
+						<Box sx={{ display: "flex", gap: 2, mb: 3, alignItems: "center" }}>
 							<FormControl sx={{ minWidth: 120 }} size="small">
 								<InputLabel>Month</InputLabel>
 								<Select
@@ -180,6 +186,24 @@ const StudentAcademics = ({ studentData }) => {
 									<MenuItem value="Sanskrit">Sanskrit</MenuItem>
 								</Select>
 							</FormControl>
+
+							{/* Clear All text button */}
+							{(month !== "All" || subject !== "All") && (
+								<Typography
+									sx={{
+										color: "#597272",
+										fontFamily: "Work Sans",
+										fontSize: "18px",
+										fontWeight: 600,
+										lineHeight: "170%",
+										cursor: "pointer",
+										ml: 1,
+									}}
+									onClick={handleClearFilters}
+								>
+									Clear All
+								</Typography>
+							)}
 						</Box>
 
 						{/* Accordion List */}
