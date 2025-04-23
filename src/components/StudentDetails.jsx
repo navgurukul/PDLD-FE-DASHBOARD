@@ -121,9 +121,10 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		});
 	};
 
-	// Function to handle view student report
+	 
+
 	const handleViewStudentReport = (studentId, student) => {
-		navigate(`/student-report/${schoolId}/${studentId}`, {
+		navigate(`/schools/schoolDetail/${schoolId}/studentReport/${studentId}`, {
 			state: {
 				studentData: student,
 				schoolName: schoolName,
@@ -383,9 +384,10 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 	];
+ 
 
 	const handleStudentNameClick = (studentId, student) => {
-		navigate(`/student-profile/${schoolId}/${studentId}`, {
+		navigate(`/schools/schoolDetail/${schoolId}/student-profile/${studentId}`, {
 			state: {
 				studentData: student,
 				schoolName: schoolName,

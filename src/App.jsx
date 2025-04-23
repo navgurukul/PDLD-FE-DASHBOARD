@@ -15,8 +15,8 @@ import AddSchool from "./components/AddSchool";
 import UserCreationForm from "./components/UserCreationForm";
 import LoginForm from "./components/LoginForm";
 import AddStudent from "./components/student/AddStudent";
-import StudentReportPage from "./components/student/StudentReportPage"
-import SchoolPerformance from "./components/school/SchoolPerformance"
+import StudentReportPage from "./components/student/StudentReportPage";
+import SchoolPerformance from "./components/school/SchoolPerformance";
 
 // Auth context to manage authentication state
 import { createContext } from "react";
@@ -103,10 +103,13 @@ function App() {
 						<Route path="/reports" element={<Reports />} />
 						<Route path="/schools" element={<Schools />} />
 						<Route path="/allTest/schoolSubmission/:testId" element={<TestReportPage />} />
-						<Route path="/allTest/schoolSubmission/:testId/testDetails/:schoolId" element={<SchoolReportPage />} />
+						<Route
+							path="/allTest/schoolSubmission/:testId/testDetails/:schoolId"
+							element={<SchoolReportPage />}
+						/>
 						<Route path="/schools/add-school" element={<AddSchool />} />
 						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} />
-						<Route path="/student-report/:schoolId/:studentId" element={<StudentReportPage />} />
+						<Route path="/school/studentReport/:schoolId/:studentId" element={<StudentReportPage />} />
 						<Route path="/student-profile/:schoolId/:studentId" element={<StudentProfileView />} />
 						<Route
 							path="/schools/schoolDetail/:schoolId/updateStudent"
@@ -123,7 +126,20 @@ function App() {
 						<Route path="/testCreationForm" element={<TestCreationForm />} />
 						<Route path="/editTest/:Id" element={<TestCreationForm />} />
 						<Route path="/help" element={<HelpAndSupport />} />
-						<Route path="/school-performance/:testId" element={<SchoolPerformance />} />
+						{/* <Route path="/schools/schoolPerformance/:schoolId" element={<SchoolPerformance />} /> */}
+
+						<Route
+							path="/schools/schoolDetail/:schoolId/schoolPerformance"
+							element={<SchoolPerformance />}
+						/>
+						<Route
+							path="/schools/schoolDetail/:schoolId/studentReport/:studentId"
+							element={<StudentReportPage />}
+						/>
+						<Route
+							path="/schools/schoolDetail/:schoolId/student-profile/:studentId"
+							element={<StudentProfileView />}
+						/>
 
 						{/* Fallback Route */}
 						<Route path="*" element={<PageNotFound />} />
