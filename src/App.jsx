@@ -16,6 +16,7 @@ import UserCreationForm from "./components/UserCreationForm";
 import LoginForm from "./components/LoginForm";
 import AddStudent from "./components/student/AddStudent";
 import StudentReportPage from "./components/student/StudentReportPage"
+import SchoolPerformance from "./components/school/SchoolPerformance"
 
 // Auth context to manage authentication state
 import { createContext } from "react";
@@ -24,6 +25,7 @@ import SchoolDetailView from "./components/SchoolDetailView";
 import TestReportPage from "./pages/TestReportPage";
 import SchoolReportPage from "./pages/SchoolReportPage";
 import StudentProfileView from "./components/student/StudentProfileSection";
+import SchoolPerformanceTable from "./components/testReport/SchoolPerformanceTable";
 export const AuthContext = createContext(null);
 
 function App() {
@@ -121,6 +123,7 @@ function App() {
 						<Route path="/testCreationForm" element={<TestCreationForm />} />
 						<Route path="/editTest/:Id" element={<TestCreationForm />} />
 						<Route path="/help" element={<HelpAndSupport />} />
+						<Route path="/school-performance/:testId" element={<SchoolPerformance />} />
 
 						{/* Fallback Route */}
 						<Route path="*" element={<PageNotFound />} />

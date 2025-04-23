@@ -14,7 +14,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import Tooltip from "@mui/material/Tooltip";
 import ButtonCustom from "../components/ButtonCustom";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
-import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
+import { addSymbolBtn, DocScanner, EditPencilIcon, trash } from "../utils/imagePath";
 import apiInstance from "../../api";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { MenuItem } from "@mui/material";
@@ -86,11 +86,11 @@ export default function SchoolList() {
 			const response = await apiInstance.get(`/dev/school/all?page=${currentPage}&pageSize=15`);
 			if (response.data.success) {
 				// console.log("API Response:", response.data.data); // Debug: Log the full response
-				
+
 				// Check if we're getting the expected 20 records max
 				const schoolsData = response.data.data.schools;
 				// console.log("Schools count from API:", schoolsData.length);
-				
+
 				setSchools(schoolsData);
 				setPagination(response.data.data.pagination);
 			} else {
@@ -141,6 +141,15 @@ export default function SchoolList() {
 		navigate("/schools/bulk-upload");
 	};
 
+	const handleSchoolReport = (schoolId, schoolObj) => {
+		navigate(`/school-performance/${schoolId}`, {
+			state: {
+				schoolName: schoolObj.schoolName,
+				udiseCode: schoolObj.udiseCode,
+			},
+		});
+	};
+
 	// Handle copy to clipboard
 	const handleCopy = (text, type) => {
 		navigator.clipboard.writeText(text);
@@ -184,7 +193,7 @@ export default function SchoolList() {
 
 		return matchesSearch && matchesCluster && matchesBlock;
 	});
-	
+
 	// Debug: Log the response data and filtered results
 	// console.log("Total schools from API:", schools.length);
 	// console.log("Filtered schools count:", filteredSchools.length);
@@ -252,7 +261,7 @@ export default function SchoolList() {
 	// This is a safeguard if the API isn't respecting the limit parameter
 	const limitedFilteredSchools = filteredSchools.slice(0, pagination.pageSize);
 	// console.log("Limited filtered schools:", limitedFilteredSchools.length);
-	
+
 	const tableData = limitedFilteredSchools.map((school) => ({
 		id: school.id,
 		schoolName: capitalizeFirstLetter(school.schoolName),
@@ -421,6 +430,22 @@ export default function SchoolList() {
 							>
 								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
 								&nbsp;
+							</Button>
+
+							{/* View Report Button */}
+							<Button
+								variant="text"
+								size="small"
+								sx={{
+									color: "#4caf50",
+									"&:hover": { backgroundColor: "transparent" },
+									padding: "2px",
+									minWidth: "unset",
+								}}
+								onClick={() => handleSchoolReport(schoolId, schoolObj)}
+								title="View Report"
+							>
+								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
 							</Button>
 						</div>
 					);
