@@ -470,7 +470,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 					{/* Class Dropdown */}
 					<FormControl
 						sx={{
-							minWidth: 240,
+							minWidth: 150,
 							"& .MuiOutlinedInput-root": {
 								borderRadius: "8px",
 								height: "48px",
