@@ -26,6 +26,12 @@ const Breadcrumb = () => {
 		studentBulkUpload: "Student Bulk Upload",
 		schoolSubmission: "School Submission",
 		testDetails: "Test Details",
+		schoolPerformance: "School Performance",
+
+		// "school-performance": "School Performance",
+		"school": "School Management",
+		"studentReport": "Student Report",
+		"student-profile": "Student Profile"
 	};
 
 	// Check if a string is a UUID
