@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
 const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, showAnimation, className }) => {

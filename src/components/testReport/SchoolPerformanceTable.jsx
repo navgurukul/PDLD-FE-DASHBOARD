@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Box, Chip } from "@mui/material";
 import MUIDataTable from "mui-datatables";
@@ -11,6 +11,9 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import DoneIcon from "@mui/icons-material/Done";
 import PendingIcon from "@mui/icons-material/Pending";
 import PercentIcon from "@mui/icons-material/Percent";
+import apiInstance from "../../../api";
+import axios from "axios"; // Keep axios as fallback
+import { useParams, useLocation } from "react-router-dom";
 
 // Create MUI theme to match TestListTable
 const theme = createTheme({
@@ -44,22 +47,105 @@ const theme = createTheme({
 	},
 });
 
-const SchoolPerformanceTable = ({
-	schools,
-	onSchoolSelect,
-	onSendReminder,
-	totalSchools,
-	schoolsSubmitted,
-	submissionRate,
-	overallPassRate,
-	pendingSchools,
-}) => {
+const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
+	 
+	
+	// State for API data
+	const [schools, setSchools] = useState([]);
+	const [totalSchools, setTotalSchools] = useState(0);
+	const [schoolsSubmitted, setSchoolsSubmitted] = useState(0);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
+
+	// UI state
 	const [searchQuery, setSearchQuery] = useState("");
 	const [statusFilter, setStatusFilter] = useState("");
 	const [sortConfig, setSortConfig] = useState({
 		key: null,
 		direction: "asc",
 	});
+
+	// Get test ID from URL
+	const { testId } = useParams();
+	const location = useLocation();
+	const testName = location.state?.testName  
+
+	// Alternative way to get testId from URL
+	const getTestIdFromUrl = () => {
+		const pathParts = location.pathname.split("/");
+		return testId || pathParts[pathParts.length - 1] || "b78a7596-7cd8-49e1-8c9e-7db0973fbbc0";
+	};
+
+	const currentTestId = getTestIdFromUrl();
+
+	// Fetch data from API
+	useEffect(() => {
+		const fetchData = async () => {
+			try {
+				setLoading(true);
+
+				let response;
+
+				// First try with the API instance (which handles auth)
+				try {
+					response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`);
+				} catch (apiInstanceError) {
+					console.warn("Error with apiInstance, trying direct URL as fallback:", apiInstanceError);
+
+					// If that fails with CORS, try with a direct URL as fallback
+					// This can help if the issue is related to baseURL configuration
+					const token = localStorage.getItem("authToken");
+
+					response = await axios.get(
+						`https://vjcme31onh.execute-api.ap-south-1.amazonaws.com/dev/schools/results/submitted/${currentTestId}`,
+						{
+							headers: {
+								"Content-Type": "application/json",
+								Accept: "application/json",
+								...(token ? { Authorization: `Bearer ${token}` } : {}),
+							},
+						}
+					);
+				}
+
+				// Process the successful response
+				if (response.data && response.data.success) {
+					const { schools: apiSchools, totalSubmittedSchools, pagination } = response.data.data;
+
+					// Transform API data to match the component's expected format
+					const formattedSchools = apiSchools.map((school) => ({
+						id: school.id,
+						name: school.schoolName,
+						schoolName: school.schoolName,
+						blockName: school.blockName,
+						clusterName: school.clusterName,
+						udiseCode: school.udiseCode,
+						passRate: school.successRate, // Map successRate to passRate
+						submitted: true, // All schools in the response are submitted
+						studentsTested: "-", // Not provided in API
+						avgScore: "-", // Not provided in API
+					}));
+
+					setSchools(formattedSchools);
+					setSchoolsSubmitted(totalSubmittedSchools);
+					setTotalSchools(pagination.totalSchools || totalSubmittedSchools);
+				} else {
+					setError("Failed to load data");
+				}
+			} catch (err) {
+				console.error("Error fetching school data:", err);
+				if (err.message && err.message.includes("CORS")) {
+					setError("CORS error: Unable to access the API. Please check network settings or try again later.");
+				} else {
+					setError("An error occurred while fetching data");
+				}
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchData();
+	}, [currentTestId]);
 
 	// Filter schools based on search query and status
 	const filteredSchools = useMemo(() => {
@@ -107,7 +193,6 @@ const SchoolPerformanceTable = ({
 		studentsTested: school.studentsTested || "-",
 		passRate: school.passRate ? `${school.passRate}%` : "-",
 		avgScore: school.avgScore || "-",
-		vsPrev: school.vsPrev !== undefined ? `${school.vsPrev > 0 ? "+" : ""}${school.vsPrev}%` : "-",
 		submitted: school.submitted,
 	}));
 
@@ -115,13 +200,6 @@ const SchoolPerformanceTable = ({
 		setSearchQuery("");
 		setStatusFilter("");
 		setSortConfig({ key: null, direction: "asc" });
-	};
-
-	// Handler for sending reminder
-	const handleSendReminder = (schoolId) => {
-		if (onSendReminder) {
-			onSendReminder(schoolId);
-		}
 	};
 
 	// MUI DataTable columns configuration
@@ -266,8 +344,28 @@ const SchoolPerformanceTable = ({
 		pagination: false,
 	};
 
-	// Calculate pending schools if not provided directly
-	const pendingCount = pendingSchools !== undefined ? pendingSchools : totalSchools - schoolsSubmitted;
+	// Calculate pending schools
+	const pendingSchools = totalSchools - schoolsSubmitted;
+	const submissionRate = totalSchools > 0 ? Math.round((schoolsSubmitted / totalSchools) * 100) : 0;
+
+	// Show loading indicator while fetching data
+	if (loading) {
+		return <div className="flex justify-center p-5">Loading school data...</div>;
+	}
+
+	// Show error message if data fetch failed
+	if (error) {
+		return <div className="text-red-500 p-5">{error}</div>;
+	}
+
+	// No schools found
+	if (schools.length === 0) {
+		return (
+			<div className="bg-white p-5 text-center">
+				<p className="text-gray-500">No schools data available.</p>
+			</div>
+		);
+	}
 
 	return (
 		<ThemeProvider theme={theme}>
@@ -278,7 +376,8 @@ const SchoolPerformanceTable = ({
 						<div>
 							<div>
 								{/* <p className="text-2xl font-bold text-[#2F4F4F] mb-0 md:mb-0">School Submission f</p> */}
-								<h5 className="text-[#2F4F4F]">Class 1 English Syllabus Test - Submission</h5>
+								{/* <h5 className="text-[#2F4F4F]">Class 1 English Syllabus Test - Submission</h5> */}
+								<h5 className="text-[#2F4F4F]">{testName} - Submission</h5>
 							</div>
 						</div>
 
@@ -312,22 +411,18 @@ const SchoolPerformanceTable = ({
 								/>
 								<Chip
 									icon={<PendingIcon style={{ fontSize: "16px" }} />}
-									label={`Pending: ${pendingCount}`}
+									label={`Pending: ${pendingSchools}`}
 									variant="outlined"
 									size="small"
 									sx={{
 										borderRadius: "8px",
-										bgcolor: pendingCount > 0 ? "#fff8e1" : "#f5f5f5",
+										bgcolor: pendingSchools > 0 ? "#fff8e1" : "#f5f5f5",
 										fontWeight: 600,
-										color: pendingCount > 0 ? "#f57c00" : "#757575",
-										"& .MuiChip-icon": { color: pendingCount > 0 ? "#f57c00" : "#757575" },
+										color: pendingSchools > 0 ? "#f57c00" : "#757575",
+										"& .MuiChip-icon": { color: pendingSchools > 0 ? "#f57c00" : "#757575" },
 									}}
 								/>
 							</Box>
-							{/* <div>
-								<p style={{ fontSize: "14px" }}>Class 1 English Syllabus Test </p>
-								<span className="text-gray-600 text-sm">Test Date: 19 Apr 2025</span>
-							</div> */}
 						</Box>
 					</div>
 				</div>
@@ -444,26 +539,6 @@ const SchoolPerformanceTable = ({
 			</div>
 		</ThemeProvider>
 	);
-};
-
-SchoolPerformanceTable.propTypes = {
-	schools: PropTypes.array.isRequired,
-	onSchoolSelect: PropTypes.func.isRequired,
-	onSendReminder: PropTypes.func,
-	totalSchools: PropTypes.number,
-	schoolsSubmitted: PropTypes.number,
-	submissionRate: PropTypes.number,
-	overallPassRate: PropTypes.number,
-	pendingSchools: PropTypes.number,
-};
-
-SchoolPerformanceTable.defaultProps = {
-	schools: [],
-	onSendReminder: () => {},
-	totalSchools: 0,
-	schoolsSubmitted: 0,
-	submissionRate: 0,
-	overallPassRate: 0,
 };
 
 export default SchoolPerformanceTable;

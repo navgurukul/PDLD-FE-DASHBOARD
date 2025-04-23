@@ -142,7 +142,8 @@ export default function SchoolList() {
 	};
 
 	const handleSchoolReport = (schoolId, schoolObj) => {
-		navigate(`/schools/schoolPerformance/${schoolId}`, {
+		navigate(`/schools/schoolDetail/${schoolId}/schoolPerformance`, {
+			// "/schools/schoolDetail/:schoolId/schoolPerformance"
 			state: {
 				schoolName: schoolObj.schoolName,
 				udiseCode: schoolObj.udiseCode,
