@@ -173,7 +173,7 @@ const StudentProfileView = () => {
 	return (
 		<Box className="main-page-wrapper">
 			{/* Student Badge - Name and gender */}
-			<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "32px 0px" }}>
+			<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "24px 0px" }}>
 				<Box sx={{ display: "flex" }}>
 					<h5 className="text-lg font-bold text-[#2F4F4F] mr-4">{student.fullName}</h5>
 					<Box

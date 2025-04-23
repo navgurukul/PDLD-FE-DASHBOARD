@@ -147,75 +147,28 @@ const StudentReportPage = () => {
 		});
 	};
 
-	// Format data for monthly performance chart
-	const getMonthlyPerformance = () => {
-		if (!selectedYear) return [];
-
-		const yearData = studentPerformance.filter((record) => record.year === selectedYear);
-
-		// Group by month and calculate averages
-		const monthlyData = MONTHS.map((month) => {
-			const monthTests = yearData.filter((test) => test.month === month);
-
-			if (monthTests.length === 0) {
-				return { month };
-			}
-
-			const result = { month };
-
-			// Calculate average for each subject
-			SUBJECTS.forEach((subject) => {
-				result[subject] = Math.round(
-					monthTests.reduce((sum, test) => sum + test[subject], 0) / monthTests.length
-				);
-			});
-
-			// Calculate overall average
-			result.overall = Math.round(
-				SUBJECTS.reduce((sum, subject) => sum + (result[subject] || 0), 0) / SUBJECTS.length
-			);
-
-			return result;
-		});
-
-		return monthlyData;
-	};
-
-	// Get year-over-year comparison data
-	const getYearOverYearData = () => {
-		const data = [];
-
-		YEARS.forEach((year) => {
-			const yearObj = { year: year.toString() };
-			const yearTests = studentPerformance.filter((test) => test.year === year);
-
-			if (yearTests.length > 0) {
-				SUBJECTS.forEach((subject) => {
-					yearObj[subject] = Math.round(
-						yearTests.reduce((sum, test) => sum + test[subject], 0) / yearTests.length
-					);
-				});
-
-				// Add overall average
-				yearObj.overall = Math.round(
-					SUBJECTS.reduce((sum, subject) => sum + (yearObj[subject] || 0), 0) / SUBJECTS.length
-				);
-			}
-
-			data.push(yearObj);
-		});
-
-		return data;
-	};
-
 	// Get progression data for trending chart
+	// Fixed getProgressionData function that ensures only one test per month
 	const getProgressionData = () => {
 		if (!selectedYear) return [];
 
 		const yearData = studentPerformance.filter((record) => record.year === selectedYear);
 
-		// Sort tests chronologically
-		const sortedTests = yearData.sort((a, b) => {
+		// Create a map to store one test per month
+		const monthlyData = {};
+
+		// Process all tests and keep only one per month (the first one we encounter)
+		yearData.forEach((test) => {
+			if (!monthlyData[test.month]) {
+				monthlyData[test.month] = test;
+			}
+		});
+
+		// Convert the map back to an array
+		const monthlyTests = Object.values(monthlyData);
+
+		// Sort by month chronologically
+		const sortedTests = monthlyTests.sort((a, b) => {
 			const monthOrder = {
 				Jan: 1,
 				Feb: 2,
@@ -230,28 +183,13 @@ const StudentReportPage = () => {
 				Nov: 11,
 				Dec: 12,
 			};
-			if (a.month !== b.month) {
-				return monthOrder[a.month] - monthOrder[b.month];
-			}
-			return a.id.localeCompare(b.id);
+			return monthOrder[a.month] - monthOrder[b.month];
 		});
 
 		return sortedTests;
 	};
 
 	// Get subject distribution data for radar chart
-	const getSubjectDistribution = () => {
-		if (getFilteredPerformance().length === 0) return [];
-
-		const avgScores = {};
-
-		SUBJECTS.forEach((subject) => {
-			const scores = getFilteredPerformance().map((test) => test[subject]);
-			avgScores[subject] = Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
-		});
-
-		return [avgScores];
-	};
 
 	// Handle going back to student list
 	const handleBack = () => {
@@ -560,73 +498,57 @@ const StudentReportPage = () => {
 					{activeTab === 0 && (
 						<>
 							{/* Performance Summary Card */}
-							<Card sx={{ mb: 4, borderRadius: 2, boxShadow: "0 2px 10px rgba(0,0,0,0.1)" }}>
+							<Card sx={{ mb: 4, borderRadius: 2 }}>
 								<CardContent>
 									<h6 className="text-lg font-bold text-[#2F4F4F] mb-4">Performance Progression</h6>
-									<Grid container spacing={3}>
-										{/* Progress Trend */}
-										<Grid item xs={12}>
-											<Box sx={{ height: 300, width: "100%" }}>
+									{/* Simple Performance Graph */}
+									<Card sx={{ mb: 4, borderRadius: 2 }}>
+										<CardContent>
+											<Box sx={{ height: 300 }}>
 												<ResponsiveContainer>
 													<LineChart data={getProgressionData()}>
-														<CartesianGrid strokeDasharray="3 3" />
+														<CartesianGrid
+															strokeDasharray="3 3"
+															stroke="rgba(47, 79, 79, 0.2)"
+														/>
 														<XAxis
 															dataKey="month"
-															tickFormatter={(value, index) => {
-																const item = getProgressionData()[index];
-																return item ? item.month : value;
-															}}
+															tickFormatter={(value) => value}
+															interval={0}
+															stroke="#2F4F4F"
 														/>
-														<YAxis domain={[0, 100]} />
+														<YAxis domain={[0, 100]} stroke="#2F4F4F" />
 														<Tooltip
-															formatter={(value, name) => [value, name]}
-															labelFormatter={(value, index) => {
-																const item = getProgressionData()[index];
-																return item
-																	? `${item.month} - ${item.testName}`
-																	: value;
-															}}
+															formatter={(value, name) => [`${value}`, name]}
+															labelFormatter={(value) => `${value}`}
+															contentStyle={{ borderColor: "#2F4F4F" }}
 														/>
-														<Legend />
-														{selectedSubject ? (
+														<Legend wrapperStyle={{ color: "#2F4F4F" }} />
+														<Line
+															type="monotone"
+															dataKey="overallPercentage"
+															name="Overall Average (in %)"
+															stroke="#000000"
+															strokeWidth={2}
+															dot={{ r: 6 }}
+															activeDot={{ r: 8 }}
+														/>
+														{SUBJECTS.map((subject, index) => (
 															<Line
+																key={subject}
 																type="monotone"
-																dataKey={selectedSubject}
-																name={selectedSubject}
-																stroke="#2F4F4F"
-																strokeWidth={2}
-																dot={{ r: 6 }}
-																activeDot={{ r: 8 }}
+																dataKey={subject}
+																name={subject}
+																stroke={COLORS[index % COLORS.length]}
+																dot={{ r: 4 }}
+																activeDot={{ r: 6 }}
 															/>
-														) : (
-															<>
-																<Line
-																	type="monotone"
-																	dataKey="overallAvg"
-																	name="Overall Average"
-																	stroke="#000000"
-																	strokeWidth={2}
-																	dot={{ r: 6 }}
-																	activeDot={{ r: 8 }}
-																/>
-																{SUBJECTS.map((subject, index) => (
-																	<Line
-																		key={subject}
-																		type="monotone"
-																		dataKey={subject}
-																		name={subject}
-																		stroke={COLORS[index % COLORS.length]}
-																		dot={{ r: 4 }}
-																		activeDot={{ r: 6 }}
-																	/>
-																))}
-															</>
-														)}
+														))}
 													</LineChart>
 												</ResponsiveContainer>
 											</Box>
-										</Grid>
-									</Grid>
+										</CardContent>
+									</Card>
 								</CardContent>
 							</Card>
 						</>
