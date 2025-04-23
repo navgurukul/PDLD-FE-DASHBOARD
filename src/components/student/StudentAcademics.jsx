@@ -116,19 +116,6 @@ const StudentAcademics = ({ studentData }) => {
 
 	return (
 		<Box className="">
-			{/* Academic Year Header */}
-			<Paper
-				elevation={0}
-				sx={{
-					p: 2,
-					borderRadius: "8px",
-					backgroundColor: "#F5F7F8",
-					marginBottom: 3,
-				}}
-			>
-				<h6 className="flex justify-center">Academic Year {academicData.academicYear}</h6>
-			</Paper>
-
 			{/* Main content grid - Syllabus and Remedial tests side by side */}
 			<Grid container spacing={3} className="">
 				{/* Syllabus Test Section */}
