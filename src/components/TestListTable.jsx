@@ -440,8 +440,14 @@ export default function TestListTable() {
 									color: "#2F4F4F",
 									"&:hover": { borderColor: "transparent" },
 								}}
-							 
-								onClick={() => navigate(`/allTest/schoolSubmission/${testId}`)}
+								onClick={() => {
+									// Pass the test name when navigating to the report
+									const testId = tableMeta.rowData[0];
+									const testName = tableMeta.rowData[1]; // This is the test name from your table data
+									navigate(`/allTest/schoolSubmission/${testId}`, {
+										state: { testName: testName },
+									});
+								}}
 							>
 								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
 								&nbsp; View Report

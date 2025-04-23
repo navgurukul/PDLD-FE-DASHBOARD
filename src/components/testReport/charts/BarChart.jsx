@@ -4,7 +4,6 @@ import PropTypes from "prop-types";
 const BarChart = ({
 	data,
 	primaryColor = "#2F4F4F",  
-	secondaryColor = "#2F4F4F33", // Using same color with transparency
 	height = 200,
 	showValues = true,
 	className = "",
@@ -131,7 +130,6 @@ BarChart.propTypes = {
 		})
 	).isRequired,
 	primaryColor: PropTypes.string,
-	secondaryColor: PropTypes.string,
 	height: PropTypes.number,
 	showValues: PropTypes.bool,
 	className: PropTypes.string,

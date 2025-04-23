@@ -11,19 +11,16 @@ import apiInstance from "../../api";
 import theme from "../theme/theme";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import LineChart from "../components/testReport/charts/LineChart";
-
-// Import mock data and helper functions
-import { MOCK_TESTS, formatDate, calculateScoreDistribution, PASS_THRESHOLD } from "../data/testReportData";
 import { Chip, Box } from "@mui/material";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import PercentIcon from "@mui/icons-material/Percent";
 
-// Flag to toggle between mock data and API calls
-const USE_MOCK_DATA = true;
-
-// Define the theme color to use consistently across components
+// Define the theme colors
 const THEME_COLOR = "#2F4F4F";
 const SECONDARY_COLOR = "#FFEBEB";
+
+// Define pass threshold percentage (35% of max score)
+const PASS_PERCENTAGE = 35;
 
 const SchoolReportPage = () => {
 	const { testId, schoolId } = useParams();
@@ -33,46 +30,105 @@ const SchoolReportPage = () => {
 	const [schoolData, setSchoolData] = useState(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState(null);
-	const [activeTab, setActiveTab] = useState("visualizations"); // Default active tab
+	const [activeTab, setActiveTab] = useState("visualizations");
+	const [passThreshold, setPassThreshold] = useState(0);
+
+	// Calculate score distribution for the bar chart
+	const calculateScoreDistribution = (students, maxScore) => {
+		// Create ranges based on percentage of max score
+		const ranges = [
+			{ label: "0-20%", value: 0 },
+			{ label: "21-40%", value: 0 },
+			{ label: "41-60%", value: 0 },
+			{ label: "61-80%", value: 0 },
+			{ label: "81-100%", value: 0 },
+		];
+
+		students.forEach((student) => {
+			// Calculate percentage score relative to max score
+			const percentageScore = (student.score / maxScore) * 100;
+			
+			if (percentageScore <= 20) ranges[0].value++;
+			else if (percentageScore <= 40) ranges[1].value++;
+			else if (percentageScore <= 60) ranges[2].value++;
+			else if (percentageScore <= 80) ranges[3].value++;
+			else ranges[4].value++;
+		});
+
+		return ranges;
+	};
 
 	// Fetch school-specific performance data
 	useEffect(() => {
 		const fetchData = async () => {
 			try {
 				setIsLoading(true);
-
-				// For mock data, always show the first test and first submitted school
-				if (USE_MOCK_DATA) {
-					// Simulate API delay
-					setTimeout(() => {
-						// Always use the first test from mock data
-						const mockTest = MOCK_TESTS[0];
-
-						// Get the first submitted school
-						const mockSchool = mockTest.schools.find((school) => school.submitted === true);
-
-						if (mockTest && mockSchool) {
-							setTestData(mockTest);
-							setSchoolData(mockSchool);
-						} else {
-							setError("Mock data not available");
-						}
-						setIsLoading(false);
-					}, 500);
-					return;
-				}
-
-				// For API, use the actual IDs
-				const testResponse = await apiInstance.get(`/dev/test/${testId}`);
-				const schoolResponse = await apiInstance.get(`/dev/test/${testId}/school/${schoolId}/report`);
-
-				if (testResponse.data?.data && schoolResponse.data?.data) {
-					setTestData(testResponse.data.data);
-					setSchoolData(schoolResponse.data.data);
-				} else {
-					setError("Invalid data format received from the server");
-				}
-				setIsLoading(false);
+                
+                // Get the authentication token from localStorage or wherever it's stored
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    setError("Authentication token not found");
+                    setIsLoading(false);
+                    return;
+                }
+                
+                // Set authorization header
+                apiInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                
+                // Use the API endpoint
+                const response = await apiInstance.get(`/dev/result/school/${schoolId}/${testId}`);
+                
+                if (response.data?.success && response.data?.data) {
+                    const apiData = response.data.data;
+                    
+                    // Calculate pass threshold (35% of max score)
+                    const threshold = Math.round((PASS_PERCENTAGE / 100) * apiData.maxScore);
+                    setPassThreshold(threshold);
+                    
+                    // Calculate average score
+                    const totalStudents = apiData.resultData.length;
+                    const totalScore = apiData.resultData.reduce((sum, student) => sum + student.score, 0);
+                    const avgScore = totalStudents ? Number((totalScore / totalStudents).toFixed(1)) : 0;
+                    
+                    // Count passed students
+                    const passedStudents = apiData.resultData.filter(student => student.score >= threshold).length;
+                    const passRate = totalStudents ? Math.round((passedStudents / totalStudents) * 100) : 0;
+                    
+                    // Process data to match component structure
+                    const processedStudents = apiData.resultData.map(student => ({
+                        id: student.studentId,
+                        name: student.studentName,
+                        score: student.score,
+                        passed: student.score >= threshold,
+                        // Calculate performance relative to max score
+                        percentage: Math.round((student.score / apiData.maxScore) * 100)
+                    }));
+                    
+                    const processedData = {
+                        name: apiData.subject || "School Report",
+                        testName: apiData.testType || "Test",
+                        students: processedStudents,
+                        studentsTested: totalStudents,
+                        avgScore: avgScore,
+                        passRate: passRate,
+                        maxScore: apiData.maxScore,
+                        passThreshold: threshold,
+                        scoreDistribution: calculateScoreDistribution(processedStudents, apiData.maxScore)
+                    };
+                    
+                    setTestData({
+                        testId: apiData.testId,
+                        testName: apiData.subject,
+                        testType: apiData.testType,
+                        createdAt: apiData.createdAt
+                    });
+                    
+                    setSchoolData(processedData);
+                    setIsLoading(false);
+                } else {
+                    setError("Invalid data format received from the server");
+                    setIsLoading(false);
+                }
 			} catch (err) {
 				console.error("Error fetching data:", err);
 				setError("Failed to load school report. Please try again later.");
@@ -99,8 +155,8 @@ const SchoolReportPage = () => {
 		const headers = ["Student Name", "Score", "Performance", "vs Class Avg"];
 		const csvData = schoolData.students.map((student) => [
 			student.name,
-			`${student.score}/100`,
-			student.score >= PASS_THRESHOLD ? "Achieved Target" : "Needs Improvement",
+			`${student.score}/${schoolData.maxScore}`,
+			student.passed ? "Achieved Target" : "Needs Improvement",
 			`${student.score > schoolData.avgScore ? "+" : ""}${(student.score - schoolData.avgScore).toFixed(1)}`,
 		]);
 
@@ -128,10 +184,6 @@ const SchoolReportPage = () => {
 			</div>
 		);
 	}
-
-	// Calculate score distribution for the bar chart if not provided by API
-	const scoreDistribution =
-		schoolData.scoreDistribution || (schoolData.students ? calculateScoreDistribution(schoolData.students) : []);
 
 	// Component for the Visualizations Tab
 	const VisualizationsTab = () => (
@@ -168,7 +220,7 @@ const SchoolReportPage = () => {
 					<h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Score Distribution</h3>
 					<div className="h-64 flex items-center justify-center">
 						{/* Using the BarChart with the same theme color */}
-						<BarChart data={scoreDistribution} primaryColor={THEME_COLOR} />
+						<BarChart data={schoolData.scoreDistribution} primaryColor={THEME_COLOR} />
 					</div>
 				</div>
 			</div>
@@ -192,6 +244,8 @@ const SchoolReportPage = () => {
 		<StudentPerformanceTable
 			students={schoolData.students}
 			classAvg={schoolData.avgScore}
+			maxScore={schoolData.maxScore}
+			passThreshold={schoolData.passThreshold}
 			onViewProfile={handleViewProfile}
 			onExport={handleExportStudentData}
 		/>
@@ -204,10 +258,12 @@ const SchoolReportPage = () => {
 				<div className="mb-6 flex justify-between">
 					<div>
 						<h5 className="text-2xl font-bold text-[#2F4F4F]">
-							{schoolData.name || schoolData.schoolName}
+							{schoolData.name}
 						</h5>
 						<div className="text-sm text-gray-600">
 							<span>{testData?.testName || "Test Details"}</span>
+							<span className="mx-1">•</span>
+							<span>Pass Threshold: {schoolData.passThreshold} ({PASS_PERCENTAGE}% of {schoolData.maxScore})</span>
 						</div>
 					</div>
 
