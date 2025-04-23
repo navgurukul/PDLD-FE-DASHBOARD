@@ -197,11 +197,29 @@ const StudentProfileView = () => {
 					</Box>
 				</Box>
 
-				<ButtonCustom
-					onClick={handleEditStudent}
-					startIcon={<img src={EditPencilIcon} alt="Edit" style={{ width: "18px", height: "18px" }} />}
-					text={"Edit Student"}
-				/>
+				{/* Show edit button in overview tab and academic year text in academic tab */}
+				{tabValue === 0 ? (
+					<ButtonCustom
+						onClick={handleEditStudent}
+						startIcon={<img src={EditPencilIcon} alt="Edit" style={{ width: "18px", height: "18px" }} />}
+						text={"Edit Student"}
+					/>
+				) : (
+					<Typography
+						variant="subtitle1"
+						sx={{
+							bgcolor: theme.palette.secondary.light,
+							color: theme.palette.primary, 
+							padding: "4px 16px",
+							borderRadius: "8px",
+							height: "48px",
+							display: "flex",
+							alignItems: "center",
+						}}
+					>
+						Academic Year 2024-25
+					</Typography>
+				)}
 			</Box>
 
 			{/* Tabs for navigation */}
