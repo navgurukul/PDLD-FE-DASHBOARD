@@ -35,7 +35,7 @@ import KeyboardBackspaceIcon from "@mui/icons-material/KeyboardBackspace";
 import DownloadIcon from "@mui/icons-material/Download";
 import PrintIcon from "@mui/icons-material/Print";
 import MUIDataTable from "mui-datatables";
-import ButtonCustom from "../ButtonCustom"
+import ButtonCustom from "../ButtonCustom";
 import OutlinedButton from "../button/OutlinedButton";
 
 // Mock data (replace with actual API calls in production)
@@ -62,13 +62,6 @@ const StudentReportPage = () => {
 	const [activeTab, setActiveTab] = useState(0);
 
 	// Function to get color based on score
-	const getScoreColor = (score) => {
-		if (score >= 90) return "rgba(76, 175, 80, 0.2)"; // Green
-		if (score >= 80) return "rgba(139, 195, 74, 0.2)"; // Light Green
-		if (score >= 70) return "rgba(255, 193, 7, 0.2)"; // Amber
-		if (score >= 60) return "rgba(255, 152, 0, 0.2)"; // Orange
-		return "rgba(244, 67, 54, 0.2)"; // Red
-	};
 
 	useEffect(() => {
 		// Function to fetch student performance data
@@ -260,38 +253,186 @@ const StudentReportPage = () => {
 		return [avgScores];
 	};
 
-	// Function to format scores with color coding
-	const formatScore = (score) => {
-		let color;
-
-		if (score >= 90) {
-			color = "#4caf50"; // Green
-		} else if (score >= 80) {
-			color = "#8bc34a"; // Light Green
-		} else if (score >= 70) {
-			color = "#ffc107"; // Amber
-		} else if (score >= 60) {
-			color = "#ff9800"; // Orange
-		} else {
-			color = "#f44336"; // Red
-		}
-
-		return (
-			<Typography
-				component="span"
-				sx={{
-					color: color,
-					fontWeight: "bold",
-				}}
-			>
-				{score}%
-			</Typography>
-		);
-	};
-
 	// Handle going back to student list
 	const handleBack = () => {
 		navigate(`/schools/schoolDetail/${schoolId}`);
+	};
+
+	// Format data for MUIDataTable
+	const formatTableData = () => {
+		return getFilteredPerformance()
+			.sort((a, b) => {
+				// Sort by year, then month
+				const monthOrder = {
+					Jan: 1,
+					Feb: 2,
+					Mar: 3,
+					Apr: 4,
+					May: 5,
+					Jun: 6,
+					Jul: 7,
+					Aug: 8,
+					Sep: 9,
+					Oct: 10,
+					Nov: 11,
+					Dec: 12,
+				};
+				if (a.year !== b.year) return b.year - a.year;
+				if (a.month !== b.month) return monthOrder[b.month] - monthOrder[a.month];
+				return a.testName.localeCompare(b.testName);
+			})
+			.map((test) => {
+				// Create a new object with the necessary fields
+				const row = {
+					testName: test.testName,
+					date: `${test.month} ${test.year}`,
+				};
+
+				// Add subject scores (without percentage signs)
+				SUBJECTS.forEach((subject) => {
+					row[subject] = test[subject];
+				});
+
+				// Add overall average (without percentage sign)
+				row["average"] = test.overallAvg;
+
+				return row;
+			});
+	};
+
+	// Define columns for MUIDataTable
+	const columns = [
+		{
+			name: "testName",
+			label: "TEST NAME",
+			options: {
+				filter: false,
+				sort: true,
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{
+								borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
+								fontSize: "14px",
+								textTransform: "uppercase",
+								padding: "16px 8px", // Add padding to the header
+							}}
+						>
+							{columnMeta.label}
+						</th>
+					);
+				},
+				setCellProps: () => ({
+					style: {
+						padding: "4px 8px", // Reduce cell padding
+					},
+				}),
+			},
+		},
+		{
+			name: "date",
+			label: "DATE",
+			options: {
+				filter: true,
+				sort: true,
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{
+								cursor: "pointer",
+								borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
+								fontSize: "14px",
+								textTransform: "uppercase",
+							}}
+						>
+							<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									paddingLeft: "16px",
+								}}
+							>
+								{columnMeta.label}
+							</div>
+						</th>
+					);
+				},
+				customBodyRender: (value) => <div style={{ whiteSpace: "nowrap" }}>{value}</div>,
+			},
+		},
+		...SUBJECTS.map((subject) => ({
+			name: subject,
+			label: subject.toUpperCase(),
+			options: {
+				filter: false,
+				sort: true,
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{
+								borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
+								fontSize: "14px",
+								textTransform: "uppercase",
+							}}
+							scope="col"
+						>
+							{columnMeta.label}
+						</th>
+					);
+				},
+				customBodyRender: (value) => <div style={{ textAlign: "center" }}>{value}</div>,
+			},
+		})),
+		{
+			name: "average",
+			label: "AVERAGE",
+			options: {
+				filter: false,
+				sort: true,
+				customHeadRender: (columnMeta) => {
+					return (
+						<th
+							style={{
+								borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
+								fontSize: "14px",
+								textTransform: "uppercase",
+							}}
+							scope="col"
+						>
+							{columnMeta.label}
+						</th>
+					);
+				},
+				customBodyRender: (value) => (
+					<Typography
+						variant="body2"
+						sx={{
+							fontWeight: "bold",
+							textAlign: "center",
+						}}
+					>
+						{value}
+					</Typography>
+				),
+			},
+		},
+	];
+
+	// MUIDataTable options
+	const options = {
+		filter: false,
+		search: false,
+		filterType: "dropdown",
+		responsive: "standard",
+		selectableRows: "none",
+		download: false,
+		print: false,
+		viewColumns: false,
+		searchPlaceholder: "Search by Test Name",
+		rowsPerPage: 10,
+		rowsPerPageOptions: [10, 20, 30],
+		pagination: false,
+		elevation: 0,
 	};
 
 	if (!studentData) {
@@ -421,16 +562,10 @@ const StudentReportPage = () => {
 							{/* Performance Summary Card */}
 							<Card sx={{ mb: 4, borderRadius: 2, boxShadow: "0 2px 10px rgba(0,0,0,0.1)" }}>
 								<CardContent>
-									<Typography variant="h6" gutterBottom>
-										Performance Overview
-									</Typography>
+									<h6 className="text-lg font-bold text-[#2F4F4F] mb-4">Performance Progression</h6>
 									<Grid container spacing={3}>
 										{/* Progress Trend */}
 										<Grid item xs={12}>
-											<Divider sx={{ my: 2 }} />
-											<Typography variant="subtitle1" gutterBottom>
-												Performance Progression
-											</Typography>
 											<Box sx={{ height: 300, width: "100%" }}>
 												<ResponsiveContainer>
 													<LineChart data={getProgressionData()}>
@@ -444,7 +579,7 @@ const StudentReportPage = () => {
 														/>
 														<YAxis domain={[0, 100]} />
 														<Tooltip
-															formatter={(value, name) => [`${value}%`, name]}
+															formatter={(value, name) => [value, name]}
 															labelFormatter={(value, index) => {
 																const item = getProgressionData()[index];
 																return item
@@ -491,63 +626,6 @@ const StudentReportPage = () => {
 												</ResponsiveContainer>
 											</Box>
 										</Grid>
-										{/* Monthly Performance Chart */}
-										<Grid item xs={12}>
-											<Divider sx={{ my: 2 }} />
-											<Typography variant="subtitle1" gutterBottom>
-												Monthly Performance ({selectedYear})
-											</Typography>
-											<Box sx={{ height: 300, width: "100%" }}>
-												<ResponsiveContainer>
-													<AreaChart data={getMonthlyPerformance()}>
-														<defs>
-															<linearGradient
-																id="colorGradient"
-																x1="0"
-																y1="0"
-																x2="0"
-																y2="1"
-															>
-																<stop
-																	offset="5%"
-																	stopColor="#2F4F4F"
-																	stopOpacity={0.8}
-																/>
-																<stop
-																	offset="95%"
-																	stopColor="#2F4F4F"
-																	stopOpacity={0.1}
-																/>
-															</linearGradient>
-														</defs>
-														<CartesianGrid strokeDasharray="3 3" />
-														<XAxis dataKey="month" />
-														<YAxis domain={[0, 100]} />
-														<Tooltip />
-														<Legend />
-														{selectedSubject ? (
-															<Area
-																type="monotone"
-																dataKey={selectedSubject}
-																name={selectedSubject}
-																fill="url(#colorGradient)"
-																stroke="#2F4F4F"
-																activeDot={{ r: 8 }}
-															/>
-														) : (
-															<Area
-																type="monotone"
-																dataKey="overall"
-																name="Overall Average"
-																fill="url(#colorGradient)"
-																stroke="#2F4F4F"
-																activeDot={{ r: 8 }}
-															/>
-														)}
-													</AreaChart>
-												</ResponsiveContainer>
-											</Box>
-										</Grid>
 									</Grid>
 								</CardContent>
 							</Card>
@@ -555,7 +633,7 @@ const StudentReportPage = () => {
 					)}
 
 					{activeTab === 1 && (
-						<Card sx={{ mb: 4, borderRadius: 2, boxShadow: "0 2px 10px rgba(0,0,0,0.1)" }}>
+						<Card sx={{ mb: 4, borderRadius: 2 }}>
 							<CardContent>
 								<Box
 									sx={{
@@ -565,12 +643,7 @@ const StudentReportPage = () => {
 										mb: 2,
 									}}
 								>
-									<Typography variant="h6">Detailed Test Results</Typography>
-									<Box sx={{ display: "flex", gap: 2 }}>
-										<OutlinedButton onClick={() => window.print()} text="Print" />
-
-										<ButtonCustom text="Export" />
-									</Box>
+									<h5 className="text-lg font-bold text-[#2F4F4F]">Detailed Test Results</h5>
 								</Box>
 
 								{getFilteredPerformance().length === 0 ? (
@@ -581,139 +654,14 @@ const StudentReportPage = () => {
 										No test data available for the selected filters.
 									</Typography>
 								) : (
-									<Box sx={{ overflowX: "auto" }}>
-										<table style={{ width: "100%", borderCollapse: "collapse", marginTop: "16px" }}>
-											<thead>
-												<tr style={{ backgroundColor: "#f5f5f5" }}>
-													<th
-														style={{
-															padding: "12px 16px",
-															textAlign: "left",
-															borderBottom: "1px solid #e0e0e0",
-														}}
-													>
-														Test
-													</th>
-													<th
-														style={{
-															padding: "12px 16px",
-															textAlign: "left",
-															borderBottom: "1px solid #e0e0e0",
-														}}
-													>
-														Date
-													</th>
-													{SUBJECTS.map((subject) => (
-														<th
-															key={subject}
-															style={{
-																padding: "12px 16px",
-																textAlign: "center",
-																borderBottom: "1px solid #e0e0e0",
-															}}
-														>
-															{subject}
-														</th>
-													))}
-													<th
-														style={{
-															padding: "12px 16px",
-															textAlign: "center",
-															borderBottom: "1px solid #e0e0e0",
-														}}
-													>
-														Average
-													</th>
-												</tr>
-											</thead>
-											<tbody>
-												{getFilteredPerformance()
-													.sort((a, b) => {
-														// Sort by year, then month
-														const monthOrder = {
-															Jan: 1,
-															Feb: 2,
-															Mar: 3,
-															Apr: 4,
-															May: 5,
-															Jun: 6,
-															Jul: 7,
-															Aug: 8,
-															Sep: 9,
-															Oct: 10,
-															Nov: 11,
-															Dec: 12,
-														};
-														if (a.year !== b.year) return b.year - a.year;
-														if (a.month !== b.month)
-															return monthOrder[b.month] - monthOrder[a.month];
-														return a.testName.localeCompare(b.testName);
-													})
-													.map((test, index) => (
-														<tr
-															key={index}
-															style={{
-																backgroundColor: index % 2 === 0 ? "white" : "#f9f9f9",
-															}}
-														>
-															<td
-																style={{
-																	padding: "12px 16px",
-																	borderBottom: "1px solid #e0e0e0",
-																}}
-															>
-																{test.testName}
-															</td>
-															<td
-																style={{
-																	padding: "12px 16px",
-																	borderBottom: "1px solid #e0e0e0",
-																}}
-															>{`${test.month} ${test.year}`}</td>
-															{SUBJECTS.map((subject) => {
-																// Color coding for scores
-																let bgColor;
-																const score = test[subject];
-
-																if (score >= 90)
-																	bgColor = "rgba(76, 175, 80, 0.2)"; // Green
-																else if (score >= 80)
-																	bgColor = "rgba(139, 195, 74, 0.2)"; // Light Green
-																else if (score >= 70)
-																	bgColor = "rgba(255, 193, 7, 0.2)"; // Amber
-																else if (score >= 60)
-																	bgColor = "rgba(255, 152, 0, 0.2)"; // Orange
-																else bgColor = "rgba(244, 67, 54, 0.2)"; // Red
-
-																return (
-																	<td
-																		key={subject}
-																		style={{
-																			padding: "12px 16px",
-																			textAlign: "center",
-																			borderBottom: "1px solid #e0e0e0",
-																			backgroundColor: bgColor,
-																		}}
-																	>
-																		{score}%
-																	</td>
-																);
-															})}
-															<td
-																style={{
-																	padding: "12px 16px",
-																	textAlign: "center",
-																	fontWeight: "bold",
-																	borderBottom: "1px solid #e0e0e0",
-																}}
-															>
-																{test.overallAvg}%
-															</td>
-														</tr>
-													))}
-											</tbody>
-										</table>
-									</Box>
+									<div className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto">
+										<MUIDataTable
+											title=""
+											data={formatTableData()}
+											columns={columns}
+											options={options}
+										/>
+									</div>
 								)}
 							</CardContent>
 						</Card>
