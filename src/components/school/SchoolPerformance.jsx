@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Typography, Box, Paper } from "@mui/material";
+import SpinnerPageOverlay from "../SpinnerPageOverlay";
 
 // Mock data - months of the year
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -83,11 +84,7 @@ const SchoolPerformance = () => {
 	}, [testId, location.state]);
 
 	if (isLoading) {
-		return (
-			<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
-				<Typography>Loading performance data...</Typography>
-			</Box>
-		);
+		return <SpinnerPageOverlay isLoading={isLoading} />;
 	}
 
 	return (
