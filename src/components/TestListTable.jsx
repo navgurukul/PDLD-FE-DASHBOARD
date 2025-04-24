@@ -335,7 +335,7 @@ export default function TestListTable() {
 		},
 		{
 			name: "schoolsSubmitted",
-			label: "SCHOOLS SUBMITTED",
+			label: "SUBMISSIONS",
 			options: {
 				filter: false,
 				sort: true,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
-import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Box, Chip } from "@mui/material";
+import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Box, Chip, CircularProgress } from "@mui/material";
 import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
@@ -350,19 +350,39 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
 	// Show loading indicator while fetching data
 	if (loading) {
-		return <div className="flex justify-center p-5">Loading school data...</div>;
+		return (
+			<div className="flex justify-center items-center p-10" style={{ minHeight: "300px" }}>
+				<CircularProgress size={60} thickness={4} sx={{ color: "#2F4F4F" }} />
+			</div>
+		);
 	}
 
 	// Show error message if data fetch failed
 	if (error) {
-		return <div className="text-red-500 p-5">{error}</div>;
-	}
-
-	// No schools found
-	if (schools.length === 0) {
 		return (
-			<div className="bg-white p-5 text-center">
-				<p className="text-gray-500">No schools data available.</p>
+			<div className="border border-gray-200 rounded-lg p-8 text-center">
+				<div className="text-red-500 mb-3">
+					<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+					</svg>
+					<h3 className="text-lg font-semibold">Error Loading Data</h3>
+				</div>
+				<p className="text-gray-600">{error}</p>
+				<Button 
+					variant="outlined" 
+					onClick={() => window.location.reload()}
+					sx={{ 
+						mt: 3,
+						color: "#2F4F4F",
+						borderColor: "#2F4F4F",
+						'&:hover': {
+							borderColor: "#2F4F4F",
+							backgroundColor: "rgba(47, 79, 79, 0.08)",
+						}
+					}}
+				>
+					Retry
+				</Button>
 			</div>
 		);
 	}
@@ -375,8 +395,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 					<div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
 						<div>
 							<div>
-								{/* <p className="text-2xl font-bold text-[#2F4F4F] mb-0 md:mb-0">School Submission f</p> */}
-								{/* <h5 className="text-[#2F4F4F]">Class 1 English Syllabus Test - Submission</h5> */}
 								<h5 className="text-[#2F4F4F]">{testName} - Submission</h5>
 							</div>
 						</div>
@@ -520,21 +538,45 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 				</div>
 
 				{/* Data Table */}
-				{/* <div className="overflow-hidden border border-grey-500 rounded-lg"> */}
 				<div
 					style={{ borderRadius: "8px" }}
 					className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
 				>
-					<MUIDataTable
-						data={tableData}
-						columns={columns}
-						options={{
-							...options,
-							elevation: 0,
-							tableBodyMaxHeight: "calc(100vh - 300px)",
-							fixedHeader: true,
-						}}
-					/>
+					{schools.length > 0 ? (
+						<MUIDataTable
+							data={tableData}
+							columns={columns}
+							options={{
+								...options,
+								elevation: 0,
+								tableBodyMaxHeight: "calc(100vh - 300px)",
+								fixedHeader: true,
+							}}
+						/>
+					) : (
+						<div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+							<svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+							</svg>
+							<h3 className="text-lg font-medium text-gray-700 mb-1">No Schools Data Available</h3>
+							<p className="text-gray-500 mb-4">No school submissions have been recorded for this test yet.</p>
+							<Button
+								variant="outlined"
+								sx={{
+									borderRadius: "8px",
+									borderColor: "#2F4F4F",
+									color: "#2F4F4F",
+									textTransform: "none",
+									"&:hover": {
+										borderColor: "#2F4F4F",
+										backgroundColor: "rgba(47, 79, 79, 0.08)",
+									},
+								}}
+							>
+								Refresh Data
+							</Button>
+						</div>
+					)}
 				</div>
 			</div>
 		</ThemeProvider>
