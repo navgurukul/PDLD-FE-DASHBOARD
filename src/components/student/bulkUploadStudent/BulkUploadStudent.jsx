@@ -368,7 +368,7 @@ export default function BulkUploadStudents() {
 
 	return (
 		<ThemeProvider theme={theme}>
-			<Box sx={{ p: 2, px: 2, maxWidth: "75rem", margin: "0 auto" }}>
+			<Box sx={{ p: 2, px: 2, maxWidth: "90%", margin: "0 auto" }}>
 				<div className="flex justify-between">
 					<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Students</h5>
 					<Button
@@ -398,14 +398,15 @@ export default function BulkUploadStudents() {
 				<StudentUploadStepper activeStep={activeStep} />
 
 				{activeStep === 0 && (
-					<Box sx={{ p: 2 }}>
+					<Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
 						<Box
 							sx={{
+								width: "70%",
 								border: "2px dashed #ccc",
 								borderRadius: 2,
-								p: 4,
+								p: 2,
 								textAlign: "center",
-								mb: 1,
+								mb: 0,
 								position: "relative", // For proper drag event handling
 								cursor: "pointer", // Show pointer cursor on the entire box
 								transition: "all 0.3s ease",
@@ -661,17 +662,7 @@ export default function BulkUploadStudents() {
 																justifyContent: "center",
 																minWidth: 150,
 															}}
-														>
-															{/* <Button
-																onClick={handleViewErrorData}
-																startIcon={<ErrorOutlineIcon />}
-																color="error"
-																variant="outlined"
-																size="small"
-																sx={{ borderRadius: "8px", height: "48px" }}
-															>
-																View Errors
-															</Button> */}
+														> 
 														</Box>
 													</>
 												)}

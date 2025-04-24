@@ -611,7 +611,7 @@ export default function BulkUploadSchools() {
 
 	return (
 		<ThemeProvider theme={theme}>
-			<Box sx={{ p: 2, px: 2, maxWidth: "75rem", margin: "0 auto" }}>
+			<Box sx={{ p: 2, px: 2, maxWidth: "90%", margin: "0 auto" }}>
 				<div className="flex justify-between">
 					<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
 					<Button
@@ -638,23 +638,26 @@ export default function BulkUploadSchools() {
 				</Typography>
 
 				{/* Add stepper to show current stage of the process */}
-				<Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-					{steps.map((label) => (
-						<Step key={label}>
-							<StepLabel>{label}</StepLabel>
-						</Step>
-					))}
-				</Stepper>
+				<Box sx={{ display: "flex", justifyContent: "center" }}>
+					<Stepper activeStep={activeStep} sx={{ width: "70%", mb: 2 }}>
+						{steps.map((label) => (
+							<Step key={label}>
+								<StepLabel>{label}</StepLabel>
+							</Step>
+						))}
+					</Stepper>
+				</Box>
 
 				{activeStep === 0 && (
-					<Box sx={{ p: 2 }}>
+					<Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
 						<Box
 							sx={{
+								width: "70%",
 								border: "2px dashed #ccc",
 								borderRadius: 2,
-								p: 4,
+								p: 2,
 								textAlign: "center",
-								mb: 1,
+								mb: 0,
 								position: "relative", // For proper drag event handling
 								cursor: "pointer", // Show pointer cursor on the entire box
 								transition: "all 0.3s ease",
