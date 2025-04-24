@@ -107,11 +107,11 @@
 }
 /* ========================================================= */
 /* table CSS */
-th,
+/* th,
 .MuiTableCell-head {
 	font-weight: 500 !important;
 	text-align: center !important;
-}
+} */
 
 .MuiTableHead-root .MuiTableCell-head {
 	border-bottom: 2px solid rgba(0, 0, 0, 0.12) !important;
