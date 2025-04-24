@@ -1,5 +1,5 @@
 import { Stepper, Step, StepLabel, Box, ThemeProvider, createTheme } from "@mui/material";
-import theme from "../../../theme/theme"
+import theme from "../../../theme/theme";
 
 const StudentUploadStepper = ({ activeStep }) => {
 	const theme = createTheme({
@@ -30,8 +30,8 @@ const StudentUploadStepper = ({ activeStep }) => {
 
 	return (
 		<ThemeProvider theme={theme}>
-			<Box sx={{ mb: 4 }}>
-				<Stepper activeStep={activeStep}>
+			<Box sx={{ display: "flex", justifyContent: "center" }}>
+				<Stepper activeStep={activeStep} sx={{ width: "70%", mb: 2 }}>
 					{steps.map((label) => (
 						<Step key={label}>
 							<StepLabel>{label}</StepLabel>
