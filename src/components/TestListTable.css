@@ -117,11 +117,16 @@
 	border-bottom: 2px solid rgba(0, 0, 0, 0.12) !important;
   }
 
-th > span {
-	display: flex;
+  th > span {
+	/* display: flex; */
 	/* justify-content: center; */
 	/* align-items: center; */
 	/* border: 1px solid red;  */
+}
+span > .MuiButtonBase-root {
+	padding: 0px !important; 
+	display: flex !important;
+	justify-content: start !important;
 }
 
 .MuiTableCell-head {
