@@ -107,39 +107,74 @@
 }
 /* ========================================================= */
 /* table CSS */
-/* th,
-.MuiTableCell-head {
-	font-weight: 500 !important;
-	text-align: center !important;
-} */
 
 .MuiTableHead-root .MuiTableCell-head {
 	border-bottom: 2px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Target the header cell container */
+.MuiTableCell-head {
+	text-align: left !important;
+	padding-left: 16px !important;
+  }
+  
+  /* Target the header cell buttons */
+  .MuiTableCell-head .MuiButtonBase-root {
+	padding: 0 !important;
+	justify-content: flex-start !important;
+	width: 100% !important;
+  }
+  
+  /* Target the text content inside header buttons */
+  .MuiTableCell-head .MuiButtonBase-root .MUIDataTableHeadCell-data {
+	text-align: left !important;
+	margin-right: auto !important;
+  }
+  
+  /* Ensure the body cells have the same padding */
+  .MuiTableCell-body {
+	padding-left: 16px !important;
+	text-align: left !important;
+  }
+  
+  /* Remove flexbox alignment from header cell buttons */
+  .MuiTableCell-head span > .MuiButtonBase-root {
+	display: flex !important;
+	justify-content: flex-start !important;
+	margin: 0 !important;
+  }
+  
+  /* Ensure header cell spans don't mess with alignment */
+  .MuiTableCell-head > span {
+	display: flex !important;
+	justify-content: flex-start !important;
+	width: 100% !important;
+  }
+  
+  /* For your debugging red border, if you want to keep it */
+  th > span {
+	display: flex;
+	justify-content: flex-start !important;
+	/* border: 1px solid red; */
   }
 
-  th > span {
-	/* display: flex; */
-	/* justify-content: center; */
-	/* align-items: center; */
-	/* border: 1px solid red;  */
-}
-span > .MuiButtonBase-root {
-	padding: 0px !important; 
+  /* Specifically target the actions column - header */
+.MuiTableCell-head[data-colindex="6"] {
+	text-align: center !important;
+  }
+  
+  /* Specifically target the actions column - content */
+  .MuiTableCell-body[data-colindex="6"] {
+	text-align: center !important;
+  }
+  
+  /* Center the actions button container */
+  .MuiTableCell-body[data-colindex="6"] > div {
 	display: flex !important;
-	justify-content: start !important;
-}
-
-.MuiTableCell-head {
-	/* text-align: center !important;  */
-	/* border: 1px solid blue; */
-}
-
-th .MuiButtonBase-root {
-	/* border: 1px solid red; */
-	padding: 0px;
-}
-
-.MuiTableCell-body div {
-	/* border: 1px solid red; */
-	text-align: left;
-}
+	justify-content: center !important;
+  }
+  
+  /* For the "View Report" button and any other buttons in the actions column */
+  .MuiTableCell-body[data-colindex="6"] .MuiButton-root {
+	justify-content: center !important;
+  }
