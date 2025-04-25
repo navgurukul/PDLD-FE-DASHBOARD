@@ -13,7 +13,8 @@ import PendingIcon from "@mui/icons-material/Pending";
 import PercentIcon from "@mui/icons-material/Percent";
 import apiInstance from "../../../api";
 import axios from "axios"; // Keep axios as fallback
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, Navigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 
 // Create MUI theme to match TestListTable
 const theme = createTheme({
@@ -49,7 +50,7 @@ const theme = createTheme({
 
 const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 	 
-	
+	const navigate = useNavigate();
 	// State for API data
 	const [schools, setSchools] = useState([]);
 	const [totalSchools, setTotalSchools] = useState(0);
@@ -572,8 +573,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 										backgroundColor: "rgba(47, 79, 79, 0.08)",
 									},
 								}}
+								onClick={() => navigate('/allTest')}
 							>
-								Refresh Data
+								Home Page
 							</Button>
 						</div>
 					)}
