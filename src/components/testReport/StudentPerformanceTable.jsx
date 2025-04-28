@@ -15,6 +15,33 @@ const theme = createTheme({
 		color: "#2F4F4F",
 	},
 	components: {
+		MuiTableCell: {
+			styleOverrides: {
+				root: {
+					backgroundColor: "none",
+					fontFamily: "Karla !important",
+					textAlign: "left",
+					"&.custom-cell": {
+						width: "0px",
+					},
+				},
+				head: {
+					fontSize: "14px",
+					fontWeight: 500,
+					textAlign: "left",
+				},
+			},
+		},
+		MuiTableRow: {
+			styleOverrides: {
+				root: {
+					"&:hover": {
+						backgroundColor: "rgba(47, 79, 79, 0.1) !important",
+						cursor: "pointer",
+					},
+				},
+			},
+		},
 		MuiPaper: {
 			styleOverrides: {
 				root: {
@@ -136,8 +163,11 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 				filter: false,
 				sort: true,
 				sortThirdClickReset: true,
+				setCellHeaderProps: () => ({
+					style: { textAlign: "center" },
+				}),
 				customBodyRenderLite: (dataIndex) => {
-					return <div className="text-center">{tableData[dataIndex].score}</div>;
+					return <div className="">{tableData[dataIndex].score}</div>;
 				},
 			},
 		},
@@ -147,10 +177,13 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 			options: {
 				filter: true,
 				sort: false,
+				setCellHeaderProps: () => ({
+					style: { textAlign: "center" },
+				}),
 				customBodyRenderLite: (dataIndex) => {
 					const isPass = tableData[dataIndex].isPass;
 					return (
-						<div className="flex justify-center">
+						<div className="">
 							<div
 								className="inline-block px-2 py-1 rounded-full text-xs"
 								style={{
@@ -172,12 +205,13 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 				filter: false,
 				sort: true,
 				sortThirdClickReset: true,
+
 				customBodyRenderLite: (dataIndex) => {
 					const value = tableData[dataIndex].vsClassAvg;
 					const isPositive = value && value.startsWith("+");
 
 					return (
-						<div className="text-center" style={{ color: isPositive ? "#2e7d32" : "#c62828" }}>
+						<div className="" style={{ color: isPositive ? "#2e7d32" : "#c62828" }}>
 							{value}
 						</div>
 					);
@@ -190,6 +224,9 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 			options: {
 				filter: false,
 				sort: false,
+				setCellHeaderProps: () => ({
+					style: { display: "flex", justifyContent: "center" },
+				}),
 				customBodyRenderLite: (dataIndex) => {
 					const studentId = tableData[dataIndex].id;
 

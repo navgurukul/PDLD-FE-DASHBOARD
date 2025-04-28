@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
-import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, Box, Chip, CircularProgress } from "@mui/material";
+import {
+	Button,
+	TextField,
+	FormControl,
+	InputLabel,
+	Select,
+	MenuItem,
+	Tooltip,
+	Box,
+	Chip,
+	CircularProgress,
+} from "@mui/material";
 import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
@@ -14,7 +25,7 @@ import PercentIcon from "@mui/icons-material/Percent";
 import apiInstance from "../../../api";
 import axios from "axios"; // Keep axios as fallback
 import { useParams, useLocation, Navigate } from "react-router-dom";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 // Create MUI theme to match TestListTable
 const theme = createTheme({
@@ -49,7 +60,6 @@ const theme = createTheme({
 });
 
 const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
-	 
 	const navigate = useNavigate();
 	// State for API data
 	const [schools, setSchools] = useState([]);
@@ -69,7 +79,16 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 	// Get test ID from URL
 	const { testId } = useParams();
 	const location = useLocation();
-	const testName = location.state?.testName  
+	const testName = location.state?.testName;
+
+	const [testNameVal, setTestNameVal] = useState(testName || localStorage.getItem("currentTestName") || "Test");
+
+	useEffect(() => {
+		if (testName) {
+			localStorage.setItem("currentTestName", testName);
+			setTestNameVal(testName);
+		}
+	}, [testName]);
 
 	// Alternative way to get testId from URL
 	const getTestIdFromUrl = () => {
@@ -260,7 +279,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 			},
 		},
 		// {
-		// 	name: "avgScore", 
+		// 	name: "avgScore",
 		// 	label: "AVG SCORE",
 		// 	options: {
 		// 		filter: false,
@@ -274,6 +293,13 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 			options: {
 				filter: false,
 				sort: false,
+
+				setCellHeaderProps: () => ({
+					style: {
+						display: "flex",
+						justifyContent: "center",
+					},
+				}),
 				customBodyRenderLite: (dataIndex) => {
 					const rowData = tableData[dataIndex];
 					const schoolId = rowData.id;
@@ -363,23 +389,34 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 		return (
 			<div className="border border-gray-200 rounded-lg p-8 text-center">
 				<div className="text-red-500 mb-3">
-					<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						className="h-12 w-12 mx-auto mb-2"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+						/>
 					</svg>
 					<h3 className="text-lg font-semibold">Error Loading Data</h3>
 				</div>
 				<p className="text-gray-600">{error}</p>
-				<Button 
-					variant="outlined" 
+				<Button
+					variant="outlined"
 					onClick={() => window.location.reload()}
-					sx={{ 
+					sx={{
 						mt: 3,
 						color: "#2F4F4F",
 						borderColor: "#2F4F4F",
-						'&:hover': {
+						"&:hover": {
 							borderColor: "#2F4F4F",
 							backgroundColor: "rgba(47, 79, 79, 0.08)",
-						}
+						},
 					}}
 				>
 					Retry
@@ -396,7 +433,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 					<div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
 						<div>
 							<div>
-								<h5 className="text-[#2F4F4F]">{testName} - Submission</h5>
+								<h5 className="text-[#2F4F4F]">{testNameVal} - Submission</h5>
 							</div>
 						</div>
 
@@ -556,11 +593,24 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 						/>
 					) : (
 						<div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-							<svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								className="h-16 w-16 text-gray-300 mb-4"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={1}
+									d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+								/>
 							</svg>
 							<h3 className="text-lg font-medium text-gray-700 mb-1">No Schools Data Available</h3>
-							<p className="text-gray-500 mb-4">No school submissions have been recorded for this test yet.</p>
+							<p className="text-gray-500 mb-4">
+								No school submissions have been recorded for this test yet.
+							</p>
 							<Button
 								variant="outlined"
 								sx={{
@@ -573,7 +623,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 										backgroundColor: "rgba(47, 79, 79, 0.08)",
 									},
 								}}
-								onClick={() => navigate('/allTest')}
+								onClick={() => navigate("/allTest")}
 							>
 								Home Page
 							</Button>
