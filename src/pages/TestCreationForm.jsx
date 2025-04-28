@@ -179,7 +179,7 @@ const TestCreationForm = () => {
 				};
 
 				console.log("Create Payload => ", payload);
-				response = await apiInstance.post("/dev/test", payload);
+				response = await apiInstance.post("/test", payload);
 			} else {
 				// ---------- EDIT MODE (PATCH) ----------
 				const [grade] = selectedGrades;
@@ -206,7 +206,7 @@ const TestCreationForm = () => {
 				}
 
 				console.log("Edit Payload =>", editPayload);
-				response = await apiInstance.patch(`/dev/test/${testId}`, editPayload);
+				response = await apiInstance.patch(`/test/${testId}`, editPayload);
 			}
 
 			if (response?.data?.success) {
@@ -251,7 +251,7 @@ const TestCreationForm = () => {
 		console.log("TRIGGERED");
 		setIsLoading(true);
 		try {
-			const response = await apiInstance.get(`/dev/test/${id}`);
+			const response = await apiInstance.get(`/test/${id}`);
 			console.log(response, "RESPONSE");
 			if (response?.data?.success) {
 				const { subject, testDate, testClass, testType, maxScore, deadline } = response.data.data;

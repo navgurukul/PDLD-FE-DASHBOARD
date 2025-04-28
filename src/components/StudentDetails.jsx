@@ -135,7 +135,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 	const fetchStudents = async () => {
 		setIsLoadingStudents(true);
 		try {
-			const response = await apiInstance.get(`/dev/student/school/${schoolId}`);
+			const response = await apiInstance.get(`/student/school/${schoolId}`);
 			const result = response.data;
 
 			if (result.success && result.data && result.data.data) {
@@ -225,7 +225,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
 		setIsDeleting(true);
 		try {
-			const response = await apiInstance.delete(`/dev/student/delete/${studentToDelete.id}`);
+			const response = await apiInstance.delete(`/student/delete/${studentToDelete.id}`);
 
 			if (response.data && response.data.success) {
 				toast.success(`Student ${studentToDelete.fullName} has been deleted successfully!`);

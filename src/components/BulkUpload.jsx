@@ -499,7 +499,7 @@ export default function BulkUploadSchools() {
 
 		try {
 			// Make the actual API call with proper endpoint
-			const response = await apiInstance.post("/dev/admin/bulk/schools", formData, {
+			const response = await apiInstance.post("/admin/bulk/schools", formData, {
 				headers: {
 					"Content-Type": "multipart/form-data",
 				},

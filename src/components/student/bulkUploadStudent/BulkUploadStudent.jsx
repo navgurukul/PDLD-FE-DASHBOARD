@@ -187,7 +187,7 @@ export default function BulkUploadStudents() {
 
 		try {
 			// Make the actual API call with proper endpoint for students
-			const response = await apiInstance.post("/dev/admin/bulk/students", formData, {
+			const response = await apiInstance.post("/admin/bulk/students", formData, {
 				headers: {
 					"Content-Type": "multipart/form-data",
 				},
@@ -662,8 +662,7 @@ export default function BulkUploadStudents() {
 																justifyContent: "center",
 																minWidth: 150,
 															}}
-														> 
-														</Box>
+														></Box>
 													</>
 												)}
 											</Box>

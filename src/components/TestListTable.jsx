@@ -165,7 +165,7 @@ export default function TestListTable() {
 			}
 
 			// Build your URL with all applicable filters, including status
-			let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
+			let url = `/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
 
 			if (!selectedClass && !selectedSubject && !selectedStatus) {
 				url += `&page=${currentPage}`;

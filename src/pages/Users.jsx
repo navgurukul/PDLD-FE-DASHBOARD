@@ -169,7 +169,7 @@ export default function Users() {
 	const fetchData = async () => {
 		try {
 			setIsLoading(true); // Show loader when fetching data
-			const response = await apiInstance.get(`/dev/users?page=${currentPage}&pageSize=${pageSize}`);
+			const response = await apiInstance.get(`/users?page=${currentPage}&pageSize=${pageSize}`);
 
 			if (response.data?.success && response.data?.data) {
 				// Extract users array from response
@@ -211,7 +211,7 @@ export default function Users() {
 		setIsDeleting(true);
 		try {
 			// Call the API to delete the user
-			await apiInstance.delete(`/dev/user/delete/${userToDelete.userId || userToDelete.id}`);
+			await apiInstance.delete(`/user/delete/${userToDelete.userId || userToDelete.id}`);
 
 			// Remove the user from the local state
 			const updatedUsers = users.filter(

@@ -83,7 +83,7 @@ export default function SchoolList() {
 		setIsLoading(true);
 		try {
 			// Ensure we're explicitly requesting only 20 records per page
-			const response = await apiInstance.get(`/dev/school/all?page=${currentPage}&pageSize=15`);
+			const response = await apiInstance.get(`/school/all?page=${currentPage}&pageSize=15`);
 			if (response.data.success) {
 				// console.log("API Response:", response.data.data); // Debug: Log the full response
 
@@ -218,7 +218,7 @@ export default function SchoolList() {
 		setIsDeleting(true);
 		try {
 			// Call the API to delete the school
-			await apiInstance.delete(`/dev/school/delete/${schoolToDelete.id}`);
+			await apiInstance.delete(`/school/delete/${schoolToDelete.id}`);
 
 			// Remove the school from the local state
 			const updatedSchools = schools.filter((school) => school.id !== schoolToDelete.id);
