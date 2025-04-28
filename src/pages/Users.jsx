@@ -210,7 +210,7 @@ export default function Users() {
 
 		setIsDeleting(true);
 		try {
-			// Call the API to delete the user
+			// Call the API to delete the user 
 			await apiInstance.delete(`/user/delete/${userToDelete.userId || userToDelete.id}`);
 
 			// Remove the user from the local state
