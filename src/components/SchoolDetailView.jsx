@@ -11,6 +11,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import StudentDetails from "./StudentDetails";
+import SchoolReport from "../components/school/SchoolReport";
 import ButtonCustom from "./ButtonCustom";
 
 const theme = createTheme({
@@ -70,7 +71,6 @@ export default function SchoolDetailView() {
 	const navigate = useNavigate();
 	const [school, setSchool] = useState(null);
 	const [isLoading, setIsLoading] = useState(true);
-	// const [tabValue, setTabValue] = useState(0);
 	const { state } = useLocation();
 	const [tabValue, setTabValue] = useState(state?.selectedTab || 0);
 
@@ -208,6 +208,7 @@ export default function SchoolDetailView() {
 					>
 						<Tab label="School Details" />
 						<Tab label="Students" />
+						<Tab label="Report" />
 					</Tabs>
 				</Box>
 
@@ -336,6 +337,11 @@ export default function SchoolDetailView() {
 				<TabPanel value={tabValue} index={1}>
 					{/* Use the StudentDetails component here */}
 					<StudentDetails schoolId={schoolId} schoolName={school.schoolName} />
+				</TabPanel>
+
+				<TabPanel value={tabValue} index={2}>
+					{/* Use the SchoolReport component here */}
+					<SchoolReport schoolId={schoolId} schoolName={school.schoolName} udiseCode={school.udiseCode} />
 				</TabPanel>
 
 				<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />

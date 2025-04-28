@@ -434,7 +434,7 @@ export default function SchoolList() {
 							</Button>
 
 							{/* View Report Button */}
-							<Button
+							{/* <Button
 								variant="text"
 								size="small"
 								sx={{
@@ -447,7 +447,7 @@ export default function SchoolList() {
 								title="View Report"
 							>
 								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
-							</Button>
+							</Button> */}
 						</div>
 					);
 				},
