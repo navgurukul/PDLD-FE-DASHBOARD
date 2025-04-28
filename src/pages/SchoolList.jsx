@@ -431,7 +431,7 @@ export default function SchoolList() {
 							>
 								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
 								&nbsp;
-							</Button>
+							</Button> 
 
 							{/* View Report Button */}
 							{/* <Button
