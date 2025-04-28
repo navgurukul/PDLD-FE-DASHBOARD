@@ -259,15 +259,15 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 				sortThirdClickReset: true,
 			},
 		},
-		{
-			name: "avgScore",
-			label: "AVG SCORE",
-			options: {
-				filter: false,
-				sort: true,
-				sortThirdClickReset: true,
-			},
-		},
+		// {
+		// 	name: "avgScore", 
+		// 	label: "AVG SCORE",
+		// 	options: {
+		// 		filter: false,
+		// 		sort: true,
+		// 		sortThirdClickReset: true,
+		// 	},
+		// },
 		{
 			name: "submitted",
 			label: "ACTIONS",
