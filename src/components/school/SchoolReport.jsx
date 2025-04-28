@@ -99,11 +99,11 @@ const SchoolReport = ({ schoolId, schoolName, udiseCode }) => {
 		<Box className="school-report-container">
 			<Grid container spacing={3}>
 				{/* School Info Card */}
-				<Grid item xs={12}>
+				{/* <Grid item xs={12}>
 					<Card>
 						<CardContent>
 							<Typography variant="h6" sx={{ mb: 2 }}>
-								School Information
+								School Information d
 							</Typography>
 							<Divider sx={{ mb: 2 }} />
 
@@ -128,7 +128,7 @@ const SchoolReport = ({ schoolId, schoolName, udiseCode }) => {
 							</Grid>
 						</CardContent>
 					</Card>
-				</Grid>
+				</Grid> */}
 
 				{/* Performance Chart */}
 				<Grid item xs={12}>
