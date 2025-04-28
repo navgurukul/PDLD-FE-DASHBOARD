@@ -47,7 +47,7 @@ const SchoolReportPage = () => {
 		students.forEach((student) => {
 			// Calculate percentage score relative to max score
 			const percentageScore = (student.score / maxScore) * 100;
-			
+
 			if (percentageScore <= 20) ranges[0].value++;
 			else if (percentageScore <= 40) ranges[1].value++;
 			else if (percentageScore <= 60) ranges[2].value++;
@@ -63,72 +63,72 @@ const SchoolReportPage = () => {
 		const fetchData = async () => {
 			try {
 				setIsLoading(true);
-                
-                // Get the authentication token from localStorage or wherever it's stored
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    setError("Authentication token not found");
-                    setIsLoading(false);
-                    return;
-                }
-                
-                // Set authorization header
-                apiInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                
-                // Use the API endpoint
-                const response = await apiInstance.get(`/dev/result/school/${schoolId}/${testId}`);
-                
-                if (response.data?.success && response.data?.data) {
-                    const apiData = response.data.data;
-                    
-                    // Calculate pass threshold (35% of max score)
-                    const threshold = Math.round((PASS_PERCENTAGE / 100) * apiData.maxScore);
-                    setPassThreshold(threshold);
-                    
-                    // Calculate average score
-                    const totalStudents = apiData.resultData.length;
-                    const totalScore = apiData.resultData.reduce((sum, student) => sum + student.score, 0);
-                    const avgScore = totalStudents ? Number((totalScore / totalStudents).toFixed(1)) : 0;
-                    
-                    // Count passed students
-                    const passedStudents = apiData.resultData.filter(student => student.score >= threshold).length;
-                    const passRate = totalStudents ? Math.round((passedStudents / totalStudents) * 100) : 0;
-                    
-                    // Process data to match component structure
-                    const processedStudents = apiData.resultData.map(student => ({
-                        id: student.studentId,
-                        name: student.studentName,
-                        score: student.score,
-                        passed: student.score >= threshold,
-                        // Calculate performance relative to max score
-                        percentage: Math.round((student.score / apiData.maxScore) * 100)
-                    }));
-                    
-                    const processedData = {
-                        name: apiData.subject || "School Report",
-                        testName: apiData.testType || "Test",
-                        students: processedStudents,
-                        studentsTested: totalStudents,
-                        avgScore: avgScore,
-                        passRate: passRate,
-                        maxScore: apiData.maxScore,
-                        passThreshold: threshold,
-                        scoreDistribution: calculateScoreDistribution(processedStudents, apiData.maxScore)
-                    };
-                    
-                    setTestData({
-                        testId: apiData.testId,
-                        testName: apiData.subject,
-                        testType: apiData.testType,
-                        createdAt: apiData.createdAt
-                    });
-                    
-                    setSchoolData(processedData);
-                    setIsLoading(false);
-                } else {
-                    setError("Invalid data format received from the server");
-                    setIsLoading(false);
-                }
+
+				// Get the authentication token from localStorage or wherever it's stored
+				const token = localStorage.getItem("authToken");
+				if (!token) {
+					setError("Authentication token not found");
+					setIsLoading(false);
+					return;
+				}
+
+				// Set authorization header
+				apiInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+				// Use the API endpoint
+				const response = await apiInstance.get(`/result/school/${schoolId}/${testId}`);
+
+				if (response.data?.success && response.data?.data) {
+					const apiData = response.data.data;
+
+					// Calculate pass threshold (35% of max score)
+					const threshold = Math.round((PASS_PERCENTAGE / 100) * apiData.maxScore);
+					setPassThreshold(threshold);
+
+					// Calculate average score
+					const totalStudents = apiData.resultData.length;
+					const totalScore = apiData.resultData.reduce((sum, student) => sum + student.score, 0);
+					const avgScore = totalStudents ? Number((totalScore / totalStudents).toFixed(1)) : 0;
+
+					// Count passed students
+					const passedStudents = apiData.resultData.filter((student) => student.score >= threshold).length;
+					const passRate = totalStudents ? Math.round((passedStudents / totalStudents) * 100) : 0;
+
+					// Process data to match component structure
+					const processedStudents = apiData.resultData.map((student) => ({
+						id: student.studentId,
+						name: student.studentName,
+						score: student.score,
+						passed: student.score >= threshold,
+						// Calculate performance relative to max score
+						percentage: Math.round((student.score / apiData.maxScore) * 100),
+					}));
+
+					const processedData = {
+						name: apiData.subject || "School Report",
+						testName: apiData.testType || "Test",
+						students: processedStudents,
+						studentsTested: totalStudents,
+						avgScore: avgScore,
+						passRate: passRate,
+						maxScore: apiData.maxScore,
+						passThreshold: threshold,
+						scoreDistribution: calculateScoreDistribution(processedStudents, apiData.maxScore),
+					};
+
+					setTestData({
+						testId: apiData.testId,
+						testName: apiData.subject,
+						testType: apiData.testType,
+						createdAt: apiData.createdAt,
+					});
+
+					setSchoolData(processedData);
+					setIsLoading(false);
+				} else {
+					setError("Invalid data format received from the server");
+					setIsLoading(false);
+				}
 			} catch (err) {
 				console.error("Error fetching data:", err);
 				setError("Failed to load school report. Please try again later.");
@@ -257,13 +257,13 @@ const SchoolReportPage = () => {
 				{/* School Header */}
 				<div className="mb-6 flex justify-between">
 					<div>
-						<h5 className="text-2xl font-bold text-[#2F4F4F]">
-							{schoolData.name}
-						</h5>
+						<h5 className="text-2xl font-bold text-[#2F4F4F]">{schoolData.name}</h5>
 						<div className="text-sm text-gray-600">
 							<span>{testData?.testName || "Test Details"}</span>
 							<span className="mx-1">•</span>
-							<span>Pass Threshold: {schoolData.passThreshold} ({PASS_PERCENTAGE}% of {schoolData.maxScore})</span>
+							<span>
+								Pass Threshold: {schoolData.passThreshold} ({PASS_PERCENTAGE}% of {schoolData.maxScore})
+							</span>
 						</div>
 					</div>
 

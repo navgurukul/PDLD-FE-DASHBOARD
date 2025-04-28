@@ -46,7 +46,7 @@ const TestReportPage = () => {
 				}
 
 				// For API, use the actual ID
-				const response = await apiInstance.get(`/dev/test/${testId}/report`);
+				const response = await apiInstance.get(`/test/${testId}/report`);
 
 				if (response.data && response.data.data) {
 					setTestData(response.data.data);
@@ -75,7 +75,7 @@ const TestReportPage = () => {
 
 		// Call API to send reminder
 		apiInstance
-			.post(`/dev/test/${testId}/school/${schoolId}/remind`)
+			.post(`/test/${testId}/school/${schoolId}/remind`)
 			.then(() => {
 				toast.success("Reminder sent successfully");
 			})

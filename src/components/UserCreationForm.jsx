@@ -137,7 +137,7 @@ export default function UserCreationForm() {
 	const fetchUserData = async (userId) => {
 		try {
 			setIsLoading(true);
-			const response = await apiInstance.get(`/dev/user/${userId}`);
+			const response = await apiInstance.get(`/user/${userId}`);
 
 			if (response.data && response.data.success) {
 				initializeFormWithUserData(response.data.data);
@@ -300,7 +300,7 @@ export default function UserCreationForm() {
 
 	const fetchBlocksAndClusters = async () => {
 		try {
-			const response = await apiInstance.get("/dev/user/dropdown-data");
+			const response = await apiInstance.get("/user/dropdown-data");
 			if (response.data && response.data.success) {
 				const blocks = response.data.data;
 				setBlocksData(blocks);
@@ -417,7 +417,7 @@ export default function UserCreationForm() {
 				}
 
 				// Call update API
-				const response = await apiInstance.put(`/dev/user/update/${userId}`, updateData);
+				const response = await apiInstance.put(`/user/update/${userId}`, updateData);
 				console.log("User updated:", response.data);
 				toast.success("User updated successfully!");
 			} else {
@@ -441,7 +441,7 @@ export default function UserCreationForm() {
 				}
 
 				// Call create API
-				const response = await apiInstance.post("/dev/user/add", userData);
+				const response = await apiInstance.post("/user/add", userData);
 				console.log("User created:", response.data);
 				toast.success("User created successfully!");
 			}

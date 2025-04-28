@@ -98,72 +98,106 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
 	const currentTestId = getTestIdFromUrl();
 
+	// const fetchData = async () => {
+	// 	try {
+	// 		setLoading(true);
+
+	// 		let response;
+
+	// 		// First try with the API instance (which handles auth)
+	// 		try {
+	// 			response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`);
+	// 		} catch (apiInstanceError) {
+	// 			console.warn("Error with apiInstance, trying direct URL as fallback:", apiInstanceError);
+
+	// 			// If that fails with CORS, try with a direct URL as fallback
+	// 			// This can help if the issue is related to baseURL configuration
+	// 			const token = localStorage.getItem("authToken");
+
+	// 			response = await axios.get(`prod/schools/results/submitted/${currentTestId}`, {
+	// 				headers: {
+	// 					"Content-Type": "application/json",
+	// 					Accept: "application/json",
+	// 					...(token ? { Authorization: `Bearer ${token}` } : {}),
+	// 				},
+	// 			});
+	// 		}
+
+	// 		// Process the successful response
+	// 		if (response.data && response.data.success) {
+	// 			const { schools: apiSchools, totalSubmittedSchools, pagination } = response.data.data;
+
+	// 			// Transform API data to match the component's expected format
+	// 			const formattedSchools = apiSchools.map((school) => ({
+	// 				id: school.id,
+	// 				name: school.schoolName,
+	// 				schoolName: school.schoolName,
+	// 				blockName: school.blockName,
+	// 				clusterName: school.clusterName,
+	// 				udiseCode: school.udiseCode,
+	// 				passRate: school.successRate, // Map successRate to passRate
+	// 				submitted: true, // All schools in the response are submitted
+	// 				studentsTested: "-", // Not provided in API
+	// 				avgScore: "-", // Not provided in API
+	// 			}));
+
+	// 			setSchools(formattedSchools);
+	// 			setSchoolsSubmitted(totalSubmittedSchools);
+	// 			setTotalSchools(pagination.totalSchools || totalSubmittedSchools);
+	// 		} else {
+	// 			setError("Failed to load data");
+	// 		}
+	// 	} catch (err) {
+	// 		console.error("Error fetching school data:", err);
+	// 		if (err.message && err.message.includes("CORS")) {
+	// 			setError("CORS error: Unable to access the API. Please check network settings or try again later.");
+	// 		} else {
+	// 			setError("An error occurred while fetching data");
+	// 		}
+	// 	} finally {
+	// 		setLoading(false);
+	// 	}
+	// };
+
 	// Fetch data from API
-	useEffect(() => {
-		const fetchData = async () => {
-			try {
-				setLoading(true);
 
-				let response;
+	const fetchData = async () => {
+		setLoading(true);
+		try {
+			const response = await apiInstance.get(`prod/schools/results/submitted/${currentTestId}`);
 
-				// First try with the API instance (which handles auth)
-				try {
-					response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`);
-				} catch (apiInstanceError) {
-					console.warn("Error with apiInstance, trying direct URL as fallback:", apiInstanceError);
+			if (response.data && response.data.success) {
+				const { schools: apiSchools, totalSubmittedSchools, pagination } = response.data.data;
 
-					// If that fails with CORS, try with a direct URL as fallback
-					// This can help if the issue is related to baseURL configuration
-					const token = localStorage.getItem("authToken");
+				// Transform API data to match the component's expected format
+				const formattedSchools = apiSchools.map((school) => ({
+					id: school.id,
+					name: school.schoolName,
+					schoolName: school.schoolName,
+					blockName: school.blockName,
+					clusterName: school.clusterName,
+					udiseCode: school.udiseCode,
+					passRate: school.successRate, // Map successRate to passRate
+					submitted: true, // All schools in the response are submitted
+					studentsTested: "-", // Not provided in API
+					avgScore: "-", // Not provided in API
+				}));
 
-					response = await axios.get(
-						`https://vjcme31onh.execute-api.ap-south-1.amazonaws.com/dev/schools/results/submitted/${currentTestId}`,
-						{
-							headers: {
-								"Content-Type": "application/json",
-								Accept: "application/json",
-								...(token ? { Authorization: `Bearer ${token}` } : {}),
-							},
-						}
-					);
-				}
-
-				// Process the successful response
-				if (response.data && response.data.success) {
-					const { schools: apiSchools, totalSubmittedSchools, pagination } = response.data.data;
-
-					// Transform API data to match the component's expected format
-					const formattedSchools = apiSchools.map((school) => ({
-						id: school.id,
-						name: school.schoolName,
-						schoolName: school.schoolName,
-						blockName: school.blockName,
-						clusterName: school.clusterName,
-						udiseCode: school.udiseCode,
-						passRate: school.successRate, // Map successRate to passRate
-						submitted: true, // All schools in the response are submitted
-						studentsTested: "-", // Not provided in API
-						avgScore: "-", // Not provided in API
-					}));
-
-					setSchools(formattedSchools);
-					setSchoolsSubmitted(totalSubmittedSchools);
-					setTotalSchools(pagination.totalSchools || totalSubmittedSchools);
-				} else {
-					setError("Failed to load data");
-				}
-			} catch (err) {
-				console.error("Error fetching school data:", err);
-				if (err.message && err.message.includes("CORS")) {
-					setError("CORS error: Unable to access the API. Please check network settings or try again later.");
-				} else {
-					setError("An error occurred while fetching data");
-				}
-			} finally {
-				setLoading(false);
+				setSchools(formattedSchools);
+				setSchoolsSubmitted(totalSubmittedSchools);
+				setTotalSchools(pagination.totalSchools || totalSubmittedSchools);
+			} else {
+				setError("Failed to load data");
 			}
-		};
+		} catch (error) {
+			console.error("Error fetching school data:", error);
+			setError(error.response?.data?.message || "An error occurred while fetching data");
+		} finally {
+			setLoading(false);
+		}
+	};
 
+	useEffect(() => {
 		fetchData();
 	}, [currentTestId]);
 

@@ -276,7 +276,7 @@ export default function AddStudent({ isEditMode = false }) {
 
 			if (isEditMode && studentId) {
 				// Update existing student
-				await apiInstance.put(`/dev/student/update/${studentId}`, studentData);
+				await apiInstance.put(`/student/update/${studentId}`, studentData);
 				toast.success("Student updated successfully!");
 				setTimeout(() => {
 					navigate(`/schools/schoolDetail/${schoolId}`, {
@@ -285,7 +285,7 @@ export default function AddStudent({ isEditMode = false }) {
 				}, 1200);
 			} else {
 				// Create new student
-				const response = await apiInstance.post("/dev/student/add", studentData);
+				const response = await apiInstance.post("/student/add", studentData);
 
 				if (response.data && response.data.success) {
 					toast.success("New Student added successfully!");

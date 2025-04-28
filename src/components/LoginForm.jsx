@@ -106,7 +106,7 @@ export default function LoginForm({ onLogin }) {
 
 		try {
 			// Call your authentication API here
-			const response = await apiInstance.post("/dev/auth/login", {
+			const response = await apiInstance.post("/auth/login", {
 				username: formData.username,
 				password: formData.password,
 			});
