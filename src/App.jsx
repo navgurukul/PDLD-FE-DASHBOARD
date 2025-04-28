@@ -17,6 +17,7 @@ import LoginForm from "./components/LoginForm";
 import AddStudent from "./components/student/AddStudent";
 import StudentReportPage from "./components/student/StudentReportPage";
 import SchoolPerformance from "./components/school/SchoolPerformance";
+import LegalTerms from "./pages/LegalTerm";
 
 // Auth context to manage authentication state
 import { createContext } from "react";
@@ -82,6 +83,12 @@ function App() {
 						path="/login"
 						element={isAuthenticated ? <Navigate to="/allTest" /> : <LoginForm onLogin={login} />}
 					/>
+					{/* Privacy Policy route */}
+					<Route 
+						path="/privacy-policy" 
+						element={<LegalTerms />} 
+					/>
+
 
 					{/* Protected routes under Layout */}
 					<Route
