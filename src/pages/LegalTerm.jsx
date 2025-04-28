@@ -1,20 +1,20 @@
-import React from "react";
 import { Link } from "react-router-dom";
+import pdldLogo from "../assets/pdld-logo.webp";
 
 const LegalTerms = () => {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Left Sidebar - Simplified version */}
-      <div className="w-[165px] bg-[#1e3a39] flex-shrink-0">
+      {/* <div className="w-[165px] bg-[#1e3a39] flex-shrink-0">
         <div className="p-4">
-          <img src="/path-to-your-logo.png" alt="Logo" className="w-12 h-12" />
+          <img src={pdldLogo} alt="pdldLogo" className="w-12 h-12" />
         </div>
-      </div>
+      </div> */}
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         {/* Top navigation bar */}
-        <div className="bg-white shadow-sm p-4 flex justify-between items-center">
+        {/* <div className="bg-white shadow-sm p-4 flex justify-between items-center">
           <div className="flex items-center gap-1">
             <Link to="/" className="text-gray-500 hover:text-gray-700">
               Home
@@ -22,10 +22,9 @@ const LegalTerms = () => {
             <span className="text-gray-400 mx-1">›</span>
             <span className="text-gray-700">Privacy Policy</span>
           </div>
-          <div>
-            {/* If you have any right-side elements */}
+          <div> 
           </div>
-        </div>
+        </div> */}
 
         {/* Content Area */}
         <div className="p-6 max-w-4xl mx-auto">
