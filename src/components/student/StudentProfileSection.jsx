@@ -17,6 +17,7 @@ import ButtonCustom from "../../components/ButtonCustom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useTheme } from "@mui/material/styles";
 import StudentAcademics from "./StudentAcademics";
+import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 
 // Tab panel component
 function TabPanel(props) {
@@ -69,7 +70,14 @@ const StudentProfileView = () => {
 	const [udiseCode, setUdiseCode] = useState("");
 
 	const iconStyle = { width: "24px", height: "24px" };
-	const labelBoxStyle = { width: "269px", color: "#666", display: "flex", gap: 1, marginRight: "48px" };
+	const labelBoxStyle = {
+		width: "269px",
+		color: "#666",
+		display: "flex",
+		alignItems: "center",
+		gap: 1,
+		marginRight: "48px",
+	};
 
 	// Format date helper function
 	const formatDate = (dateString) => {
@@ -149,8 +157,15 @@ const StudentProfileView = () => {
 
 	if (isLoading) {
 		return (
-			<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
-				<CircularProgress sx={{ color: "#2F4F4F" }} />
+			<Box
+				sx={{
+					display: "flex",
+					justifyContent: "center",
+					alignItems: "center",
+					height: "400px",
+				}}
+			>
+				 <SpinnerPageOverlay isLoading={isLoading} />
 			</Box>
 		);
 	}
@@ -173,7 +188,14 @@ const StudentProfileView = () => {
 	return (
 		<Box className="main-page-wrapper">
 			{/* Student Badge - Name and gender */}
-			<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "24px 0px" }}>
+			<Box
+				sx={{
+					display: "flex",
+					justifyContent: "space-between",
+					alignItems: "center",
+					marginTop: "24px 0px",
+				}}
+			>
 				<Box sx={{ display: "flex" }}>
 					<h5 className="text-lg font-bold text-[#2F4F4F] mr-4">{student.fullName}</h5>
 					<Box
@@ -307,7 +329,13 @@ const StudentProfileView = () => {
 							<Grid container spacing={3}>
 								{/* Hemoglobin */}
 								<Grid item xs={12} sm={4}>
-									<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+									<Box
+										sx={{
+											display: "flex",
+											flexDirection: "column",
+											alignItems: "center",
+										}}
+									>
 										<Box
 											sx={{
 												width: "48px",
@@ -331,7 +359,13 @@ const StudentProfileView = () => {
 
 								{/* Height */}
 								<Grid item xs={12} sm={4}>
-									<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+									<Box
+										sx={{
+											display: "flex",
+											flexDirection: "column",
+											alignItems: "center",
+										}}
+									>
 										<Box
 											sx={{
 												width: "48px",
@@ -355,7 +389,13 @@ const StudentProfileView = () => {
 
 								{/* Weight */}
 								<Grid item xs={12} sm={4}>
-									<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+									<Box
+										sx={{
+											display: "flex",
+											flexDirection: "column",
+											alignItems: "center",
+										}}
+									>
 										<Box
 											sx={{
 												width: "48px",
