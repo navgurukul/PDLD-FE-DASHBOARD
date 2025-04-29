@@ -164,7 +164,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 	const fetchData = async () => {
 		setLoading(true);
 		try {
-			const response = await apiInstance.get(`prod/schools/results/submitted/${currentTestId}`);
+			const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`);
 
 			if (response.data && response.data.success) {
 				const { schools: apiSchools, totalSubmittedSchools, pagination } = response.data.data;

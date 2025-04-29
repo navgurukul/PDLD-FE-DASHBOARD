@@ -22,6 +22,7 @@ import apiInstance from "../../api";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import SpinnerPageOverlay from "./SpinnerPageOverlay";
 
 const theme = createTheme({
 	typography: {
@@ -601,7 +602,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
 				{isLoadingStudents ? (
 					<Box sx={{ display: "flex", justifyContent: "center" }}>
-						<CircularProgress sx={{ color: "#2F4F4F" }} />
+						<SpinnerPageOverlay isLoading={isLoadingStudents} />
 					</Box>
 				) : (
 					<div
