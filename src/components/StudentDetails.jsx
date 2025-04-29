@@ -380,6 +380,14 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			options: {
 				filter: false,
 				sort: true,
+				setCellProps: () => ({
+					style: {
+						display: "flex",
+						justifyContent: "flex-start",
+						borderBottom:"1px solid #E0E0E0",
+						paddingBottom: "22px",
+					},
+				}),
 			},
 		},
 		{
@@ -402,14 +410,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 				filter: false,
 				sort: false,
 				empty: true,
-				setCellProps: () => ({
-					style: {
-						textAlign: "center",
-					},
-				}),
+
 				setCellHeaderProps: () => ({
 					style: {
-						textAlign: "center",
+						display: "flex",
+						justifyContent: "center",
 					},
 				}),
 				customBodyRenderLite: (dataIndex) => {
