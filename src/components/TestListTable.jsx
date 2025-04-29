@@ -27,6 +27,40 @@ const theme = createTheme({
 		color: "#2F4F4F",
 	},
 	components: {
+		MuiTableCell: {
+			styleOverrides: {
+				root: {
+					backgroundColor: "none",
+					fontFamily: "Karla !important",
+					textAlign: "left",
+					"&.custom-cell": {
+						width: "0px",
+					},
+				},
+				head: {
+					fontSize: "14px",
+					fontWeight: 500,
+					textAlign: "left",
+				},
+			},
+		},
+		MuiTableRow: {
+			styleOverrides: {
+				root: {
+					"&:hover": {
+						backgroundColor: "rgba(47, 79, 79, 0.1) !important",
+						cursor: "pointer",
+					},
+				},
+			},
+		},
+		MuiToolbar: {
+			styleOverrides: {
+				regular: {
+					minHeight: "8px",
+				},
+			},
+		},
 		MuiPaper: {
 			styleOverrides: {
 				root: {
@@ -44,7 +78,7 @@ const theme = createTheme({
 						color: "white",
 					},
 					"&:hover": {
-						backgroundColor: "#A3BFBF ", // Hover color
+						backgroundColor: "#A3BFBF", // Hover color
 					},
 				},
 			},
@@ -100,7 +134,7 @@ export default function TestListTable() {
 		}
 	}, []);
 
-	const pageSize = 20; // The fixed page size
+	const pageSize = 15; // The fixed page size
 
 	const handleCreateTest = () => {
 		navigate("/testCreationForm"); // Replace with your target route
@@ -131,8 +165,7 @@ export default function TestListTable() {
 			}
 
 			// Build your URL with all applicable filters, including status
-			// let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&page=${currentPage}&pageSize=${pageSize}`;
-			let url = `/dev/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
+			let url = `/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
 
 			if (!selectedClass && !selectedSubject && !selectedStatus) {
 				url += `&page=${currentPage}`;
@@ -171,49 +204,14 @@ export default function TestListTable() {
 	// Filter tests based on search query (local filter for "testName")
 	const filteredTests = tests?.filter((test) => test.testName?.toLowerCase().includes(searchQuery.toLowerCase()));
 
-	// Add this sort function at the component level
-	// Sort function
-	const sortByClassNumber = (data, order = "asc") => {
-		return [...data].sort((a, b) => {
-			const aClassNum = parseInt(a.testClass || 0, 10);
-			const bClassNum = parseInt(b.testClass || 0, 10);
-			return order === "asc" ? aClassNum - bClassNum : bClassNum - aClassNum;
-		});
-	};
-
 	// State to track sorting
 	const [sortConfig, setSortConfig] = useState({
 		key: null,
 		direction: "asc",
 	});
 
-	// Add this sort function for dates
-	const sortByDateTimestamp = (data, order = "asc") => {
-		return [...data].sort((a, b) => {
-			// Use the timestamp for proper date sorting
-			const aTimestamp = new Date(a.testDate).getTime();
-			const bTimestamp = new Date(b.testDate).getTime();
-
-			return order === "asc" ? aTimestamp - bTimestamp : bTimestamp - aTimestamp;
-		});
-	};
-
-	// Apply sorting based on which column is being sorted
-	const sortedTests = useMemo(() => {
-		if (!sortConfig.key) return filteredTests;
-
-		switch (sortConfig.key) {
-			case "class":
-				return sortByClassNumber(filteredTests, sortConfig.direction);
-			case "date":
-				return sortByDateTimestamp(filteredTests, sortConfig.direction);
-			default:
-				return filteredTests;
-		}
-	}, [filteredTests, sortConfig]);
-
 	// Then proceed with mapping to tableData as before
-	const tableData = sortedTests?.map((test) => ({
+	const tableData = filteredTests?.map((test) => ({
 		id: test.id,
 		testName: test.testName,
 		subject: test.subject || "N/A",
@@ -224,7 +222,6 @@ export default function TestListTable() {
 			year: "numeric",
 		}),
 		schoolsSubmitted: test.totalSubmittedSchools || 0,
-		// <-- Use testStatus directly instead of getStatus
 		status: test.testStatus,
 		actions: "View Report",
 	}));
@@ -234,57 +231,32 @@ export default function TestListTable() {
 		{
 			name: "id",
 			label: "ID",
-			options: { display: false }, // Keep the ID hidden in the table
+			options: { display: false },
 		},
 		{
 			name: "testName",
-			label: "Test Name",
-			options: { filter: false, sort: true },
+			label: "TEST NAME",
+			options: {
+				filter: false,
+				sort: true,
+			},
 		},
 		{
 			name: "subject",
-			label: "Subject",
-			options: { filter: true, sort: true },
+			label: "SUBJECT",
+			options: {
+				filter: true,
+				sort: true,
+			},
 		},
 		{
 			name: "class",
 			label: "CLASS",
 			options: {
 				filter: true,
-				sort: false, // Disable built-in sorting
-				customHeadRender: (columnMeta) => {
-					return (
-						<th
-							style={{
-								cursor: "pointer",
-								borderBottom: "1px solid lightgray",
-								fontSize: "14px",
-								textTransform: "uppercase", // Keep it capitalized
-							}}
-							onClick={() => {
-								// Toggle sort direction if already sorting by class
-								setSortConfig({
-									key: "class",
-									direction:
-										sortConfig.key === "class" && sortConfig.direction === "asc" ? "desc" : "asc",
-								});
-							}}
-						>
-							<div
-								style={{
-									display: "flex",
-									alignItems: "center",
-									// justifyContent: "center",
-									paddingLeft: "16px",
-								}}
-							>
-								{columnMeta.label}
-								<span style={{ marginLeft: "5px" }}>
-									{sortConfig.key === "class" ? (sortConfig.direction === "asc" ? "" : "") : ""}
-								</span>
-							</div>
-						</th>
-					);
+				sort: true,
+				customBodyRender: (value) => {
+					return <div>{value}</div>;
 				},
 		},
 	},
@@ -293,86 +265,33 @@ export default function TestListTable() {
 			label: "DATE OF TEST",
 			options: {
 				filter: true,
-				sort: false, // Disable built-in sorting
-				customHeadRender: (columnMeta) => {
-					return (
-						<th
-							style={{
-								// textAlign: "center",
-								cursor: "pointer",
-								borderBottom: "1px solid lightgray",
-								fontSize: "14px", // Smaller font size for this specific header
-								textTransform: "uppercase", // Keep it capitalized
-							}}
-							onClick={() => {
-								// Toggle sort direction if already sorting by date
-								setSortConfig({
-									key: "date",
-									direction:
-										sortConfig.key === "date" && sortConfig.direction === "asc" ? "desc" : "asc",
-								});
-							}}
-						>
-							<div
-								style={{
-									display: "flex",
-									alignItems: "center",
-									// justifyContent: "center",
-									paddingLeft: "16px",
-								}}
-							>
-								{columnMeta.label}
-								<span style={{ marginLeft: "5px" }}>
-									{sortConfig.key === "date" ? (sortConfig.direction === "asc" ? "" : "") : ""}
-								</span>
-							</div>
-						</th>
-					);
+				sort: true,
+				customBodyRender: (value) => {
+					return <div style={{ whiteSpace: "nowrap" }}>{value}</div>;
 				},
-				customBodyRender: (value) => <div style={{ whiteSpace: "nowrap" }}>{value}</div>,
 			},
 		},
 		{
 			name: "schoolsSubmitted",
-			label: "SCHOOLS SUBMITTED",
+			label: "SUBMISSIONS",
 			options: {
 				filter: false,
 				sort: true,
-				customHeadRender: (columnMeta) => {
-					return (
-						<th
-							style={{
-								borderBottom: "1px solid lightgray",
-								fontSize: "14px",
-								width: "120px",
-								maxWidth: "120px",
-							}}
-							scope="col"
-						>
-							{columnMeta.label}
-						</th>
-					);
-				},
-				customBodyRender: (value) => {
-					return (
-						<div
-							style={{
-								textAlign: "center",
-								paddingLeft: "0px",
-								width: "120px",
-								maxWidth: "120px",
-							}}
-						>
-							{value}
-						</div>
-					);
-				},
+				customCellClass: "custom-cell",
 				setCellProps: () => ({
+					style: {
+						width: "100px",
+						maxWidth: "100px",
+						textAlign: "center",
+					},
+				}),
+				setCellHeaderProps: () => ({
 					style: {
 						width: "100px",
 						maxWidth: "100px",
 					},
 				}),
+				customBodyRender: (value) => <div style={{ textAlign: "center" }}>{value}</div>,
 			},
 		},
 		{
@@ -381,37 +300,26 @@ export default function TestListTable() {
 			options: {
 				filter: false,
 				sort: false,
-
-				// Center the header text using customHeadRender with small font size
-				customHeadRender: (columnMeta) => {
-					return (
-						<th
-							style={{
-								// textAlign: "center",
-								borderBottom: "1px solid lightgray",
-							}}
-							scope="col"
-						>
-							<div
-								style={{
-									// textAlign: "center",
-									fontSize: "14px",
-								}}
-							>
-								{columnMeta.label}
-							</div>
-						</th>
-					);
-				},
-
-				// The rest of your customBodyRender code remains the same
+				setCellProps: () => ({
+					style: {
+						width: "250px",
+						maxWidth: "250px",
+					},
+				}),
+				setCellHeaderProps: () => ({
+					style: {
+						width: "250px",
+						maxWidth: "250px",
+						textAlign: "center", // Changed from "left" to "center"
+					},
+				}),
 				customBodyRender: (value, tableMeta) => {
 					const testId = tableMeta.rowData[0];
 					return (
 						<div
 							style={{
 								display: "flex",
-								justifyContent: "center",
+								justifyContent: "flex-end",
 							}}
 						>
 							{userRole === "DISTRICT_OFFICER" && (
@@ -423,7 +331,8 @@ export default function TestListTable() {
 										borderColor: "transparent",
 										"&:hover": { borderColor: "transparent" },
 									}}
-									onClick={() => {
+									onClick={(event) => {
+										event.stopPropagation();
 										navigate(`/editTest/${testId}`);
 									}}
 								>
@@ -438,6 +347,14 @@ export default function TestListTable() {
 									borderColor: "transparent",
 									color: "#2F4F4F",
 									"&:hover": { borderColor: "transparent" },
+								}}
+								onClick={(event) => {
+									event.stopPropagation();
+									const testId = tableMeta.rowData[0];
+									const testName = tableMeta.rowData[1];
+									navigate(`/allTest/schoolSubmission/${testId}`, {
+										state: { testName: testName },
+									});
 								}}
 							>
 								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
@@ -464,6 +381,18 @@ export default function TestListTable() {
 		rowsPerPage: 10,
 		rowsPerPageOptions: [10, 20, 30],
 		pagination: false,
+		onColumnSortChange: (column, direction) => {
+			let key = null;
+			if (column === "class") key = "class";
+			else if (column === "dateOfTest") key = "date";
+
+			if (key) {
+				setSortConfig({
+					key: key,
+					direction: direction,
+				});
+			}
+		},
 	};
 
 	const resetFilters = () => {
@@ -487,7 +416,7 @@ export default function TestListTable() {
 					<div className="w-full lg:flex-1">
 						<div className="flex flex-col md:flex-row md:flex-wrap gap-2 my-[10px] mx-0">
 							{/* Filter Container - Wrap on mobile */}
-							<div className="flex justify-between w-full   gap-2">
+							<div className="flex justify-between w-full gap-2">
 								<div className="flex flex-wrap gap-2">
 									<TextField
 										variant="outlined"
@@ -671,7 +600,7 @@ export default function TestListTable() {
 									</div>
 								</div>
 
-								<div className="  ">
+								<div>
 									{userRole === "DISTRICT_OFFICER" && (
 										<ButtonCustom
 											imageName={addSymbolBtn}
@@ -685,7 +614,7 @@ export default function TestListTable() {
 					</div>
 				</div>
 
-				{/* Data Table (rest of the code remains the same) */}
+				{/* Data Table */}
 				<div
 					style={{ borderRadius: "8px" }}
 					className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"

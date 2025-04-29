@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
-import { Button, TextField } from "@mui/material";
+import { Button, TextField, FormControl, InputLabel, Select, MenuItem, Tooltip, IconButton } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -11,6 +11,8 @@ import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 
 const theme = createTheme({
 	typography: {
@@ -49,9 +51,13 @@ export default function Users() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filteredUsers, setFilteredUsers] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [availableRoles, setAvailableRoles] = useState([]);
+	const [selectedRole, setSelectedRole] = useState("");
+	const [availableBlocks, setAvailableBlocks] = useState([]);
+	const [selectedBlock, setSelectedBlock] = useState("");
 	const location = useLocation();
 	const navigate = useNavigate();
-	const pageSize = 20;
+	const pageSize = 15;
 
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [userToDelete, setUserToDelete] = useState(null);
@@ -64,21 +70,68 @@ export default function Users() {
 		}
 	}, [location, navigate]);
 
+	// Helper function to capitalize first letter and make the rest lowercase
+	const capitalizeFirstLetter = (string) => {
+		if (!string) return "";
+		return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+	};
+
+	// Extract unique roles from users
 	useEffect(() => {
-		if (!searchQuery.trim()) {
-			setFilteredUsers(users);
-			return;
+		if (users.length > 0) {
+			const roles = [...new Set(users.map((user) => user.role))].filter(Boolean);
+			setAvailableRoles(roles);
+
+			// Extract unique blocks from users
+			const blocks = new Set();
+			users.forEach((user) => {
+				// Check both assignedBlock and assignedBlocks
+				const blocksList = user.assignedBlocks || user.assignedBlock;
+				if (blocksList && Array.isArray(blocksList)) {
+					blocksList.forEach((block) => {
+						if (block) blocks.add(capitalizeFirstLetter(block));
+					});
+				}
+			});
+			setAvailableBlocks([...blocks].sort());
+		}
+	}, [users]);
+
+	// Filter users based on search query, selected role and selected block
+	useEffect(() => {
+		let filtered = users;
+
+		// Apply search filter
+		if (searchQuery.trim()) {
+			const lowercaseQuery = searchQuery.toLowerCase();
+			filtered = filtered.filter(
+				(user) =>
+					user.name?.toLowerCase().includes(lowercaseQuery) ||
+					formatRoleName(user.role)?.toLowerCase().includes(lowercaseQuery)
+			);
 		}
 
-		const lowercaseQuery = searchQuery.toLowerCase();
-		const filtered = users.filter(
-			(user) =>
-				user.name?.toLowerCase().includes(lowercaseQuery) ||
-				formatRoleName(user.role)?.toLowerCase().includes(lowercaseQuery)
-		);
+		// Apply role filter
+		if (selectedRole) {
+			filtered = filtered.filter((user) => user.role === selectedRole);
+		}
+
+		// Apply block filter
+		if (selectedBlock) {
+			filtered = filtered.filter(
+				(user) =>
+					user.role === "DISTRICT_OFFICER" ||
+					user.role === "district_officer" ||
+					((user.assignedBlocks || user.assignedBlock) &&
+						Array.isArray(user.assignedBlocks || user.assignedBlock) &&
+						(user.assignedBlocks || user.assignedBlock).some(
+							(block) => block?.toLowerCase() === selectedBlock.toLowerCase()
+						))
+			);
+		}
 
 		setFilteredUsers(filtered);
-	}, [searchQuery, users]);
+	}, [searchQuery, selectedRole, selectedBlock, users]);
 
 	const handleCreateUser = () => {
 		navigate("/users/userCreationForm");
@@ -93,15 +146,30 @@ export default function Users() {
 			BLOCK_OFFICER: "Block Officer",
 			CLUSTER_PRINCIPAL: "Cluster Principal",
 			CLUSTER_ACADEMIC_COORDINATOR: "Cluster Academic Coordinator",
+			CAC: "Cluster Academic Coordinator",
 		};
 
 		return roleMap[role] || role.replace(/_/g, " ");
 	};
 
+	// Function to get short form of role names for dropdown
+	const getRoleShortForm = (role) => {
+		if (!role) return "";
+
+		const roleShortFormMap = {
+			DISTRICT_OFFICER: "District Officer",
+			BLOCK_OFFICER: "Block Officer",
+			CLUSTER_PRINCIPAL: "Cluster Principal",
+			CLUSTER_ACADEMIC_COORDINATOR: "CAC",
+		};
+
+		return roleShortFormMap[role] || role.replace(/_/g, " ");
+	};
+
 	const fetchData = async () => {
 		try {
 			setIsLoading(true); // Show loader when fetching data
-			const response = await apiInstance.get(`/dev/users?page=${currentPage}&pageSize=${pageSize}`);
+			const response = await apiInstance.get(`/users?page=${currentPage}&pageSize=${pageSize}`);
 
 			if (response.data?.success && response.data?.data) {
 				// Extract users array from response
@@ -142,8 +210,8 @@ export default function Users() {
 
 		setIsDeleting(true);
 		try {
-			// Call the API to delete the user
-			await apiInstance.delete(`/dev/user/delete/${userToDelete.userId || userToDelete.id}`);
+			// Call the API to delete the user 
+			await apiInstance.delete(`/user/delete/${userToDelete.userId || userToDelete.id}`);
 
 			// Remove the user from the local state
 			const updatedUsers = users.filter(
@@ -175,6 +243,20 @@ export default function Users() {
 		}
 	};
 
+	// Function to handle copying username and password
+	const handleCopyCredentials = (user) => {
+		const text = `Username: ${user.username}\nPassword: ${user.password}`;
+		navigator.clipboard
+			.writeText(text)
+			.then(() => {
+				toast.success("Username and password copied to clipboard");
+			})
+			.catch((error) => {
+				console.error("Failed to copy: ", error);
+				toast.error("Failed to copy to clipboard");
+			});
+	};
+
 	const getSchoolCount = (user) => {
 		// First check if schoolsMapped is directly provided
 		if (typeof user.schoolsMapped === "number") {
@@ -188,25 +270,43 @@ export default function Users() {
 		return managedCount + assignedCount;
 	};
 
+	const resetFilters = () => {
+		setSelectedRole("");
+		setSelectedBlock("");
+		setSearchQuery("");
+		setCurrentPage(1);
+	};
+
 	const tableData = filteredUsers.map((user) => ({
 		id: user.userId || user.id,
 		name: user.name || "N/A",
 		username: user.username || "N/A",
-		role: formatRoleName(user.role) || "N/A",
+		role: getRoleShortForm(user.role) || "N/A", // Use short form for role
 		dateJoined: new Date(user.createdAt).toLocaleDateString("en-GB", {
 			day: "2-digit",
 			month: "short",
 			year: "numeric",
 		}),
 		schoolsMapped: `${
-			user.role == ("DISTRICT_OFFICER" || "district_officer") ? "All" : getSchoolCount(user)
+			user.role === "DISTRICT_OFFICER" || user.role === "district_officer" ? "All" : getSchoolCount(user)
 		} Schools`,
 		password: user.password || "default123",
 		status: user.isActive ? "Active" : "Inactive",
+		blockName: `${
+			user.role === "DISTRICT_OFFICER" || user.role === "district_officer"
+				? "All Blocks"
+				: (user.assignedBlocks || user.assignedBlock)?.map((b) => capitalizeFirstLetter(b)).join(", ") || "N/A"
+		}`,
+		assignedCluster: `${
+			user.role === "DISTRICT_OFFICER" || user.role === "district_officer"
+				? "All Clusters"
+				: user.assignedClusters?.map((c) => capitalizeFirstLetter(c)).join(", ") || "N/A"
+		}`,
 		actions: "Manage User",
 		userObj: user, // Pass the entire user object for the delete modal
 	}));
 
+	// Add new columns for Block Name and Assigned Cluster
 	const columns = [
 		{
 			name: "id",
@@ -215,58 +315,73 @@ export default function Users() {
 		},
 		{
 			name: "name",
-			label: "Name",
+			label: "NAME",
 			options: { sort: true },
 		},
-		{
-			name: "username",
-			label: "Username",
-			options: { sort: true },
-		},
+
 		{
 			name: "role",
-			label: "Role",
+			label: "ROLE",
+			options: { sort: true },
+		},
+
+		{
+			name: "blockName", // New column for Block Name
+			label: "BLOCK",
 			options: { sort: true },
 		},
 		{
-			name: "dateJoined",
-			label: "Date Joined",
+			name: "assignedCluster", // New column for Assigned Cluster
+			label: "CLUSTER",
 			options: { sort: true },
 		},
 		{
 			name: "schoolsMapped",
-			label: "Schools Mapped",
+			label: "SCHOOLS MAPPED",
 			options: { sort: true },
+		},
+		{
+			name: "username",
+			label: "USERNAME",
+			options: {
+				sort: true,
+				customBodyRender: (value, tableMeta) => {
+					const userIndex = tableMeta.rowIndex;
+					const user = filteredUsers[userIndex];
+
+					return (
+						<div className="flex items-center gap-2">
+							<span>{value}</span>
+							<Tooltip title="Copy username and password" arrow>
+								<IconButton
+									size="small"
+									onClick={() => handleCopyCredentials(user)}
+									sx={{ color: "#2F4F4F", padding: "2px" }}
+								>
+									<ContentCopyIcon fontSize="small" />
+								</IconButton>
+							</Tooltip>
+						</div>
+					);
+				},
+			},
 		},
 		{
 			name: "password",
-			label: "Password",
-			options: { sort: true },
+			label: "PASSWORD",
+			options: {
+				display: false, // Hide the password column
+			},
 		},
 		{
-			name: "status",
-			label: "Status",
-			options: {
-				customBodyRender: (value) => (
-					<span
-						className={`px-2 py-1 rounded-full ${
-							value === "Active"
-								? "bg-green-100 text-green-800"
-								: value === "Inactive"
-								? "bg-red-100 text-red-800"
-								: "bg-yellow-100 text-yellow-800"
-						}`}
-					>
-						{value}
-					</span>
-				),
-			},
+			name: "dateJoined",
+			label: "JOINED ON",
+			options: { sort: true },
 		},
 		{
 			name: "userObj", // Hidden column to store user object
 			options: { display: false },
 		},
-		// Inside the Users component, modify the actions column renderer
 		{
 			name: "actions",
 			label: "ACTIONS",
@@ -275,7 +390,7 @@ export default function Users() {
 					<th
 						style={{
 							textAlign: "center",
-							borderBottom: "2px solid lightgray",
+							borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
 						}}
 						scope="col"
 					>
@@ -284,15 +399,14 @@ export default function Users() {
 				),
 				customBodyRender: (value, tableMeta) => {
 					const userId = tableMeta.rowData[0];
-					const userObj = tableMeta.rowData[8]; // Index of userObj in the rowData array
+					const userIndex = tableMeta.rowIndex;
+					const user = filteredUsers[userIndex];
 
 					return (
 						<div className="flex gap-2 justify-center">
 							<button
 								className="p-1 hover:bg-gray-100 rounded"
-								onClick={() =>
-									navigate(`/users/update-user/${userId}`, { state: { userData: userObj } })
-								}
+								onClick={() => navigate(`/users/update-user/${userId}`, { state: { userData: user } })}
 							>
 								<img src={EditPencilIcon} alt="Edit" className="w-5 h-5" />
 							</button>
@@ -305,7 +419,7 @@ export default function Users() {
 									padding: "2px",
 									minWidth: "unset",
 								}}
-								onClick={() => openDeleteModal(userObj)}
+								onClick={() => openDeleteModal(user)}
 							>
 								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
 								&nbsp;
@@ -329,6 +443,14 @@ export default function Users() {
 		pagination: false,
 	};
 
+	const handleRoleChange = (e) => {
+		setSelectedRole(e.target.value);
+	};
+
+	const handleBlockChange = (e) => {
+		setSelectedBlock(e.target.value);
+	};
+
 	return (
 		<ThemeProvider theme={theme}>
 			<div className="main-page-wrapper bg-white rounded-lg shadow-sm">
@@ -336,21 +458,181 @@ export default function Users() {
 					<h5 className="text-lg font-bold text-[#2F4F4F]">All Users</h5>
 				</div>
 				<div className="flex justify-between mb-2">
-					<TextField
-						variant="outlined"
-						placeholder="Search by Name or Role..."
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						InputProps={{
-							style: {
-								backgroundColor: "#fff",
-								borderRadius: "8px",
-								width: "420px",
+					<div className="flex flex-wrap gap-2">
+						<TextField
+							variant="outlined"
+							placeholder="Search by Name or Role..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							InputProps={{
+								style: {
+									backgroundColor: "#fff",
+									borderRadius: "8px",
+									width: "380px",
+									height: "48px",
+								},
+							}}
+							sx={{ marginBottom: "10px" }}
+						/>
+
+						{/* Role Dropdown with Shortform */}
+						<FormControl
+							sx={{
 								height: "48px",
-							},
-						}}
-						sx={{ marginBottom: "10px" }}
-					/>
+								display: "flex",
+								width: "150px", // Reduced width for more compact layout
+								minWidth: "120px",
+							}}
+						>
+							<InputLabel
+								id="role-select-label"
+								sx={{
+									transform: "translate(14px, 14px) scale(1)",
+									"&.Mui-focused, &.MuiFormLabel-filled": {
+										transform: "translate(14px, -9px) scale(0.75)",
+									},
+								}}
+							>
+								Role
+							</InputLabel>
+							<Select
+								labelId="role-select-label"
+								id="role-select"
+								value={selectedRole}
+								label="Role"
+								onChange={handleRoleChange}
+								sx={{
+									height: "100%",
+									borderRadius: "8px",
+									backgroundColor: "#fff",
+									"& .MuiOutlinedInput-notchedOutline": {
+										borderRadius: "8px",
+									},
+									"& .MuiSelect-select": {
+										paddingTop: "12px",
+										paddingBottom: "12px",
+										display: "flex",
+										alignItems: "center",
+										color: "#2F4F4F",
+										fontWeight: "600",
+									},
+								}}
+								MenuProps={{
+									PaperProps: {
+										sx: {
+											maxHeight: 200,
+											overflowY: "auto",
+											"&::-webkit-scrollbar": {
+												width: "5px",
+											},
+											"&::-webkit-scrollbar-thumb": {
+												backgroundColor: "#B0B0B0",
+												borderRadius: "5px",
+											},
+											"&::-webkit-scrollbar-track": {
+												backgroundColor: "#F0F0F0",
+											},
+										},
+									},
+								}}
+							>
+								<MenuItem value="">All Roles</MenuItem>
+								{availableRoles.map((role) => (
+									<MenuItem key={role} value={role}>
+										{getRoleShortForm(role)}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+
+						{/* Block Filter Dropdown */}
+						<FormControl
+							sx={{
+								height: "48px",
+								display: "flex",
+								width: "150px",
+								minWidth: "120px",
+							}}
+						>
+							<InputLabel
+								id="block-select-label"
+								sx={{
+									transform: "translate(14px, 14px) scale(1)",
+									"&.Mui-focused, &.MuiFormLabel-filled": {
+										transform: "translate(14px, -9px) scale(0.75)",
+									},
+								}}
+							>
+								Block
+							</InputLabel>
+							<Select
+								labelId="block-select-label"
+								id="block-select"
+								value={selectedBlock}
+								label="Block"
+								onChange={handleBlockChange}
+								sx={{
+									height: "100%",
+									borderRadius: "8px",
+									backgroundColor: "#fff",
+									"& .MuiOutlinedInput-notchedOutline": {
+										borderRadius: "8px",
+									},
+									"& .MuiSelect-select": {
+										paddingTop: "12px",
+										paddingBottom: "12px",
+										display: "flex",
+										alignItems: "center",
+										color: "#2F4F4F",
+										fontWeight: "600",
+									},
+								}}
+								MenuProps={{
+									PaperProps: {
+										sx: {
+											maxHeight: 200,
+											overflowY: "auto",
+											"&::-webkit-scrollbar": {
+												width: "5px",
+											},
+											"&::-webkit-scrollbar-thumb": {
+												backgroundColor: "#B0B0B0",
+												borderRadius: "5px",
+											},
+											"&::-webkit-scrollbar-track": {
+												backgroundColor: "#F0F0F0",
+											},
+										},
+									},
+								}}
+							>
+								<MenuItem value="">All Blocks</MenuItem>
+								{availableBlocks.map((block) => (
+									<MenuItem key={block} value={block}>
+										{block}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+
+						{/* Reset Filters Button */}
+						<Tooltip title="Reset Filters" placement="top">
+							<div
+								onClick={resetFilters}
+								style={{
+									cursor: "pointer",
+									display: "flex",
+									alignItems: "center",
+									backgroundColor: "#f5f5f5",
+									padding: "6px 12px",
+									borderRadius: "4px",
+									height: "48px",
+								}}
+							>
+								<RestartAltIcon color="action" />
+							</div>
+						</Tooltip>
+					</div>
 					<ButtonCustom imageName={addSymbolBtn} text="Create User" onClick={handleCreateUser} />
 				</div>
 

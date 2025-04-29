@@ -18,6 +18,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ButtonCustom from "./ButtonCustom";
 import { toast, ToastContainer } from "react-toastify";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
+import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 
 const theme = createTheme({
 	typography: {
@@ -28,7 +29,7 @@ const theme = createTheme({
 		MuiButton: {
 			styleOverrides: {
 				root: {
-					backgroundColor: "#007BFF",
+					// backgroundColor: "#007BFF",
 					color: "white",
 					"&:hover": {
 						backgroundColor: "#0069D9",
@@ -81,6 +82,12 @@ export default function UserCreationForm() {
 
 	const [blocksData, setBlocksData] = useState([]);
 	const [totalSchoolsSelected, setTotalSchoolsSelected] = useState(0);
+	const [confirmDialog, setConfirmDialog] = useState({
+		open: false,
+		title: "",
+		message: "",
+		confirmAction: null,
+	});
 
 	const [availableBlocks, setAvailableBlocks] = useState([]);
 	const [availableClusters, setAvailableClusters] = useState([]);
@@ -130,7 +137,7 @@ export default function UserCreationForm() {
 	const fetchUserData = async (userId) => {
 		try {
 			setIsLoading(true);
-			const response = await apiInstance.get(`/dev/user/${userId}`);
+			const response = await apiInstance.get(`/user/${userId}`);
 
 			if (response.data && response.data.success) {
 				initializeFormWithUserData(response.data.data);
@@ -293,7 +300,7 @@ export default function UserCreationForm() {
 
 	const fetchBlocksAndClusters = async () => {
 		try {
-			const response = await apiInstance.get("/dev/user/dropdown-data");
+			const response = await apiInstance.get("/user/dropdown-data");
 			if (response.data && response.data.success) {
 				const blocks = response.data.data;
 				setBlocksData(blocks);
@@ -410,7 +417,7 @@ export default function UserCreationForm() {
 				}
 
 				// Call update API
-				const response = await apiInstance.put(`/dev/user/update/${userId}`, updateData);
+				const response = await apiInstance.put(`/user/update/${userId}`, updateData);
 				console.log("User updated:", response.data);
 				toast.success("User updated successfully!");
 			} else {
@@ -434,7 +441,7 @@ export default function UserCreationForm() {
 				}
 
 				// Call create API
-				const response = await apiInstance.post("/dev/user/add", userData);
+				const response = await apiInstance.post("/user/add", userData);
 				console.log("User created:", response.data);
 				toast.success("User created successfully!");
 			}
@@ -560,19 +567,47 @@ export default function UserCreationForm() {
 		setIsLoading(false);
 	};
 
-	// UPDATE handleBlockChange to use loadAvailableClusters:
+	// Updated handleBlockChange function with modal confirmation
 	const handleBlockChange = (event) => {
 		const blockName = event.target.value;
-		setFormData({ ...formData, block: blockName });
+		const previousBlock = formData.block;
 
-		// Reset cluster and school selections when block changes
-		setSelectedEntities({
-			...selectedEntities,
-			clusters: [],
-			schools: [],
-		});
+		// Check if we have selected clusters that will be lost
+		if (isEditMode && selectedEntities.clusters.length > 0 && previousBlock !== blockName) {
+			// Show confirmation modal with the right format for DeleteConfirmationModal
+			setConfirmDialog({
+				open: true,
+				title: "Change Block?",
+				// Message without the entity name since we're using the full message
+				message: `Changing the block from "${previousBlock}" to "${blockName}" will reset your cluster selections. Are you sure you want to proceed`,
+				confirmAction: () => {
+					// User confirmed, proceed with change
+					setFormData({ ...formData, block: blockName });
 
-		loadAvailableClusters(blockName);
+					// Reset cluster and school selections when block changes
+					setSelectedEntities({
+						...selectedEntities,
+						clusters: [],
+						schools: [],
+					});
+
+					loadAvailableClusters(blockName);
+					toast.info("Block changed. Cluster selections have been reset.");
+				},
+			});
+		} else {
+			// No confirmation needed, just make the change
+			setFormData({ ...formData, block: blockName });
+
+			// Reset cluster and school selections when block changes
+			setSelectedEntities({
+				...selectedEntities,
+				clusters: [],
+				schools: [],
+			});
+
+			loadAvailableClusters(blockName);
+		}
 	};
 
 	// KEEP this effect but simplify it:
@@ -593,13 +628,56 @@ export default function UserCreationForm() {
 	}, [blocksData, formData.block]);
 
 	// Add this function to restore previously selected clusters
+	// Improved handleRestoreClusters function
 	const handleRestoreClusters = () => {
 		// If in edit mode and we have user data, restore from original user data
-		if (isEditMode && userData && userData.assignedClusters) {
-			setSelectedEntities({
-				...selectedEntities,
-				clusters: userData.assignedClusters,
-			});
+		if (isEditMode && userData) {
+			// Check if the current block matches the original user's block
+			const originalBlock =
+				userData.assignedBlocks && userData.assignedBlocks.length > 0
+					? userData.assignedBlocks[0]
+					: userData.assignedBlock && userData.assignedBlock.length > 0
+					? userData.assignedBlock[0]
+					: "";
+
+			if (formData.block !== originalBlock) {
+				// If blocks don't match, show a warning toast
+				setConfirmDialog({
+					open: true,
+					title: "Cannot Restore Clusters",
+					message: `You've changed the block from "${originalBlock}" to "${formData.block}". Clusters can only be restored for the original block.`,
+					confirmAction: null,
+				});
+				return;
+			}
+
+			// Only restore if we have clusters to restore and they belong to the current block
+			if (userData.assignedClusters && userData.assignedClusters.length > 0) {
+				// Filter to only include clusters that exist in the current availableClusters
+				const validClusters = userData.assignedClusters.filter((clusterName) =>
+					availableClusters.some((cluster) => cluster.name === clusterName)
+				);
+
+				if (validClusters.length === 0) {
+					toast.warning("None of the original clusters are available in the current block");
+					return;
+				}
+
+				if (validClusters.length < userData.assignedClusters.length) {
+					toast.info(
+						`Restored ${validClusters.length} of ${userData.assignedClusters.length} original clusters`
+					);
+				} else {
+					toast.success("Original clusters restored");
+				}
+
+				setSelectedEntities({
+					...selectedEntities,
+					clusters: validClusters,
+				});
+			} else {
+				toast.info("No previous clusters to restore");
+			}
 		} else {
 			// For non-edit mode, simply clear the selection
 			setSelectedEntities({
@@ -954,6 +1032,20 @@ export default function UserCreationForm() {
 					</div>
 				</form>
 			</Paper>
+			<DeleteConfirmationModal
+				open={confirmDialog.open}
+				onClose={() => setConfirmDialog({ ...confirmDialog, open: false })}
+				onConfirm={() => {
+					if (confirmDialog.confirmAction) {
+						confirmDialog.confirmAction();
+					}
+					setConfirmDialog({ ...confirmDialog, open: false });
+				}}
+				title={confirmDialog.title}
+				message={confirmDialog.message}
+				confirmText="Confirm"
+				cancelText="Cancel"
+			/>
 			<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
 		</ThemeProvider>
 	);

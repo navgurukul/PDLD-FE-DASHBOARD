@@ -1,16 +1,93 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Typography, Box, FormControl, Select, MenuItem, TextField, CircularProgress, Button } from "@mui/material";
+import {
+	Typography,
+	Box,
+	FormControl,
+	Select,
+	MenuItem,
+	TextField,
+	CircularProgress,
+	Button,
+	ThemeProvider,
+	createTheme,
+} from "@mui/material";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
 import { toast, ToastContainer } from "react-toastify";
 import ButtonCustom from "../components/ButtonCustom";
-import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
+import { addSymbolBtn, EditPencilIcon, trash, DocScanner } from "../utils/imagePath";
 import apiInstance from "../../api";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import SpinnerPageOverlay from "./SpinnerPageOverlay";
+
+const theme = createTheme({
+	typography: {
+		fontFamily: "'Karla', sans-serif",
+		color: "#2F4F4F",
+	},
+	components: {
+		MuiTableCell: {
+			styleOverrides: {
+				root: {
+					backgroundColor: "none",
+					fontFamily: "Karla !important",
+					textAlign: "left",
+					"&.custom-cell": {
+						width: "0px",
+					},
+				},
+				head: {
+					fontSize: "14px",
+					fontWeight: 500,
+					textAlign: "left",
+				},
+			},
+		},
+		MuiTableRow: {
+			styleOverrides: {
+				root: {
+					"&:hover": {
+						backgroundColor: "rgba(47, 79, 79, 0.1) !important",
+						cursor: "pointer",
+					},
+				},
+			},
+		},
+		MuiToolbar: {
+			styleOverrides: {
+				regular: {
+					minHeight: "8px",
+				},
+			},
+		},
+		MuiPaper: {
+			styleOverrides: {
+				root: {
+					boxShadow: "none",
+				},
+			},
+		},
+		MuiPaginationItem: {
+			styleOverrides: {
+				root: {
+					color: "black", // Change default text color
+					backgroundColor: "white", // Change the background color of all buttons
+					"&.Mui-selected": {
+						backgroundColor: "#2F4F4F", // Change color when selected
+						color: "white",
+					},
+					"&:hover": {
+						backgroundColor: "#A3BFBF", // Hover color
+					},
+				},
+			},
+		},
+	},
+});
 
 const StudentDetails = ({ schoolId, schoolName }) => {
 	const navigate = useNavigate();
@@ -59,7 +136,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 	const fetchStudents = async () => {
 		setIsLoadingStudents(true);
 		try {
-			const response = await apiInstance.get(`/dev/student/school/${schoolId}`);
+			const response = await apiInstance.get(`/student/school/${schoolId}`);
 			const result = response.data;
 
 			if (result.success && result.data && result.data.data) {
@@ -105,16 +182,28 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		if (schoolId) {
 			fetchStudents();
 		}
-	}, [schoolId]);
+	}, [schoolId, location.key]);
 
 	const handleEditStudent = (studentId, student) => {
+		// Create a copy of the student object to avoid modifying the original
+		const studentForEdit = { ...student };
 		navigate(`/schools/schoolDetail/${schoolId}/updateStudent`, {
 			state: {
 				schoolId: schoolId,
 				studentId: studentId,
 				udiseCode: schoolInfo.udiseCode,
 				isEditMode: true,
-				studentData: student, // Pass the complete student object
+				studentData: studentForEdit,
+			},
+		});
+	};
+
+	const handleViewStudentReport = (studentId, student) => {
+		navigate(`/schools/schoolDetail/${schoolId}/studentReport/${studentId}`, {
+			state: {
+				studentData: student,
+				schoolName: schoolName,
+				udiseCode: schoolInfo.udiseCode,
 			},
 		});
 	};
@@ -137,17 +226,13 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
 		setIsDeleting(true);
 		try {
-			// Call the delete API endpoint
-			const response = await apiInstance.delete(`/dev/student/delete/${studentToDelete.id}`);
+			const response = await apiInstance.delete(`/student/delete/${studentToDelete.id}`);
 
 			if (response.data && response.data.success) {
-				// Remove student from the list
-				setStudents(students.filter((student) => student.id !== studentToDelete.id));
-
-				// Show success toast
 				toast.success(`Student ${studentToDelete.fullName} has been deleted successfully!`);
+				// Refresh data instead of just updating local state
+				fetchStudents();
 			} else {
-				// Show error toast if the API returns an error message
 				toast.error(response.data?.message || "Failed to delete student. Please try again.");
 			}
 		} catch (error) {
@@ -155,7 +240,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			toast.error("Failed to delete student. Please try again later.");
 		} finally {
 			setIsDeleting(false);
-			closeDeleteModal(); // Close modal after operation completes
+			closeDeleteModal();
 		}
 	};
 
@@ -202,10 +287,37 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 	// Define columns for MUIDataTable
 	const columns = [
 		{
-			name: "Name",
+			name: "NAME",
 			options: {
 				filter: false,
 				sort: true,
+				customBodyRenderLite: (dataIndex) => {
+					const studentName = tableData[dataIndex][0]; // Name is at index 0
+					const studentId = tableData[dataIndex][7]; // ID is at index 7
+					const student = tableData[dataIndex][8]; // Full student object at index 8
+
+					return (
+						<Button
+							sx={{
+								color: "#1976d2",
+								textTransform: "none",
+								padding: "0px",
+								fontWeight: "normal",
+								textAlign: "left",
+								"&:hover": {
+									backgroundColor: "transparent",
+									textDecoration: "underline",
+								},
+							}}
+							onClick={(e) => {
+								e.stopPropagation(); // Prevent any parent click handlers
+								handleStudentNameClick(studentId, student);
+							}}
+						>
+							{studentName}
+						</Button>
+					);
+				},
 				setCellProps: () => ({
 					style: {
 						minWidth: "150px",
@@ -214,21 +326,21 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
-			name: "Gender",
+			name: "GENDER",
 			options: {
 				filter: true,
 				sort: true,
 			},
 		},
 		{
-			name: "Class",
+			name: "CLASS",
 			options: {
 				filter: true,
 				sort: true,
 			},
 		},
 		{
-			name: "Date of Birth",
+			name: "DATE OF BIRTH",
 			options: {
 				filter: false,
 				sort: true,
@@ -240,7 +352,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
-			name: "Father's Name",
+			name: "FATHER'S NAME",
 			options: {
 				filter: false,
 				sort: true,
@@ -252,7 +364,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
-			name: "Mother's Name",
+			name: "MOTHER'S NAME",
 			options: {
 				filter: false,
 				sort: true,
@@ -264,10 +376,18 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
-			name: "Apar ID",
+			name: "APAR ID",
 			options: {
 				filter: false,
 				sort: true,
+				setCellProps: () => ({
+					style: {
+						display: "flex",
+						justifyContent: "flex-start",
+						borderBottom:"1px solid #E0E0E0",
+						paddingBottom: "22px",
+					},
+				}),
 			},
 		},
 		{
@@ -285,11 +405,18 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 		{
-			name: "Actions",
+			name: "ACTIONS",
 			options: {
 				filter: false,
 				sort: false,
 				empty: true,
+
+				setCellHeaderProps: () => ({
+					style: {
+						display: "flex",
+						justifyContent: "center",
+					},
+				}),
 				customBodyRenderLite: (dataIndex) => {
 					const studentId = tableData[dataIndex][7]; // Get ID from tableData
 					const student = tableData[dataIndex][8]; // Get full student object
@@ -306,9 +433,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 									minWidth: "unset",
 								}}
 								onClick={() => handleEditStudent(studentId, student)}
+								title="Edit Student"
 							>
 								<img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
 							</Button>
+
 							<Button
 								variant="text"
 								size="small"
@@ -319,8 +448,24 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 									minWidth: "unset",
 								}}
 								onClick={() => openDeleteModal(student)}
+								title="Delete Student"
 							>
 								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
+							</Button>
+
+							<Button
+								variant="text"
+								size="small"
+								sx={{
+									color: "#4caf50",
+									"&:hover": { backgroundColor: "transparent" },
+									padding: "2px",
+									minWidth: "unset",
+								}}
+								onClick={() => handleViewStudentReport(studentId, student)}
+								title="View Report"
+							>
+								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
 							</Button>
 						</div>
 					);
@@ -328,6 +473,16 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 			},
 		},
 	];
+
+	const handleStudentNameClick = (studentId, student) => {
+		navigate(`/schools/schoolDetail/${schoolId}/student-profile/${studentId}`, {
+			state: {
+				studentData: student,
+				schoolName: schoolName,
+				udiseCode: schoolInfo.udiseCode,
+			},
+		});
+	};
 
 	// MUIDataTable options
 	const options = {
@@ -339,6 +494,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 		pagination: false,
 		selectableRows: "none",
 		responsive: "standard",
+		// onRowClick: handleRowClick, <-- REMOVE THIS LINE
 		textLabels: {
 			body: {
 				noMatch: "No students found",
@@ -348,9 +504,9 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
 	const handleBulkUploadStudent = () => {
 		navigate(`/schools/schoolDetail/${schoolId}/studentBulkUpload`, {
-		  state: { schoolId: schoolId }
+			state: { schoolId: schoolId },
 		});
-	  };
+	};
 
 	const handleAddStudent = () => {
 		// () => navigate(`/schools/schoolDetail/addStudents`)
@@ -363,141 +519,147 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 	};
 
 	return (
-		<Box>
-			<div className="flex justify-between items-center mb-2">
-				<Typography variant="h6" className="text-xl font-bold">
-					<span>Total Student Count ({schoolInfo.totalStudentsInSchool})</span>
-				</Typography>
-			</div>
-
-			<div className="flex justify-between sm:flex-row mb-2">
-				<div className="flex gap-2">
-					{/* Search Field */}
-					<TextField
-						placeholder="Search students..."
-						fullWidth
-						variant="outlined"
-						value={searchQuery}
-						onChange={handleSearchChange}
-						InputProps={{
-							startAdornment: (
-								<Box sx={{ mr: 1, color: "grey.500" }}>
-									<SearchIcon />
-								</Box>
-							),
-							sx: {
-								borderRadius: "8px",
-								height: "48px",
-								backgroundColor: "#fff",
-								minWidth: "250px",
-								width: "360px",
-							},
-						}}
-					/>
-
-					{/* Class Dropdown */}
-					<FormControl
-						sx={{
-							minWidth: 240,
-							"& .MuiOutlinedInput-root": {
-								borderRadius: "8px",
-								height: "48px",
-							},
-						}}
-					>
-						<Select
-							value={selectedClass}
-							onChange={handleClassChange}
-							displayEmpty
-							renderValue={(value) => `Class ${value}`}
-						>
-							{classes.map((classData) => (
-								<MenuItem key={classData.class} value={classData.class.toString()}>
-									Class {classData.class}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-				</div>
-
-				<div className="flex gap-2 sm:mt-0">
-					<ButtonCustom imageName={addSymbolBtn} text={"Add Student"} onClick={handleAddStudent} />
-					<Button
-						variant="outlined"
-						sx={{
-							borderColor: "#2F4F4F",
-							color: "#2F4F4F",
-							borderRadius: "8px",
-							textTransform: "none",
-							fontSize: "18px",
-							"&:hover": {
-								borderColor: "#1E3535",
-								backgroundColor: "rgba(47, 79, 79, 0.1)",
-							},
-							width: { xs: "100%", sm: "auto" },
-						}}
-						onClick={handleBulkUploadStudent}
-					>
-						<UploadFileIcon sx={{ mr: 1 }} />
-						Bulk Upload
-					</Button>
-				</div>
-			</div>
-
-			{isLoadingStudents ? (
-				<Box sx={{ display: "flex", justifyContent: "center" }}>
-					<CircularProgress sx={{ color: "#2F4F4F" }} />
-				</Box>
-			) : (
-				<div
-					style={{
-						borderRadius: "8px",
-						position: "relative",
-						minHeight: "300px",
-						marginTop: "16px",
-					}}
-					className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
-				>
-					<MUIDataTable data={tableData} columns={columns} options={options} />
-				</div>
-			)}
-
-			{filteredStudents.length === 0 && !isLoadingStudents && (
-				<Box
-					sx={{
-						display: "flex",
-						flexDirection: "column",
-						alignItems: "center",
-						justifyContent: "center",
-						minHeight: "200px",
-						textAlign: "center",
-						py: 6,
-					}}
-				>
-					<Typography variant="body1" sx={{ mb: 2, color: "text.secondary" }}>
-						No students found in Class {selectedClass}.
+		<ThemeProvider theme={theme}>
+			<Box>
+				<div className="flex justify-between items-center mb-2">
+					<Typography variant="h6" className="text-xl font-bold">
+						<span>Total Student Count ({schoolInfo.totalStudentsInSchool})</span>
 					</Typography>
-					<Typography variant="body1">Click "Add Student" to register a new student.</Typography>
-				</Box>
-			)}
+				</div>
 
-			{/* Delete Confirmation Modal - Following SchoolList approach exactly */}
-			<DeleteConfirmationModal
-				open={deleteModalOpen}
-				onClose={closeDeleteModal}
-				onConfirm={confirmDeleteStudent}
-				title="Delete Student"
-				confirmText="Delete"
-				cancelText="Cancel"
-				message="Are you sure you want to delete this student: "
-				entityName={studentToDelete ? studentToDelete.fullName : ""}
-				isProcessing={isDeleting}
-				confirmButtonColor="error"
-				icon={<DeleteOutlineIcon fontSize="large" />}
-			/>
+				<div
+					className="flex flex-wrap
+			 justify-between   sm:flex-row mb-2 
+			 "
+				>
+					<div className="flex gap-2">
+						{/* Search Field */}
+						<TextField
+							placeholder="Search students..."
+							fullWidth
+							variant="outlined"
+							value={searchQuery}
+							onChange={handleSearchChange}
+							InputProps={{
+								startAdornment: (
+									<Box sx={{ mr: 1, color: "grey.500" }}>
+										<SearchIcon />
+									</Box>
+								),
+								sx: {
+									borderRadius: "8px",
+									height: "48px",
+									backgroundColor: "#fff",
+									minWidth: "250px",
+									width: "360px",
+								},
+							}}
+						/>
 
-			<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
-		</Box>
+						{/* Class Dropdown */}
+						<FormControl
+							sx={{
+								minWidth: 150,
+								"& .MuiOutlinedInput-root": {
+									borderRadius: "8px",
+									height: "48px",
+								},
+							}}
+						>
+							<Select
+								value={selectedClass}
+								onChange={handleClassChange}
+								displayEmpty
+								renderValue={(value) => `Class ${value}`}
+							>
+								{classes.map((classData) => (
+									<MenuItem key={classData.class} value={classData.class.toString()}>
+										Class {classData.class}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+					</div>
+
+					<div className="flex gap-2 xl:mt-0 mt-5 ">
+						<ButtonCustom imageName={addSymbolBtn} text={"Add Student"} onClick={handleAddStudent} />
+						<Button
+							variant="outlined"
+							sx={{
+								borderColor: "#2F4F4F",
+								color: "#2F4F4F",
+								borderRadius: "8px",
+								textTransform: "none",
+								fontSize: "18px",
+								"&:hover": {
+									borderColor: "#1E3535",
+									backgroundColor: "rgba(47, 79, 79, 0.1)",
+								},
+								width: { xs: "100%", sm: "auto" },
+							}}
+							onClick={handleBulkUploadStudent}
+						>
+							<UploadFileIcon sx={{ mr: 1 }} />
+							Bulk Upload
+						</Button>
+					</div>
+				</div>
+
+				{isLoadingStudents ? (
+					<Box sx={{ display: "flex", justifyContent: "center" }}>
+						<SpinnerPageOverlay isLoading={isLoadingStudents} />
+					</Box>
+				) : (
+					<div
+						style={{
+							borderRadius: "8px",
+							position: "relative",
+							minHeight: "300px",
+							marginTop: "16px",
+						}}
+						className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
+					>
+						<MUIDataTable data={tableData} columns={columns} options={options} />
+					</div>
+				)}
+
+				{filteredStudents.length === 0 && !isLoadingStudents && (
+					<Box
+						sx={{
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							justifyContent: "center",
+							minHeight: "200px",
+							textAlign: "center",
+							py: 6,
+						}}
+					>
+						<Typography variant="body1" sx={{ mb: 2, color: "text.secondary" }}>
+							No students found in Class {selectedClass}.
+						</Typography>
+						<Typography variant="body1">Click "Add Student" to register a new student.</Typography>
+					</Box>
+				)}
+
+				{/* Delete Confirmation Modal - Following SchoolList approach exactly */}
+				<DeleteConfirmationModal
+					open={deleteModalOpen}
+					onClose={closeDeleteModal}
+					onConfirm={confirmDeleteStudent}
+					title="Delete Student"
+					confirmText="Delete"
+					cancelText="Cancel"
+					message="Are you sure you want to delete this student: "
+					entityName={studentToDelete ? studentToDelete.fullName : ""}
+					isProcessing={isDeleting}
+					confirmButtonColor="error"
+					icon={<DeleteOutlineIcon fontSize="large" />}
+				/>
+
+				<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
+			</Box>
+		</ThemeProvider>
 	);
 };
 

@@ -15,11 +15,18 @@ import AddSchool from "./components/AddSchool";
 import UserCreationForm from "./components/UserCreationForm";
 import LoginForm from "./components/LoginForm";
 import AddStudent from "./components/student/AddStudent";
+import StudentReportPage from "./components/student/StudentReportPage";
+import SchoolPerformance from "./components/school/SchoolPerformance";
+import LegalTerms from "./pages/LegalTerm";
 
 // Auth context to manage authentication state
 import { createContext } from "react";
 import UploadSummary from "./components/UploadSummary";
 import SchoolDetailView from "./components/SchoolDetailView";
+import TestReportPage from "./pages/TestReportPage";
+import SchoolReportPage from "./pages/SchoolReportPage";
+import StudentProfileView from "./components/student/StudentProfileSection";
+import SchoolPerformanceTable from "./components/testReport/SchoolPerformanceTable";
 export const AuthContext = createContext(null);
 
 function App() {
@@ -76,6 +83,12 @@ function App() {
 						path="/login"
 						element={isAuthenticated ? <Navigate to="/allTest" /> : <LoginForm onLogin={login} />}
 					/>
+					{/* Privacy Policy route */}
+					<Route 
+						path="/privacy-policy" 
+						element={<LegalTerms />} 
+					/>
+
 
 					{/* Protected routes under Layout */}
 					<Route
@@ -86,8 +99,8 @@ function App() {
 							</ProtectedRoute>
 						}
 					>
-						{/* Default Route (renders TableList by default) */}
-						<Route index element={<TableList />} />
+						{/* Default Route - redirect to allTest */}
+						<Route index element={<Navigate to="/allTest" replace />} />
 
 						{/* Nested Routes within Layout */}
 						<Route path="/allTest" element={<TableList />} />
@@ -96,23 +109,50 @@ function App() {
 						<Route path="/users/update-user/:userId" element={<UserCreationForm isEditMode={true} />} />
 						<Route path="/reports" element={<Reports />} />
 						<Route path="/schools" element={<Schools />} />
+						<Route path="/allTest/schoolSubmission/:testId" element={<TestReportPage />} />
+						<Route
+							path="/allTest/schoolSubmission/:testId/testDetails/:schoolId"
+							element={<SchoolReportPage />}
+						/>
 						<Route path="/schools/add-school" element={<AddSchool />} />
-						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} /> 
-						<Route path="/schools/schoolDetail/:schoolId/updateStudent" element={<AddStudent isEditMode={true} />} />
+						<Route path="/schools/schoolDetail/:schoolId" element={<SchoolDetailView />} />
+						<Route path="/school/studentReport/:schoolId/:studentId" element={<StudentReportPage />} />
+						<Route path="/student-profile/:schoolId/:studentId" element={<StudentProfileView />} />
+						<Route
+							path="/schools/schoolDetail/:schoolId/updateStudent"
+							element={<AddStudent isEditMode={true} />}
+						/>
 						<Route path="/schools/schoolDetail/:schoolId/addStudents" element={<AddStudent />} />
 						<Route path="/schools/update/:schoolId" element={<AddSchool />} />
-						<Route path="/schools/schoolDetail/:schoolId/studentBulkUpload" element={<BulkUploadStudent />} />
+						<Route
+							path="/schools/schoolDetail/:schoolId/studentBulkUpload"
+							element={<BulkUploadStudent />}
+						/>
 						<Route path="/schools/bulk-upload" element={<BulkUploadSchools />} />
 						<Route path="/bulk-Upload-Summary" element={<UploadSummary />} />
 						<Route path="/testCreationForm" element={<TestCreationForm />} />
 						<Route path="/editTest/:Id" element={<TestCreationForm />} />
 						<Route path="/help" element={<HelpAndSupport />} />
+						{/* <Route path="/schools/schoolPerformance/:schoolId" element={<SchoolPerformance />} /> */}
+
+						<Route
+							path="/schools/schoolDetail/:schoolId/schoolPerformance"
+							element={<SchoolPerformance />}
+						/>
+						<Route
+							path="/schools/schoolDetail/:schoolId/studentReport/:studentId"
+							element={<StudentReportPage />}
+						/>
+						<Route
+							path="/schools/schoolDetail/:schoolId/student-profile/:studentId"
+							element={<StudentProfileView />}
+						/>
 
 						{/* Fallback Route */}
 						<Route path="*" element={<PageNotFound />} />
 					</Route>
 
-					{/* Redirect to login if trying to access any other route without authentication */}
+					{/* Redirect to allTest if logged in, otherwise redirect to login */}
 					<Route
 						path="*"
 						element={

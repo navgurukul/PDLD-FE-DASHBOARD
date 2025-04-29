@@ -14,7 +14,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import Tooltip from "@mui/material/Tooltip";
 import ButtonCustom from "../components/ButtonCustom";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
-import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
+import { addSymbolBtn, DocScanner, EditPencilIcon, trash } from "../utils/imagePath";
 import apiInstance from "../../api";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { MenuItem } from "@mui/material";
@@ -83,14 +83,14 @@ export default function SchoolList() {
 		setIsLoading(true);
 		try {
 			// Ensure we're explicitly requesting only 20 records per page
-			const response = await apiInstance.get(`/dev/school/all?page=${currentPage}&pageSize=20`);
+			const response = await apiInstance.get(`/school/all?page=${currentPage}&pageSize=15`);
 			if (response.data.success) {
 				// console.log("API Response:", response.data.data); // Debug: Log the full response
-				
+
 				// Check if we're getting the expected 20 records max
 				const schoolsData = response.data.data.schools;
 				// console.log("Schools count from API:", schoolsData.length);
-				
+
 				setSchools(schoolsData);
 				setPagination(response.data.data.pagination);
 			} else {
@@ -141,6 +141,16 @@ export default function SchoolList() {
 		navigate("/schools/bulk-upload");
 	};
 
+	const handleSchoolReport = (schoolId, schoolObj) => {
+		navigate(`/schools/schoolDetail/${schoolId}/schoolPerformance`, {
+			// "/schools/schoolDetail/:schoolId/schoolPerformance"
+			state: {
+				schoolName: schoolObj.schoolName,
+				udiseCode: schoolObj.udiseCode,
+			},
+		});
+	};
+
 	// Handle copy to clipboard
 	const handleCopy = (text, type) => {
 		navigator.clipboard.writeText(text);
@@ -184,7 +194,7 @@ export default function SchoolList() {
 
 		return matchesSearch && matchesCluster && matchesBlock;
 	});
-	
+
 	// Debug: Log the response data and filtered results
 	// console.log("Total schools from API:", schools.length);
 	// console.log("Filtered schools count:", filteredSchools.length);
@@ -208,7 +218,7 @@ export default function SchoolList() {
 		setIsDeleting(true);
 		try {
 			// Call the API to delete the school
-			await apiInstance.delete(`/dev/school/delete/${schoolToDelete.id}`);
+			await apiInstance.delete(`/school/delete/${schoolToDelete.id}`);
 
 			// Remove the school from the local state
 			const updatedSchools = schools.filter((school) => school.id !== schoolToDelete.id);
@@ -252,7 +262,7 @@ export default function SchoolList() {
 	// This is a safeguard if the API isn't respecting the limit parameter
 	const limitedFilteredSchools = filteredSchools.slice(0, pagination.pageSize);
 	// console.log("Limited filtered schools:", limitedFilteredSchools.length);
-	
+
 	const tableData = limitedFilteredSchools.map((school) => ({
 		id: school.id,
 		schoolName: capitalizeFirstLetter(school.schoolName),
@@ -274,7 +284,7 @@ export default function SchoolList() {
 		},
 		{
 			name: "schoolName",
-			label: "School Name",
+			label: "SCHOOL NAME",
 			options: {
 				filter: false,
 				sort: true,
@@ -311,22 +321,22 @@ export default function SchoolList() {
 		},
 		{
 			name: "udiseCode",
-			label: "UDISE Code",
+			label: "UDISE CODE",
 			options: { filter: false, sort: true },
 		},
 		{
 			name: "block",
-			label: "Block",
+			label: "BLOCK",
 			options: { filter: false, sort: true },
 		},
 		{
 			name: "cluster",
-			label: "Cluster",
+			label: "CLUSTER",
 			options: { filter: false, sort: true },
 		},
 		{
 			name: "password",
-			label: "Password",
+			label: "PASSWORD",
 			options: {
 				filter: false,
 				sort: true,
@@ -374,7 +384,8 @@ export default function SchoolList() {
 						<th
 							style={{
 								textAlign: "center",
-								borderBottom: "1px solid lightgray",
+								// borderBottom: "1px solid lightgray",
+								borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
 							}}
 							scope="col"
 						>
@@ -420,7 +431,23 @@ export default function SchoolList() {
 							>
 								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
 								&nbsp;
-							</Button>
+							</Button> 
+
+							{/* View Report Button */}
+							{/* <Button
+								variant="text"
+								size="small"
+								sx={{
+									color: "#4caf50",
+									"&:hover": { backgroundColor: "transparent" },
+									padding: "2px",
+									minWidth: "unset",
+								}}
+								onClick={() => handleSchoolReport(schoolId, schoolObj)}
+								title="View Report"
+							>
+								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
+							</Button> */}
 						</div>
 					);
 				},

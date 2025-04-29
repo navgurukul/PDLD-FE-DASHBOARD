@@ -76,7 +76,7 @@ export default function AddSchool({ onClose, onSave }) {
 
 	const fetchBlocksAndClusters = async () => {
 		try {
-			const response = await apiInstance.get("/dev/user/dropdown-data");
+			const response = await apiInstance.get("/user/dropdown-data");
 			if (response.data && response.data.success) {
 				setBlocksData(response.data.data);
 			} else {
@@ -124,7 +124,7 @@ export default function AddSchool({ onClose, onSave }) {
 				// Otherwise fetch from API
 				setFetchingSchool(true);
 				apiInstance
-					.get(`/dev/school/${schoolId}`)
+					.get(`/school/${schoolId}`)
 					.then((response) => {
 						if (response.data && response.data.data) {
 							const schoolData = response.data.data;
@@ -374,7 +374,7 @@ export default function AddSchool({ onClose, onSave }) {
 				if (schoolId) {
 					try {
 						// Update existing school
-						response = await apiInstance.put(`/dev/school/update/${schoolId}`, payload);
+						response = await apiInstance.put(`/school/update/${schoolId}`, payload);
 
 						// Success message
 						toast.success("School updated successfully!");
@@ -396,7 +396,7 @@ export default function AddSchool({ onClose, onSave }) {
 					}
 				} else {
 					// Create new school
-					response = await apiInstance.post("/dev/school/add", payload);
+					response = await apiInstance.post("/school/add", payload);
 
 					// Check response status and show appropriate message
 					if (response.status === 200 || response.status === 201) {

@@ -1,289 +1,276 @@
-import { useState } from "react";
+import  { useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Box,
-  Typography,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Tooltip,
-  IconButton,
-  Tabs,
-  Tab,
-  Pagination,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
+	Button,
+	Table,
+	TableBody,
+	TableCell,
+	TableContainer,
+	TableHead,
+	TableRow,
+	Paper,
+	IconButton,
+	Tooltip,
+	Typography,
+	Box,
+	Tabs,
+	Tab,
+	TextField,
+	InputAdornment,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import { toast } from "react-toastify";
+import GetAppIcon from "@mui/icons-material/GetApp";
+import SearchIcon from "@mui/icons-material/Search";
+import InfoIcon from "@mui/icons-material/Info";
 
-// Function to get login details from localStorage with fallback
-const getLoginDetails = () => {
-  // Default values as specified
-  let defaultDetails = {
-    username: "mahendra-shah",
-    currentDateTime: "2025-04-03 06:25:18"
-  };
-  
-  try {
-    // Get user data from localStorage
-    const userDataString = localStorage.getItem('userData');
-    if (userDataString) {
-      const userData = JSON.parse(userDataString);
-      if (userData?.username || userData?.name || userData?.email) {
-        defaultDetails.name = userData.name || userData.username || userData.email;
-      }
-    }
-  } catch (error) {
-    console.error("Error parsing user data from localStorage:", error);
-  }
-  
-  return defaultDetails;
-};
+const StudentErrorDetailsDialog = ({ open, onClose, errorData }) => {
+	const [activeTab, setActiveTab] = useState(0);
+	const [searchTerm, setSearchTerm] = useState("");
 
-// Get login details
-const loginDetails = getLoginDetails();
+	// Define display headers (what shows in the UI table) - using only API response fields
+	const displayHeaders = [
+		{ id: "name", label: "Full Name" },
+		{ id: "fatherName", label: "Father's Name" },
+		{ id: "motherName", label: "Mother's Name" },
+		{ id: "dob", label: "Date of Birth" },
+		{ id: "class", label: "Grade" },
+		{ id: "gender", label: "Gender" },
+		{ id: "schoolUdiseCode", label: "School ID" },
+		{ id: "aparID", label: "aparID" },
+		{ id: "hostel", label: "Hostel" },
+		{ id: "error", label: "Error" },
+	];
 
-const StudentErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
-  const [page, setPage] = useState(1);
-  const [tabValue, setTabValue] = useState(0);
-  const rowsPerPage = 5;
-  
-  // Group errors by reason if available
-  const errorTypes = {};
-  errorData.forEach(row => {
-    if (row.reason) {
-      const errorType = row.reason.startsWith("Duplicate") ? "Duplicate" : "Validation";
-      errorTypes[errorType] = errorTypes[errorType] || [];
-      errorTypes[errorType].push(row);
-    } else {
-      errorTypes['General'] = errorTypes['General'] || [];
-      errorTypes['General'].push(row);
-    }
-  });
+	// Define all fields to include in CSV export - using only API response fields
+	const csvHeaders = [
+		{ id: "fullname", label: "Full Name" },
+		{ id: "fatherName", label: "Father's Name" },
+		{ id: "motherName", label: "Mother's Name" },
+		{ id: "dob", label: "Date of Birth" },
+		{ id: "class", label: "Grade" },
+		{ id: "gender", label: "Gender" },
+		{ id: "schoolUdiseCode", label: "School ID" },
+		{ id: "aparID", label: "aparID" },
+		{ id: "hostel", label: "Hostel" },
+		{ id: "error", label: "Error" },
+	];
 
-  const errorCategories = Object.keys(errorTypes);
-  
-  // Filter data based on selected tab
-  const filteredData = tabValue === 0 
-    ? errorData 
-    : errorTypes[errorCategories[tabValue - 1]] || [];
-  
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-  
-  // Get current page data
-  const currentData = filteredData.slice(
-    (page - 1) * rowsPerPage,
-    page * rowsPerPage
-  );
+	// Filter the error data based on search term
+	const filteredErrors = errorData.filter((error) => {
+		const searchLower = searchTerm.toLowerCase();
+		return (
+			(error.name && error.name.toLowerCase().includes(searchLower)) ||
+			(error.aparID && error.aparID.toLowerCase().includes(searchLower)) ||
+			(error.error && error.error.toLowerCase().includes(searchLower))
+		);
+	});
 
-  const handlePageChange = (event, value) => {
-    setPage(value);
-  };
+	const handleTabChange = (event, newValue) => {
+		setActiveTab(newValue);
+	};
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-    setPage(1); // Reset to first page when changing tabs
-  };
+	const handleSearchChange = (event) => {
+		setSearchTerm(event.target.value);
+	};
 
-  const downloadErrorsCSV = () => {
-    // Create CSV content
-    let csvContent = headers.join(",") + "\n";
-    
-    const dataToExport = tabValue === 0 ? errorData : filteredData;
-    
-    dataToExport.forEach(row => {
-      const values = headers.map(header => {
-        // Handle values that contain commas or quotes
-        const value = row[header] || "";
-        if (typeof value === 'string' && (value.includes(",") || value.includes("\""))) {
-          return `"${value.replace(/"/g, '""')}"`;
-        }
-        return value;
-      });
-      csvContent += values.join(",") + "\n";
-    });
-    
-    // Create and trigger download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `student_error_rows_${loginDetails.name}_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast.success("Error data downloaded as CSV");
-  };
+	const downloadErrorsCSV = () => {
+		// Create CSV header row
+		const csvHeader = csvHeaders.map((header) => header.label).join(",");
 
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-      PaperProps={{
-        sx: { 
-          borderRadius: 2,
-          maxHeight: '90vh'
-        }
-      }}
-    >
-      <DialogTitle>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <ErrorOutlineIcon color="error" sx={{ mr: 1 }} />
-            <Typography variant="h6" component="span">
-              Student Records with Errors
-            </Typography>
-          </Box>
-          <IconButton onClick={onClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      
-      <DialogContent dividers>
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {errorData.length} student record(s) could not be processed due to errors. Review and fix these issues.
-          </Typography>
-          
-          {/* Tabs for filtering errors by type */}
-          {errorCategories.length > 1 && (
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-              <Tabs 
-                value={tabValue} 
-                onChange={handleTabChange}
-                variant="scrollable"
-                scrollButtons="auto"
-              >
-                <Tab label={`All Errors (${errorData.length})`} />
-                {errorCategories.map((category, index) => (
-                  <Tab 
-                    key={`error-tab-${index}`} 
-                    label={`${category} (${errorTypes[category].length})`} 
-                  />
-                ))}
-              </Tabs>
-            </Box>
-          )}
-          
-          <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                  <TableCell width="60">
-                    <Typography variant="subtitle2">Row</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="subtitle2">Student Name</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="subtitle2">Enrollment ID</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="subtitle2">Grade</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="subtitle2">School ID</Typography>
-                  </TableCell>
-                  <TableCell width="250">
-                    <Typography variant="subtitle2">Error Reason</Typography>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {currentData.map((row, index) => (
-                  <TableRow 
-                    key={`error-row-${index}`}
-                    sx={{ backgroundColor: alpha('#f44336', 0.03) }}
-                  >
-                    <TableCell>
-                      {(page - 1) * rowsPerPage + index + 1}
-                    </TableCell>
-                    <TableCell>{row.studentName || ""}</TableCell>
-                    <TableCell>{row.enrollmentId || ""}</TableCell>
-                    <TableCell>{row.grade || ""}</TableCell>
-                    <TableCell>{row.schoolId || ""}</TableCell>
-                    <TableCell>
-                      <Tooltip title={row.reason || "Unknown error"}>
-                        <Typography 
-                          variant="body2" 
-                          color="error"
-                          sx={{ 
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                          }}
-                        >
-                          {row.reason || "Unknown error"}
-                        </Typography>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {currentData.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        No errors to display
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            {totalPages > 1 && (
-              <Pagination 
-                count={totalPages} 
-                page={page} 
-                onChange={handlePageChange} 
-                color="primary" 
-                size="small"
-              />
-            )}
-            
-            <Typography variant="caption" color="text.secondary">
-              Showing {Math.min(filteredData.length, (page - 1) * rowsPerPage + 1)}-
-              {Math.min(filteredData.length, page * rowsPerPage)} of {filteredData.length} errors
-            </Typography>
-          </Box>
-        </Box>
-      </DialogContent>
-      
-      <DialogActions sx={{ p: 2 }}>
-        <Button
-          variant="outlined"
-          onClick={onClose}
-        >
-          Close
-        </Button>
-        
-        <Button
-          variant="contained"
-          startIcon={<FileDownloadIcon />}
-          onClick={downloadErrorsCSV}
-          color="primary"
-        >
-          Download Errors CSV
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+		// Create CSV rows from filtered data
+		const csvRows = filteredErrors.map((error) => {
+			return csvHeaders
+				.map((header) => {
+					let value = error[header.id] !== undefined ? error[header.id] : "";
+
+					// Handle commas and quotes in CSV properly
+					if (typeof value === "string" && (value.includes(",") || value.includes('"'))) {
+						return `"${value.replace(/"/g, '""')}"`;
+					}
+					return value;
+				})
+				.join(",");
+		});
+
+		// Combine header and rows
+		const csvContent = [csvHeader, ...csvRows].join("\n");
+
+		// Create blob and download
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.setAttribute("href", url);
+		link.setAttribute("download", "student_upload_errors.csv");
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
+
+	return (
+		<Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+			<DialogTitle>
+				<Box display="flex" justifyContent="space-between" alignItems="center">
+					<Typography variant="h6">Error Details ({filteredErrors.length} errors)</Typography>
+					<IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+						<CloseIcon />
+					</IconButton>
+				</Box>
+			</DialogTitle>
+
+			<Box sx={{ borderBottom: 1, borderColor: "divider", px: 3 }}>
+				<Tabs value={activeTab} onChange={handleTabChange} aria-label="error view tabs">
+					<Tab label="View Errors" />
+					{/* <Tab label="Raw Data" /> */}
+				</Tabs>
+			</Box>
+
+			<Box sx={{ px: 3, pt: 2, pb: 1 }}>
+				<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+					<TextField
+						placeholder="Search..."
+						variant="outlined"
+						size="small"
+						value={searchTerm}
+						onChange={handleSearchChange}
+						sx={{ width: 300 }}
+						InputProps={{
+							startAdornment: (
+								<InputAdornment position="start">
+									<SearchIcon />
+								</InputAdornment>
+							),
+						}}
+					/>
+
+					{/* <Button
+						variant="outlined"
+						startIcon={<GetAppIcon />}
+						onClick={downloadErrorsCSV}
+						sx={{ borderRadius: "8px", height: "40px" }}
+					>
+						Download Errors as CSV
+					</Button> */}
+				</Box>
+
+				<Box sx={{ mb: 1 }}>
+					<Typography variant="body2" color="text.secondary" sx={{ display: "flex", alignItems: "center" }}>
+						<InfoIcon fontSize="small" sx={{ mr: 0.5 }} />
+						{searchTerm
+							? `Showing ${filteredErrors.length} of ${errorData.length} errors`
+							: `Showing all ${errorData.length} errors`}
+					</Typography>
+				</Box>
+			</Box>
+
+			<DialogContent sx={{ pt: 0 }}>
+				{activeTab === 0 && (
+					<TableContainer component={Paper} sx={{ maxHeight: 400 }}>
+						<Table stickyHeader size="small">
+							<TableHead>
+								<TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+									{displayHeaders.map((header) => (
+										<TableCell key={header.id} sx={{ fontWeight: "bold" }}>
+											{header.label}
+										</TableCell>
+									))}
+								</TableRow>
+							</TableHead>
+							<TableBody>
+								{filteredErrors.length > 0 ? (
+									filteredErrors.map((error, index) => (
+										<TableRow key={`error-row-${index}`} hover>
+											{displayHeaders.map((header) => (
+												<TableCell key={`${index}-${header.id}`}>
+													{header.id === "class" ? (
+														error[header.id] ? (
+															`Class ${error[header.id]}`
+														) : (
+															""
+														)
+													) : header.id === "error" ? (
+														<Tooltip title={error[header.id] || ""}>
+															<Typography
+																variant="body2"
+																sx={{
+																	whiteSpace: "nowrap",
+																	overflow: "hidden",
+																	textOverflow: "ellipsis",
+																	maxWidth: 300,
+																	color: "error.main",
+																}}
+															>
+																{error[header.id] || ""}
+															</Typography>
+														</Tooltip>
+													) : (
+														error[header.id] || ""
+													)}
+												</TableCell>
+											))}
+										</TableRow>
+									))
+								) : (
+									<TableRow>
+										<TableCell colSpan={displayHeaders.length} align="center">
+											No errors found matching your search.
+										</TableCell>
+									</TableRow>
+								)}
+							</TableBody>
+						</Table>
+					</TableContainer>
+				)}
+
+				{activeTab === 1 && (
+					<TableContainer component={Paper} sx={{ maxHeight: 400 }}>
+						<Table stickyHeader size="small">
+							<TableHead>
+								<TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+									{csvHeaders.map((header) => (
+										<TableCell key={header.id} sx={{ fontWeight: "bold" }}>
+											{header.label}
+										</TableCell>
+									))}
+								</TableRow>
+							</TableHead>
+							<TableBody>
+								{filteredErrors.length > 0 ? (
+									filteredErrors.map((error, index) => (
+										<TableRow key={`raw-error-row-${index}`} hover>
+											{csvHeaders.map((header) => (
+												<TableCell key={`raw-${index}-${header.id}`}>
+													{header.id === "class"
+														? error[header.id]
+															? `Class ${error[header.id]}`
+															: ""
+														: error[header.id] || ""}
+												</TableCell>
+											))}
+										</TableRow>
+									))
+								) : (
+									<TableRow>
+										<TableCell colSpan={csvHeaders.length} align="center">
+											No errors found matching your search.
+										</TableCell>
+									</TableRow>
+								)}
+							</TableBody>
+						</Table>
+					</TableContainer>
+				)}
+			</DialogContent>
+
+			<DialogActions>
+				<Button onClick={onClose} color="primary">
+					Close
+				</Button>
+			</DialogActions>
+		</Dialog>
+	);
 };
 
 export default StudentErrorDetailsDialog;

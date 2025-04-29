@@ -179,7 +179,7 @@ const TestCreationForm = () => {
 				};
 
 				console.log("Create Payload => ", payload);
-				response = await apiInstance.post("/dev/test", payload);
+				response = await apiInstance.post("/test", payload);
 			} else {
 				// ---------- EDIT MODE (PATCH) ----------
 				const [grade] = selectedGrades;
@@ -206,7 +206,7 @@ const TestCreationForm = () => {
 				}
 
 				console.log("Edit Payload =>", editPayload);
-				response = await apiInstance.patch(`/dev/test/${testId}`, editPayload);
+				response = await apiInstance.patch(`/test/${testId}`, editPayload);
 			}
 
 			if (response?.data?.success) {
@@ -251,7 +251,7 @@ const TestCreationForm = () => {
 		console.log("TRIGGERED");
 		setIsLoading(true);
 		try {
-			const response = await apiInstance.get(`/dev/test/${id}`);
+			const response = await apiInstance.get(`/test/${id}`);
 			console.log(response, "RESPONSE");
 			if (response?.data?.success) {
 				const { subject, testDate, testClass, testType, maxScore, deadline } = response.data.data;
@@ -796,9 +796,14 @@ const TestCreationForm = () => {
 																			: null
 																	}
 																	onChange={(date) => {
-																		// Format date as YYYY-MM-DD string to maintain compatibility
+																		// Adjust for timezone offset when converting to string, just like in the deadline picker
 																		const dateStr = date
-																			? date.toISOString().split("T")[0]
+																			? new Date(
+																					date.getTime() -
+																						date.getTimezoneOffset() * 60000
+																			  )
+																					.toISOString()
+																					.split("T")[0]
 																			: "";
 																		handleTestDateChange(combinedKey, dateStr);
 																	}}
@@ -822,8 +827,15 @@ const TestCreationForm = () => {
 																				: null
 																		}
 																		onChange={(date) => {
+																			// Adjust for timezone offset when converting to string
 																			const dateStr = date
-																				? date.toISOString().split("T")[0]
+																				? new Date(
+																						date.getTime() -
+																							date.getTimezoneOffset() *
+																								60000
+																				  )
+																						.toISOString()
+																						.split("T")[0]
 																				: "";
 																			handleDeadlineChange(combinedKey, dateStr);
 																		}}
@@ -835,6 +847,36 @@ const TestCreationForm = () => {
 																		placeholderText="Select deadline"
 																		isClearable
 																		disabled={!testDates[combinedKey]}
+																		renderDayContents={(day, date) => {
+																			const today = new Date();
+																			const isToday =
+																				date &&
+																				date.getDate() === today.getDate() &&
+																				date.getMonth() === today.getMonth() &&
+																				date.getFullYear() ===
+																					today.getFullYear();
+
+																			return (
+																				<div
+																					style={{
+																						border: isToday
+																							? "1px solid #2F4F4F"
+																							: "none",
+																						borderRadius: "8px",
+																						width: "27px",
+																						height: "24px",
+																						display: "flex",
+																						alignItems: "center",
+																						justifyContent: "center",
+																						color: isToday
+																							? "#2F4F4F"
+																							: "inherit",
+																					}}
+																				>
+																					{day}
+																				</div>
+																			);
+																		}}
 																	/>
 																</div>
 															</div>

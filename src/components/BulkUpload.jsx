@@ -388,18 +388,13 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
 			</DialogContent>
 
 			<DialogActions sx={{ p: 2 }}>
-				<Button variant="outlined" onClick={onClose}>
-					Close
-				</Button>
+				<OutlinedButton text={"Close"} onClick={onClose} />
 
-				<Button
-					variant="contained"
-					startIcon={<FileDownloadIcon />}
+				<ButtonCustom
+					text={"Download Errors CSV"}
+					imageName={<FileDownloadIcon />}
 					onClick={downloadErrorsCSV}
-					color="primary"
-				>
-					Download Errors CSV
-				</Button>
+				/>
 			</DialogActions>
 		</Dialog>
 	);
@@ -504,7 +499,7 @@ export default function BulkUploadSchools() {
 
 		try {
 			// Make the actual API call with proper endpoint
-			const response = await apiInstance.post("/dev/admin/bulk/schools", formData, {
+			const response = await apiInstance.post("/admin/bulk/schools", formData, {
 				headers: {
 					"Content-Type": "multipart/form-data",
 				},
@@ -616,7 +611,7 @@ export default function BulkUploadSchools() {
 
 	return (
 		<ThemeProvider theme={theme}>
-			<Box sx={{ p: 2, px: 2, maxWidth: "75rem", margin: "0 auto" }}>
+			<Box sx={{ p: 2, px: 2, maxWidth: "90%", margin: "0 auto" }}>
 				<div className="flex justify-between">
 					<h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
 					<Button
@@ -643,23 +638,26 @@ export default function BulkUploadSchools() {
 				</Typography>
 
 				{/* Add stepper to show current stage of the process */}
-				<Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-					{steps.map((label) => (
-						<Step key={label}>
-							<StepLabel>{label}</StepLabel>
-						</Step>
-					))}
-				</Stepper>
+				<Box sx={{ display: "flex", justifyContent: "center" }}>
+					<Stepper activeStep={activeStep} sx={{ width: "70%", mb: 2 }}>
+						{steps.map((label) => (
+							<Step key={label}>
+								<StepLabel>{label}</StepLabel>
+							</Step>
+						))}
+					</Stepper>
+				</Box>
 
 				{activeStep === 0 && (
-					<Box sx={{ p: 2 }}>
+					<Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
 						<Box
 							sx={{
+								width: "70%",
 								border: "2px dashed #ccc",
 								borderRadius: 2,
-								p: 4,
+								p: 2,
 								textAlign: "center",
-								mb: 1,
+								mb: 0,
 								position: "relative", // For proper drag event handling
 								cursor: "pointer", // Show pointer cursor on the entire box
 								transition: "all 0.3s ease",
@@ -922,6 +920,7 @@ export default function BulkUploadSchools() {
 																color="error"
 																variant="outlined"
 																size="small"
+																sx={{ borderRadius: "8px", height: "48px" }}
 															>
 																View Errors
 															</Button>
@@ -1013,6 +1012,7 @@ export default function BulkUploadSchools() {
 														startIcon={<FileDownloadIcon />}
 														onClick={handleViewErrorData}
 														color="error"
+														sx={{ borderRadius: "8px", height: "48px" }}
 													>
 														Download Errors
 													</Button>
