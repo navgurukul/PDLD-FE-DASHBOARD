@@ -141,10 +141,10 @@ theme = createTheme(theme, {
 			},
 		},
 		body1: {
-			fontFamily: "Karla",
+			fontFamily: "Work Sans",
 			color: "#2F4F4F",
 			fontSize: "1.125rem",
-			fontWeight: 500,
+			fontWeight: 400,
 			lineHeight: "170%",
 			letterSpacing: 0,
 			[theme.breakpoints.down("sm")]: {

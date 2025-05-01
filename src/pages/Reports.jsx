@@ -457,7 +457,7 @@ const Reports = () => {
 				</div>
 
 				{/* Search Card */}
-				<div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 mb-6">
+				{/* <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 mb-6">
 					<h2 className="text-xl font-bold mb-4">
 						Search for {viewMode === "school" ? "School" : "Student"}
 					</h2>
@@ -517,7 +517,7 @@ const Reports = () => {
 					</div>
 
 					{/* Search Results */}
-					{showSearchResults && (
+					{/* {showSearchResults && (
 						<div className="mt-4 bg-white rounded-xl p-4 border border-gray-200 max-h-80 overflow-y-auto">
 							<h3 className="text-lg font-bold mb-2">Search Results</h3>
 
@@ -575,8 +575,8 @@ const Reports = () => {
 								</ul>
 							)}
 						</div>
-					)}
-				</div>
+					)} */}
+				{/* </div>  */}  
 
 				{/* Selection Path Display */}
 				{(selectedSchool || selectedStudent) && (
