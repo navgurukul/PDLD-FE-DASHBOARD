@@ -297,32 +297,22 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 					const student = tableData[dataIndex][8]; // Full student object at index 8
 
 					return (
-						<Button
-							sx={{
-								color: "#1976d2",
-								textTransform: "none",
-								padding: "0px",
-								fontWeight: "normal",
-								textAlign: "left",
-								"&:hover": {
-									backgroundColor: "transparent",
-									textDecoration: "underline",
-								},
-							}}
+						<div
 							onClick={(e) => {
-								e.stopPropagation(); // Prevent any parent click handlers
+								e.stopPropagation();
 								handleStudentNameClick(studentId, student);
+							}}
+							style={{
+								cursor: "pointer",
+								color: "#1976d2",
+								fontWeight: "500",
+								"&:hover": { textDecoration: "underline" },
 							}}
 						>
 							{studentName}
-						</Button>
+						</div>
 					);
 				},
-				setCellProps: () => ({
-					style: {
-						minWidth: "150px",
-					},
-				}),
 			},
 		},
 		{
@@ -453,7 +443,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 								<img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
 							</Button>
 
-							<Button
+							{/* <Button
 								variant="text"
 								size="small"
 								sx={{
@@ -466,7 +456,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 								title="View Report"
 							>
 								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
-							</Button>
+							</Button> */}
 						</div>
 					);
 				},
