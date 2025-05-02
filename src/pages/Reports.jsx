@@ -453,7 +453,7 @@ const Reports = () => {
 			<div className="max-w-7xl mx-auto">
 				{/* Header with view mode selection */}
 				<div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-					<h5 className="text-lg font-bold text-[#2F4F4F]">School Performance Analytics</h5>
+					<h5 className="text-lg font-bold text-[#2F4F4F]">School Performance Analytics_</h5>
 				</div>
 
 				{/* Search Card */}
