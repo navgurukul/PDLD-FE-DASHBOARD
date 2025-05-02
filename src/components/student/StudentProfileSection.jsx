@@ -19,7 +19,7 @@ import {
 	fingerprint,
 	calendar_today,
 } from "../../utils/imagePath";
-import AcademicOverviewGraph from "../graph/AcademicOverViewGraph";
+import AcademicOverviewGraph from "../graph/AcademicOverviewGraph";
 
 // Tab panel component
 function TabPanel(props) {
