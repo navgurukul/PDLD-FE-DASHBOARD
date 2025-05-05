@@ -6,6 +6,284 @@
  * Mock data for test reports
  * Contains test information, school submissions, and student performance data
  */
+// Dummy data for Academic Overview Graph
+// Dummy data for Academic Overview Graph
+const academicData = [
+	{
+	  month: "April '24",
+	  scores: {
+		overall: 10,
+		english: 5,
+		hindi: 6,
+		mathematics: 4,
+		science: 5,
+		socialStudies: 6,
+		sanskrit: 4
+	  }
+	},
+	{
+	  month: "May '24",
+	  scores: {
+		overall: 20,
+		english: 10,
+		hindi: 9,
+		mathematics: 11,
+		science: 8,
+		socialStudies: 10,
+		sanskrit: 12
+	  }
+	},
+	{
+	  month: "June '24",
+	  scores: {
+		overall: 12,
+		english: 6,
+		hindi: 5,
+		mathematics: 7,
+		science: 6,
+		socialStudies: 6,
+		sanskrit: 6
+	  }
+	},
+	{
+	  month: "July '24",
+	  scores: {
+		overall: 50,
+		english: 25,
+		hindi: 26,
+		mathematics: 24,
+		science: 25,
+		socialStudies: 25,
+		sanskrit: 25
+	  }
+	},
+	{
+	  month: "August '24",
+	  scores: {
+		overall: 30,
+		english: 30,
+		hindi: 30,
+		mathematics: 30,
+		science: 30,
+		socialStudies: 30,
+		sanskrit: 30
+	  },
+	  totalScore: 640
+	},
+	{
+	  month: "Sept '24",
+	  scores: {
+		overall: 38,
+		english: 19,
+		hindi: 18,
+		mathematics: 20,
+		science: 19,
+		socialStudies: 20,
+		sanskrit: 18
+	  }
+	},
+	{
+	  month: "Oct '24",
+	  scores: {
+		overall: 38,
+		english: 19,
+		hindi: 19,
+		mathematics: 19,
+		science: 19,
+		socialStudies: 19,
+		sanskrit: 19
+	  }
+	},
+	{
+	  month: "Nov '24",
+	  scores: {
+		overall: 50,
+		english: 25,
+		hindi: 25,
+		mathematics: 25,
+		science: 25,
+		socialStudies: 25,
+		sanskrit: 25
+	  }
+	},
+	{
+	  month: "Dec '24",
+	  scores: {
+		overall: 40,
+		english: 20,
+		hindi: 20,
+		mathematics: 20,
+		science: 20,
+		socialStudies: 20,
+		sanskrit: 20
+	  }
+	},
+	{
+	  month: "Jan '25",
+	  scores: {
+		overall: 80,
+		english: 40,
+		hindi: 40,
+		mathematics: 40,
+		science: 40,
+		socialStudies: 40,
+		sanskrit: 40
+	  }
+	},
+	{
+	  month: "Feb '25",
+	  scores: {
+		overall: 60,
+		english: 30,
+		hindi: 30,
+		mathematics: 30,
+		science: 30,
+		socialStudies: 30,
+		sanskrit: 30
+	  }
+	},
+	{
+	  month: "Mar '25",
+	  scores: {
+		overall: 70,
+		english: 35,
+		hindi: 35,
+		mathematics: 35,
+		science: 35,
+		socialStudies: 35,
+		sanskrit: 35
+	  }
+	}
+  ];
+  
+  export default academicData;
+
+  export const mockData = [
+	{
+	  month: "April '24",
+	  english: 15,
+	  hindi: 10,
+	  mathematics: 12,
+	  science: 14,
+	  socialStudies: 16,
+	  sanskrit: 8,
+	  overall: 10
+	},
+	{
+	  month: "May '24",
+	  english: 25,
+	  hindi: 20,
+	  mathematics: 22,
+	  science: 18,
+	  socialStudies: 20,
+	  sanskrit: 15,
+	  overall: 20
+	},
+	{
+	  month: "June '24",
+	  english: 15,
+	  hindi: 12,
+	  mathematics: 10,
+	  science: 14,
+	  socialStudies: 12,
+	  sanskrit: 10,
+	  overall: 12
+	},
+	{
+	  month: "July '24",
+	  english: 45,
+	  hindi: 48,
+	  mathematics: 50,
+	  science: 52,
+	  socialStudies: 47,
+	  sanskrit: 50,
+	  overall: 50
+	},
+	{
+	  month: "August '24",
+	  english: 30,
+	  hindi: 30,
+	  mathematics: 30,
+	  science: 30,
+	  socialStudies: 30,
+	  sanskrit: 30,
+	  overall: 30,
+	  totalScore: 640
+	},
+	{
+	  month: "Sept '24",
+	  english: 40,
+	  hindi: 38,
+	  mathematics: 42,
+	  science: 36,
+	  socialStudies: 38,
+	  sanskrit: 35,
+	  overall: 38
+	},
+	{
+	  month: "Oct '24",
+	  english: 42,
+	  hindi: 38,
+	  mathematics: 40,
+	  science: 36,
+	  socialStudies: 39,
+	  sanskrit: 35,
+	  overall: 38
+	},
+	{
+	  month: "Nov '24",
+	  english: 48,
+	  hindi: 52,
+	  mathematics: 45,
+	  science: 55,
+	  socialStudies: 48,
+	  sanskrit: 50,
+	  overall: 50
+	},
+	{
+	  month: "Dec '24",
+	  english: 38,
+	  hindi: 42,
+	  mathematics: 36,
+	  science: 44,
+	  socialStudies: 40,
+	  sanskrit: 40,
+	  overall: 40
+	},
+	{
+	  month: "Jan '25",
+	  english: 75,
+	  hindi: 82,
+	  mathematics: 78,
+	  science: 85,
+	  socialStudies: 77,
+	  sanskrit: 83,
+	  overall: 80
+	},
+	{
+	  month: "Feb '25",
+	  english: 62,
+	  hindi: 58,
+	  mathematics: 65,
+	  science: 55,
+	  socialStudies: 60,
+	  sanskrit: 60,
+	  overall: 60
+	},
+	{
+	  month: "Mar '25",
+	  english: 68,
+	  hindi: 72,
+	  mathematics: 66,
+	  science: 74,
+	  socialStudies: 70,
+	  sanskrit: 70,
+	  overall: 70
+	}
+  ];
+   
+
+
 export const MOCK_TESTS = [
 	{
 		id: 1,
@@ -65,7 +343,7 @@ export const MOCK_TESTS = [
 					{ id: 28, name: "Gitanjali Roy", score: 70 },
 					{ id: 29, name: "Harish Choudhary", score: 68 },
 					{ id: 30, name: "Indira Sen", score: 65 },
-					{ id: 31, name: "Javed Khan", score: 62 }, 
+					{ id: 31, name: "Javed Khan", score: 62 },
 				],
 			},
 			{

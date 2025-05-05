@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { Typography, Box, Grid, Paper, Tabs, Tab, Button, IconButton } from "@mui/material";
+import { Typography, Box, Grid, Paper, Tabs, Tab, Button } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
-import CircularProgress from "@mui/material/CircularProgress";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useTheme } from "@mui/material/styles";
+import StudentAcademics from "./StudentAcademics";
+import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
+import ButtonCustom from "../../components/ButtonCustom";
+// import academicData from "../../data/testReportData"
+import {mockData} from "../../data/testReportData"
 import {
 	EditPencilIcon,
 	bloodImage,
@@ -13,11 +19,7 @@ import {
 	fingerprint,
 	calendar_today,
 } from "../../utils/imagePath";
-import ButtonCustom from "../../components/ButtonCustom";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { useTheme } from "@mui/material/styles";
-import StudentAcademics from "./StudentAcademics";
-import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
+import AcademicOverviewGraph from "../graph/AcademicOverviewGraph";
 
 // Tab panel component
 function TabPanel(props) {
@@ -41,12 +43,13 @@ const dummyStudent = {
 	id: "123456",
 	fullName: "Raj Kumar",
 	gender: "Male",
-	class: "8",
+	class: "Class 1",
 	dob: "1994-12-11",
 	fatherName: "Raja Kumar",
 	motherName: "Rajshri Kumari",
 	aparId: "123456782",
 	hostel: "Hostel C",
+	schoolName: "Delhi Public School",
 	healthMetrics: {
 		lastUpdated: "03rd March 2025",
 		hemoglobin: "8.9",
@@ -55,7 +58,7 @@ const dummyStudent = {
 	},
 };
 
-const dummySchoolName = "Government Higher Secondary School";
+const dummySchoolName = "Delhi Public School";
 const dummyUdiseCode = "12345678901";
 
 const StudentProfileView = () => {
@@ -68,16 +71,6 @@ const StudentProfileView = () => {
 	const [tabValue, setTabValue] = useState(0);
 	const [schoolName, setSchoolName] = useState("");
 	const [udiseCode, setUdiseCode] = useState("");
-
-	const iconStyle = { width: "24px", height: "24px" };
-	const labelBoxStyle = {
-		width: "269px",
-		color: "#666",
-		display: "flex",
-		alignItems: "center",
-		gap: 1,
-		marginRight: "48px",
-	};
 
 	// Format date helper function
 	const formatDate = (dateString) => {
@@ -165,7 +158,7 @@ const StudentProfileView = () => {
 					height: "400px",
 				}}
 			>
-				 <SpinnerPageOverlay isLoading={isLoading} />
+				<SpinnerPageOverlay isLoading={isLoading} />
 			</Box>
 		);
 	}
@@ -182,8 +175,6 @@ const StudentProfileView = () => {
 			</Box>
 		);
 	}
-
-	const lastUpdated = student.healthMetrics?.lastUpdated || "N/A";
 
 	return (
 		<Box className="main-page-wrapper">
@@ -219,19 +210,13 @@ const StudentProfileView = () => {
 					</Box>
 				</Box>
 
-				{/* Show edit button in overview tab and academic year text in academic tab */}
-				{tabValue === 0 ? (
-					<ButtonCustom
-						onClick={handleEditStudent}
-						startIcon={<img src={EditPencilIcon} alt="Edit" style={{ width: "18px", height: "18px" }} />}
-						text={"Edit Student"}
-					/>
-				) : (
+				{/* Show academic year text in academic tab */}
+				{tabValue === 1 ? (
 					<Typography
 						variant="subtitle1"
 						sx={{
 							bgcolor: theme.palette.secondary.light,
-							color: theme.palette.primary, 
+							color: theme.palette.primary,
 							padding: "4px 16px",
 							borderRadius: "8px",
 							height: "48px",
@@ -241,7 +226,7 @@ const StudentProfileView = () => {
 					>
 						Academic Year 2024-25
 					</Typography>
-				)}
+				) : null}
 			</Box>
 
 			{/* Tabs for navigation */}
@@ -253,173 +238,114 @@ const StudentProfileView = () => {
 			</Box>
 
 			{/* Overview tab content */}
-			<TabPanel value={tabValue} index={0} sx={{ padding: 0 }}>
+			<TabPanel value={tabValue} index={0}>
 				<Grid container spacing={4}>
-					{/* Personal Details Section */}
-					<Grid item xs={12} md={6}>
-						<Paper variant="profileCard">
-							<h6 className="mb-4">Personal Details</h6>
+					{/* Personal Details Section - Matching Figma with exact spacing */}
+					<Grid item xs={12}>
+						{/* Personal Details Card */}
+						<Paper
+							sx={{
+								p: 4, // 32px padding
+								borderRadius: "8px",
+								background: "#FFF",
+								boxShadow:
+									"0px 1px 2px 0px rgba(47, 79, 79, 0.06), 0px 2px 1px 0px rgba(47, 79, 79, 0.04), 0px 1px 5px 0px rgba(47, 79, 79, 0.08)",
+							}}
+						>
+							{/* Header with Edit Button */}
+							<Box
+								sx={{
+									display: "flex",
+									justifyContent: "space-between",
+									alignItems: "center",
+									mb: 4, // 32px bottom margin
+								}}
+							>
+								<h5 className="text-lg font-bold text-[#2F4F4F]">Personal Details</h5>
 
-							<Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-								<Box sx={{ display: "flex", alignItems: "start" }}>
-									<Box sx={labelBoxStyle}>
-										<img src={person} alt="person" style={iconStyle} />
-										<Typography variant="body1">Father's Name</Typography>
-									</Box>
-									<Typography variant="subtitle1"> {student.fatherName || "N/A"}</Typography>
-								</Box>
-
-								<Box sx={{ display: "flex", alignItems: "start" }}>
-									<Box sx={labelBoxStyle}>
-										<img src={person} alt="person" style={iconStyle} />
-										<Typography variant="body1">Mother's Name</Typography>
-									</Box>
-									<Typography variant="subtitle1">{student.motherName || "N/A"}</Typography>
-								</Box>
-
-								<Box sx={{ display: "flex", alignItems: "start" }}>
-									<Box sx={labelBoxStyle}>
-										<img src={calendar_today} alt="calendar_today" style={iconStyle} />
-										<Typography variant="body1">Date of Birth</Typography>
-									</Box>
-									<Typography variant="subtitle1">{formatDate(student.dob)}</Typography>
-								</Box>
-
-								<Box sx={{ display: "flex", alignItems: "start" }}>
-									<Box sx={labelBoxStyle}>
-										<img src={house} alt="person" style={iconStyle} />
-										<Typography variant="body1">Hostel</Typography>
-									</Box>
-									<Typography variant="subtitle1">{student.hostel || "N/A"}</Typography>
-								</Box>
-
-								<Box sx={{ display: "flex", alignItems: "start" }}>
-									<Box sx={labelBoxStyle}>
-										<img src={fingerprint} alt="person" style={iconStyle} />
-										<Typography variant="body1">Apar ID</Typography>
-									</Box>
-									<Typography variant="subtitle1">{student.aparId || "N/A"}</Typography>
-								</Box>
+								<ButtonCustom text={"Edit Profile"} />
 							</Box>
-						</Paper>
-					</Grid>
 
-					{/* Health Metrics Section */}
-					<Grid item xs={12} md={6}>
-						<Paper variant="profileCard">
-							<Box sx={{ mb: 4 }}>
-								<h6 className="mb-4">Health Metrics</h6>
-								<Typography variant="body2" color="text.secondary">
-									Last Updated
-									<Typography
-										component="span"
-										variant="subtitle2"
-										display="inline"
-										sx={{
-											fontWeight: "bold",
-											color: theme.palette.primary.main,
-											ml: 1,
-										}}
-									>
-										28th March 2025
+							{/* First Row */}
+							<Box sx={{ display: "flex", mb: 3 }}>
+								{/* Father's Name */}
+								<Box sx={{ width: "25%", pr: 4 }}>
+									<Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+										Father's Name
 									</Typography>
-								</Typography>
+									<Typography variant="subtitle1">
+										Raja Kumar
+									</Typography>
+								</Box>
+
+								{/* Mother's Name */}
+								<Box sx={{ width: "25%", pr: 4 }}>
+									<Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+										Mother's Name
+									</Typography>
+									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+										Rajshri Kumari
+									</Typography>
+								</Box>
+
+								{/* Date of Birth */}
+								<Box sx={{ width: "25%", pr: 4 }}>
+									<Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+										Date of Birth
+									</Typography>
+									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+										11-12-1994
+									</Typography>
+								</Box>
+
+								{/* Hostel */}
+								<Box sx={{ width: "25%" }}>
+									<Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+										Hostel
+									</Typography>
+									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+										Hostel C
+									</Typography>
+								</Box>
 							</Box>
 
-							<Grid container spacing={3}>
-								{/* Hemoglobin */}
-								<Grid item xs={12} sm={4}>
-									<Box
-										sx={{
-											display: "flex",
-											flexDirection: "column",
-											alignItems: "center",
-										}}
-									>
-										<Box
-											sx={{
-												width: "48px",
-												height: "48px",
-												display: "flex",
-												justifyContent: "center",
-												alignItems: "center",
-												mb: 1,
-											}}
-										>
-											<img src={bloodImage} alt="bloodImage" />
-										</Box>
-										<Typography variant="body1" color="text.secondary" sx={{ gap: 1 }}>
-											Hemoglobin
-										</Typography>
-										<Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-											{"8.9 g/dL"}
-										</Typography>
-									</Box>
-								</Grid>
+							{/* Second Row */}
+							<Box sx={{ display: "flex" }}>
+								{/* Apar Id */}
+								<Box sx={{ width: "25%", pr: 4 }}>
+									<Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+										Apar Id
+									</Typography>
+									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+										123456782
+									</Typography>
+								</Box>
 
-								{/* Height */}
-								<Grid item xs={12} sm={4}>
-									<Box
-										sx={{
-											display: "flex",
-											flexDirection: "column",
-											alignItems: "center",
-										}}
-									>
-										<Box
-											sx={{
-												width: "48px",
-												height: "48px",
-												display: "flex",
-												justifyContent: "center",
-												alignItems: "center",
-												mb: 1,
-											}}
-										>
-											<img src={heightImageStudent} alt="heightImageStudent" />
-										</Box>
-										<Typography variant="body1" color="text.secondary" sx={{ gap: 1 }}>
-											Height
-										</Typography>
-										<Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-											{"152 cm"}
-										</Typography>
-									</Box>
-								</Grid>
+								{/* Class */}
+								<Box sx={{ width: "25%", pr: 4 }}>
+									<Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+										Class
+									</Typography>
+									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+										Class 1
+									</Typography>
+								</Box>
 
-								{/* Weight */}
-								<Grid item xs={12} sm={4}>
-									<Box
-										sx={{
-											display: "flex",
-											flexDirection: "column",
-											alignItems: "center",
-										}}
-									>
-										<Box
-											sx={{
-												width: "48px",
-												height: "48px",
-												display: "flex",
-												justifyContent: "center",
-												alignItems: "center",
-												mb: 1,
-											}}
-										>
-											<img src={weightScale} alt="weightScale" />
-										</Box>
-										<Typography variant="body1" color="text.secondary" sx={{ gap: 1 }}>
-											Weight
-										</Typography>
-										<Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-											{"55 Kg"}
-										</Typography>
-									</Box>
-								</Grid>
-							</Grid>
+								{/* School Name */}
+								<Box sx={{ width: "50%" }}>
+									<Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+										School Name
+									</Typography>
+									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+										Delhi Public School
+									</Typography>
+								</Box>
+							</Box>
 						</Paper>
 					</Grid>
 				</Grid>
+				{/* <AcademicOverviewGraph data={academicData} /> */}
+				<AcademicOverviewGraph chartData={mockData} />
 			</TabPanel>
 
 			{/* Academics tab content */}

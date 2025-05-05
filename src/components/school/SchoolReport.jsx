@@ -1,178 +1,403 @@
-import React, { useState, useEffect } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Typography, Box, Paper, Grid, Card, CardContent, Divider } from "@mui/material";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
+import { useState, useEffect } from "react";
+import MUIDataTable from "mui-datatables";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import ButtonCustom from "../../components/ButtonCustom"
+import SpinnerPageOverlay from "../../components/SpinnerPageOverlay"; 
 
-// Mock data - months of the year
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const SUBJECTS = ["Hindi", "English", "Sanskrit", "Science", "SocialScience", "Math"];
-
-// Colors for the chart lines
-const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#00C49F"];
-
-const SchoolReport = ({ schoolId, schoolName, udiseCode }) => {
-	const [performanceData, setPerformanceData] = useState([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [yearlyAverage, setYearlyAverage] = useState({});
-
-	useEffect(() => {
-		// Simulate API call to fetch performance data
-		const timer = setTimeout(() => {
-			// Generate mock data for monthly performance
-			const mockData = MONTHS.map((month) => {
-				const result = { month };
-
-				// Generate random data for each subject with an upward trend
-				SUBJECTS.forEach((subject) => {
-					// Make the data show a general upward trend
-					const baseScore =
-						month === "Jan"
-							? 60
-							: month === "Feb"
-							? 63
-							: month === "Mar"
-							? 65
-							: month === "Apr"
-							? 68
-							: month === "May"
-							? 70
-							: month === "Jun"
-							? 72
-							: month === "Jul"
-							? 74
-							: month === "Aug"
-							? 76
-							: month === "Sep"
-							? 78
-							: month === "Oct"
-							? 81
-							: month === "Nov"
-							? 83
-							: 85;
-
-					// Add some randomness
-					result[subject] = Math.round(baseScore + (Math.random() * 10 - 5));
-				});
-
-				// Calculate overall average
-				result.overall = Math.round(
-					SUBJECTS.reduce((sum, subject) => sum + result[subject], 0) / SUBJECTS.length
-				);
-
-				return result;
-			});
-
-			// Calculate yearly average for each subject
-			const subjectAverages = {};
-			SUBJECTS.forEach((subject) => {
-				subjectAverages[subject] = Math.round(
-					mockData.reduce((sum, month) => sum + month[subject], 0) / mockData.length
-				);
-			});
-
-			// Calculate overall yearly average
-			subjectAverages.overall = Math.round(
-				Object.values(subjectAverages).reduce((sum, val) => sum + val, 0) / SUBJECTS.length
-			);
-
-			setYearlyAverage(subjectAverages);
-			setPerformanceData(mockData);
-			setIsLoading(false);
-		}, 1000);
-
-		return () => clearTimeout(timer);
-	}, [schoolId]);
-
-	// Function to capitalize first letter
-	const capitalizeFirstLetter = (string) => {
-		if (!string) return "";
-		return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
-	};
-
-	if (isLoading) {
-		return <SpinnerPageOverlay isLoading={isLoading} />;
-	}
-
-	return (
-		<Box className="school-report-container">
-			<Grid container spacing={3}>
-				{/* School Info Card */}
-				{/* <Grid item xs={12}>
-					<Card>
-						<CardContent>
-							<Typography variant="h6" sx={{ mb: 2 }}>
-								School Information d
-							</Typography>
-							<Divider sx={{ mb: 2 }} />
-
-							<Grid container spacing={2}>
-								<Grid item xs={3}>
-									<Typography variant="subtitle2" color="text.secondary">
-										School Name:
-									</Typography>
-								</Grid>
-								<Grid item xs={9}>
-									<Typography variant="body1">{capitalizeFirstLetter(schoolName)}</Typography>
-								</Grid>
-
-								<Grid item xs={3}>
-									<Typography variant="subtitle2" color="text.secondary">
-										UDISE Code:
-									</Typography>
-								</Grid>
-								<Grid item xs={9}>
-									<Typography variant="body1">{udiseCode || "N/A"}</Typography>
-								</Grid>
-							</Grid>
-						</CardContent>
-					</Card>
-				</Grid> */}
-
-				{/* Performance Chart */}
-				<Grid item xs={12}>
-					<Card>
-						<CardContent>
-							<Typography variant="h6" sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-								<TrendingUpIcon sx={{ mr: 1 }} /> Monthly Performance Trend (2025)
-							</Typography>
-							<Divider sx={{ mb: 3 }} />
-
-							<Box sx={{ height: "400px", width: "100%" }}>
-								<ResponsiveContainer width="100%" height="100%">
-									<LineChart data={performanceData}>
-										<CartesianGrid strokeDasharray="3 3" />
-										<XAxis dataKey="month" />
-										<YAxis domain={[0, 100]} />
-										<Tooltip />
-										<Legend />
-										{SUBJECTS.map((subject, index) => (
-											<Line
-												key={subject}
-												type="monotone"
-												dataKey={subject}
-												stroke={COLORS[index % COLORS.length]}
-												activeDot={{ r: 6 }}
-											/>
-										))}
-										<Line
-											type="monotone"
-											dataKey="overall"
-											name="Overall Average"
-											stroke="#000000"
-											strokeWidth={2}
-											activeDot={{ r: 8 }}
-										/>
-									</LineChart>
-								</ResponsiveContainer>
-							</Box>
-						</CardContent>
-					</Card>
-				</Grid>
-			</Grid>
-		</Box>
-	);
+// Internal styles
+const styles = {
+  mainWrapper: {
+    maxWidth: "1200px",
+    margin: "0 auto", 
+  },
+  lowScore: {
+    color: "#ff0000",
+    fontWeight: "bold",
+  },
+  noteText: {
+    marginTop: "16px",
+    fontSize: "14px",
+  },
+  tableContainer: {
+    borderRadius: "8px",
+    overflow: "hidden",
+    border: "1px solid #e0e0e0",
+  }
 };
 
-export default SchoolReport;
+const theme = createTheme({
+  typography: {
+    fontFamily: "'Karla', sans-serif",
+    color: "#2F4F4F",
+  },
+  components: {
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          backgroundColor: "none",
+          fontFamily: "Karla !important",
+          textAlign: "left",
+          padding: "16px 12px !important",
+        },
+        head: {
+          fontSize: "14px",
+          fontWeight: 500,
+          textAlign: "left",
+          backgroundColor: "#f9f9f9 !important",
+          fontWeight: "bold !important",
+        },
+      },
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          "&:hover": {
+            backgroundColor: "rgba(47, 79, 79, 0.1) !important",
+          },
+        },
+      },
+    },
+    MuiToolbar: {
+      styleOverrides: {
+        regular: {
+          minHeight: "8px",
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          boxShadow: "none",
+        },
+      },
+    },
+  },
+});
+
+export default function SchoolReport() {
+  const [reports, setReports] = useState([]);
+  const [selectedClass, setSelectedClass] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  // Class options for the dropdown
+  const CLASS_OPTIONS = [
+    "Class 1", 
+    "Class 2", 
+    "Class 3", 
+    "Class 4", 
+    "Class 5"
+  ];
+
+  // Mock data to simulate the API response
+  const mockData = {
+    "Class 1": [
+      {
+        name: "Test - 1",
+        students: 38,
+        maxMarks: 30,
+        subjects: {
+          hindi: 24,
+          english: 23,
+          mathematics: 25,
+          science: 27,
+          socialStudies: 29,
+          healthCare: 29,
+          it: 29
+        }
+      },
+      {
+        name: "Test - 1",
+        students: 38,
+        maxMarks: 30,
+        subjects: {
+          hindi: 24,
+          english: 23,
+          mathematics: 25,
+          science: 27,
+          socialStudies: 29,
+          healthCare: 29,
+          it: 29
+        }
+      },
+      {
+        name: "Test - 1",
+        students: 38,
+        maxMarks: 50,
+        subjects: {
+          hindi: 24,
+          english: 9,
+          mathematics: 25,
+          science: 12,
+          socialStudies: 29,
+          healthCare: 29,
+          it: 29
+        }
+      },
+      {
+        name: "Test - 1",
+        students: 38,
+        maxMarks: 30,
+        subjects: {
+          hindi: 24,
+          english: 23,
+          mathematics: 25,
+          science: 27,
+          socialStudies: 29,
+          healthCare: 29,
+          it: 29
+        }
+      },
+      {
+        name: "Test - 1",
+        students: 38,
+        maxMarks: 30,
+        subjects: {
+          hindi: 24,
+          english: 23,
+          mathematics: 25,
+          science: 27,
+          socialStudies: 28,
+          healthCare: 29,
+          it: 29
+        }
+      }
+    ],
+    "Class 2": [],
+    "Class 3": [],
+    "Class 4": [],
+    "Class 5": []
+  };
+
+  // Function to fetch report data (simulated)
+  const fetchReportData = async (classVal) => {
+    setIsLoading(true);
+    try {
+      // Simulate API call with a timeout
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setReports(mockData[classVal] || []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Re-fetch data when selected class changes
+  useEffect(() => {
+    fetchReportData(`Class ${selectedClass}`);
+  }, [selectedClass]);
+
+  // Handle class change
+  const handleClassChange = (e) => {
+    setSelectedClass(parseInt(e.target.value, 10));
+  };
+
+  // Handle report download
+  const handleDownloadReport = () => {
+    // This would typically trigger a download API call
+    // For now we'll just log a message
+    console.log(`Downloading report for Class ${selectedClass}`);
+    alert(`Report for Class ${selectedClass} will be downloaded`);
+  };
+
+  // Format the data for MUIDataTable
+  const tableData = reports.map(report => [
+    report.name,
+    report.students,
+    report.maxMarks,
+    report.subjects.hindi,
+    report.subjects.english,
+    report.subjects.mathematics,
+    report.subjects.science,
+    report.subjects.socialStudies,
+    report.subjects.healthCare,
+    report.subjects.it
+  ]);
+
+  // Define columns for MUIDataTable
+  const columns = [
+    {
+      name: "Name of Exam",
+      options: {
+        filter: false,
+        sort: true,
+      }
+    },
+    {
+      name: "No. Of Students",
+      options: {
+        filter: false,
+        sort: true,
+      }
+    },
+    {
+      name: "Max Marks",
+      options: {
+        filter: false,
+        sort: true,
+      }
+    },
+    {
+      name: "Hindi",
+      options: {
+        filter: false,
+        sort: true,
+        customBodyRender: (value) => {
+          return <div style={parseInt(value) < 15 ? styles.lowScore : null}>{value}</div>;
+        }
+      }
+    },
+    {
+      name: "English",
+      options: {
+        filter: false,
+        sort: true,
+        customBodyRender: (value) => {
+          return <div style={parseInt(value) < 15 ? styles.lowScore : null}>{value}</div>;
+        }
+      }
+    },
+    {
+      name: "Mathematics",
+      options: {
+        filter: false,
+        sort: true,
+      }
+    },
+    {
+      name: "Science",
+      options: {
+        filter: false,
+        sort: true,
+        customBodyRender: (value) => {
+          return <div style={parseInt(value) < 15 ? styles.lowScore : null}>{value}</div>;
+        }
+      }
+    },
+    {
+      name: "Social Studies",
+      options: {
+        filter: false,
+        sort: true,
+      }
+    },
+    {
+      name: "Health Care",
+      options: {
+        filter: false,
+        sort: true,
+      }
+    },
+    {
+      name: "IT",
+      options: {
+        filter: false,
+        sort: true,
+      }
+    }
+  ];
+
+  // MUIDataTable options
+  const options = {
+    filter: false,
+    search: false,
+    download: false,
+    print: false,
+    viewColumns: false,
+    selectableRows: "none",
+    pagination: false,
+    responsive: "standard",
+    fixedHeader: true,
+    tableBodyHeight: "100%",
+    tableBodyMaxHeight: "100%",
+    setTableProps: () => ({
+      style: {
+        width: "100%",
+      },
+    }),
+  };
+
+  return (
+    <ThemeProvider theme={theme}>
+      <div   style={styles.mainWrapper}>
+         
+        {/* Filters and Action Button Row */}
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
+          {/* Class Dropdown */}
+          <div className="w-full sm:w-auto mb-3 sm:mb-0">
+            <FormControl
+              sx={{
+                height: "48px",
+                display: "flex",
+                width: { xs: "100%", sm: "150px" },
+                minWidth: "120px",
+              }}
+            >
+              <InputLabel
+                id="class-select-label"
+                sx={{
+                  transform: "translate(14px, 14px) scale(1)",
+                  "&.Mui-focused, &.MuiFormLabel-filled": {
+                    transform: "translate(14px, -9px) scale(0.75)",
+                  },
+                }}
+              >
+                Class
+              </InputLabel>
+              <Select
+                labelId="class-select-label"
+                id="class-select"
+                value={selectedClass}
+                label="Class"
+                onChange={handleClassChange}
+                sx={{
+                  height: "100%",
+                  borderRadius: "8px",
+                  backgroundColor: "#fff",
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderRadius: "8px",
+                  },
+                  "& .MuiSelect-select": {
+                    paddingTop: "12px",
+                    paddingBottom: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                  },
+                }}
+              >
+                {CLASS_OPTIONS.map((option, index) => (
+                  <MenuItem key={option} value={index + 1}>
+                    {option}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </div>
+
+          {/* Download Report Button */}
+          <ButtonCustom
+            text={"Download Report"}
+            onClick={handleDownloadReport}
+            btnWidth={200}
+          />
+        </div>
+
+        {/* Data Table */}
+        <div className="overflow-x-auto" style={styles.tableContainer}>
+          <MUIDataTable data={tableData} columns={columns} options={options} />
+        </div>
+
+        {/* Note text */}
+        <div style={styles.noteText}>
+          <span className="font-bold">Note:</span> These marks represent the subject-wise average score of the class, calculated as: (Total Marks Obtained in the Subject + Number of Students Appeared)
+        </div>
+
+        {/* Loading Overlay */}
+        {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
+      </div>
+    </ThemeProvider>
+  );
+}

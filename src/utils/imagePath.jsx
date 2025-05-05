@@ -29,10 +29,11 @@ import person from "../assets/person.svg"
 import house from "../assets/house.svg"
 import fingerprint from "../assets/fingerprint.svg"
 import calendar_today from "../assets/calendar_today.svg"
+import noSchoolImage from "../assets/data-buried-svgrepo-com 1.svg"
 
 export {
   SelReports,SelTests,SelUsers,UNSelUsers,UNSelTests,UNSelReports,bloodImage,
-    BrandGoogleAnalytics,addSymbolBtn,closeCross,deadlineSummaryModal,
+    BrandGoogleAnalytics,addSymbolBtn,closeCross,deadlineSummaryModal,noSchoolImage,
     ChevronLeft,school,unselectedschool,trash,heightImageStudent,
     CreateTestImg,weightScale,person,house,fingerprint,calendar_today,
     DocScanner,

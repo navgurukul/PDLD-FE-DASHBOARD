@@ -344,28 +344,34 @@ export default function Users() {
 			name: "username",
 			label: "USERNAME",
 			options: {
-				sort: true,
-				customBodyRender: (value, tableMeta) => {
-					const userIndex = tableMeta.rowIndex;
-					const user = filteredUsers[userIndex];
-
-					return (
-						<div className="flex items-center gap-2">
-							<span>{value}</span>
-							<Tooltip title="Copy username and password" arrow>
-								<IconButton
-									size="small"
-									onClick={() => handleCopyCredentials(user)}
-									sx={{ color: "#2F4F4F", padding: "2px" }}
-								>
-									<ContentCopyIcon fontSize="small" />
-								</IconButton>
-							</Tooltip>
-						</div>
-					);
-				},
+			  sort: true,
+			  customBodyRender: (value, tableMeta) => {
+				const userIndex = tableMeta.rowIndex;
+				const user = filteredUsers[userIndex];
+		  
+				return (
+				  <div className="flex items-center gap-2" style={{ justifyContent: "flex-start", width: "100%", textAlign: "left" }}>
+					<span style={{ textAlign: "left" }}>{value}</span>
+					<Tooltip title="Copy username and password" arrow>
+					  <IconButton
+						size="small"
+						onClick={() => handleCopyCredentials(user)}
+						sx={{ color: "#2F4F4F", padding: "2px" }}
+					  >
+						<ContentCopyIcon fontSize="small" />
+					  </IconButton>
+					</Tooltip>
+				  </div>
+				);
+			  },
+			  setCellHeaderProps: () => ({
+				style: { textAlign: "left", paddingLeft: "16px" }
+			  }),
+			  setCellProps: () => ({
+				style: { textAlign: "left", paddingLeft: "16px" }
+			  })
 			},
-		},
+		  },
 		{
 			name: "password",
 			label: "PASSWORD",
