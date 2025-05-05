@@ -8,10 +8,7 @@ import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 
 // Internal styles
 const styles = {
-  mainWrapper: {
-    maxWidth: "1200px",
-    margin: "0 auto", 
-  },
+   
   lowScore: {
     color: "#ff0000",
     fontWeight: "bold",
@@ -42,8 +39,7 @@ const theme = createTheme({
           padding: "16px 12px !important",
         },
         head: {
-          fontSize: "14px",
-          fontWeight: 500,
+          fontSize: "14px", 
           textAlign: "left",
           backgroundColor: "#f9f9f9 !important",
           fontWeight: "bold !important",
@@ -322,7 +318,7 @@ export default function SchoolReport() {
 
   return (
     <ThemeProvider theme={theme}>
-      <div   style={styles.mainWrapper}>
+      <div     >
          
         {/* Filters and Action Button Row */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
