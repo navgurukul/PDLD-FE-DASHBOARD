@@ -350,7 +350,7 @@ const StudentAcademics = () => {
 
 	return (
 		<ThemeProvider theme={theme}>
-			<div className="w-full mx-auto p-4 font-sans">
+			<div className="w-full mx-auto font-sans">
 				{/* Syllabus Test Section */}
 				<div className="mb-8">
 					<h5 className="text-lg font-bold text-[#2F4F4F] mb-4">Syllabus Test</h5>
