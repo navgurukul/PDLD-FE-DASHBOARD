@@ -10,6 +10,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
+import {noSchoolImage} from "../utils/imagePath";
 
 // Create theme for consistent styling
 const theme = createTheme({
@@ -413,114 +414,128 @@ const Reports = () => {
 					</div>
 				</div>
 
-				{/* Selected School Info and Class Filter */}
-				{selectedSchool && (
-					<div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-						{/* <h2 className="text-xl text-blue-600">{selectedSchool.id} - {selectedSchool.name}</h2> */}
-
-						<div className="flex justify-between items-center w-full">
-							<div className="flex items-center gap-4">
-								<FormControl
-									sx={{
-										height: "48px",
-										display: "flex",
-										width: "150px",
-									}}
-								>
-									<InputLabel id="class-select-label">Class</InputLabel>
-									<Select
-										labelId="class-select-label"
-										id="class-select"
-										value={selectedClass}
-										label="Class"
-										onChange={(e) => setSelectedClass(e.target.value)}
-										sx={{
-											height: "100%",
-											borderRadius: "8px",
-											"& .MuiOutlinedInput-notchedOutline": {
-												borderRadius: "8px",
-											},
-											"& .MuiSelect-select": {
-												paddingTop: "12px",
-												paddingBottom: "12px",
-												display: "flex",
-												alignItems: "center",
-											},
-										}}
-									>
-										<MenuItem value="">All Classes</MenuItem>
-										{classes.map((option) => (
-											<MenuItem key={option} value={option}>
-												{option}
-											</MenuItem>
-										))}
-									</Select>
-								</FormControl>
-
-								<Tooltip title="Reset Filters" placement="top">
-									<div
-										onClick={resetFilters}
-										style={{
-											cursor: "pointer",
-											display: "flex",
-											alignItems: "center",
-											backgroundColor: "#f5f5f5",
-											padding: "6px 12px",
-											borderRadius: "4px",
-											height: "48px",
-										}}
-									>
-										<RestartAltIcon color="action" />
-									</div>
-								</Tooltip>
-							</div>
-
-							<Button
-								variant="contained"
-								onClick={handleDownloadReport}
-								sx={{
-									backgroundColor: "#f3c22c",
-									color: "#000",
-									fontWeight: "medium",
-									"&:hover": {
-										backgroundColor: "#e0b424",
-									},
-									height: "40px",
-								}}
-							>
-								Download Report
-							</Button>
-						</div>
-					</div>
-				)}
-
-				{/* Report Table */}
-				{selectedSchool && (
+				{selectedSchool ? (
 					<>
-						<div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
-							<MUIDataTable data={reportData} columns={columns} options={options} />
+						{selectedSchool && (
+							<div className="  mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+								{/* <h2 className="text-xl text-blue-600">{selectedSchool.id} - {selectedSchool.name}</h2> */}
 
-							{/* Note */}
-							<div className="p-4 bg-gray-50 text-sm text-gray-600">
-								<span className="font-semibold">Note:</span> These marks represent the subject-wise
-								average score of the class, calculated as: (Total Marks Obtained in the Subject ÷ Number
-								of Students Appeared)
-							</div>
-						</div>
+								<div className="flex justify-between items-center w-full">
+									<div className="flex items-center gap-4">
+										<FormControl
+											sx={{
+												height: "48px",
+												display: "flex",
+												width: "150px",
+											}}
+										>
+											<InputLabel id="class-select-label">Class</InputLabel>
+											<Select
+												labelId="class-select-label"
+												id="class-select"
+												value={selectedClass}
+												label="Class"
+												onChange={(e) => setSelectedClass(e.target.value)}
+												sx={{
+													height: "100%",
+													borderRadius: "8px",
+													"& .MuiOutlinedInput-notchedOutline": {
+														borderRadius: "8px",
+													},
+													"& .MuiSelect-select": {
+														paddingTop: "12px",
+														paddingBottom: "12px",
+														display: "flex",
+														alignItems: "center",
+													},
+												}}
+											>
+												<MenuItem value="">All Classes</MenuItem>
+												{classes.map((option) => (
+													<MenuItem key={option} value={option}>
+														{option}
+													</MenuItem>
+												))}
+											</Select>
+										</FormControl>
 
-						{/* Pagination */}
-						{totalRecords > pageSize && (
-							<div style={{ width: "max-content", margin: "25px auto" }}>
-								<Pagination
-									count={Math.ceil(totalRecords / pageSize)}
-									page={currentPage}
-									onChange={(e, page) => setCurrentPage(page)}
-									showFirstButton
-									showLastButton
-								/>
+										<Tooltip title="Reset Filters" placement="top">
+											<div
+												onClick={resetFilters}
+												style={{
+													cursor: "pointer",
+													display: "flex",
+													alignItems: "center",
+													backgroundColor: "#f5f5f5",
+													padding: "6px 12px",
+													borderRadius: "4px",
+													height: "48px",
+												}}
+											>
+												<RestartAltIcon color="action" />
+											</div>
+										</Tooltip>
+									</div>
+
+									<Button
+										variant="contained"
+										onClick={handleDownloadReport}
+										sx={{
+											backgroundColor: "#f3c22c",
+											color: "#000",
+											fontWeight: "medium",
+											"&:hover": {
+												backgroundColor: "#e0b424",
+											},
+											height: "40px",
+										}}
+									>
+										Download Report
+									</Button>
+								</div>
 							</div>
 						)}
+
+						{/* Report Table */}
+						{selectedSchool && (
+							<>
+								<div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
+									<MUIDataTable data={reportData} columns={columns} options={options} />
+
+									{/* Note */}
+									<div className="p-4 bg-gray-50 text-sm text-gray-600">
+										<span className="font-semibold">Note:</span> These marks represent the
+										subject-wise average score of the class, calculated as: (Total Marks Obtained in
+										the Subject ÷ Number of Students Appeared)
+									</div>
+								</div>
+
+								{/* Pagination */}
+								{totalRecords > pageSize && (
+									<div style={{ width: "max-content", margin: "25px auto" }}>
+										<Pagination
+											count={Math.ceil(totalRecords / pageSize)}
+											page={currentPage}
+											onChange={(e, page) => setCurrentPage(page)}
+											showFirstButton
+											showLastButton
+										/>
+									</div>
+								)}
+							</>
+						)}
 					</>
+				) : (
+					// Show placeholder image when no school is selected (user first lands on page)
+					<div className="flex flex-col items-center justify-center p-10">
+						<img
+							src={noSchoolImage}
+							alt="Search for a school"
+							className="w-40 h-40 mb-6"
+						/>
+						<h3 className="text-xl text-gray-600 mb-2">No School Selected</h3>
+						<p className="text-gray-500">Please search and select a school to view performance reports</p>
+					</div>
 				)}
 
 				{/* Loading Indicator */}
