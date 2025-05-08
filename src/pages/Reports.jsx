@@ -1,16 +1,24 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, } from "react";
 import MUIDataTable from "mui-datatables";
-import { Button, TextField, MenuItem, CircularProgress, Tooltip, Menu, ListItemIcon, ListItemText } from "@mui/material";
+import {
+	Button,
+	TextField,
+	MenuItem, 
+	Tooltip,
+	Menu,
+	ListItemIcon,
+	ListItemText,
+} from "@mui/material";
+
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { FormControl, Select, InputLabel } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { FormControl, Select, InputLabel } from "@mui/material"; 
 import { Pagination } from "@mui/material";
 import { Search } from "lucide-react";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
-import {noSchoolImage} from "../utils/imagePath";
+import { noSchoolImage } from "../utils/imagePath";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import TableChartIcon from "@mui/icons-material/TableChart";
 
@@ -80,9 +88,10 @@ const theme = createTheme({
 	},
 });
 
-const Reports = () => {
-	const navigate = useNavigate();
+const Reports = () => { 
 
+	const [downloadMenuAnchorEl, setDownloadMenuAnchorEl] = useState(null);
+	const downloadMenuOpen = Boolean(downloadMenuAnchorEl);
 	// State management
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedSchool, setSelectedSchool] = useState(null);
@@ -93,10 +102,6 @@ const Reports = () => {
 	const [totalRecords, setTotalRecords] = useState(0);
 	const [reportData, setReportData] = useState([]);
 	const [schools, setSchools] = useState([]);
-	
-	// State for download menu
-	const [downloadMenuAnchorEl, setDownloadMenuAnchorEl] = useState(null);
-	const downloadMenuOpen = Boolean(downloadMenuAnchorEl);
 
 	const pageSize = 10;
 
@@ -243,19 +248,19 @@ const Reports = () => {
 	// Download report as PDF
 	const handleDownloadPDF = () => {
 		toast.info("Generating PDF report...");
-		
+
 		// In a real implementation, you would call an API endpoint to generate the PDF
 		// For now, we'll simulate with a timeout and then trigger the download
 		setTimeout(() => {
 			// In a real implementation, this would be the actual PDF data from your backend
 			// For demonstration, we'll create a simple HTML-to-PDF approach
-			
+
 			// Create a hidden HTML element with the data formatted for PDF
-			const printContent = document.createElement('div');
-			printContent.style.display = 'none';
+			const printContent = document.createElement("div");
+			printContent.style.display = "none";
 			printContent.innerHTML = `
-				<h2>${selectedSchool ? selectedSchool.name : 'School'} Performance Report</h2>
-				<h3>${selectedClass || 'All Classes'}</h3>
+				<h2>${selectedSchool ? selectedSchool.name : "School"} Performance Report</h2>
+				<h3>${selectedClass || "All Classes"}</h3>
 				<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
 					<tr>
 						<th>Name of Exam</th>
@@ -269,7 +274,9 @@ const Reports = () => {
 						<th>Health Care</th>
 						<th>IT</th>
 					</tr>
-					${reportData.map(row => `
+					${reportData
+						.map(
+							(row) => `
 						<tr>
 							<td>${row.name}</td>
 							<td>${row.noOfStudents}</td>
@@ -282,7 +289,9 @@ const Reports = () => {
 							<td style="color: ${getTextColor(row.healthCare)}">${row.healthCare}</td>
 							<td style="color: ${getTextColor(row.it)}">${row.it}</td>
 						</tr>
-					`).join('')}
+					`
+						)
+						.join("")}
 				</table>
 				<p style="margin-top: 20px; font-size: 12px;">
 					<strong>Note:</strong> These marks represent the subject-wise average score of the class, 
@@ -290,14 +299,14 @@ const Reports = () => {
 				</p>
 			`;
 			document.body.appendChild(printContent);
-			
+
 			// In a real implementation, you'd use a proper PDF library like jsPDF
 			// For this demo, we'll use the browser's print to PDF functionality
-			const pdfWindow = window.open('', '_blank');
+			const pdfWindow = window.open("", "_blank");
 			pdfWindow.document.write(`
 				<html>
 					<head>
-						<title>${selectedSchool ? selectedSchool.name : 'School'} Performance Report</title>
+						<title>${selectedSchool ? selectedSchool.name : "School"} Performance Report</title>
 						<style>
 							body { font-family: Arial, sans-serif; padding: 20px; }
 							table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -321,19 +330,19 @@ const Reports = () => {
 				</html>
 			`);
 			pdfWindow.document.close();
-			
+
 			// Remove the temporary element
 			document.body.removeChild(printContent);
 			toast.success("PDF report generated");
 		}, 1000);
-		
+
 		handleDownloadClose();
 	};
 
 	// Download report as CSV
 	const handleDownloadCSV = () => {
 		toast.info("Generating CSV report...");
-		
+
 		// Format the data for CSV
 		const headers = [
 			"Name of Exam",
@@ -345,13 +354,13 @@ const Reports = () => {
 			"Science",
 			"Social Science",
 			"Health Care",
-			"IT"
+			"IT",
 		];
-		
+
 		// Convert the report data to CSV format
 		let csvContent = headers.join(",") + "\n";
-		
-		reportData.forEach(row => {
+
+		reportData.forEach((row) => {
 			const rowData = [
 				row.name,
 				row.noOfStudents,
@@ -362,25 +371,30 @@ const Reports = () => {
 				row.science,
 				row.socialScience,
 				row.healthCare,
-				row.it
+				row.it,
 			];
-			
+
 			// Handle commas in data by wrapping in quotes if needed
-			csvContent += rowData.map(cell => {
-				if (cell && cell.toString().includes(',')) {
-					return `"${cell}"`;
-				}
-				return cell;
-			}).join(",") + "\n";
+			csvContent +=
+				rowData
+					.map((cell) => {
+						if (cell && cell.toString().includes(",")) {
+							return `"${cell}"`;
+						}
+						return cell;
+					})
+					.join(",") + "\n";
 		});
-		
+
 		// Create a Blob from the CSV data
-		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-		
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+
 		// Create a download link for the CSV file
-		const link = document.createElement('a');
-		const fileName = `${selectedSchool ? selectedSchool.name.replace(/\s+/g, '_') : 'School'}_Performance_Report_${new Date().toISOString().split('T')[0]}.csv`;
-		
+		const link = document.createElement("a");
+		const fileName = `${selectedSchool ? selectedSchool.name.replace(/\s+/g, "_") : "School"}_Performance_Report_${
+			new Date().toISOString().split("T")[0]
+		}.csv`;
+
 		// Create the download URL
 		if (window.navigator.msSaveOrOpenBlob) {
 			// For IE
@@ -389,10 +403,10 @@ const Reports = () => {
 			// For other browsers
 			const url = window.URL.createObjectURL(blob);
 			link.href = url;
-			link.setAttribute('download', fileName);
+			link.setAttribute("download", fileName);
 			document.body.appendChild(link);
 			link.click();
-			
+
 			// Cleanup
 			setTimeout(() => {
 				document.body.removeChild(link);
@@ -400,10 +414,27 @@ const Reports = () => {
 				toast.success("CSV report downloaded");
 			}, 100);
 		}
-		
+
 		handleDownloadClose();
 	};
-
+	// Download report
+	const handleDownloadReport = () => {
+		toast.info("Downloading report...");
+		// Implement download logic here
+	};
+	const defaultCustomHeadLabelRender = (columnMeta) => (
+		<span
+			style={{
+				color: "#2F4F4F",
+				fontFamily: "'Work Sans'",
+				fontSize: "14px",
+				lineHeight: "28px",
+				fontWeight: 600,
+			}}
+		>
+			{columnMeta.label}
+		</span>
+	);
 	// Table columns
 	const columns = [
 		{
@@ -508,7 +539,11 @@ const Reports = () => {
 			},
 		},
 	];
-
+	// Apply default customHeadLabelRender to all columns
+	columns.forEach((column) => {
+		if (!column.options) column.options = {};
+		column.options.customHeadLabelRender = defaultCustomHeadLabelRender;
+	});
 	// Table options
 	const options = {
 		filter: false,
@@ -653,6 +688,31 @@ const Reports = () => {
 
 									<Button
 										variant="contained"
+										onClick={handleDownloadReport}
+										sx={{
+											backgroundColor: "#f3c22c",
+											color: "#000",
+											fontWeight: "medium",
+											"&:hover": {
+												backgroundColor: "#e0b424",
+											},
+											height: "40px",
+										}}
+									>
+										Download Report
+									</Button>
+								</div>
+							</div>
+						)}
+
+						{/* Report Table */}
+						{selectedSchool && (
+							<>
+								<div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
+									<MUIDataTable data={reportData} columns={columns} options={options} />
+
+									<Button
+										variant="contained"
 										onClick={handleDownloadClick}
 										sx={{
 											backgroundColor: "#f3c22c",
@@ -666,19 +726,19 @@ const Reports = () => {
 									>
 										Download Report
 									</Button>
-									
+
 									{/* Download Options Menu */}
 									<Menu
 										anchorEl={downloadMenuAnchorEl}
 										open={downloadMenuOpen}
 										onClose={handleDownloadClose}
 										anchorOrigin={{
-											vertical: 'bottom',
-											horizontal: 'right',
+											vertical: "bottom",
+											horizontal: "right",
 										}}
 										transformOrigin={{
-											vertical: 'top',
-											horizontal: 'right',
+											vertical: "top",
+											horizontal: "right",
 										}}
 									>
 										<MenuItem onClick={handleDownloadPDF}>
@@ -695,23 +755,12 @@ const Reports = () => {
 										</MenuItem>
 									</Menu>
 								</div>
-							</div>
-						)}
-
-						{/* Report Table */}
-						{selectedSchool && (
-							<>
-								<div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
-									<MUIDataTable data={reportData} columns={columns} options={options} />
-
-									{/* Note */}
-									<div className="p-4 bg-gray-50 text-sm text-gray-600">
-										<span className="font-semibold">Note:</span> These marks represent the
-										subject-wise average score of the class, calculated as: (Total Marks Obtained in
-										the Subject ÷ Number of Students Appeared)
-									</div>
+								){/* Note */}
+								<div className="p-4 bg-gray-50 text-sm text-gray-600">
+									<span className="font-semibold">Note:</span> These marks represent the subject-wise
+									average score of the class, calculated as: (Total Marks Obtained in the Subject ÷
+									Number of Students Appeared)
 								</div>
-
 								{/* Pagination */}
 								{totalRecords > pageSize && (
 									<div style={{ width: "max-content", margin: "25px auto" }}>
@@ -730,11 +779,7 @@ const Reports = () => {
 				) : (
 					// Show placeholder image when no school is selected (user first lands on page)
 					<div className="flex flex-col items-center justify-center p-10">
-						<img
-							src={noSchoolImage}
-							alt="Search for a school"
-							className="w-40 h-40 mb-6"
-						/>
+						<img src={noSchoolImage} alt="Search for a school" className="w-40 h-40 mb-6" />
 						<h3 className="text-xl text-gray-600 mb-2">No School Selected</h3>
 						<p className="text-gray-500">Please search and select a school to view performance reports</p>
 					</div>

@@ -103,6 +103,7 @@ theme = createTheme(theme, {
 			lineHeight: "130%",
 			letterSpacing: 0,
 			textAlign: "center",
+			color: theme.palette.text.primary, // Use Text Primary color
 			[theme.breakpoints.down("sm")]: {
 				fontSize: "1.5rem",
 			},
@@ -152,7 +153,7 @@ theme = createTheme(theme, {
 			},
 		},
 		body2: {
-			fontFamily: "Karla",
+			fontFamily: "Work Sans", /* Change from 'Karla' to 'Work Sans' */
 			color: "#2F4F4F",
 			fontSize: "0.875rem",
 			fontWeight: 500,
@@ -165,6 +166,7 @@ theme = createTheme(theme, {
 			fontWeight: 500,
 			lineHeight: "150%",
 			letterSpacing: 0,
+			color: theme.palette.text.primary, // Use Text Primary color
 		},
 		button: {
 			fontFamily: "Noto Sans",
@@ -183,6 +185,7 @@ theme = createTheme(theme, {
 			fontWeight: 700,
 			lineHeight: "170%",
 			letterSpacing: 1,
+			color: theme.palette.text.primary, // Use Text Primary color
 			[theme.breakpoints.down("sm")]: {
 				fontSize: "1rem",
 			},
@@ -241,6 +244,7 @@ theme.components = {
 				padding: theme.spacing(3),
 				borderRadius: "8px",
 				background: "#FFF",
+				color: theme.palette.text.primary, // Use Text Primary color
 				boxShadow:
 					"0px 1px 2px 0px rgba(47, 79, 79, 0.06), 0px 2px 1px 0px rgba(47, 79, 79, 0.04), 0px 1px 5px 0px rgba(47, 79, 79, 0.08)",
 				border: "none",
