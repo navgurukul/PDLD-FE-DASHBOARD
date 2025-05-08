@@ -301,6 +301,20 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     student,
   ]);
 
+  const defaultCustomHeadLabelRender = (columnMeta) => (
+    <span
+      style={{
+        color: "#2F4F4F",
+        fontFamily: "'Work Sans'",
+        fontWeight: 600,
+        fontSize: "14px",
+        fontStyle: "normal",
+      }}
+    >
+      {columnMeta.label}
+    </span>
+  );
+
   // Define columns for MUIDataTable
   const columns = [
     {
@@ -490,6 +504,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       },
     },
   ];
+
+  columns.forEach((column) => {
+    if (!column.options) column.options = {};
+    column.options.customHeadLabelRender = defaultCustomHeadLabelRender;
+  });
 
   const handleStudentNameClick = (studentId, student) => {
     navigate(`/schools/schoolDetail/${schoolId}/student-profile/${studentId}`, {

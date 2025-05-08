@@ -3,12 +3,11 @@ import MUIDataTable from "mui-datatables";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import ButtonCustom from "../../components/ButtonCustom"
-import SpinnerPageOverlay from "../../components/SpinnerPageOverlay"; 
+import ButtonCustom from "../../components/ButtonCustom";
+import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 
 // Internal styles
 const styles = {
-   
   lowScore: {
     color: "#ff0000",
     fontWeight: "bold",
@@ -21,7 +20,7 @@ const styles = {
     borderRadius: "8px",
     overflow: "hidden",
     border: "1px solid #e0e0e0",
-  }
+  },
 };
 
 const theme = createTheme({
@@ -39,7 +38,7 @@ const theme = createTheme({
           padding: "16px 12px !important",
         },
         head: {
-          fontSize: "14px", 
+          fontSize: "14px",
           textAlign: "left",
           backgroundColor: "#f9f9f9 !important",
           fontWeight: "bold !important",
@@ -79,13 +78,7 @@ export default function SchoolReport() {
   const navigate = useNavigate();
 
   // Class options for the dropdown
-  const CLASS_OPTIONS = [
-    "Class 1", 
-    "Class 2", 
-    "Class 3", 
-    "Class 4", 
-    "Class 5"
-  ];
+  const CLASS_OPTIONS = ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5"];
 
   // Mock data to simulate the API response
   const mockData = {
@@ -101,8 +94,8 @@ export default function SchoolReport() {
           science: 27,
           socialStudies: 29,
           healthCare: 29,
-          it: 29
-        }
+          it: 29,
+        },
       },
       {
         name: "Test - 1",
@@ -115,8 +108,8 @@ export default function SchoolReport() {
           science: 27,
           socialStudies: 29,
           healthCare: 29,
-          it: 29
-        }
+          it: 29,
+        },
       },
       {
         name: "Test - 1",
@@ -129,8 +122,8 @@ export default function SchoolReport() {
           science: 12,
           socialStudies: 29,
           healthCare: 29,
-          it: 29
-        }
+          it: 29,
+        },
       },
       {
         name: "Test - 1",
@@ -143,8 +136,8 @@ export default function SchoolReport() {
           science: 27,
           socialStudies: 29,
           healthCare: 29,
-          it: 29
-        }
+          it: 29,
+        },
       },
       {
         name: "Test - 1",
@@ -157,14 +150,14 @@ export default function SchoolReport() {
           science: 27,
           socialStudies: 28,
           healthCare: 29,
-          it: 29
-        }
-      }
+          it: 29,
+        },
+      },
     ],
     "Class 2": [],
     "Class 3": [],
     "Class 4": [],
-    "Class 5": []
+    "Class 5": [],
   };
 
   // Function to fetch report data (simulated)
@@ -172,7 +165,7 @@ export default function SchoolReport() {
     setIsLoading(true);
     try {
       // Simulate API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setReports(mockData[classVal] || []);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -200,7 +193,7 @@ export default function SchoolReport() {
   };
 
   // Format the data for MUIDataTable
-  const tableData = reports.map(report => [
+  const tableData = reports.map((report) => [
     report.name,
     report.students,
     report.maxMarks,
@@ -210,8 +203,23 @@ export default function SchoolReport() {
     report.subjects.science,
     report.subjects.socialStudies,
     report.subjects.healthCare,
-    report.subjects.it
+    report.subjects.it,
   ]);
+
+  const defaultCustomHeadRender = (columnMeta) => {
+    return (
+      <th
+        style={{
+          color: "#2F4F4F",
+          fontFamily: "'Work Sans'",
+          fontWeight: 600,
+          fontSize: "14px",
+        }}
+      >
+        {columnMeta.label}
+      </th>
+    );
+  };
 
   // Define columns for MUIDataTable
   const columns = [
@@ -220,21 +228,21 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
-      }
+      },
     },
     {
       name: "No. Of Students",
       options: {
         filter: false,
         sort: true,
-      }
+      },
     },
     {
       name: "Max Marks",
       options: {
         filter: false,
         sort: true,
-      }
+      },
     },
     {
       name: "Hindi",
@@ -242,9 +250,13 @@ export default function SchoolReport() {
         filter: false,
         sort: true,
         customBodyRender: (value) => {
-          return <div style={parseInt(value) < 15 ? styles.lowScore : null}>{value}</div>;
-        }
-      }
+          return (
+            <div style={parseInt(value) < 15 ? styles.lowScore : null}>
+              {value}
+            </div>
+          );
+        },
+      },
     },
     {
       name: "English",
@@ -252,16 +264,20 @@ export default function SchoolReport() {
         filter: false,
         sort: true,
         customBodyRender: (value) => {
-          return <div style={parseInt(value) < 15 ? styles.lowScore : null}>{value}</div>;
-        }
-      }
+          return (
+            <div style={parseInt(value) < 15 ? styles.lowScore : null}>
+              {value}
+            </div>
+          );
+        },
+      },
     },
     {
       name: "Mathematics",
       options: {
         filter: false,
         sort: true,
-      }
+      },
     },
     {
       name: "Science",
@@ -269,32 +285,42 @@ export default function SchoolReport() {
         filter: false,
         sort: true,
         customBodyRender: (value) => {
-          return <div style={parseInt(value) < 15 ? styles.lowScore : null}>{value}</div>;
-        }
-      }
+          return (
+            <div style={parseInt(value) < 15 ? styles.lowScore : null}>
+              {value}
+            </div>
+          );
+        },
+      },
     },
     {
       name: "Social Studies",
       options: {
         filter: false,
         sort: true,
-      }
+      },
     },
     {
       name: "Health Care",
       options: {
         filter: false,
         sort: true,
-      }
+      },
     },
     {
       name: "IT",
       options: {
         filter: false,
         sort: true,
-      }
-    }
+      },
+    },
   ];
+
+  // Apply default customHeadLabelRender to all columns
+  columns.forEach((column) => {
+    if (!column.options) column.options = {};
+    column.options.customHeadRender = defaultCustomHeadRender;
+  });
 
   // MUIDataTable options
   const options = {
@@ -318,8 +344,7 @@ export default function SchoolReport() {
 
   return (
     <ThemeProvider theme={theme}>
-      <div     >
-         
+      <div>
         {/* Filters and Action Button Row */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
           {/* Class Dropdown */}
@@ -388,7 +413,9 @@ export default function SchoolReport() {
 
         {/* Note text */}
         <div style={styles.noteText}>
-          <span className="font-bold">Note:</span> These marks represent the subject-wise average score of the class, calculated as: (Total Marks Obtained in the Subject + Number of Students Appeared)
+          <span className="font-bold">Note:</span> These marks represent the
+          subject-wise average score of the class, calculated as: (Total Marks
+          Obtained in the Subject + Number of Students Appeared)
         </div>
 
         {/* Loading Overlay */}

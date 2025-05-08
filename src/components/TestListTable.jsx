@@ -31,6 +31,36 @@ const theme = createTheme({
     color: "#2F4F4F",
   },
   components: {
+    // Change the highlight color from blue to “Text Primary” color style.
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#2F4F4F", // Use text.primary color on focus
+          },
+        },
+        notchedOutline: {
+          borderColor: "#ccc", // default border color
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          color: "#949494", // Default label color
+          "&.Mui-focused": {
+            color: "#2F4F4F", // Focused label color
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        icon: {
+          color: "#2F4F4F", // Dropdown arrow icon color
+        },
+      },
+    },
     MuiTableCell: {
       styleOverrides: {
         root: {
@@ -239,6 +269,20 @@ export default function TestListTable() {
     actions: "View Report",
   }));
 
+  const defaultCustomHeadLabelRender = (columnMeta) => (
+    <span
+      style={{
+        color: "#2F4F4F",
+        fontFamily: "'Work Sans'",
+        fontWeight: 600,
+        fontSize: "14px",
+        fontStyle: "normal",
+      }}
+    >
+      {columnMeta.label}
+    </span>
+  );
+
   // MUI DataTable columns
   const columns = [
     {
@@ -325,7 +369,8 @@ export default function TestListTable() {
           style: {
             width: "250px",
             maxWidth: "250px",
-            textAlign: "center", // Changed from "left" to "center"
+            textAlign: "center",
+            fontWeight: 600, // Changed from "left" to "center"
           },
         }),
         customBodyRender: (value, tableMeta) => {
@@ -390,6 +435,11 @@ export default function TestListTable() {
     },
   ];
 
+  // Apply default customHeadLabelRender to all columns
+  columns.forEach((column) => {
+    if (!column.options) column.options = {};
+    column.options.customHeadLabelRender = defaultCustomHeadLabelRender;
+  });
   // MUI DataTable options
   const options = {
     filter: false,

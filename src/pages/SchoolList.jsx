@@ -298,6 +298,19 @@ export default function SchoolList() {
     schoolObj: school, // Pass the entire school object for the delete modal
   }));
 
+  const defaultCustomHeadLabelRender = (columnMeta) => (
+    <span
+      style={{
+        color: "#2F4F4F",
+        fontFamily: "'Work Sans'",
+        fontWeight: 600,
+        fontSize: "14px",
+        fontStyle: "normal",
+      }}
+    >
+      {columnMeta.label}
+    </span>
+  );
   // MUI DataTable columns
   const columns = [
     {
@@ -417,7 +430,16 @@ export default function SchoolList() {
               }}
               scope="col"
             >
-              <div style={{ textAlign: "center", fontSize: "14px" }}>
+              <div
+                style={{
+                  textAlign: "center",
+                  fontSize: "14px",
+                  color: "#2F4F4F",
+                  fontFamily: "'Work Sans', sans-serif",
+                  fontWeight: 600,
+                  fontStyle: "normal",
+                }}
+              >
                 {columnMeta.label}
               </div>
             </th>
@@ -494,6 +516,11 @@ export default function SchoolList() {
       },
     },
   ];
+
+  columns.forEach((column) => {
+    if (!column.options) column.options = {};
+    column.options.customHeadLabelRender = defaultCustomHeadLabelRender;
+  });
 
   // MUI DataTable options
   const options = {
