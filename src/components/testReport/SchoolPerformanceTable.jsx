@@ -26,6 +26,7 @@ import apiInstance from "../../../api";
 import axios from "axios"; // Keep axios as fallback
 import { useParams, useLocation, Navigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import OutlinedButton from "../../components/button/OutlinedButton";
 
 // Create MUI theme to match TestListTable
 const theme = createTheme({
@@ -440,21 +441,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 					<h3 className="text-lg font-semibold">Error Loading Data</h3>
 				</div>
 				<p className="text-gray-600">{error}</p>
-				<Button
-					variant="outlined"
-					onClick={() => window.location.reload()}
-					sx={{
-						mt: 3,
-						color: "#2F4F4F",
-						borderColor: "#2F4F4F",
-						"&:hover": {
-							borderColor: "#2F4F4F",
-							backgroundColor: "rgba(47, 79, 79, 0.08)",
-						},
-					}}
-				>
-					Retry
-				</Button>
+				<OutlinedButton onClick={() => window.location.reload()} text={"Retry"} />
 			</div>
 		);
 	}
