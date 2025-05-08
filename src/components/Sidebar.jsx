@@ -24,7 +24,7 @@ const Sidebar = () => {
 	const menuItems = [
 		{
 			to: "/allTest",
-			label: "Test",
+			label: "Tests",  //Change the “Test” label name to “Tests”
 			selectedImage: SelTests,
 			unselectedImage: UNSelTests,
 		},

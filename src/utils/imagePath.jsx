@@ -19,8 +19,8 @@ import UNSelReports from "../assets/unselectedReports.png"
 import addSymbolBtn from "../assets/addSymbolBtn.svg"
 import closeCross from "../assets/closeCross.svg"
 import deadlineSummaryModal from "../assets/deadlineSummaryModal.svg"
-import school from "../assets/school.svg"
-import unselectedschool from "../assets/unselectedschool.svg"
+// import school from "../assets/school.svg"
+// import unselectedschool from "../assets/unselectedschool.svg"
 import trash from "../assets/trash.svg"
 import bloodImage from "../assets/bloodImage.svg"
 import heightImageStudent from "../assets/heightImageStudent.svg"
@@ -31,10 +31,16 @@ import fingerprint from "../assets/fingerprint.svg"
 import calendar_today from "../assets/calendar_today.svg"
 import noSchoolImage from "../assets/data-buried-svgrepo-com 1.svg"
 
+import schoolSelected from "../assets/schoolSelected.svg";
+import schoolUnselected from "../assets/schoolUnselected.svg";
+
+
 export {
+  schoolSelected as unselectedschool, // This was previously "unselected"
+  schoolUnselected as school,         // This was previously "selected"
   SelReports,SelTests,SelUsers,UNSelUsers,UNSelTests,UNSelReports,bloodImage,
     BrandGoogleAnalytics,addSymbolBtn,closeCross,deadlineSummaryModal,noSchoolImage,
-    ChevronLeft,school,unselectedschool,trash,heightImageStudent,
+    ChevronLeft,trash,heightImageStudent,
     CreateTestImg,weightScale,person,house,fingerprint,calendar_today,
     DocScanner,
     EditPencilIcon,
