@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import MUIDataTable from "mui-datatables";
-import { Button, TextField, MenuItem, CircularProgress, Tooltip } from "@mui/material";
+import { Button, TextField, MenuItem, CircularProgress, Tooltip, Menu, ListItemIcon, ListItemText } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, Select, InputLabel } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,8 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import {noSchoolImage} from "../utils/imagePath";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import TableChartIcon from "@mui/icons-material/TableChart";
 
 // Create theme for consistent styling
 const theme = createTheme({
@@ -91,6 +93,10 @@ const Reports = () => {
 	const [totalRecords, setTotalRecords] = useState(0);
 	const [reportData, setReportData] = useState([]);
 	const [schools, setSchools] = useState([]);
+	
+	// State for download menu
+	const [downloadMenuAnchorEl, setDownloadMenuAnchorEl] = useState(null);
+	const downloadMenuOpen = Boolean(downloadMenuAnchorEl);
 
 	const pageSize = 10;
 
@@ -224,10 +230,178 @@ const Reports = () => {
 		setCurrentPage(1);
 	};
 
-	// Download report
-	const handleDownloadReport = () => {
-		toast.info("Downloading report...");
-		// Implement download logic here
+	// Handle opening download menu
+	const handleDownloadClick = (event) => {
+		setDownloadMenuAnchorEl(event.currentTarget);
+	};
+
+	// Handle closing download menu
+	const handleDownloadClose = () => {
+		setDownloadMenuAnchorEl(null);
+	};
+
+	// Download report as PDF
+	const handleDownloadPDF = () => {
+		toast.info("Generating PDF report...");
+		
+		// In a real implementation, you would call an API endpoint to generate the PDF
+		// For now, we'll simulate with a timeout and then trigger the download
+		setTimeout(() => {
+			// In a real implementation, this would be the actual PDF data from your backend
+			// For demonstration, we'll create a simple HTML-to-PDF approach
+			
+			// Create a hidden HTML element with the data formatted for PDF
+			const printContent = document.createElement('div');
+			printContent.style.display = 'none';
+			printContent.innerHTML = `
+				<h2>${selectedSchool ? selectedSchool.name : 'School'} Performance Report</h2>
+				<h3>${selectedClass || 'All Classes'}</h3>
+				<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+					<tr>
+						<th>Name of Exam</th>
+						<th>No. of Students</th>
+						<th>Max Marks</th>
+						<th>Hindi</th>
+						<th>English</th>
+						<th>Mathematics</th>
+						<th>Science</th>
+						<th>Social Science</th>
+						<th>Health Care</th>
+						<th>IT</th>
+					</tr>
+					${reportData.map(row => `
+						<tr>
+							<td>${row.name}</td>
+							<td>${row.noOfStudents}</td>
+							<td>${row.maxMarks}</td>
+							<td style="color: ${getTextColor(row.hindi)}">${row.hindi}</td>
+							<td style="color: ${getTextColor(row.english)}">${row.english}</td>
+							<td style="color: ${getTextColor(row.mathematics)}">${row.mathematics}</td>
+							<td style="color: ${getTextColor(row.science)}">${row.science}</td>
+							<td style="color: ${getTextColor(row.socialScience)}">${row.socialScience}</td>
+							<td style="color: ${getTextColor(row.healthCare)}">${row.healthCare}</td>
+							<td style="color: ${getTextColor(row.it)}">${row.it}</td>
+						</tr>
+					`).join('')}
+				</table>
+				<p style="margin-top: 20px; font-size: 12px;">
+					<strong>Note:</strong> These marks represent the subject-wise average score of the class, 
+					calculated as: (Total Marks Obtained in the Subject ÷ Number of Students Appeared)
+				</p>
+			`;
+			document.body.appendChild(printContent);
+			
+			// In a real implementation, you'd use a proper PDF library like jsPDF
+			// For this demo, we'll use the browser's print to PDF functionality
+			const pdfWindow = window.open('', '_blank');
+			pdfWindow.document.write(`
+				<html>
+					<head>
+						<title>${selectedSchool ? selectedSchool.name : 'School'} Performance Report</title>
+						<style>
+							body { font-family: Arial, sans-serif; padding: 20px; }
+							table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+							th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+							th { background-color: #f2f2f2; }
+						</style>
+					</head>
+					<body>
+						${printContent.innerHTML}
+						<script>
+							// Auto-print and prompt save dialog
+							window.onload = function() {
+								window.print();
+								// Wait for print dialog to close
+								setTimeout(function() {
+									window.close();
+								}, 500);
+							};
+						</script>
+					</body>
+				</html>
+			`);
+			pdfWindow.document.close();
+			
+			// Remove the temporary element
+			document.body.removeChild(printContent);
+			toast.success("PDF report generated");
+		}, 1000);
+		
+		handleDownloadClose();
+	};
+
+	// Download report as CSV
+	const handleDownloadCSV = () => {
+		toast.info("Generating CSV report...");
+		
+		// Format the data for CSV
+		const headers = [
+			"Name of Exam",
+			"No. of Students",
+			"Max Marks",
+			"Hindi",
+			"English",
+			"Mathematics",
+			"Science",
+			"Social Science",
+			"Health Care",
+			"IT"
+		];
+		
+		// Convert the report data to CSV format
+		let csvContent = headers.join(",") + "\n";
+		
+		reportData.forEach(row => {
+			const rowData = [
+				row.name,
+				row.noOfStudents,
+				row.maxMarks,
+				row.hindi,
+				row.english,
+				row.mathematics,
+				row.science,
+				row.socialScience,
+				row.healthCare,
+				row.it
+			];
+			
+			// Handle commas in data by wrapping in quotes if needed
+			csvContent += rowData.map(cell => {
+				if (cell && cell.toString().includes(',')) {
+					return `"${cell}"`;
+				}
+				return cell;
+			}).join(",") + "\n";
+		});
+		
+		// Create a Blob from the CSV data
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+		
+		// Create a download link for the CSV file
+		const link = document.createElement('a');
+		const fileName = `${selectedSchool ? selectedSchool.name.replace(/\s+/g, '_') : 'School'}_Performance_Report_${new Date().toISOString().split('T')[0]}.csv`;
+		
+		// Create the download URL
+		if (window.navigator.msSaveOrOpenBlob) {
+			// For IE
+			window.navigator.msSaveBlob(blob, fileName);
+		} else {
+			// For other browsers
+			const url = window.URL.createObjectURL(blob);
+			link.href = url;
+			link.setAttribute('download', fileName);
+			document.body.appendChild(link);
+			link.click();
+			
+			// Cleanup
+			setTimeout(() => {
+				document.body.removeChild(link);
+				window.URL.revokeObjectURL(url);
+				toast.success("CSV report downloaded");
+			}, 100);
+		}
+		
+		handleDownloadClose();
 	};
 
 	// Table columns
@@ -479,7 +653,7 @@ const Reports = () => {
 
 									<Button
 										variant="contained"
-										onClick={handleDownloadReport}
+										onClick={handleDownloadClick}
 										sx={{
 											backgroundColor: "#f3c22c",
 											color: "#000",
@@ -492,6 +666,34 @@ const Reports = () => {
 									>
 										Download Report
 									</Button>
+									
+									{/* Download Options Menu */}
+									<Menu
+										anchorEl={downloadMenuAnchorEl}
+										open={downloadMenuOpen}
+										onClose={handleDownloadClose}
+										anchorOrigin={{
+											vertical: 'bottom',
+											horizontal: 'right',
+										}}
+										transformOrigin={{
+											vertical: 'top',
+											horizontal: 'right',
+										}}
+									>
+										<MenuItem onClick={handleDownloadPDF}>
+											<ListItemIcon>
+												<PictureAsPdfIcon fontSize="small" />
+											</ListItemIcon>
+											<ListItemText>Download as PDF</ListItemText>
+										</MenuItem>
+										<MenuItem onClick={handleDownloadCSV}>
+											<ListItemIcon>
+												<TableChartIcon fontSize="small" />
+											</ListItemIcon>
+											<ListItemText>Download as CSV</ListItemText>
+										</MenuItem>
+									</Menu>
 								</div>
 							</div>
 						)}

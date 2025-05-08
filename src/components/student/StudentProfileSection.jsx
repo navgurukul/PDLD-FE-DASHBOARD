@@ -7,8 +7,8 @@ import { useTheme } from "@mui/material/styles";
 import StudentAcademics from "./StudentAcademics";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import ButtonCustom from "../../components/ButtonCustom";
-// import academicData from "../../data/testReportData"
-import {mockData} from "../../data/testReportData"
+import { mockData } from "../../data/testReportData";
+import apiInstance from "../../../api";
 import {
 	EditPencilIcon,
 	bloodImage,
@@ -99,25 +99,65 @@ const StudentProfileView = () => {
 		setTabValue(newValue);
 	};
 
-	useEffect(() => {
-		// Short timeout to simulate API call
-		const timer = setTimeout(() => {
-			// Check if we have student data from location state
-			if (location.state?.studentData) {
-				setStudent(location.state.studentData);
+	// Fetch student profile data
+	const fetchStudentProfile = async () => {
+		setIsLoading(true);
+		try {
+			// Get contextual school information from location state if available
+			if (location.state) {
 				setSchoolName(location.state.schoolName || dummySchoolName);
 				setUdiseCode(location.state.udiseCode || dummyUdiseCode);
 			} else {
-				// Use dummy data if no state was passed
-				setStudent(dummyStudent);
 				setSchoolName(dummySchoolName);
 				setUdiseCode(dummyUdiseCode);
 			}
-			setIsLoading(false);
-		}, 800);
 
-		return () => clearTimeout(timer);
-	}, [studentId, location.state]);
+			// Fetch student profile data using the API
+			const response = await apiInstance.get(`/student/profile/${studentId}`);
+
+			if (response.data && response.data.success) {
+				const profileData = response.data.data;
+				console.log("Student profile data:", profileData);
+
+				// Set student data with the API response
+				setStudent({
+					id: profileData.studentId,
+					fullName: profileData.fullName,
+					fatherName: profileData.fatherName,
+					motherName: profileData.motherName,
+					dob: profileData.dob,
+					gender: profileData.gender,
+					class: profileData.class,
+					// Include academic data if available
+					academic: profileData.academic || { year: "2025-2026", months: [] },
+					// Any missing fields that the UI might expect
+					aparId: profileData.aparId || "N/A",
+					hostel: profileData.hostel || "N/A",
+					schoolName: schoolName,
+				});
+			} else {
+				toast.error("Failed to load student profile. Please try again.");
+				// Fall back to dummy data if needed
+				setStudent(dummyStudent);
+			}
+		} catch (error) {
+			console.error("Error fetching student profile:", error);
+			toast.error("Failed to load student profile. Please try again later.");
+			// Fall back to dummy data
+			setStudent(dummyStudent);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		if (studentId) {
+			fetchStudentProfile();
+		} else {
+			setIsLoading(false);
+			setStudent(dummyStudent);
+		}
+	}, [studentId]); // Re-fetch when studentId changes
 
 	// Handle edit student
 	const handleEditStudent = () => {
@@ -211,7 +251,7 @@ const StudentProfileView = () => {
 				</Box>
 
 				{/* Show academic year text in academic tab */}
-				{tabValue === 1 ? (
+				{tabValue === 1 && student.academic ? (
 					<Typography
 						variant="subtitle1"
 						sx={{
@@ -224,7 +264,7 @@ const StudentProfileView = () => {
 							alignItems: "center",
 						}}
 					>
-						Academic Year 2024-25
+						Academic Year {student.academic.year || "2024-25"}
 					</Typography>
 				) : null}
 			</Box>
@@ -263,7 +303,11 @@ const StudentProfileView = () => {
 							>
 								<h5 className="text-lg font-bold text-[#2F4F4F]">Personal Details</h5>
 
-								<ButtonCustom text={"Edit Profile"} />
+								<ButtonCustom
+									text={"Edit Profile"}
+									imageName={EditPencilIcon}
+									onClick={handleEditStudent}
+								/>
 							</Box>
 
 							{/* First Row */}
@@ -273,9 +317,7 @@ const StudentProfileView = () => {
 									<Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
 										Father's Name
 									</Typography>
-									<Typography variant="subtitle1">
-										Raja Kumar
-									</Typography>
+									<Typography variant="subtitle1">{student.fatherName || "N/A"}</Typography>
 								</Box>
 
 								{/* Mother's Name */}
@@ -284,7 +326,7 @@ const StudentProfileView = () => {
 										Mother's Name
 									</Typography>
 									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
-										Rajshri Kumari
+										{student.motherName || "N/A"}
 									</Typography>
 								</Box>
 
@@ -294,7 +336,7 @@ const StudentProfileView = () => {
 										Date of Birth
 									</Typography>
 									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
-										11-12-1994
+										{formatDate(student.dob)}
 									</Typography>
 								</Box>
 
@@ -304,7 +346,7 @@ const StudentProfileView = () => {
 										Hostel
 									</Typography>
 									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
-										Hostel C
+										{student.hostel || "N/A"}
 									</Typography>
 								</Box>
 							</Box>
@@ -317,7 +359,7 @@ const StudentProfileView = () => {
 										Apar Id
 									</Typography>
 									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
-										123456782
+										{student.aparId || "N/A"}
 									</Typography>
 								</Box>
 
@@ -327,7 +369,7 @@ const StudentProfileView = () => {
 										Class
 									</Typography>
 									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
-										Class 1
+										Class {student.class || "N/A"}
 									</Typography>
 								</Box>
 
@@ -337,7 +379,7 @@ const StudentProfileView = () => {
 										School Name
 									</Typography>
 									<Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
-										Delhi Public School
+										{schoolName || "N/A"}
 									</Typography>
 								</Box>
 							</Box>
@@ -350,7 +392,7 @@ const StudentProfileView = () => {
 
 			{/* Academics tab content */}
 			<TabPanel value={tabValue} index={1}>
-				<StudentAcademics studentId={studentId} schoolId={schoolId} />
+				<StudentAcademics studentId={studentId} schoolId={schoolId} academicData={student.academic} />
 			</TabPanel>
 
 			<ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
