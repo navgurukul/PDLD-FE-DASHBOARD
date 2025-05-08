@@ -5,11 +5,17 @@
 	font-family: "Karla", sans-serif !important;
 }
 
-.my-date-picker {
-	width: 220px !important;
-	padding: 11.5px 10px !important;
-	border: 1px solid blue;
-}
+  th, .MuiTableCell-head { 
+    border-bottom: 1px solid lightgray !important; 
+    font-weight: 500 !important;  
+  }
+  
+
+  .my-date-picker {
+    width: 220px !important;
+    padding: 11.5px 10px !important;
+    border: 1px solid blue;
+  }
 
 .my-date-picker input:active {
 	border: none !important;

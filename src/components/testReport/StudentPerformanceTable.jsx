@@ -85,10 +85,10 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 			if (!filterStatus) {
 				return nameMatch;
 			} else if (filterStatus === "pass") {
-				return nameMatch && student.score >= 40; // Assuming 40 is the pass mark
+				return nameMatch && student.score >= 35; // Students with 35 or above pass
 			} else {
 				// 'fail'
-				return nameMatch && student.score < 40;
+				return nameMatch && student.score < 35; // Students below 35 fail
 			}
 		});
 	}, [students, searchQuery, filterStatus]);
@@ -122,9 +122,9 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 		id: student.id,
 		name: student.name,
 		score: `${student.score}/100`,
-		result: student.score >= 40 ? "Meets Standard" : "Needs Improvement",
+		result: student.score >= 35 ? "Meets Standard" : "Needs Improvement", // Students with 35 or above "Meet Standard"
 		vsClassAvg: `${student.score > classAvg ? "+" : ""}${(student.score - classAvg).toFixed(1)}`,
-		isPass: student.score >= 40,
+		isPass: student.score >= 35, // Students with 35 or above pass
 		originalScore: student.score,
 	}));
 
@@ -167,7 +167,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 					style: { textAlign: "center" },
 				}),
 				customBodyRenderLite: (dataIndex) => {
-					return <div className="">{tableData[dataIndex].score}</div>;
+					return <div className="">{paginatedTableData[dataIndex].score}</div>;
 				},
 			},
 		},
@@ -181,7 +181,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 					style: { textAlign: "center" },
 				}),
 				customBodyRenderLite: (dataIndex) => {
-					const isPass = tableData[dataIndex].isPass;
+					const isPass = paginatedTableData[dataIndex].isPass;
 					return (
 						<div className="">
 							<div
@@ -191,7 +191,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 									color: isPass ? "#2e7d32" : "#c62828",
 								}}
 							>
-								{tableData[dataIndex].result}
+								{paginatedTableData[dataIndex].result}
 							</div>
 						</div>
 					);
@@ -207,7 +207,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 				sortThirdClickReset: true,
 
 				customBodyRenderLite: (dataIndex) => {
-					const value = tableData[dataIndex].vsClassAvg;
+					const value = paginatedTableData[dataIndex].vsClassAvg;
 					const isPositive = value && value.startsWith("+");
 
 					return (
@@ -228,7 +228,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 					style: { display: "flex", justifyContent: "center" },
 				}),
 				customBodyRenderLite: (dataIndex) => {
-					const studentId = tableData[dataIndex].id;
+					const studentId = paginatedTableData[dataIndex].id;
 
 					return (
 						<div style={{ display: "flex", justifyContent: "center" }}>
@@ -379,7 +379,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 					style={{ borderRadius: "8px" }}
 					className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
 				>
-					<MUIDataTable data={tableData} columns={columns} options={options} />
+					<MUIDataTable data={paginatedTableData} columns={columns} options={options} />
 				</div>
 
 				<div style={{ width: "max-content", margin: "25px auto" }}>
