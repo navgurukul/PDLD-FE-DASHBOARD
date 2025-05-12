@@ -346,7 +346,7 @@ const StudentReportPage = () => {
 						variant="body2"
 						sx={{
 							fontWeight: "bold",
-							textAlign: "center",
+							 textAlign: "center",
 						}}
 					>
 						{value}
