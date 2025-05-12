@@ -409,7 +409,9 @@ export default function TestListTable() {
                 size="small"
                 sx={{
                   borderColor: "transparent",
+                   textTransform: "none",    
                   color: "#2F4F4F",
+                  fontWeight: 600,
                   "&:hover": { borderColor: "transparent" },
                 }}
                 onClick={(event) => {

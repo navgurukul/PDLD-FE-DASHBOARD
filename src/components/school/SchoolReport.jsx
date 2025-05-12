@@ -29,6 +29,36 @@ const theme = createTheme({
     color: "#2F4F4F",
   },
   components: {
+    // Change the highlight color from blue to “Text Primary” color style.
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#2F4F4F", // Use text.primary color on focus
+          },
+        },
+        notchedOutline: {
+          borderColor: "#ccc", // default border color
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          color: "#949494", // Default label color
+          "&.Mui-focused": {
+            color: "#2F4F4F", // Focused label color
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        icon: {
+          color: "#2F4F4F", // Dropdown arrow icon color
+        },
+      },
+    },
     MuiTableCell: {
       styleOverrides: {
         root: {
@@ -36,12 +66,6 @@ const theme = createTheme({
           fontFamily: "Karla !important",
           textAlign: "left",
           padding: "16px 12px !important",
-        },
-        head: {
-          fontSize: "14px",
-          textAlign: "left",
-          backgroundColor: "#f9f9f9 !important",
-          fontWeight: "bold !important",
         },
       },
     },
@@ -206,28 +230,25 @@ export default function SchoolReport() {
     report.subjects.it,
   ]);
 
-  const defaultCustomHeadRender = (columnMeta) => {
-    return (
-      <th
-        style={{
-          color: "#2F4F4F",
-          fontFamily: "'Work Sans'",
-          fontWeight: 600,
-          fontSize: "14px",
-        }}
-      >
-        {columnMeta.label}
-      </th>
-    );
+  // Define columns for MUIDataTable
+  const headerStyle = {
+    fontFamily: '"Work Sans", sans-serif',
+    fontSize: "14px",
+    fontStyle: "normal",
+    fontWeight: 600,
+    lineHeight: "170%",
+    color: "#2F4F4F",
   };
 
-  // Define columns for MUIDataTable
   const columns = [
     {
       name: "Name of Exam",
       options: {
         filter: false,
         sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
       },
     },
     {
@@ -235,6 +256,10 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+        
       },
     },
     {
@@ -242,6 +267,9 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
       },
     },
     {
@@ -249,13 +277,14 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
-        customBodyRender: (value) => {
-          return (
-            <div style={parseInt(value) < 15 ? styles.lowScore : null}>
-              {value}
-            </div>
-          );
-        },
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+        customBodyRender: (value) => (
+          <div style={parseInt(value) < 15 ? styles.lowScore : null}>
+            {value}
+          </div>
+        ),
       },
     },
     {
@@ -263,13 +292,14 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
-        customBodyRender: (value) => {
-          return (
-            <div style={parseInt(value) < 15 ? styles.lowScore : null}>
-              {value}
-            </div>
-          );
-        },
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+        customBodyRender: (value) => (
+          <div style={parseInt(value) < 15 ? styles.lowScore : null}>
+            {value}
+          </div>
+        ),
       },
     },
     {
@@ -277,6 +307,9 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
       },
     },
     {
@@ -284,13 +317,14 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
-        customBodyRender: (value) => {
-          return (
-            <div style={parseInt(value) < 15 ? styles.lowScore : null}>
-              {value}
-            </div>
-          );
-        },
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+        customBodyRender: (value) => (
+          <div style={parseInt(value) < 15 ? styles.lowScore : null}>
+            {value}
+          </div>
+        ),
       },
     },
     {
@@ -298,6 +332,9 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
       },
     },
     {
@@ -305,6 +342,9 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
       },
     },
     {
@@ -312,15 +352,12 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
       },
     },
   ];
-
-  // Apply default customHeadLabelRender to all columns
-  columns.forEach((column) => {
-    if (!column.options) column.options = {};
-    column.options.customHeadRender = defaultCustomHeadRender;
-  });
 
   // MUIDataTable options
   const options = {
