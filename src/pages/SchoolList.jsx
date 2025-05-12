@@ -34,6 +34,36 @@ const theme = createTheme({
     color: "#2F4F4F",
   },
   components: {
+    // Change the highlight color from blue to “Text Primary” color style.
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#2F4F4F", // Use text.primary color on focus
+          },
+        },
+        notchedOutline: {
+          borderColor: "#ccc", // default border color
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          color: "#949494", // Default label color
+          "&.Mui-focused": {
+            color: "#2F4F4F", // Focused label color
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        icon: {
+          color: "#2F4F4F", // Dropdown arrow icon color
+        },
+      },
+    },
     MuiPaper: {
       styleOverrides: {
         root: {
