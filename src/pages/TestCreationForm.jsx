@@ -1,952 +1,859 @@
-import { SUBJECTS_BY_GRADE, SUBJECT_CATEGORIES } from "../data/testData";
-import { useEffect, useState, useRef } from "react";
-import apiInstance from "../../api";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { SUBJECT_OPTIONS, CLASS_GROUPS, SUBJECTS_BY_GRADE } from "./../data/testData";
+import { CheckCircle, Plus, Trash2 } from "lucide-react";
+import ButtonCustom from "../components/ButtonCustom";
+import ModalSummary from "../components/SummaryModal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useNavigate, useLocation, useParams } from "react-router";
-import CircularProgress from "@mui/material/CircularProgress";
-import Box from "@mui/material/Box";
-import { Typography } from "@mui/material";
-import ModalSummary from "../components/SummaryModal";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import apiInstance from "../../api";
+import OutlinedButton from "../components/button/OutlinedButton";
+import { Autocomplete, TextField } from "@mui/material";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 const TestCreationForm = () => {
-	const [testDates, setTestDates] = useState({});
-	const [testDeadlines, setTestDeadlines] = useState({});
-	const [dropdownOpen, setDropdownOpen] = useState({});
-	const [selectedGrades, setSelectedGrades] = useState([]);
-	const [selectedSubjects, setSelectedSubjects] = useState({});
-	const [testType, setTestType] = useState("regular");
-	const [testScores, setTestScores] = useState({});
-	const [isLoading, setIsLoading] = useState(false);
-	const [creatingTest, setCreatingTest] = useState(false);
-	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-	const [isEditMode, setIsEditMode] = useState(false);
-	const [showSummary, setShowSummary] = useState(false);
-	const { Id: testId } = useParams();
-	const location = useLocation();
-	const dropdownRef = useRef(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isEditMode = location.state?.isEditMode || false;
+  const testData = location.state?.testData || null;
 
-	const navigate = useNavigate();
+  // State management
+  const [activeClassGroupId, setActiveClassGroupId] = useState(null);
+  const [selectedClasses, setSelectedClasses] = useState({});
 
-	useEffect(() => {
-		const authToken = localStorage.getItem("authToken");
-		if (!authToken) {
-			toast.error("Please login to continue");
-			navigate("/login");
-		}
-	}, []);
+  const [formData, setFormData] = useState({
+    testType: "syllabus",
+    testTag: "", // Use testCategory instead of testTag
+  });
+  const [subjectRows, setSubjectRows] = useState({});
+  const [maxScores, setMaxScores] = useState({});
 
-	const handleScoreChange = (gradeSubject, score) => {
-		const maxScore = Number(score);
-		if (maxScore > 90) {
-			toast.error("Max Score cannot be more than 90", {
-				position: "top-right",
-				autoClose: 3000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-			});
-			return;
-		}
-		setTestScores((prev) => ({ ...prev, [gradeSubject]: maxScore }));
-	};
+  // Modal and API states
+  const [showSummary, setShowSummary] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [testTagInput, setTestTagInput] = useState("");
 
-	const handleGradeSelection = (grade) => {
-		if (!grade) return;
-		const isSelected = selectedGrades.includes(grade);
-		if (isSelected) {
-			setSelectedGrades(selectedGrades.filter((g) => g !== grade));
-			const newSelectedSubjects = { ...selectedSubjects };
-			delete newSelectedSubjects[grade];
-			setSelectedSubjects(newSelectedSubjects);
-		} else {
-			setSelectedGrades([...selectedGrades, grade].sort((a, b) => a - b));
-		}
-	};
+  // Add a state to track if we're in edit mode
+  const [editMode, setEditMode] = useState(isEditMode);
 
-	const handleSubjectSelection = (grade, subject) => {
-		if (!grade || !subject) return;
+  const TEST_TAG_OPTIONS = [
+    { id: "Monthly", name: "Monthly" },
+    { id: "Quarterly", name: "Quarterly" },
+    { id: "Half Yearly", name: "Half Yearly" },
+    { id: "Pre Boards", name: "Pre Boards" },
+    { id: "Annual", name: "Annual" },
+  ];
 
-		if (isEditMode) {
-			// In edit mode, only ONE subject per grade
+  // Improve the date formatting function to handle API date format
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return "";
 
-			const currentlySelected = selectedSubjects[grade] || [];
+    try {
+      // For API date format like "2025-05-04T00:00:00.000Z"
+      const date = new Date(dateString);
+      return date.toISOString().split("T")[0]; // Returns YYYY-MM-DD
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "";
+    }
+  };
 
-			if (currentlySelected.includes(subject)) {
-				// 🔒 Prevent removal if remedial test for Class 11/12
-				if (
-					(testType === "remedial" && (grade === 11 || grade === 12)) ||
-					(testType === "regular" && isEditMode)
-				) {
-					return;
-				}
-				// Otherwise allow removal
-				setSelectedSubjects((prev) => ({
-					...prev,
-					[grade]: prev[grade].filter((s) => s !== subject),
-				}));
-				return;
-			}
+  const populateFormWithTestData = (test) => {
+    setTestTagInput(test.testTag || "");
+    // Set form data
+    setFormData({
+      testType: test.testType?.toLowerCase() === "remedial" ? "remedial" : "syllabus",
+      testTag: test.testTag || "",
+    });
 
-			// 2️⃣ If exactly one subject is already selected => we’re “switching” subjects
-			if (currentlySelected.length === 1) {
-				const oldSubject = currentlySelected[0];
+    // Find which class group contains this class
+    const classNum = test.testClass;
+    let foundGroupId = null;
 
-				// Preserve old date & score
-				const oldKey = `${grade}-${oldSubject}`;
-				const newKey = `${grade}-${subject}`;
+    // Find the group that contains this class
+    for (const group of CLASS_GROUPS) {
+      if (group.classes.includes(classNum)) {
+        foundGroupId = group.id;
+        break;
+      }
+    }
 
-				// Copy date from old subject to new subject
-				setTestDates((prev) => {
-					const oldValue = prev[oldKey];
-					// Don’t lose other fields
-					const updated = { ...prev };
-					if (oldValue) {
-						updated[newKey] = oldValue;
-					}
-					// Optionally remove the old date if you don’t want leftover keys
-					delete updated[oldKey];
-					return updated;
-				});
+    if (foundGroupId) {
+      setActiveClassGroupId(foundGroupId);
 
-				// Copy maxScore from old subject to new subject
-				setTestScores((prev) => {
-					const oldValue = prev[oldKey];
-					const updated = { ...prev };
-					if (oldValue) {
-						updated[newKey] = oldValue;
-					}
-					// Optionally remove old subject’s score
-					delete updated[oldKey];
-					return updated;
-				});
+      // Set selected class
+      const className = `Class ${classNum}`;
+      const selectedClassObj = {};
+      selectedClassObj[className] = true;
+      setSelectedClasses(selectedClassObj);
 
-				// Now replace the old subject with the new one in selectedSubjects
-				setSelectedSubjects((prev) => ({
-					...prev,
-					[grade]: [subject],
-				}));
-			} else {
-				// 3️⃣ No subject is selected yet => just add the new one
-				setSelectedSubjects((prev) => ({
-					...prev,
-					[grade]: [subject],
-				}));
-			}
-		} else {
-			// ⏺ Create mode => allow multiple subjects
-			setSelectedSubjects((prev) => ({
-				...prev,
-				[grade]: prev[grade]?.includes(subject)
-					? prev[grade].filter((s) => s !== subject)
-					: [...(prev[grade] || []), subject],
-			}));
-		}
-	};
+      // Set max score
+      if (test.maxScore) {
+        const maxScoreObj = {};
+        maxScoreObj[className] = test.maxScore;
+        setMaxScores(maxScoreObj);
+      }
 
-	const toggleDropdown = (grade) => {
-		if (isEditMode) return;
-		setDropdownOpen((prev) => ({
-			...prev,
-			[grade]: !prev[grade],
-		}));
-	};
+      // Set subject rows with test date and deadline
+      if (test.subject) {
+        const subjectRowObj = {};
+        subjectRowObj[className] = [
+          {
+            id: `${className}_1`,
+            subject: test.subject.toLowerCase().replace(/\s+/g, "_"),
+            testDate: formatDateForInput(test.testDate),
+            submissionDeadline: formatDateForInput(test.deadline),
+          },
+        ];
+        setSubjectRows(subjectRowObj);
+      }
+    }
+  };
 
-	const handleCreateTest = async () => {
-		setCreatingTest(true);
-		try {
-			let response;
+  // Add useEffect to populate form with existing data when in edit mode
+  useEffect(() => {
+    if (isEditMode && testData) {
+      populateFormWithTestData(testData);
+    }
+  }, [isEditMode, testData]);
 
-			if (!isEditMode) {
-				// ---------- CREATE MODE (POST) ----------
-				const payload = {
-					testType: testType === "regular" ? "SYLLABUS" : "REMEDIAL",
-					classes: selectedGrades.map((grade) => ({
-						class: grade,
-						subjects: (selectedSubjects[grade] || []).map((subject) => {
-							const key = `${grade}-${subject}`;
-							return {
-								subject,
-								testDate: testDates[key] || "",
-								deadline: testDeadlines[key] || "",
-								maxScore: testType === "regular" && testScores[key] ? Number(testScores[key]) : 100,
-							};
-						}),
-					})),
-				};
+  const filterTestTagOptions = (options, params) => {
+    if (!params.inputValue) {
+      return options;
+    }
 
-				console.log("Create Payload => ", payload);
-				response = await apiInstance.post("/test", payload);
-			} else {
-				// ---------- EDIT MODE (PATCH) ----------
-				const [grade] = selectedGrades;
-				const [subject] = selectedSubjects[grade] || [];
-				const key = `${grade}-${subject}`;
+    const inputValue = params.inputValue.toLowerCase().trim();
 
-				const editPayload = {};
+    // Check for partial matches
+    const partialMatches = options.filter((option) =>
+      option.name.toLowerCase().includes(inputValue)
+    );
 
-				if (testDates[key]) {
-					editPayload.testDate = testDates[key];
-				}
+    // Return matches if found
+    if (partialMatches.length > 0) {
+      return partialMatches;
+    }
 
-				if (testDeadlines[key]) editPayload.deadline = testDeadlines[key];
+    // Check for exact match
+    const exactMatch = options.some((option) => option.name.toLowerCase() === inputValue);
 
-				// Add maxScore if changed
-				if (testType === "regular" && testScores[key] !== undefined) {
-					editPayload.maxScore = Number(testScores[key]);
-				}
+    // Add "Create new" option if no match found
+    if (!exactMatch && inputValue) {
+      return [
+        {
+          name: params.inputValue,
+          isCreateNew: true,
+        },
+      ];
+    }
 
-				if (Object.keys(editPayload).length === 0) {
-					toast.warn("No changes made!");
-					setCreatingTest(false);
-					return;
-				}
+    return [];
+  };
 
-				console.log("Edit Payload =>", editPayload);
-				response = await apiInstance.patch(`/test/${testId}`, editPayload);
-			}
+  // Handle class group selection
+  const handleGroupCardSelect = (groupId) => {
+    // If clicking the same group that's already active, collapse it
+    if (activeClassGroupId === groupId) {
+      setActiveClassGroupId(null);
+      setSelectedClasses({});
+      setSubjectRows({});
+      return;
+    }
 
-			if (response?.data?.success) {
-				const successMessage = isEditMode ? "Test Updated Successfully" : "Test Created Successfully";
+    // When switching to a new group, clear previous selections
+    setActiveClassGroupId(groupId);
+    setSelectedClasses({});
+    setSubjectRows({});
+  };
 
-				// Redirect to the test list page with success message
-				navigate("/", { state: { successMessage } });
-			} else {
-				toast.error(isEditMode ? "Failed to update test" : "Failed to create test");
-			}
-		} catch (error) {
-			console.error("Error => ", error);
-			toast.error("Something went wrong");
-		} finally {
-			setCreatingTest(false);
-		}
-	};
+  // Toggle class selection within the active group
+  const toggleClassSelection = (className) => {
+    setSelectedClasses((prev) => {
+      const newSelections = { ...prev };
 
-	const isFormValid = () => {
-		if (selectedGrades.length === 0) return false;
+      if (newSelections[className]) {
+        delete newSelections[className];
+      } else {
+        newSelections[className] = true;
+        // Initialize with one subject row when a class is selected
+        if (!subjectRows[className]) {
+          setSubjectRows((prevRows) => ({
+            ...prevRows,
+            [className]: [
+              {
+                id: `${className}_1`,
+                subject: "",
+                testDate: "",
+                submissionDeadline: "",
+              },
+            ],
+          }));
+        }
+      }
 
-		for (const grade of selectedGrades) {
-			if (!selectedSubjects[grade]?.length) return false;
+      return newSelections;
+    });
+  };
 
-			for (const subject of selectedSubjects[grade]) {
-				const key = `${grade}-${subject}`;
-				if (!testDates[key]) return false;
+  // Add a new subject row for a class
+  const addSubjectRow = (className) => {
+    setSubjectRows((prev) => {
+      const currentRows = prev[className] || [];
+      const newId = `${className}_${currentRows.length + 1}`;
 
-				// Always require deadline date for all test types
-				if (!testDeadlines[key]) return false;
+      return {
+        ...prev,
+        [className]: [
+          ...currentRows,
+          {
+            id: newId,
+            subject: "",
+            testDate: "",
+            submissionDeadline: "",
+          },
+        ],
+      };
+    });
+  };
 
-				// Only validate maxScore for "regular" test type
-				if (testType === "regular" && (!testScores[key] || testScores[key] > 90)) {
-					return false;
-				}
-			}
-		}
-		return true;
-	};
+  // Remove a subject row
+  const removeSubjectRow = (className, rowId) => {
+    setSubjectRows((prev) => {
+      const filteredRows = prev[className].filter((row) => row.id !== rowId);
+      return {
+        ...prev,
+        [className]: filteredRows,
+      };
+    });
+  };
 
-	const fetchSingleTestData = async (id) => {
-		console.log("TRIGGERED");
-		setIsLoading(true);
-		try {
-			const response = await apiInstance.get(`/test/${id}`);
-			console.log(response, "RESPONSE");
-			if (response?.data?.success) {
-				const { subject, testDate, testClass, testType, maxScore, deadline } = response.data.data;
+  // Handle form field changes
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-				// Map the fetched testType to our internal state ("SYLLABUS" => "regular", "REMEDIAL" => "remedial")
-				setTestType(testType === "SYLLABUS" ? "regular" : "remedial");
+  // Handle subject row field changes
+  const handleSubjectRowChange = (className, rowId, field, value) => {
+    setSubjectRows((prev) => {
+      const updatedRows = prev[className].map((row) => {
+        if (row.id === rowId) {
+          return { ...row, [field]: value };
+        }
+        return row;
+      });
 
-				// Set the selected grade
-				setSelectedGrades([testClass]);
+      return {
+        ...prev,
+        [className]: updatedRows,
+      };
+    });
+  };
 
-				// Set the selected subject(s)
-				setSelectedSubjects({ [testClass]: [subject] });
+  // Handle max score changes
+  const handleMaxScoreChange = (className, value) => {
+    setMaxScores((prev) => ({
+      ...prev,
+      [className]: value,
+    }));
+  };
 
-				// Convert testDate to YYYY-MM-DD so it can populate the date input
-				const dateStr = new Date(testDate).toISOString().split("T")[0];
-				setTestDates({ [`${testClass}-${subject}`]: dateStr });
+  // Prepare data for summary modal
+  const prepareSummaryData = () => {
+    // Convert data for ModalSummary
+    const selectedGrades = [];
+    const selectedSubjects = {};
+    const testDates = {};
+    const testDeadlines = {};
+    const testScores = {};
 
-				// If there's a separate 'deadline' field in the response:
-				if (deadline) {
-					const deadlineStr = new Date(deadline).toISOString().split("T")[0];
-					setTestDeadlines({ [`${testClass}-${subject}`]: deadlineStr });
-				}
+    // Process each selected class
+    Object.keys(selectedClasses).forEach((className) => {
+      // Extract class number if in format "Class X"
+      const grade = className.includes("Class ")
+        ? parseInt(className.replace("Class ", ""))
+        : className;
 
-				// If the test is a SYLLABUS test, we also need the maxScore
-				if (testType === "SYLLABUS") {
-					setTestScores({ [`${testClass}-${subject}`]: maxScore });
-				}
-			}
-		} catch (error) {
-			console.error("Error => ", error);
-			toast.error("Failed to fetch test data");
-		} finally {
-			// Stop loader
-			setIsLoading(false);
-		}
-	};
+      selectedGrades.push(grade);
+      selectedSubjects[grade] = [];
 
-	useEffect(() => {
-		// Check if the URL path includes '/edit/testCreation' or contains "edit" in some fashion
-		if (location.pathname.includes("/editTest") && testId) {
-			setIsEditMode(true);
-			fetchSingleTestData(testId);
-		}
-	}, [testId]);
+      // Process each subject row
+      subjectRows[className]?.forEach((row) => {
+        if (row.subject) {
+          // Format subject for display (capitalize first letter of each word)
+          const displaySubject = row.subject
+            .split("_")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
 
-	// Close dropdown if user clicks outside
-	useEffect(() => {
-		const handleClickOutside = (event) => {
-			if (!event.target.closest(".dropdown-container")) {
-				setDropdownOpen({});
-			}
-		};
-		document.addEventListener("click", handleClickOutside);
-		return () => {
-			document.removeEventListener("click", handleClickOutside);
-		};
-	}, []);
+          selectedSubjects[grade].push(displaySubject);
 
-	const handleShowSummary = () => {
-		// Instead of calling handleCreateTest immediately,
-		// we open the modal so user can confirm:
-		setShowSummary(true);
-	};
+          const key = `${grade}-${displaySubject}`;
+          testDates[key] = row.testDate;
+          testDeadlines[key] = row.submissionDeadline;
+          testScores[key] = maxScores[className];
+        }
+      });
+    });
 
-	const handleModalConfirm = () => {
-		// Close the modal
-		setShowSummary(false);
-		// Then proceed with the actual API call
-		handleCreateTest();
-	};
+    return {
+      selectedGrades,
+      selectedSubjects,
+      testDates,
+      testDeadlines,
+      testScores,
+      testType: formData.testType === "syllabus" ? "regular" : "remedial",
+      testTag: formData.testTag,
+    };
+  };
 
-	const handleTestDateChange = (key, value) => {
-		// Always update the testDates object
-		setTestDates((prev) => ({ ...prev, [key]: value }));
+  // API call to create test
+  const handleCreateTest = async () => {
+    setIsSubmitting(true);
+    try {
+      // Build API payload (same as before)
+      const payload = {
+        testType: formData.testType === "syllabus" ? "SYLLABUS" : "REMEDIAL",
+        testTag: formData.testTag,
+        classes: Object.keys(selectedClasses).map((className) => {
+          const classNum = className.includes("Class ")
+            ? parseInt(className.replace("Class ", ""))
+            : className;
 
-		// If we’re editing a test, reset the deadline so the user must re-select it
-		if (isEditMode) {
-			setTestDeadlines((prev) => ({ ...prev, [key]: "" }));
-		}
-	};
+          return {
+            class: classNum,
+            subjects: subjectRows[className]
+              .filter((row) => row.subject)
+              .map((row) => ({
+                subject: row.subject,
+                testDate: row.testDate,
+                deadline: row.submissionDeadline,
+                maxScore: Number(maxScores[className]) || 100,
+              })),
+          };
+        }),
+      };
 
-	const handleDeadlineChange = (key, value) => {
-		setTestDeadlines((prev) => ({ ...prev, [key]: value }));
-	};
+      // Add test ID to payload if in edit mode
+      if (editMode && testData) {
+        payload.testId = testData.id;
+      }
 
-	return (
-		<>
-			{isLoading && (
-				<Box
-					sx={{
-						position: "fixed",
-						top: 0,
-						left: 0,
-						width: "100vw",
-						height: "100vh",
-						backgroundColor: "rgba(0, 0, 0, 0.3)", // Tinted transparent background
-						backdropFilter: "blur(5px)", // Optional: Adds a slight blur effect
-						display: "flex",
-						justifyContent: "center",
-						alignItems: "center",
-						zIndex: 1300, // Ensures it appears above other elements
-					}}
-				>
-					<CircularProgress />
-				</Box>
-			)}
+      // Make API call - use PUT for edit, POST for create
+      const response = editMode
+        ? await apiInstance.patch(`/test/${testData.id}`, payload)
+        : await apiInstance.post("/test", payload);
 
-			<div
-				style={{
-					width: "50%",
-					height: "75vh",
-					margin: "20px auto",
-					display: "flex",
-					flexDirection: "column",
-					justifyContent: "space-between",
-				}}
-			>
-				<div>
-					<div className="space-y-4">
-						{isEditMode && <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Edit Test Details</h5>}
-						<h2 className="text-xl font-semibold mb-2">Test Type</h2>
-						<div className="flex space-x-4">
-							<label className="flex items-center space-x-2">
-								<input
-									type="radio"
-									name="testType"
-									value="regular"
-									checked={testType === "regular"}
-									onChange={() => setTestType("regular")}
-									className="w-4 h-5 accent-gray-500"
-									disabled={isEditMode}
-								/>
-								<span
-									className={`px-2 py-2 rounded-lg ${
-										testType === "regular" ? "text-gray-700 font-bold" : "text-gray-700"
-									}`}
-								>
-									Syllabus
-								</span>
-							</label>
-							<div className="flex items-center space-x-2">
-								<label className="flex items-center space-x-2">
-									<input
-										type="radio"
-										name="testType"
-										value="remedial"
-										checked={testType === "remedial"}
-										onChange={() => setTestType("remedial")}
-										className="w-4 h-5 accent-gray-500"
-										disabled={isEditMode}
-									/>
-									<span
-										className={`px-2 py-2 rounded-lg ${
-											testType === "remedial" ? "text-gray-700 font-bold" : "text-gray-700"
-										}`}
-									>
-										Remedial
-									</span>
-								</label>
-							</div>
-						</div>
-					</div>
+      if (response?.data?.success) {
+        toast.success(editMode ? "Test Updated Successfully" : "Test Created Successfully");
+        navigate("/", {
+          state: {
+            successMessage: editMode ? "Test Updated Successfully" : "Test Created Successfully",
+          },
+        });
+      } else {
+        toast.error(editMode ? "Failed to update test" : "Failed to create test");
+      }
+    } catch (error) {
+      console.error("Error =>", error);
+      toast.error("Something went wrong");
+    } finally {
+      setIsSubmitting(false);
+      setShowSummary(false);
+    }
+  };
 
-					<div className="space-y-4">
-						{!isEditMode && <h2 className="text-xl font-semibold mb-2">Classes</h2>}
+  // Show summary modal after validation
+  const handleShowSummary = (e) => {
+    e.preventDefault(); // Prevent form submission
 
-						{!isEditMode && (
-							<div className="relative">
-								<div
-									className="w-full bg-white text-black border border-[#BDBDBD] rounded-lg p-2 cursor-pointer flex flex-wrap items-center gap-2"
-									onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-								>
-									{/* Selected Classes inside Input Box */}
-									<div className="flex flex-wrap gap-2">
-										{selectedGrades.map((grade) => (
-											<div
-												key={grade}
-												className="px-3 py-2 bg-[#EAEDED] text-[#2F4F4F] rounded-lg flex items-center gap-2"
-											>
-												<span>Class {grade}</span>
-												{!isEditMode && (
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															handleGradeSelection(grade);
-														}}
-														className="text-[#2F4F4F]"
-													>
-														<svg
-															className="w-4 h-4"
-															fill="none"
-															stroke="currentColor"
-															viewBox="0 0 24 24"
-														>
-															<path
-																strokeLinecap="round"
-																strokeLinejoin="round"
-																strokeWidth="2"
-																d="M6 18L18 6M6 6l12 12"
-															/>
-														</svg>
-													</button>
-												)}
-											</div>
-										))}
-									</div>
+    // Validate the form
+    if (!validateForm()) {
+      return;
+    }
 
-									{/* Placeholder or Dropdown Icon */}
-									{selectedGrades.length === 0 && <span className="text-gray-500">Choose class</span>}
-									<svg
-										width="24"
-										height="24"
-										viewBox="0 0 24 24"
-										fill="none"
-										xmlns="http://www.w3.org/2000/svg"
-										className="ml-auto"
-									>
-										<path
-											d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z"
-											fill="#BDBDBD"
-										/>
-									</svg>
-								</div>
+    // Show summary modal
+    setShowSummary(true);
+  };
 
-								{/* Dropdown */}
-								{isDropdownOpen && (
-									<div className="absolute left-0 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-10 p-2">
-										{Array.from({ length: 12 }, (_, i) => i + 1)
-											.filter((grade) => !selectedGrades.includes(grade))
-											.map((grade) => (
-												<div
-													key={grade}
-													className="p-2 cursor-pointer hover:bg-gray-200 text-gray-700"
-													onClick={() => {
-														handleGradeSelection(grade);
-														setIsDropdownOpen(false);
-													}}
-												>
-													Class {grade}
-												</div>
-											))}
-									</div>
-								)}
-							</div>
-						)}
-					</div>
+  // Form validation
+  const validateForm = () => {
+    // Check if class group is selected
+    if (!activeClassGroupId) {
+      toast.error("Please select a class group");
+      return false;
+    }
 
-					{selectedGrades.length > 0 && (
-						<div className="dropdown-container space-y-4">
-							{selectedGrades.map((grade) => (
-								<div key={grade} className="rounded-lg py-2">
-									<h3 className="text-lg font-semibold">Class {grade}</h3>
+    // Check if at least one class is selected
+    if (Object.keys(selectedClasses).length === 0) {
+      toast.error("Please select at least one class");
+      return false;
+    }
 
-									{grade >= 1 && grade <= 10 && (
-										<div
-											className="w-full p-2 
-										[box-shadow:0px_1px_2px_0px_rgba(47,79,79,0.06),0px_2px_1px_0px_rgba(47,79,79,0.04),0px_1px_5px_0px_rgba(47,79,79,0.08)]
-										"
-										>
-											<div
-												className="rounded-md p-2 flex justify-between items-center cursor-pointer bg-red border border-gray-300"
-												onClick={() => toggleDropdown(grade)}
-											>
-												<div className="text-gray-500 flex flex-wrap gap-2">
-													{!selectedSubjects[grade] || selectedSubjects[grade].length === 0
-														? "Choose subjects"
-														: selectedSubjects[grade].map((subject) => (
-																<span
-																	key={subject}
-																	className="bg-[#2F4F4F] text-white px-4 py-1 h-10 rounded-md text-sm flex items-center"
-																	style={{ fontSize: "14px" }}
-																>
-																	{subject}
-																	<button
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			handleSubjectSelection(grade, subject);
-																		}}
-																		className="ml-1 text-white-500"
-																		disabled={isEditMode}
-																	>
-																		✖
-																	</button>
-																</span>
-														  ))}
-												</div>
-												<div className="flex items-center">
-													<svg
-														width="24"
-														height="24"
-														viewBox="0 0 24 24"
-														fill="none"
-														xmlns="http://www.w3.org/2000/svg"
-													>
-														<path
-															d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z"
-															fill="#BDBDBD"
-														/>
-													</svg>
-												</div>
-											</div>
-											{dropdownOpen[grade] && (
-												<div className="p-4 rounded-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
-													<div className="flex flex-wrap gap-2">
-														{(testType === "remedial"
-															? ["Maths", "Hindi"]
-															: SUBJECTS_BY_GRADE[grade]
-														)?.map((subject) => (
-															<div
-																key={subject}
-																className="px-3 py-2 flex items-center cursor-pointer"
-																onClick={() => handleSubjectSelection(grade, subject)}
-															>
-																<div className="relative w-4 h-4 border border-[#2F4F4F] rounded-sm flex items-center justify-center mr-2">
-																	{selectedSubjects[grade]?.includes(subject) && (
-																		<svg
-																			width="16"
-																			height="16"
-																			viewBox="0 0 16 16"
-																			fill="none"
-																			xmlns="http://www.w3.org/2000/svg"
-																		>
-																			<path
-																				d="M12.6667 2H3.33333C2.6 2 2 2.6 2 3.33333V12.6667C2 13.4 2.6 14 3.33333 14H12.6667C13.4 14 14 13.4 14 12.6667V3.33333C14 2.6 13.4 2 12.6667 2ZM7.14 10.86C6.88 11.12 6.46 11.12 6.2 10.86L3.80667 8.46667C3.54667 8.20667 3.54667 7.78667 3.80667 7.52667C4.06667 7.26667 4.48667 7.26667 4.74667 7.52667L6.66667 9.44667L11.2533 4.86C11.5133 4.6 11.9333 4.6 12.1933 4.86C12.4533 5.12 12.4533 5.54 12.1933 5.8L7.14 10.86Z"
-																				fill="#2F4F4F"
-																			/>
-																		</svg>
-																	)}
-																</div>
-																{subject}
-															</div>
-														))}
-													</div>
-												</div>
-											)}
-										</div>
-									)}
+    if (!formData.testTag) {
+      toast.error("Please select a test tag");
+      return false;
+    }
 
-									{(grade === 11 || grade === 12) && (
-										<div
-											className="w-full p-2 
-										[box-shadow:0px_1px_2px_0px_rgba(47,79,79,0.06),0px_2px_1px_0px_rgba(47,79,79,0.04),0px_1px_5px_0px_rgba(47,79,79,0.08)]
-										"
-										>
-											<div
-												className="rounded-md p-2 flex justify-between items-center cursor-pointer bg-white border border-gray-400"
-												onClick={() => toggleDropdown(grade)}
-												ref={dropdownRef}
-											>
-												<div className="text-gray-500 flex flex-wrap gap-2 ">
-													{!selectedSubjects[grade] || selectedSubjects[grade].length === 0
-														? "Choose subjects"
-														: selectedSubjects[grade].map((subject) => (
-																<span
-																	key={subject}
-																	className="bg-[#2F4F4F] text-white px-3 py-2 rounded-md text-sm flex items-center"
-																	style={{ fontSize: "14px" }}
-																>
-																	{subject}
-																	<button
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			handleSubjectSelection(grade, subject);
-																		}}
-																		// className="ml-1 text-gray-500"
-																		className="ml-1 text-white-500"
-																	>
-																		✖
-																	</button>
-																</span>
-														  ))}
-												</div>
-												<div className="flex items-center">
-													<svg
-														width="24"
-														height="24"
-														viewBox="0 0 24 24"
-														fill="none"
-														xmlns="http://www.w3.org/2000/svg"
-													>
-														<path
-															d="M15.8751 9.00002L11.9951 12.88L8.1151 9.00002C7.7251 8.61002 7.0951 8.61002 6.7051 9.00002C6.3151 9.39002 6.3151 10.02 6.7051 10.41L11.2951 15C11.6851 15.39 12.3151 15.39 12.7051 15L17.2951 10.41C17.6851 10.02 17.6851 9.39002 17.2951 9.00002C16.9051 8.62002 16.2651 8.61002 15.8751 9.00002Z"
-															fill="#BDBDBD"
-														/>
-													</svg>
-												</div>
-											</div>
-											{dropdownOpen[grade] &&
-												(() => {
-													// Check if it's a remedial test for Class 11 or 12
-													const isRemedialFor11Or12 =
-														testType === "remedial" && (grade === 11 || grade === 12);
+    // Check test category
+    if (!formData.testTag) {
+      toast.error("Please select a test category");
+      return false;
+    }
 
-													// Updated code section for remedial test checkboxes for Class 11 and 12
-													// Replace the existing remedial test condition block with this code
+    // Validate each class's data
+    for (const className of Object.keys(selectedClasses)) {
+      // Validate max score
+      if (!maxScores[className]) {
+        toast.error(`Please enter a max score for ${className}`);
+        return false;
+      }
 
-													if (isRemedialFor11Or12) {
-														// ✅ ONLY show Maths + Hindi, hide everything else
-														return (
-															<div className="p-4 rounded-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
-																<div className="flex flex-wrap gap-2">
-																	{["Maths", "Hindi"].map((subject) => (
-																		<div
-																			key={subject}
-																			className="px-3 py-2 flex items-center cursor-pointer"
-																			onClick={() =>
-																				handleSubjectSelection(grade, subject)
-																			}
-																		>
-																			<div className="relative w-4 h-4 border border-[#2F4F4F] rounded-sm flex items-center justify-center mr-2">
-																				{selectedSubjects[grade]?.includes(
-																					subject
-																				) && (
-																					<svg
-																						width="16"
-																						height="16"
-																						viewBox="0 0 16 16"
-																						fill="none"
-																						xmlns="http://www.w3.org/2000/svg"
-																					>
-																						<path
-																							d="M12.6667 2H3.33333C2.6 2 2 2.6 2 3.33333V12.6667C2 13.4 2.6 14 3.33333 14H12.6667C13.4 14 14 13.4 14 12.6667V3.33333C14 2.6 13.4 2 12.6667 2ZM7.14 10.86C6.88 11.12 6.46 11.12 6.2 10.86L3.80667 8.46667C3.54667 8.20667 3.54667 7.78667 3.80667 7.52667C4.06667 7.26667 4.48667 7.26667 4.74667 7.52667L6.66667 9.44667L11.2533 4.86C11.5133 4.6 11.9333 4.6 12.1933 4.86C12.4533 5.12 12.4533 5.54 12.1933 5.8L7.14 10.86Z"
-																							fill="#2F4F4F"
-																						/>
-																					</svg>
-																				)}
-																			</div>
-																			{subject}
-																		</div>
-																	))}
-																</div>
-															</div>
-														);
-													}
+      // Check if at least one subject is added
+      if (!subjectRows[className] || subjectRows[className].length === 0) {
+        toast.error(`Please add at least one subject for ${className}`);
+        return false;
+      }
 
-													// Otherwise (non-remedial, or a different grade) — show the usual categories
-													return (
-														<div className="p-4 rounded-lg bg-white max-h-96 overflow-y-auto border border-gray-200">
-															{Object.entries(SUBJECT_CATEGORIES).map(
-																([category, subjects]) => (
-																	<div key={category} className="mb-3">
-																		<div className="text-[#2F4F4F] text-sm font-semibold px-3 py-2">
-																			{category}
-																		</div>
-																		<div className="flex flex-wrap gap-3 px-3">
-																			{subjects
-																				.filter((subject) =>
-																					SUBJECTS_BY_GRADE[grade]?.includes(
-																						subject
-																					)
-																				)
-																				.map((subject) => (
-																					<div
-																						key={subject}
-																						className="px-3 py-2 hover:bg-gray-50 flex items-center cursor-pointer"
-																						onClick={(e) => {
-																							e.stopPropagation();
-																							handleSubjectSelection(
-																								grade,
-																								subject
-																							);
-																						}}
-																					>
-																						<div
-																							className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${
-																								selectedSubjects[
-																									grade
-																								]?.includes(subject)
-																									? "bg-[#2F4F4F] border-[#2F4F4F]"
-																									: "border-[#2F4F4F] bg-white"
-																							}`}
-																						>
-																							{selectedSubjects[
-																								grade
-																							]?.includes(subject) && (
-																								<svg
-																									className="w-4 h-4"
-																									fill="none"
-																									stroke="white"
-																									viewBox="0 0 24 24"
-																								>
-																									<path
-																										strokeLinecap="round"
-																										strokeLinejoin="round"
-																										strokeWidth="2"
-																										d="M5 13l4 4L19 7"
-																									/>
-																								</svg>
-																							)}
-																						</div>
-																						{subject}
-																					</div>
-																				))}
-																		</div>
-																	</div>
-																)
-															)}
-														</div>
-													);
-												})()}
-										</div>
-									)}
+      // Validate each subject row
+      for (const row of subjectRows[className]) {
+        if (!row.subject) {
+          toast.error(`Please select a subject for ${className}`);
+          return false;
+        }
 
-									{selectedSubjects[grade]?.length > 0 && (
-										<div className="space-y-2 mt-4">
-											<h4 className="text-[#2F4F4F] text-lg font-semibold">
-												Set Test Date {testType === "regular" && "and Max Score"}
-											</h4>
-											{selectedSubjects[grade].map((subject) => {
-												const combinedKey = `${grade}-${subject}`;
-												// 1) Min date for testDate is "today".
-												const today = new Date();
-												const minTestDate = today.toISOString().split("T")[0];
+        if (!row.testDate) {
+          toast.error(`Please select a test date for ${row.subject} in ${className}`);
+          return false;
+        }
 
-												// 2) Min date for deadline is "one day after" testDate (if selected).
-												let minDeadline = "";
-												if (testDates[combinedKey]) {
-													const dt = new Date(testDates[combinedKey]); // testDate
-													dt.setDate(dt.getDate() + 1); // one day later
-													minDeadline = dt.toISOString().split("T")[0];
-												}
-												return (
-													<div
-														key={combinedKey}
-														className=" space-x-4 p-2 bg-white rounded-lg"
-													>
-														<div style={{ marginBottom: "8px" }}>
-															<Typography text="primary" variant="subtitle1">
-																{subject}
-															</Typography>
-														</div>
+        if (!row.submissionDeadline) {
+          toast.error(`Please select a submission deadline for ${row.subject} in ${className}`);
+          return false;
+        }
+      }
+    }
 
-														<div className="flex gap-4 ">
-															<div className="w-full">
-																<Typography color="primary" variant="subtitle2">
-																	Test Date
-																</Typography>
-																<DatePicker
-																	selected={
-																		testDates[combinedKey]
-																			? new Date(testDates[combinedKey])
-																			: null
-																	}
-																	onChange={(date) => {
-																		// Adjust for timezone offset when converting to string, just like in the deadline picker
-																		const dateStr = date
-																			? new Date(
-																					date.getTime() -
-																						date.getTimezoneOffset() * 60000
-																			  )
-																					.toISOString()
-																					.split("T")[0]
-																			: "";
-																		handleTestDateChange(combinedKey, dateStr);
-																	}}
-																	minDate={new Date(minTestDate)}
-																	dateFormat="dd-MM-yyyy"
-																	className="h-12 w-full p-2 border border-[#E0E0E0] rounded-lg"
-																	placeholderText="Select test date"
-																	isClearable
-																/>
-															</div>
-															{/* Replace the Score Submission Deadline DatePicker with this code */}
-															<div className="w-full">
-																<Typography color="primary" variant="subtitle2">
-																	Score Submission Deadline
-																</Typography>
-																<div style={{ width: "100%" }}>
-																	<DatePicker
-																		selected={
-																			testDeadlines[combinedKey]
-																				? new Date(testDeadlines[combinedKey])
-																				: null
-																		}
-																		onChange={(date) => {
-																			// Adjust for timezone offset when converting to string
-																			const dateStr = date
-																				? new Date(
-																						date.getTime() -
-																							date.getTimezoneOffset() *
-																								60000
-																				  )
-																						.toISOString()
-																						.split("T")[0]
-																				: "";
-																			handleDeadlineChange(combinedKey, dateStr);
-																		}}
-																		minDate={
-																			minDeadline ? new Date(minDeadline) : null
-																		}
-																		dateFormat="dd-MM-yyyy"
-																		className="h-12 w-full p-2 border border-[#E0E0E0] rounded-lg"
-																		placeholderText="Select deadline"
-																		isClearable
-																		disabled={!testDates[combinedKey]}
-																		renderDayContents={(day, date) => {
-																			const today = new Date();
-																			const isToday =
-																				date &&
-																				date.getDate() === today.getDate() &&
-																				date.getMonth() === today.getMonth() &&
-																				date.getFullYear() ===
-																					today.getFullYear();
+    return true;
+  };
 
-																			return (
-																				<div
-																					style={{
-																						border: isToday
-																							? "1px solid #2F4F4F"
-																							: "none",
-																						borderRadius: "8px",
-																						width: "27px",
-																						height: "24px",
-																						display: "flex",
-																						alignItems: "center",
-																						justifyContent: "center",
-																						color: isToday
-																							? "#2F4F4F"
-																							: "inherit",
-																					}}
-																				>
-																					{day}
-																				</div>
-																			);
-																		}}
-																	/>
-																</div>
-															</div>
-															{testType === "regular" && (
-																<div className="w-20">
-																	<Typography color="primary" variant="subtitle2">
-																		Max Score
-																	</Typography>
-																	<div className="w-20 h-12 px-4 py-3 rounded-lg border border-[#E0E0E0] flex items-center">
-																		<input
-																			type="text"
-																			placeholder="90"
-																			className="w-full h-full focus:outline-none text-lg"
-																			value={testScores[combinedKey] || ""}
-																			onChange={(e) =>
-																				handleScoreChange(
-																					combinedKey,
-																					e.target.value
-																				)
-																			}
-																		/>
-																	</div>
-																</div>
-															)}
-														</div>
-													</div>
-												);
-											})}
-										</div>
-									)}
-								</div>
-							))}
-						</div>
-					)}
-				</div>
+  // Handle modal confirmation - this triggers the API call
+  const handleModalConfirm = () => {
+    handleCreateTest();
+  };
 
-				<div>
-					<div className="py-2 bg-white mt-4">
-						<div className="flex justify-center">
-							<button
-								onClick={handleShowSummary}
-								disabled={!isFormValid() || creatingTest}
-								className={`flex justify-center h-11 px-4 py-2 min-w-[120px] w-max ${
-									!isFormValid() || creatingTest
-										? "bg-gray-300 cursor-not-allowed"
-										: "bg-[#FFD700] cursor-pointer"
-								} rounded-lg items-center gap-2`}
-							>
-								{creatingTest ? "Saving Test Details..." : isEditMode ? "Update Test" : "Create Test"}
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
+  // Get clean class ID for DOM IDs
+  const getClassId = (className) => {
+    return typeof className === "number"
+      ? `class_${className}`
+      : `class_${className}`.replace(/\s+/g, "_").toLowerCase();
+  };
 
-			<ToastContainer newestOnTop rtl={false} pauseOnFocusLoss draggable />
+  return (
+    <div className="main-page-wrapper text-[#2F4F4F] font-['Work_Sans']">
+      <header className="mb-8 text-center">
+        <h1 className="text-4xl font-bold text-[#2F4F4F] font-['Karla']">
+          {editMode ? "Edit Test" : "Create New Test"}
+        </h1>
+        <p className="text-[#597272] mt-2 font-['Work_Sans']">
+          {editMode
+            ? "Update the test dates below. Other fields are read-only."
+            : "Fill in the details below to schedule new tests."}
+        </p>
+      </header>
 
-			<ModalSummary
-				isOpen={showSummary}
-				onClose={() => setShowSummary(false)}
-				selectedGrades={selectedGrades}
-				selectedSubjects={selectedSubjects}
-				testDates={testDates}
-				testDeadlines={testDeadlines}
-				testScores={testScores}
-				testType={testType}
-				handleConfirm={handleModalConfirm}
-			/>
-		</>
-	);
+      <form>
+        {/* Test Configuration Section */}
+        <div className="bg-white p-6 rounded-xl shadow-md mb-8">
+          <h2 className="text-xl font-semibold text-[#2F4F4F] mb-6 border-b pb-3 border-slate-200 font-['Karla']">
+            Test Configuration
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <div>
+              <label className="block font-medium text-[#597272] mb-2 text-sm" htmlFor="testType">
+                Test Type
+              </label>
+              <select
+                id="testType"
+                name="testType"
+                className={`w-full p-2.5 border border-slate-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#049796] focus:ring-2 focus:ring-[#CDEAEA] ${
+                  editMode ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
+                value={formData.testType}
+                onChange={handleFormChange}
+                disabled={editMode}
+              >
+                <option value="syllabus">Syllabus</option>
+                <option value="remedial">Remedial</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-medium text-[#597272] mb-2 text-sm" htmlFor="testTag">
+                Test Tag
+              </label>
+              <Autocomplete
+                freeSolo
+                id="testTag"
+                options={TEST_TAG_OPTIONS}
+                filterOptions={filterTestTagOptions}
+                getOptionLabel={(option) => {
+                  if (typeof option === "string") {
+                    return option;
+                  }
+                  if (option.isCreateNew) {
+                    return `Create new: ${option.name}`;
+                  }
+                  return option.name || "";
+                }}
+                value={formData.testTag || null}
+                inputValue={testTagInput}
+                onInputChange={(event, newInputValue) => {
+                  if (!editMode) {
+                    setTestTagInput(newInputValue);
+                    if (!event) {
+                      const trimmedValue = newInputValue.trim();
+                      setFormData({
+                        ...formData,
+                        testTag: trimmedValue,
+                      });
+                    }
+                  }
+                }}
+                onChange={(event, newValue) => {
+                  if (!editMode) {
+                    // Handle "Create new" option
+                    if (typeof newValue === "string") {
+                      setFormData({
+                        ...formData,
+                        testTag: newValue.trim(),
+                      });
+                    }
+                    // Handle direct string input
+                    else if (newValue && newValue.isCreateNew) {
+                      setFormData({
+                        ...formData,
+                        testTag: newValue.name,
+                      });
+                      toast.success(`New test tag "${newValue.name}" added`);
+                    }
+                    // Handle dropdown selection
+                    else if (newValue && newValue.name) {
+                      setFormData({
+                        ...formData,
+                        testTag: newValue.name,
+                      });
+                    }
+                    // Handle clearing
+                    else {
+                      setFormData({
+                        ...formData,
+                        testTag: "",
+                      });
+                    }
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder={editMode ? "" : "Select or type a new test tag"}
+                    required
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        height: "42px",
+                        borderRadius: "6px",
+                        fontSize: "16px",
+                        backgroundColor: editMode ? "#f5f5f5" : "white",
+                      },
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "rgba(0, 0, 0, 0.23)",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: editMode ? "rgba(0, 0, 0, 0.23)" : "rgba(0, 0, 0, 0.87)",
+                      },
+                      "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: editMode ? "rgba(0, 0, 0, 0.23)" : "#049796",
+                        borderWidth: "1px",
+                      },
+                    }}
+                    disabled={editMode}
+                  />
+                )}
+                disabled={editMode}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Class Group Selection Section - Compressed */}
+        <div className="bg-white p-4 rounded-xl shadow-md mb-6">
+          <h2 className="text-lg font-semibold text-[#2F4F4F] mb-3 border-b pb-2 border-slate-200 font-['Karla']">
+            {editMode ? "Target Class Group" : "Select Target Class Group"}
+          </h2>
+          <div className="space-y-3">
+            {CLASS_GROUPS.map((group) => (
+              <div
+                key={group.id}
+                className={`bg-white border rounded-lg p-4 ${
+                  !editMode ? "cursor-pointer" : ""
+                } transition-all ${
+                  activeClassGroupId === group.id
+                    ? "border-[#2F4F4F] shadow-sm bg-[#D4DAE8]"
+                    : "border-slate-200 hover:border-slate-400"
+                } ${editMode ? "opacity-75" : ""}`}
+                onClick={() => !editMode && handleGroupCardSelect(group.id)}
+                tabIndex={!editMode ? "0" : "-1"}
+                onKeyDown={(e) => {
+                  if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    handleGroupCardSelect(group.id);
+                  }
+                }}
+              >
+                <div className="text-base font-semibold text-[#2F4F4F] mb-2 flex items-center font-['Karla']">
+                  {activeClassGroupId === group.id && (
+                    <CheckCircle className="w-5 h-5 text-[#2F4F4F] mr-2" />
+                  )}
+                  {group.name}
+                </div>
+                {activeClassGroupId === group.id && (
+                  <div className="flex flex-wrap gap-2">
+                    {group.classes.map((classItem) => {
+                      const className =
+                        typeof classItem === "number" ? `Class ${classItem}` : classItem;
+                      return (
+                        <div
+                          key={className}
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                            selectedClasses[className]
+                              ? "bg-[#D4DAE8] text-[#2F4F4F] border-[#2F4F4F] font-semibold"
+                              : "bg-slate-100 border-slate-200 text-[#2F4F4F] hover:bg-[#CDEAEA] hover:border-[#049796]"
+                          } ${editMode ? "pointer-events-none" : ""}`}
+                          onClick={(e) => {
+                            if (!editMode) {
+                              e.stopPropagation();
+                              toggleClassSelection(className);
+                            }
+                          }}
+                          tabIndex={!editMode ? "0" : "-1"}
+                          onKeyDown={(e) => {
+                            if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              toggleClassSelection(className);
+                            }
+                          }}
+                        >
+                          {className}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Selected Classes Details */}
+        <div className="space-y-6">
+          {Object.keys(selectedClasses).map((className) => (
+            <div
+              key={getClassId(className)}
+              className="p-6 border border-[#E0E5E5] rounded-lg bg-[#F0F5F5] mt-6"
+            >
+              <div className="flex justify-between items-center border-b border-[#CEDADA] pb-4 mb-4">
+                <h3 className="text-lg font-semibold text-[#2F4F4F] font-['Karla']">
+                  {className} - Test Details
+                </h3>
+                <div className="w-1/3 min-w-32">
+                  <label
+                    htmlFor={`max_score_${getClassId(className)}`}
+                    className="block text-xs font-medium text-[#597272] mb-1"
+                  >
+                    Overall Max Score:
+                  </label>
+                  <input
+                    type="number"
+                    id={`max_score_${getClassId(className)}`}
+                    className={`w-full p-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-2 focus:ring-[#D4DAE8] ${
+                      editMode ? "bg-gray-100 cursor-not-allowed" : ""
+                    }`}
+                    placeholder="e.g., 100"
+                    value={maxScores[className] || ""}
+                    onChange={(e) => !editMode && handleMaxScoreChange(className, e.target.value)}
+                    disabled={editMode}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Subjects Table */}
+              <div>
+                <div className="grid grid-cols-4 gap-4 font-semibold text-[#2F4F4F] text-sm pb-2 border-b border-[#CEDADA] mb-2 font-['Work_Sans']">
+                  <div>Subject</div>
+                  <div>Test Date</div>
+                  <div>Submission Deadline</div>
+                  <div>Action</div>
+                </div>
+
+                {subjectRows[className]?.map((row) => (
+                  <div
+                    key={row.id}
+                    className="grid grid-cols-4 gap-4 items-center py-3 border-b border-[#E0E5E5]"
+                  >
+                    <div>
+                      <select
+                        className={`w-full p-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-2 focus:ring-[#D4DAE8] ${
+                          editMode ? "bg-gray-100 cursor-not-allowed" : ""
+                        }`}
+                        value={row.subject}
+                        onChange={(e) =>
+                          !editMode &&
+                          handleSubjectRowChange(className, row.id, "subject", e.target.value)
+                        }
+                        disabled={editMode}
+                        required
+                      >
+                        <option value="">Select Subject...</option>
+                        {(() => {
+                          // Extract the class number from the className (e.g., "Class 9" → 9)
+                          const classNum = className.includes("Class ")
+                            ? parseInt(className.replace("Class ", ""))
+                            : parseInt(className);
+
+                          // Get subjects for this class from SUBJECTS_BY_GRADE
+                          const subjectsForClass = SUBJECTS_BY_GRADE[classNum] || [];
+
+                          // Get already selected subjects in this class (excluding the current row)
+                          const selectedSubjects = subjectRows[className]
+                            .filter((otherRow) => otherRow.id !== row.id && otherRow.subject)
+                            .map((otherRow) => otherRow.subject);
+
+                          // Filter out already selected subjects
+                          const availableSubjects = subjectsForClass.filter(
+                            (subject) =>
+                              !selectedSubjects.includes(subject.toLowerCase().replace(/\s+/g, "_"))
+                          );
+
+                          return availableSubjects.map((subject) => (
+                            <option
+                              key={subject}
+                              value={subject.toLowerCase().replace(/\s+/g, "_")}
+                            >
+                              {subject}
+                            </option>
+                          ));
+                        })()}
+                      </select>
+                    </div>
+                    {/* Test Date - EDITABLE EVEN IN EDIT MODE */}
+                    {/* Test Date - EDITABLE EVEN IN EDIT MODE */}
+                    <div>
+                      <input
+                        type="date"
+                        className="w-full p-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-2 focus:ring-[#D4DAE8]"
+                        value={row.testDate}
+                        onChange={(e) =>
+                          handleSubjectRowChange(className, row.id, "testDate", e.target.value)
+                        }
+                        required
+                      />
+                    </div>
+                    {/* Submission Deadline - EDITABLE EVEN IN EDIT MODE */}
+                    {/* Submission Deadline - EDITABLE EVEN IN EDIT MODE */}
+                    <div>
+                      <input
+                        type="date"
+                        className="w-full p-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-2 focus:ring-[#D4DAE8]"
+                        value={row.submissionDeadline}
+                        onChange={(e) =>
+                          handleSubjectRowChange(
+                            className,
+                            row.id,
+                            "submissionDeadline",
+                            e.target.value
+                          )
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        className={`bg-transparent text-[#F44336] hover:text-[#C3362B] hover:bg-[#FFE5E3] p-1 rounded-md ${
+                          editMode ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                        onClick={() => !editMode && removeSubjectRow(className, row.id)}
+                        disabled={editMode}
+                        aria-label="Remove subject"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Subject Button - HIDE IN EDIT MODE */}
+              {!editMode && (
+                <div className="mt-6">
+                  <OutlinedButton
+                    onClick={() => addSubjectRow(className)}
+                    text="Add Subject"
+                    icon={true}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex justify-center mt-5">
+          <ButtonCustom
+            onClick={handleShowSummary}
+            text={
+              isSubmitting
+                ? editMode
+                  ? "Updating Test..."
+                  : "Creating Test..."
+                : editMode
+                ? "Update Test"
+                : "Create Test"
+            }
+            disabled={isSubmitting}
+          />
+        </div>
+      </form>
+
+      {/* Toast container for notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
+      {/* Summary Modal */}
+      <ModalSummary
+        isOpen={showSummary}
+        onClose={() => setShowSummary(false)}
+        {...prepareSummaryData()}
+        handleConfirm={handleModalConfirm}
+        modalTitle={editMode ? "Test Update Summary" : "Test Creation Summary"}
+      />
+    </div>
+  );
 };
 
 export default TestCreationForm;

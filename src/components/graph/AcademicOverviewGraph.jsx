@@ -1,223 +1,297 @@
 import { useState, useEffect } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { Typography, Box, Radio, RadioGroup, FormControlLabel, Paper } from "@mui/material";
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label }) => {
-	if (!active || !payload || !payload.length) return null;
+  if (!active || !payload || !payload.length) return null;
 
-	const currentData = payload[0].payload;
+  const currentData = payload[0].payload;
 
-	return (
-		<Paper
-			sx={{
-				p: 2,
-				border: "1px dashed #c9d6ff",
-				borderRadius: "4px",
-				boxShadow: "0px 1px 4px rgba(0,0,0,0.1)",
-				maxWidth: "300px",
-				bgcolor: "#fff",
-			}}
-		>
-			<Typography
-				variant="subtitle1"
-				sx={{
-					color: "#DCB900",
-					fontWeight: "bold",
-					mb: 1.5,
-				}}
-			>
-				{label.toUpperCase()}
-			</Typography>
+  return (
+    <Paper
+      sx={{
+        p: 2,
+        border: "1px dashed #c9d6ff",
+        borderRadius: "4px",
+        boxShadow: "0px 1px 4px rgba(0,0,0,0.1)",
+        maxWidth: "300px",
+        bgcolor: "#fff",
+      }}
+    >
+      <Typography
+        variant="subtitle1"
+        sx={{
+          color: "#DCB900",
+          fontWeight: "bold",
+          mb: 1.5,
+        }}
+      >
+        {label.toUpperCase()}
+      </Typography>
 
-			<Box sx={{ mb: 1 }}>
-				<Typography variant="body2" sx={{ display: "flex", justifyContent: "space-between" }}>
-					<span style={{ fontWeight: 500, color: "#2F4F4F" }}>Average Score</span>
-					<span style={{ fontWeight: 500, color: "#2F4F4F" }}>{currentData.overall}%</span>
-				</Typography>
-			</Box>
+      <Box sx={{ mb: 1 }}>
+        <Typography variant="body2" sx={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontWeight: 500, color: "#2F4F4F" }}>Average Score</span>
+          <span style={{ fontWeight: 500, color: "#2F4F4F" }}>{currentData.overall}%</span>
+        </Typography>
+      </Box>
 
-			{currentData.totalScore && (
-				<Box
-					sx={{
-						display: "inline-block",
-						bgcolor: "#ff6b6b",
-						color: "white",
-						px: 1,
-						py: 0.5,
-						borderRadius: "4px",
-						mb: 1,
-						fontWeight: "bold",
-					}}
-				>
-					{currentData.totalScore}
-				</Box>
-			)}
+      {currentData.totalScore && (
+        <Box
+          sx={{
+            display: "inline-block",
+            bgcolor: "#ff6b6b",
+            color: "white",
+            px: 1,
+            py: 0.5,
+            borderRadius: "4px",
+            mb: 1,
+            fontWeight: "bold",
+          }}
+        >
+          {currentData.totalScore}
+        </Box>
+      )}
 
-			<Box
-				sx={{
-					borderTop: "1px dashed #E0E0E0",
-					pt: 1,
-					mt: 1,
-				}}
-			>
-				{Object.entries(currentData)
-					.filter(([key]) =>
-						["english", "hindi", "mathematics", "science", "socialStudies", "sanskrit"].includes(key)
-					)
-					.map(([subject, score]) => (
-						<Box
-							key={subject}
-							sx={{
-								display: "flex",
-								justifyContent: "space-between",
-								py: 0.5,
-								borderBottom: subject === "mathematics" ? "1px dashed #E0E0E0" : "none",
-							}}
-						>
-							<Typography
-								variant="body2"
-								sx={{
-									color: subject === "mathematics" ? "#1976d2" : "text.primary",
-									fontWeight: subject === "mathematics" ? 500 : 400,
-								}}
-							>
-								{subject.charAt(0).toUpperCase() +
-									subject
-										.slice(1)
-										.replace(/([A-Z])/g, " $1")
-										.trim()}
-							</Typography>
-							<Typography variant="body2">{score}/50</Typography>
-						</Box>
-					))}
-			</Box>
-		</Paper>
-	);
+      <Box
+        sx={{
+          borderTop: "1px dashed #E0E0E0",
+          pt: 1,
+          mt: 1,
+        }}
+      >
+        {Object.entries(currentData)
+          .filter(([key]) => key !== "month" && key !== "totalScore" && key !== "overall")
+          .map(([subject, score]) => (
+            <Box
+              key={subject}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                py: 0.5,
+                borderBottom: subject === "mathematics" ? "1px dashed #E0E0E0" : "none",
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  color: subject === "mathematics" ? "#1976d2" : "text.primary",
+                  fontWeight: subject === "mathematics" ? 500 : 400,
+                }}
+              >
+                {subject.charAt(0).toUpperCase() +
+                  subject
+                    .slice(1)
+                    .replace(/([A-Z])/g, " $1")
+                    .trim()}
+              </Typography>
+              <Typography variant="body2">{score}</Typography>
+            </Box>
+          ))}
+      </Box>
+    </Paper>
+  );
 };
 
-const AcademicOverviewGraph = ({ chartData }) => {
-	const [selectedSubject, setSelectedSubject] = useState("overall");
-	const [graphData, setGraphData] = useState([]);
-	const [isLoading, setIsLoading] = useState(true);
+const transformStudentDataForGraph = (studentData) => {
+  if (!studentData || !studentData.academic || !studentData.academic.months) {
+    return [];
+  }
 
-	// Handle subject change
-	const handleSubjectChange = (event) => {
-		setSelectedSubject(event.target.value);
-	};
+  return studentData.academic.months.map((monthData) => {
+    // Initialize with month
+    const monthObj = { month: monthData.month };
 
-	useEffect(() => {
-		setGraphData(chartData);
-		setIsLoading(false);
-	}, [chartData]);
+    // Track scores for each subject
+    const subjectScores = {};
+    const subjectCounts = {};
 
-	if (isLoading) {
-		return <Typography>Loading...</Typography>;
-	}
+    // Process each test in the month
+    monthData.tests.forEach((test) => {
+      if (test.testType === "SYLLABUS" && test.score !== null) {
+        // Normalize subject name (lowercase, no spaces)
+        const subject = test.subject.toLowerCase().replace(/\s+/g, "");
 
-	return (
-		<Paper
-			sx={{
-				p: 4,
-				borderRadius: "8px",
-				background: "#FFF",
-				marginTop: "40px",
-				boxShadow:
-					"0px 1px 2px 0px rgba(47, 79, 79, 0.06), 0px 2px 1px 0px rgba(47, 79, 79, 0.04), 0px 1px 5px 0px rgba(47, 79, 79, 0.08)",
-			}}
-		>
-			<Box>
-				<h5 className="mb-4 text-lg font-bold text-[#2F4F4F]">Academic Overview</h5>
+        // Initialize if first encounter
+        if (!subjectScores[subject]) {
+          subjectScores[subject] = 0;
+          subjectCounts[subject] = 0;
+        }
 
-				<RadioGroup row value={selectedSubject} onChange={handleSubjectChange} sx={{ mb: 4 }}>
-					<FormControlLabel
-						value="overall"
-						control={<Radio sx={{ color: "#2F4F4F", "&.Mui-checked": { color: "#2F4F4F" } }} />}
-						label="Overall"
-					/>
-					<FormControlLabel
-						value="english"
-						control={<Radio sx={{ color: "#2F4F4F", "&.Mui-checked": { color: "#2F4F4F" } }} />}
-						label="English"
-					/>
-					<FormControlLabel
-						value="hindi"
-						control={<Radio sx={{ color: "#2F4F4F", "&.Mui-checked": { color: "#2F4F4F" } }} />}
-						label="Hindi"
-					/>
-					<FormControlLabel
-						value="mathematics"
-						control={<Radio sx={{ color: "#2F4F4F", "&.Mui-checked": { color: "#2F4F4F" } }} />}
-						label="Mathematics"
-					/>
-					<FormControlLabel
-						value="science"
-						control={<Radio sx={{ color: "#2F4F4F", "&.Mui-checked": { color: "#2F4F4F" } }} />}
-						label="Science"
-					/>
-					<FormControlLabel
-						value="socialStudies"
-						control={<Radio sx={{ color: "#2F4F4F", "&.Mui-checked": { color: "#2F4F4F" } }} />}
-						label="Social Studies"
-					/>
-					<FormControlLabel
-						value="sanskrit"
-						control={<Radio sx={{ color: "#2F4F4F", "&.Mui-checked": { color: "#2F4F4F" } }} />}
-						label="Sanskrit"
-					/>
-				</RadioGroup>
+        // Calculate percentage score
+        const normalizedScore = (test.score / test.maxScore) * 100;
 
-				<Box sx={{ width: "100%", height: 300 }}>
-					<ResponsiveContainer width="100%" height="100%">
-						<LineChart data={graphData} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
-							<CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
-							<XAxis
-								dataKey="month"
-								axisLine={{ stroke: "#E0E0E0" }}
-								tickLine={false}
-								tick={{ fontSize: 12, fill: "#666" }}
-							/>
-							<YAxis
-								domain={[0, 100]}
-								tickCount={11}
-								axisLine={{ stroke: "#E0E0E0" }}
-								tickLine={false}
-								tick={{ fontSize: 12, fill: "#666" }}
-								label={{
-									value: "Scores in Percentage",
-									angle: -90,
-									position: "insideLeft",
-									style: { textAnchor: "middle", fill: "#666", fontSize: 12 },
-								}}
-							/>
-							<Tooltip
-								content={selectedSubject === "overall" ? <CustomTooltip /> : null}
-								formatter={(value) => (selectedSubject !== "overall" ? [`${value}%`, "Score"] : value)}
-								contentStyle={
-									selectedSubject !== "overall"
-										? {
-												backgroundColor: "white",
-												border: "1px solid #E0E0E0",
-												borderRadius: "4px",
-												boxShadow: "0px 2px 4px rgba(0,0,0,0.1)",
-										  }
-										: null
-								}
-							/>
-							<Line
-								type="monotone"
-								dataKey={selectedSubject}
-								stroke="#FFCC00"
-								strokeWidth={2}
-								dot={{ r: 4, fill: "#FFCC00", strokeWidth: 2, stroke: "#FFCC00" }}
-								activeDot={{ r: 6, fill: "#FFCC00", stroke: "white", strokeWidth: 2 }}
-							/>
-						</LineChart>
-					</ResponsiveContainer>
-				</Box>
-			</Box>
-		</Paper>
-	);
+        // Add to totals
+        subjectScores[subject] += normalizedScore;
+        subjectCounts[subject]++;
+      }
+    });
+
+    // Calculate average for each subject
+    Object.keys(subjectScores).forEach((subject) => {
+      monthObj[subject] = Math.round(subjectScores[subject] / subjectCounts[subject]);
+    });
+
+    // Calculate overall average
+    let totalScore = 0,
+      totalTests = 0;
+    Object.values(subjectScores).forEach((score, index) => {
+      totalScore += score;
+      totalTests += Object.values(subjectCounts)[index];
+    });
+
+    monthObj.overall = totalTests > 0 ? Math.round(totalScore / totalTests) : 0;
+
+    return monthObj;
+  });
+};
+
+const AcademicOverviewGraph = ({ studentData }) => {
+  const [selectedSubject, setSelectedSubject] = useState("overall");
+  const [graphData, setGraphData] = useState([]);
+
+  const [availableSubjects, setAvailableSubjects] = useState(["overall"]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Handle subject change
+  const handleSubjectChange = (event) => {
+    setSelectedSubject(event.target.value);
+  };
+
+  useEffect(() => {
+    if (studentData && studentData.academic && studentData.academic.months) {
+      // Discover all subjects
+      const subjects = new Set();
+      subjects.add("overall"); // Always include overall
+
+      // Find all subjects in the student data
+      studentData.academic.months.forEach((monthData) => {
+        monthData.tests.forEach((test) => {
+          if (test.testType === "SYLLABUS" && test.score !== null) {
+            // Normalize subject names
+            const subject = test.subject.toLowerCase().replace(/\s+/g, "");
+            subjects.add(subject);
+          }
+        });
+      });
+
+      // Store available subjects array
+      setAvailableSubjects(Array.from(subjects));
+
+      // Transform the data using our function
+      const transformedData = transformStudentDataForGraph(studentData);
+      setGraphData(transformedData);
+    } else {
+      setAvailableSubjects(["overall"]);
+      setGraphData([]);
+    }
+    setIsLoading(false);
+  }, [studentData]);
+
+  if (isLoading) {
+    return <Typography>Loading...</Typography>;
+  }
+
+  const formatSubjectName = (subject) => {
+    if (subject === "overall") return "Overall";
+    return subject
+      .replace(/([A-Z])/g, " $1") // Add space before capital letters
+      .replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
+      .trim();
+  };
+
+  return (
+    <Paper
+      sx={{
+        p: 4,
+        borderRadius: "8px",
+        background: "#FFF",
+        marginTop: "40px",
+        boxShadow:
+          "0px 1px 2px 0px rgba(47, 79, 79, 0.06), 0px 2px 1px 0px rgba(47, 79, 79, 0.04), 0px 1px 5px 0px rgba(47, 79, 79, 0.08)",
+      }}
+    >
+      <Box>
+        <h5 className="mb-4 text-lg font-bold text-[#2F4F4F]">Academic Overview</h5>
+
+        <RadioGroup row value={selectedSubject} onChange={handleSubjectChange} sx={{ mb: 4 }}>
+          {/* Dynamic radio buttons based on available subjects */}
+          {availableSubjects.map((subject) => (
+            <FormControlLabel
+              key={subject}
+              value={subject}
+              control={<Radio sx={{ color: "#2F4F4F", "&.Mui-checked": { color: "#2F4F4F" } }} />}
+              label={formatSubjectName(subject)}
+            />
+          ))}
+        </RadioGroup>
+
+        <Box sx={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={graphData} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
+              <XAxis
+                dataKey="month"
+                axisLine={{ stroke: "#E0E0E0" }}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: "#666" }}
+              />
+              <YAxis
+                domain={[0, 100]}
+                tickCount={11} // This aims for 11 ticks (0,10,20...100)
+                interval={0} // Force display of all ticks
+                allowDataOverflow={false}
+                allowDecimals={false}
+                axisLine={{ stroke: "#E0E0E0" }}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: "#666" }}
+                ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]} // Explicitly define all tick values
+                label={{
+                  value: "Scores in Percentage",
+                  angle: -90,
+                  position: "insideLeft",
+                  style: { textAnchor: "middle", fill: "#666", fontSize: 12 },
+                }}
+              />
+              <Tooltip
+                content={selectedSubject === "overall" ? <CustomTooltip /> : null}
+                formatter={(value) =>
+                  selectedSubject !== "overall" ? [`${value}%`, "Score"] : value
+                }
+                contentStyle={
+                  selectedSubject !== "overall"
+                    ? {
+                        backgroundColor: "white",
+                        border: "1px solid #E0E0E0",
+                        borderRadius: "4px",
+                        boxShadow: "0px 2px 4px rgba(0,0,0,0.1)",
+                      }
+                    : null
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey={selectedSubject}
+                stroke="#FFCC00"
+                strokeWidth={2}
+                dot={{ r: 4, fill: "#FFCC00", strokeWidth: 2, stroke: "#FFCC00" }}
+                activeDot={{ r: 6, fill: "#FFCC00", stroke: "white", strokeWidth: 2 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </Box>
+      </Box>
+    </Paper>
+  );
 };
 
 export default AcademicOverviewGraph;

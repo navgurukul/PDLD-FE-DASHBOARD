@@ -14,11 +14,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import Tooltip from "@mui/material/Tooltip";
 
 import apiInstance from "../../api";
-import {
-  CLASS_OPTIONS,
-  SUBJECT_OPTIONS,
-  STATUS_LABELS,
-} from "../data/testData";
+import { CLASS_OPTIONS, SUBJECT_OPTIONS, STATUS_LABELS } from "../data/testData";
 import ButtonCustom from "./ButtonCustom";
 import SpinnerPageOverlay from "./SpinnerPageOverlay";
 import { FormControl } from "@mui/material";
@@ -233,14 +229,7 @@ export default function TestListTable() {
   // Re-fetch data whenever any filter changes
   useEffect(() => {
     fetchData();
-  }, [
-    selectedClass,
-    selectedSubject,
-    selectedStatus,
-    startDate,
-    endDate,
-    currentPage,
-  ]);
+  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage]);
 
   // Filter tests based on search query (local filter for "testName")
   const filteredTests = tests?.filter((test) =>
@@ -282,6 +271,22 @@ export default function TestListTable() {
       {columnMeta.label}
     </span>
   );
+
+  // In the customBodyRender function of the actions column
+  const handleEditClick = (event, testId) => {
+    event.stopPropagation();
+
+    // Find the test object with matching ID
+    const testToEdit = tests.find((test) => test.id === testId);
+
+    // Navigate to test creation form with the test data
+    navigate(`/testCreationForm`, {
+      state: {
+        isEditMode: true,
+        testData: testToEdit,
+      },
+    });
+  };
 
   // MUI DataTable columns
   const columns = [
@@ -348,9 +353,7 @@ export default function TestListTable() {
             maxWidth: "100px",
           },
         }),
-        customBodyRender: (value) => (
-          <div style={{ textAlign: "center" }}>{value}</div>
-        ),
+        customBodyRender: (value) => <div style={{ textAlign: "center" }}>{value}</div>,
       },
     },
     {
@@ -391,16 +394,9 @@ export default function TestListTable() {
                     borderColor: "transparent",
                     "&:hover": { borderColor: "transparent" },
                   }}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    navigate(`/editTest/${testId}`);
-                  }}
+                  onClick={(event) => handleEditClick(event, testId)}
                 >
-                  <img
-                    src={EditPencilIcon}
-                    alt="Edit"
-                    style={{ width: "20px", height: "20px" }}
-                  />
+                  <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
                   &nbsp;
                 </Button>
               )}
@@ -421,11 +417,7 @@ export default function TestListTable() {
                   });
                 }}
               >
-                <img
-                  src={DocScanner}
-                  alt="View Report"
-                  style={{ width: "20px", height: "20px" }}
-                />
+                <img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
                 &nbsp; View Report
               </Button>
             </div>
@@ -549,10 +541,7 @@ export default function TestListTable() {
                     >
                       <MenuItem value="">Class</MenuItem>
                       {CLASS_OPTIONS.map((option) => (
-                        <MenuItem
-                          key={option}
-                          value={parseInt(option.replace("Class ", ""), 10)}
-                        >
+                        <MenuItem key={option} value={parseInt(option.replace("Class ", ""), 10)}>
                           {option}
                         </MenuItem>
                       ))}

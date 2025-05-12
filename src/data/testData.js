@@ -53,21 +53,22 @@ export const STATUS_LABELS = {
 export const CLASS_GROUPS = [
     { id: "group1_3", name: "Classes 1 to 3", classes: [1, 2, 3] },
     { id: "group4_5", name: "Classes 4 to 5", classes: [4, 5] },
-    { id: "group6_10", name: "Classes 6 to 10", classes: [6, 7, 8, 9, 10] },
+    { id: "group6_8", name: "Classes 6 to 8", classes: [6, 7, 8] },
+    { id: "group9_10", name: "Classes 9 to 10", classes: [ 9, 10] },
     { id: "group11_12", name: "Classes 11 to 12", classes: [11, 12] }
   ];
 
 export const SUBJECTS_BY_GRADE = {
-	1: ["English", "Hindi", "Mathematics", "EVS", "Art", "Music"],
-	2: ["English", "Hindi", "Mathematics", "EVS", "Art", "Music"],
-	3: ["English", "Hindi", "Mathematics", "EVS", "Art", "Music"],
-	4: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Art", "Music"],
-	5: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Art", "Music"],
-	6: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Sanskrit", "Computer Science"],
-	7: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Sanskrit", "Computer Science"],
-	8: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Sanskrit", "Computer Science"],
-	9: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Sanskrit", "Computer Science"],
-	10: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Sanskrit", "Computer Science"],
+	1: ["English", "Hindi", "Mathematics" ],
+	2: ["English", "Hindi", "Mathematics" ],
+	3: ["English", "Hindi", "Mathematics" ],
+	4: ["English", "Hindi", "Mathematics",   "Social Science" ],
+	5: ["English", "Hindi", "Mathematics",   "Social Science" ],
+	6: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Sanskrit",  ],
+	7: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Sanskrit",  ],
+	8: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Sanskrit",  ],
+	9: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Sanskrit",  ],
+	10: ["English", "Hindi", "Mathematics", "Science", "Social Science", "Sanskrit",  ],
 	11: [
 		"Physics",
 		"Chemistry",
