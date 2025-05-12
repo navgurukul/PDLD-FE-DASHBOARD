@@ -191,6 +191,19 @@ const StudentPerformanceTable = ({
     setSortConfig({ key: null, direction: "asc" });
   };
 
+  const defaultCustomHeadLabelRender = (columnMeta) => (
+    <span
+      style={{
+        color: "#2F4F4F",
+        fontFamily: "'Work Sans'",
+        fontWeight: 600,
+        fontSize: "14px",
+        fontStyle: "normal",
+      }}
+    >
+      {columnMeta.label}
+    </span>
+  );
   // MUI DataTable columns configuration
   const columns = [
     {
@@ -200,7 +213,7 @@ const StudentPerformanceTable = ({
     },
     {
       name: "name",
-      label: "STUDENT NAME",
+      label: "Student Name",
       options: {
         filter: false,
         sort: true,
@@ -209,7 +222,7 @@ const StudentPerformanceTable = ({
     },
     {
       name: "score",
-      label: "SCORE",
+      label: "Score",
       options: {
         filter: false,
         sort: true,
@@ -224,7 +237,7 @@ const StudentPerformanceTable = ({
     },
     {
       name: "result",
-      label: "RESULT",
+      label: "Result",
       options: {
         filter: true,
         sort: false,
@@ -251,7 +264,7 @@ const StudentPerformanceTable = ({
     },
     {
       name: "vsClassAvg",
-      label: "VS CLASS AVG",
+      label: "VS Class Avg",
       options: {
         filter: false,
         sort: true,
@@ -274,7 +287,7 @@ const StudentPerformanceTable = ({
     },
     {
       name: "id",
-      label: "ACTIONS",
+      label: "Actions",
       options: {
         filter: false,
         sort: false,
@@ -305,6 +318,11 @@ const StudentPerformanceTable = ({
       },
     },
   ];
+
+  columns.forEach((column) => {
+    if (!column.options) column.options = {};
+    column.options.customHeadLabelRender = defaultCustomHeadLabelRender;
+  });
 
   // MUI DataTable options
   const options = {
