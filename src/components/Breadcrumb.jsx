@@ -15,9 +15,9 @@ const Breadcrumb = () => {
     users: "User Management",
     userCreationForm: "Add User",
     reports: "Reports",
-    allTest: "All Tests",
+    allTest: "Tests", // made changes
     testCreationForm: "Create Test",
-    edit: "Edit",
+    edit: "Edit Test", // made changes
     testCreation: "Test",
     help: "Help & Support",
     schoolDetail: "School Detail",
@@ -52,27 +52,96 @@ const Breadcrumb = () => {
 
   // Add Home link as the first item
   breadcrumbItems.push(
-    <Link
-      key="home"
-      to="/"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        textDecoration: "none",
-        color: "#757575",
-      }}
-    >
-      Home
-    </Link>
-  );
+    <Typography
+     key="home"
+     variant="subtitle2"
+     color="text.primary"
+     component={Link}
+     to="/"
+     sx={{
+       textDecoration: "none",
+       fontFamily: "'Karla', sans-serif",
+     }}
+   >
+     Home
+   </Typography>
+ );
+
+
 
   // Special handling for schoolSubmission path
   let schoolSubmissionPath = "";
 
   // Process each pathname segment
-  for (let i = 0; i < pathnames.length; i++) {
-    const value = pathnames[i];
-    currentPath += `/${value}`;
+ for (let i = 0; i < pathnames.length; i++) {
+  const value = pathnames[i];
+  currentPath += `/${value}`;
+
+  // Handle Create Test breadcrumb
+  if (value === "testCreationForm") {
+    breadcrumbItems.push(
+      <Typography
+        key="/allTest"
+        variant="subtitle2"
+        color="text.primary"
+        component={Link}
+        to="/allTest"
+        sx={{
+          textDecoration: "none",
+          fontFamily: "'Karla', sans-serif",
+        }}
+      >
+        Tests
+      </Typography>
+    );
+    breadcrumbItems.push(
+      <Typography
+        key="/testCreationForm"
+        variant="body2"
+        color="text.disabled"
+        sx={{
+          textDecoration: "none",
+          fontFamily: "'Karla', sans-serif",
+        }}
+      >
+        Create Test
+      </Typography>
+    );
+    continue;
+  }
+
+  // Handle Edit Test breadcrumb
+  if (value === "editTest") {
+    breadcrumbItems.push(
+      <Typography
+        key="/allTest"
+        variant="subtitle2"
+        color="text.primary"
+        component={Link}
+        to="/allTest"
+        sx={{
+          textDecoration: "none",
+          fontFamily: "'Karla', sans-serif",
+        }}
+      >
+        Tests
+      </Typography>
+    );
+    breadcrumbItems.push(
+      <Typography
+        key="/editTest"
+        variant="body2"
+        color="text.disabled"
+        sx={{
+          textDecoration: "none",
+          fontFamily: "'Karla', sans-serif",
+        }}
+      >
+        Edit Test
+      </Typography>
+    );
+    continue;
+  }
 
     // Save schoolDetail path with its UUID
     if (
