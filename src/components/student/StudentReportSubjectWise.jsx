@@ -1,11 +1,87 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination } from "@mui/material";
 
-const StudentReportSubjectWise = () => {
+const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, status, subject }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  
+  const [tableData, setTableData] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const rowsPerPage = 10;
+
+  // Process academic data to populate the table
+  useEffect(() => {
+    if (!academicData || !academicData.months) return;
+
+    const processedTestData = [];
+
+    // Iterate through each month in the academic data
+    academicData.months.forEach((monthData) => {
+      // Filter only syllabus tests
+      const syllabusTests = monthData.tests.filter(
+        (test) => test.testType === "SYLLABUS" && (subject === "All" || test.subject === subject)
+      );
+
+      // Process each test
+      syllabusTests.forEach((test) => {
+        // Extract month from test date
+        const testDate = new Date(test.testDate);
+        const monthNames = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        const month = monthNames[testDate.getMonth()];
+
+        // Format the date
+        const day = testDate.getDate();
+        const year = testDate.getFullYear().toString().substr(-2);
+        const formattedDate = `${day} ${month}' ${year}`;
+
+        // Determine pass status
+        let testStatus = "Absent";
+        if (test.score !== null) {
+          testStatus = test.passStatus ? "Pass" : "Fail";
+        }
+
+        // Create a row for the table
+        const testRow = {
+          name: test.testName,
+          type: test.testTag,
+          date: formattedDate,
+          maxMarks: test.maxScore,
+          marksSecured: test.score !== null ? test.score : 0,
+          status: testStatus,
+        };
+
+        // Apply filters if set
+        const passesMonthFilter = syllabusMonth === "All" || month === syllabusMonth;
+        const passesMaxMarksFilter = maxMarks === "All" || test.maxScore === parseInt(maxMarks);
+        const passesStatusFilter =
+          status === "All" ||
+          (status === "Excellent" && test.score >= 75) ||
+          (status === "Satisfactory" && test.score >= 60 && test.score < 75) ||
+          (status === "Needs Improvement" && test.score < 60);
+
+        if (passesMonthFilter && passesMaxMarksFilter && passesStatusFilter) {
+          processedTestData.push(testRow);
+        }
+      });
+    });
+
+    setTableData(processedTestData);
+    setTotalPages(Math.ceil(processedTestData.length / rowsPerPage));
+  }, [academicData, syllabusMonth, maxMarks, status, subject]);
+
   // Create custom theme for the table
   const theme = createTheme({
     typography: {
@@ -17,20 +93,20 @@ const StudentReportSubjectWise = () => {
         styleOverrides: {
           root: {
             "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#2F4F4F", // Use text.primary color on focus
+              borderColor: "#2F4F4F",
             },
           },
           notchedOutline: {
-            borderColor: "#ccc", // default border color
+            borderColor: "#ccc",
           },
         },
       },
       MuiInputLabel: {
         styleOverrides: {
           root: {
-            color: "#949494", // Default label color
+            color: "#949494",
             "&.Mui-focused": {
-              color: "#2F4F4F", // Focused label color
+              color: "#2F4F4F",
             },
           },
         },
@@ -38,7 +114,7 @@ const StudentReportSubjectWise = () => {
       MuiSelect: {
         styleOverrides: {
           icon: {
-            color: "#2F4F4F", // Dropdown arrow icon color
+            color: "#2F4F4F",
           },
         },
       },
@@ -101,91 +177,7 @@ const StudentReportSubjectWise = () => {
     },
   });
 
-  // Define the data for the table
-  const testData = [
-    {
-      name: "Class 8 Hindi Syllabus Mar",
-      type: "Test - 1",
-      date: "17 April' 25",
-      maxMarks: 30,
-      marksSecured: 24,
-      status: "Pass",
-    },
-    {
-      name: "Class 8 Hindi Syllabus Mar",
-      type: "Test - 1",
-      date: "17 April' 25",
-      maxMarks: 30,
-      marksSecured: 24,
-      status: "Pass",
-    },
-    {
-      name: "Class 8 Hindi Syllabus Mar",
-      type: "Test - 1",
-      date: "17 April' 25",
-      maxMarks: 30,
-      marksSecured: 24,
-      status: "Pass",
-    },
-    {
-      name: "Class 8 Hindi Syllabus Mar",
-      type: "Test - 1",
-      date: "17 April' 25",
-      maxMarks: 30,
-      marksSecured: 12,
-      status: "Fail",
-    },
-    {
-      name: "Class 8 Hindi Syllabus Mar",
-      type: "Test - 1",
-      date: "17 April' 25",
-      maxMarks: 30,
-      marksSecured: 24,
-      status: "Pass",
-    },
-    {
-      name: "Class 8 Hindi Syllabus Mar",
-      type: "Test - 1",
-      date: "17 April' 25",
-      maxMarks: 30,
-      marksSecured: 24,
-      status: "Pass",
-    },
-    {
-      name: "Class 8 Hindi Syllabus Mar",
-      type: "Test - 2",
-      date: "17 April' 25",
-      maxMarks: 30,
-      marksSecured: 12,
-      status: "Fail",
-    },
-    {
-      name: "Class 8 Hindi Syllabus Mar",
-      type: "Test - 2",
-      date: "17 April' 25",
-      maxMarks: 30,
-      marksSecured: 24,
-      status: "Pass",
-    },
-    {
-      name: "Class 8 Hindi Syllabus Mar",
-      type: "Test - 2",
-      date: "17 April' 25",
-      maxMarks: 30,
-      marksSecured: 0,
-      status: "Absent",
-    },
-    {
-      name: "Class 8 Hindi Syllabus Mar",
-      type: "Test - 2",
-      date: "17 April' 25",
-      maxMarks: 30,
-      marksSecured: 24,
-      status: "Pass",
-    },
-  ];
-
-  // Custom head label render function - identical to the one in StudentAcademics
+  // Custom head label render function
   const defaultCustomHeadLabelRender = (columnMeta) => (
     <span
       style={{
@@ -255,7 +247,7 @@ const StudentReportSubjectWise = () => {
         sort: true,
         customBodyRender: (value) => {
           let statusClass = "";
-          
+
           if (value === "Pass") {
             statusClass = "bg-green-100 text-green-800";
           } else if (value === "Fail") {
@@ -263,7 +255,7 @@ const StudentReportSubjectWise = () => {
           } else if (value === "Absent") {
             statusClass = "bg-blue-100 text-blue-800";
           }
-          
+
           return (
             <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusClass}`}>
               {value}
@@ -285,34 +277,30 @@ const StudentReportSubjectWise = () => {
     selectableRows: "none",
     pagination: false,
     responsive: "standard",
-    rowsPerPage: 10,
+    rowsPerPage: rowsPerPage,
     rowsPerPageOptions: [],
     elevation: 0,
   };
 
-  // Calculate total pages (assuming 10 items per page)
-  const totalPages = Math.ceil(testData.length / 10);
+  // Calculate page data
+  const paginatedData = tableData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   return (
     <ThemeProvider theme={theme}>
       <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <MUIDataTable 
-          data={testData} 
-          columns={columns} 
-          options={options} 
-        />
+        <MUIDataTable data={paginatedData} columns={columns} options={options} />
       </div>
-      <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
-        <Pagination
-          count={totalPages}
-          page={currentPage}
-          onChange={(e, page) => setCurrentPage(page)}
-          showFirstButton
-          showLastButton
-          shape="rounded"
-          variant="outlined"
-        />
-      </div>
+      {tableData.length > rowsPerPage && (
+        <div style={{ width: "max-content", margin: "25px auto" }}>
+          <Pagination
+            count={totalPages}
+            page={currentPage}
+            onChange={(e, page) => setCurrentPage(page)}
+            showFirstButton
+            showLastButton
+          />
+        </div>
+      )}
     </ThemeProvider>
   );
 };

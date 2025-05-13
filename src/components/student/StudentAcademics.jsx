@@ -104,51 +104,77 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
   const [maxMarksOptions, setMaxMarksOptions] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
   const [subjectOptions, setSubjectOptions] = useState([]);
+  const [testTypeOptions, setTestTypeOptions] = useState([]);
 
   // Organize data when academicData changes
   useEffect(() => {
     if (!academicData || !academicData.months) return;
 
-    // Extract all months for filter options
-    const months = academicData.months.map((month) => month.month);
-    setMonthOptions([...new Set(months)]);
-
+    // Arrays to hold our processed data
     const processedSyllabusData = [];
     const processedRemedialData = [];
-    const allSubjects = new Set();
-    const allMaxMarks = new Set();
+    
+    // Sets to collect unique values for filters
+    const months = new Set();
+    const subjects = new Set();
+    const maxMarks = new Set();
+    const testTypes = new Set();
 
     // Process data for each month
-    academicData.months.forEach((monthData) => {
-      // Group syllabus tests by subject for this month
-      const syllabusTests = monthData.tests.filter((test) => test.testType === "SYLLABUS");
-      const remedialTests = monthData.tests.filter((test) => test.testType === "REMEDIAL");
+    academicData.months.forEach((monthData, monthIndex) => {
+      // Extract month names from tests for filter options
+      monthData.tests.forEach(test => {
+        const testDate = new Date(test.testDate);
+        const monthNames = ["January", "February", "March", "April", "May", "June",
+                         "July", "August", "September", "October", "November", "December"];
+        months.add(monthNames[testDate.getMonth()]);
+      });
 
-      // If we have syllabus tests for this month, add them to the table data
-      if (syllabusTests.length > 0) {
-        // Collect unique subjects and max scores
-        const subjectScores = {};
-        let totalScore = 0;
-        let totalMaxScore = 0;
-        let maxScoreForMonth = 0;
-
-        syllabusTests.forEach((test) => {
-          if (!subjectScores[test.subject]) {
-            subjectScores[test.subject] = test.score;
-            allSubjects.add(test.subject);
-            allMaxMarks.add(test.maxScore);
-            if (test.maxScore > maxScoreForMonth) {
-              maxScoreForMonth = test.maxScore;
-            }
-          }
-          totalScore += test.score || 0;
-          totalMaxScore += test.maxScore || 0;
-        });
-
+      // Group tests by test type for aggregate view
+      const testTypeGroups = {};
+      
+      // Process syllabus tests
+      const syllabusTests = monthData.tests.filter(test => test.testType === "SYLLABUS");
+      
+      // Process syllabus tests for each test type
+      syllabusTests.forEach(test => {
+        subjects.add(test.subject);
+        maxMarks.add(test.maxScore);
+        testTypes.add(test.testTag || "Monthly");
+        
+        // Add to test type groups
+        const testType = test.testTag || "Monthly";
+        if (!testTypeGroups[testType]) {
+          testTypeGroups[testType] = {
+            testType: testType,
+            tests: [],
+            subjects: {},
+            totalScore: 0,
+            totalMaxScore: 0
+          };
+        }
+        
+        testTypeGroups[testType].tests.push(test);
+        
+        // Add subject scores
+        if (!testTypeGroups[testType].subjects[test.subject]) {
+          testTypeGroups[testType].subjects[test.subject] = test.score;
+        }
+        
+        // Track scores for percentage calculation
+        if (test.score !== null && test.maxScore !== null) {
+          testTypeGroups[testType].totalScore += test.score;
+          testTypeGroups[testType].totalMaxScore += test.maxScore;
+        }
+      });
+      
+      // Create aggregate rows for each test type
+      Object.values(testTypeGroups).forEach(group => {
         // Calculate overall percentage
-        const overallPercentage =
-          totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
-
+        const overallPercentage = group.totalMaxScore > 0 
+          ? Math.round((group.totalScore / group.totalMaxScore) * 100) 
+          : 0;
+          
         // Determine status based on percentage
         let status = "Needs Improvement";
         if (overallPercentage >= 75) {
@@ -156,24 +182,41 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         } else if (overallPercentage >= 60) {
           status = "Satisfactory";
         }
-
+        
+        // Find maximum score for any test in this group
+        let maxScoreForGroup = 0;
+        group.tests.forEach(test => {
+          if (test.maxScore > maxScoreForGroup) {
+            maxScoreForGroup = test.maxScore;
+          }
+        });
+        
         // Create a row for the syllabus table
         const syllabusRow = {
-          month: monthData.month,
-          maxMarks: maxScoreForMonth,
-          ...subjectScores,
+          testType: group.testType,
+          maxMarks: maxScoreForGroup,
+          ...group.subjects,
           overallPercentage: `${overallPercentage}%`,
           status: status,
         };
-
+        
         processedSyllabusData.push(syllabusRow);
-      }
-
+      });
+      
       // Process remedial tests
-      remedialTests.forEach((test) => {
-        allSubjects.add(test.subject);
+      const remedialTests = monthData.tests.filter(test => test.testType === "REMEDIAL");
+      
+      remedialTests.forEach(test => {
+        subjects.add(test.subject);
+        
+        // Extract month from test date
+        const testDate = new Date(test.testDate);
+        const monthNames = ["January", "February", "March", "April", "May", "June",
+                         "July", "August", "September", "October", "November", "December"];
+        const month = monthNames[testDate.getMonth()];
+        
         processedRemedialData.push({
-          month: monthData.month,
+          month: month,
           subject: test.subject,
           testType: "Assessment",
           grade: test.grade,
@@ -184,8 +227,10 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
     // Update state with processed data
     setSyllabusData(processedSyllabusData);
     setRemedialData(processedRemedialData);
-    setMaxMarksOptions([...allMaxMarks]);
-    setSubjectOptions([...allSubjects]);
+    setMonthOptions([...months]);
+    setMaxMarksOptions([...maxMarks].filter(mark => mark !== null));
+    setSubjectOptions([...subjects]);
+    setTestTypeOptions([...testTypes]);
     setStatusOptions(["Excellent", "Satisfactory", "Needs Improvement"]);
   }, [academicData]);
 
@@ -193,11 +238,10 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
   const filteredSyllabusData = useMemo(() => {
     return syllabusData.filter(
       (item) =>
-        (syllabusMonth === "All" || item.month === syllabusMonth) &&
         (maxMarks === "All" || item.maxMarks === parseInt(maxMarks)) &&
         (status === "All" || item.status === status)
     );
-  }, [syllabusData, syllabusMonth, maxMarks, status]);
+  }, [syllabusData, maxMarks, status]);
 
   const filteredRemedialData = useMemo(() => {
     return remedialData.filter(
@@ -256,8 +300,8 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
   // Basic columns for the syllabus table
   const baseColumns = [
     {
-      name: "month",
-      label: "Month",
+      name: "testType",
+      label: "Test Type",
       options: {
         filter: false,
         sort: true,
@@ -321,7 +365,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
   const remedialColumns = [
     {
       name: "month",
-      label: "Month",
+      label: "Name of Test",
       options: {
         filter: false,
         sort: true,
@@ -552,9 +596,15 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
                 </Button>
               </div>
 
-              {/* Syllabus Test MUIDataTable */}
+              {/* Subject-wise view using the StudentReportSubjectWise component */}
               <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <StudentReportSubjectWise />
+                <StudentReportSubjectWise 
+                  academicData={academicData} 
+                  syllabusMonth={syllabusMonth}
+                  maxMarks={maxMarks}
+                  status={status}
+                  subject={subject}
+                />
               </div>
             </>
           )}
