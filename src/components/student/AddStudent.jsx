@@ -137,6 +137,8 @@ export default function AddStudent({ isEditMode = false }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [subjectOptions, setSubjectOptions] = useState(getSubjectOptions("11")); // Default to class 11 options for higher classes
 
+  //stream (and extraSubjects, aadharId) pass only when class is 11 or 12 (if not selected then no need to show in payload)
+
   const [formData, setFormData] = useState({
     name: "",
     gender: "M",
@@ -458,7 +460,7 @@ export default function AddStudent({ isEditMode = false }) {
         ? `${format(new Date(formData.dateOfBirth), "d-MM-yyyy")}`
         : "";
 
-      // Prepare data for API according to the required payload structure
+      // Create base payload with required fields
       const studentData = {
         fullName: formData.name,
         fatherName: formData.fatherName,
@@ -467,12 +469,28 @@ export default function AddStudent({ isEditMode = false }) {
         class: formData.class,
         gender: formData.gender,
         schoolUdiseCode: formData.udiseCode,
-        aparId: formData.uniqueId || "",
-        hostel: formData.hostel || "",
-        aadharId: formData.aadharId || "",
-        stream: formData.stream || "",
-        extraSubjects: formData.extraSubjects || [],
       };
+
+      // Only add optional fields if they have values
+      if (formData.uniqueId) {
+        studentData.aparId = formData.uniqueId;
+      }
+
+      if (formData.hostel) {
+        studentData.hostel = formData.hostel;
+      }
+
+      if (formData.aadharId) {
+        studentData.aadharId = formData.aadharId;
+      }
+
+      if (formData.stream) {
+        studentData.stream = formData.stream;
+      }
+
+      if (formData.extraSubjects && formData.extraSubjects.length > 0) {
+        studentData.extraSubjects = formData.extraSubjects;
+      }
 
       if (isEditMode && studentId) {
         // Update existing student

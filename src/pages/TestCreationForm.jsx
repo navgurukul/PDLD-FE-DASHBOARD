@@ -311,39 +311,50 @@ const TestCreationForm = () => {
     };
   };
 
-  // API call to create test
+  // API call to create or update test
   const handleCreateTest = async () => {
     setIsSubmitting(true);
     try {
-      // Build API payload (same as before)
-      const payload = {
-        testType: formData.testType === "syllabus" ? "SYLLABUS" : "REMEDIAL",
-        testTag: formData.testTag,
-        classes: Object.keys(selectedClasses).map((className) => {
-          const classNum = className.includes("Class ")
-            ? parseInt(className.replace("Class ", ""))
-            : className;
+      let payload;
 
-          return {
-            class: classNum,
-            subjects: subjectRows[className]
-              .filter((row) => row.subject)
-              .map((row) => ({
-                subject: row.subject,
-                testDate: row.testDate,
-                deadline: row.submissionDeadline,
-                maxScore: Number(maxScores[className]) || 100,
-              })),
-          };
-        }),
-      };
+      if (editMode) {
+        // Simplified payload for edit mode
+        // Get the first subject row from the first selected class
+        const firstClassName = Object.keys(selectedClasses)[0];
+        const firstSubjectRow = subjectRows[firstClassName][0];
 
-      // Add test ID to payload if in edit mode
-      if (editMode && testData) {
-        payload.testId = testData.id;
+        payload = {
+          testType: formData.testType === "syllabus" ? "SYLLABUS" : "REMEDIAL",
+          testTag: formData.testTag,
+          testDate: firstSubjectRow.testDate,
+          deadline: firstSubjectRow.submissionDeadline,
+        };
+      } else {
+        // Complex payload for create mode
+        payload = {
+          testType: formData.testType === "syllabus" ? "SYLLABUS" : "REMEDIAL",
+          testTag: formData.testTag,
+          classes: Object.keys(selectedClasses).map((className) => {
+            const classNum = className.includes("Class ")
+              ? parseInt(className.replace("Class ", ""))
+              : className;
+
+            return {
+              class: classNum,
+              subjects: subjectRows[className]
+                .filter((row) => row.subject)
+                .map((row) => ({
+                  subject: row.subject,
+                  testDate: row.testDate,
+                  deadline: row.submissionDeadline,
+                  maxScore: Number(maxScores[className]) || 100,
+                })),
+            };
+          }),
+        };
       }
 
-      // Make API call - use PUT for edit, POST for create
+      // Make API call - use PATCH for edit, POST for create
       const response = editMode
         ? await apiInstance.patch(`/test/${testData.id}`, payload)
         : await apiInstance.post("/test", payload);
