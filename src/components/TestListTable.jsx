@@ -280,13 +280,13 @@ export default function TestListTable() {
     const testToEdit = tests.find((test) => test.id === testId);
 
     // Navigate to test creation form with the test data
-    navigate(`/testCreationForm`, {
-      state: {
-        isEditMode: true,
-        testData: testToEdit,
-      },
-    });
-  };
+    navigate(`/editTest/${testId}`, {
+  state: {
+    isEditMode: true,
+    testData: testToEdit,
+  },
+});
+  }
 
   // MUI DataTable columns
   const columns = [
