@@ -2,166 +2,246 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Breadcrumbs, Typography } from "@mui/material";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import HomeIcon from "@mui/icons-material/Home";
 
 const Breadcrumb = () => {
-	const location = useLocation();
-	const pathnames = location.pathname.split("/").filter((x) => x);
+  const location = useLocation();
+  const pathnames = location.pathname.split("/").filter((x) => x);
 
-	// Define path to label mapping
-	const pathMap = {
-		schools: "School Management",
-		"add-school": "Add School",
-		upload: "Bulk Upload",
-		users: "User Management",
-		userCreationForm: "Add User",
-		reports: "Reports",
-		allTest: "All Tests",
-		testCreationForm: "Create Test",
-		edit: "Edit",
-		testCreation: "Test",
-		help: "Help & Support",
-		schoolDetail: "School Detail",
-		addStudents: "Add Students",
-		studentBulkUpload: "Student Bulk Upload",
-		schoolSubmission: "School Submission",
-		testDetails: "Test Details",
-		schoolPerformance: "School Performance",
+  // Define path to label mapping
+  const pathMap = {
+    schools: "School Management",
+    "add-school": "Add School",
+    upload: "Bulk Upload",
+    users: "User Management",
+    userCreationForm: "Add User",
+    reports: "Reports",
+    allTest: "Tests", // made changes
+    testCreationForm: "Create Test",
+    edit: "Edit Test", // made changes
+    testCreation: "Test",
+    help: "Help & Support",
+    schoolDetail: "School Detail",
+    addStudents: "Add Students",
+    studentBulkUpload: "Student Bulk Upload",
+    schoolSubmission: "School Submission",
+    testDetails: "Test Details",
+    schoolPerformance: "School Performance",
 
-		// "school-performance": "School Performance",
-		"school": "School Management",
-		"studentReport": "Student Report",
-		"student-profile": "Student Profile"
-	};
+    // "school-performance": "School Performance",
+    school: "School Management",
+    studentReport: "Student Report",
+    "student-profile": "Student Profile",
+  };
 
-	// Check if a string is a UUID
-	const isUUID = (str) => {
-		return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-	};
-	
-	// Check if a string is numeric (for testDetails ID)
-	const isNumeric = (str) => {
-		return /^\d+$/.test(str);
-	};
+  // Check if a string is a UUID
+  const isUUID = (str) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      str
+    );
+  };
 
-	// Create breadcrumb items with proper path handling
-	const breadcrumbItems = [];
-	let currentPath = "";
-	let schoolDetailPath = "";
+  // Check if a string is numeric (for testDetails ID)
+  const isNumeric = (str) => {
+    return /^\d+$/.test(str);
+  };
 
-	// Add Home link as the first item
-	breadcrumbItems.push(
-		<Link
-			key="home"
-			to="/"
-			style={{
-				display: "flex",
-				alignItems: "center",
-				textDecoration: "none",
-				color: "#757575",
-			}}
-		>
-			<HomeIcon sx={{ mr: 0.5, fontSize: "16px" }} />
-			Home
-		</Link>
-	);
+  // Create breadcrumb items with proper path handling
+  const breadcrumbItems = [];
+  let currentPath = "";
+  let schoolDetailPath = "";
 
-	// Special handling for schoolSubmission path
-	let schoolSubmissionPath = "";
+  // Add Home link as the first item
+  breadcrumbItems.push(
+    <Typography
+     key="home"
+     variant="subtitle2"
+     color="text.primary"
+     component={Link}
+     to="/"
+     sx={{
+       textDecoration: "none",
+       fontFamily: "'Karla', sans-serif",
+     }}
+   >
+     Home
+   </Typography>
+ );
 
-	// Process each pathname segment
-	for (let i = 0; i < pathnames.length; i++) {
-		const value = pathnames[i];
-		currentPath += `/${value}`;
 
-		// Save schoolDetail path with its UUID
-		if (value === "schoolDetail" && i + 1 < pathnames.length && isUUID(pathnames[i + 1])) {
-			schoolDetailPath = `/schools/schoolDetail/${pathnames[i + 1]}`;
-		}
 
-		// Save the path to schoolSubmission including its UUID
-		if (value === "schoolSubmission" && i + 1 < pathnames.length && isUUID(pathnames[i + 1])) {
-			schoolSubmissionPath = `/allTest/schoolSubmission/${pathnames[i + 1]}`;
-		}
+  // Special handling for schoolSubmission path
+  let schoolSubmissionPath = "";
 
-		// Skip UUIDs and numeric IDs in breadcrumb display
-		if (isUUID(value) || (i === pathnames.length - 1 && isNumeric(value))) {
-			continue;
-		}
+  // Process each pathname segment
+ for (let i = 0; i < pathnames.length; i++) {
+  const value = pathnames[i];
+  currentPath += `/${value}`;
 
-		// Check if this is testDetails (which should be highlighted)
-		const isTestDetails = value === "testDetails";
+  // Handle Create Test breadcrumb
+  if (value === "testCreationForm") {
+    breadcrumbItems.push(
+      <Typography
+        key="/allTest"
+        variant="subtitle2"
+        color="text.primary"
+        component={Link}
+        to="/allTest"
+        sx={{
+          textDecoration: "none",
+          fontFamily: "'Karla', sans-serif",
+        }}
+      >
+        Tests
+      </Typography>
+    );
+    breadcrumbItems.push(
+      <Typography
+        key="/testCreationForm"
+        variant="body2"
+        color="text.disabled"
+        sx={{
+          textDecoration: "none",
+          fontFamily: "'Karla', sans-serif",
+        }}
+      >
+        Create Test
+      </Typography>
+    );
+    continue;
+  }
 
-		// Determine if this is the last visible item or testDetails (which should always be highlighted)
-		const isLast =
-			isTestDetails ||
-			i === pathnames.length - 1 ||
-			(i < pathnames.length - 1 &&
-				(isUUID(pathnames[i + 1]) || isNumeric(pathnames[i + 1])) &&
-				i + 1 === pathnames.length - 1);
+  // Handle Edit Test breadcrumb
+  if (value === "editTest") {
+    breadcrumbItems.push(
+      <Typography
+        key="/allTest"
+        variant="subtitle2"
+        color="text.primary"
+        component={Link}
+        to="/allTest"
+        sx={{
+          textDecoration: "none",
+          fontFamily: "'Karla', sans-serif",
+        }}
+      >
+        Tests
+      </Typography>
+    );
+    breadcrumbItems.push(
+      <Typography
+        key="/editTest"
+        variant="body2"
+        color="text.disabled"
+        sx={{
+          textDecoration: "none",
+          fontFamily: "'Karla', sans-serif",
+        }}
+      >
+        Edit Test
+      </Typography>
+    );
+    continue;
+  }
 
-		// Use the path map to get a friendly name, or capitalize the first letter
-		const displayName = pathMap[value] || value.charAt(0).toUpperCase() + value.slice(1);
+    // Save schoolDetail path with its UUID
+    if (
+      value === "schoolDetail" &&
+      i + 1 < pathnames.length &&
+      isUUID(pathnames[i + 1])
+    ) {
+      schoolDetailPath = `/schools/schoolDetail/${pathnames[i + 1]}`;
+    }
 
-		if (isLast) {
-			breadcrumbItems.push(
-				<Typography
-					key={currentPath}
-					color="text.primary"
-					fontWeight="medium"
-					style={{
-						textDecoration: "none",
-						fontFamily: "'Karla', sans-serif",
-						fontSize: "14px",
-					}}
-				>
-					{displayName}
-				</Typography>
-			);
-		} else {
-			// Determine the correct link path
-			let linkTo = currentPath;
+    // Save the path to schoolSubmission including its UUID
+    if (
+      value === "schoolSubmission" &&
+      i + 1 < pathnames.length &&
+      isUUID(pathnames[i + 1])
+    ) {
+      schoolSubmissionPath = `/allTest/schoolSubmission/${pathnames[i + 1]}`;
+    }
 
-			// Use the stored paths for special cases
-			if (value === "schoolSubmission") {
-				linkTo = schoolSubmissionPath;
-			} else if (value === "schoolDetail") {
-				linkTo = schoolDetailPath;
-			}
+    // Skip UUIDs and numeric IDs in breadcrumb display
+    if (isUUID(value) || (i === pathnames.length - 1 && isNumeric(value))) {
+      continue;
+    }
 
-			breadcrumbItems.push(
-				<Link
-					key={currentPath}
-					to={linkTo}
-					style={{
-						textDecoration: "none",
-						color: "#757575",
-						fontFamily: "'Karla', sans-serif",
-						fontSize: "14px",
-						fontWeight: "400",
-					}}
-				>
-					{displayName}
-				</Link>
-			);
-		}
-	}
+    // Check if this is testDetails (which should be highlighted)
+    const isTestDetails = value === "testDetails";
 
-	return (
-		<Breadcrumbs
-			separator={<NavigateNextIcon fontSize="small" />}
-			aria-label="breadcrumb"
-			sx={{
-				mb: 1,
-				pl: 10,
-				mt: 5,
-				fontFamily: "'Karla', sans-serif",
-				fontSize: "14px",
-			}}
-		>
-			{breadcrumbItems}
-		</Breadcrumbs>
-	);
+    // Determine if this is the last visible item or testDetails (which should always be highlighted)
+    const isLast =
+      isTestDetails ||
+      i === pathnames.length - 1 ||
+      (i < pathnames.length - 1 &&
+        (isUUID(pathnames[i + 1]) || isNumeric(pathnames[i + 1])) &&
+        i + 1 === pathnames.length - 1);
+
+    // Use the path map to get a friendly name, or capitalize the first letter
+    const displayName =
+      pathMap[value] || value.charAt(0).toUpperCase() + value.slice(1);
+
+    if (isLast) {
+      breadcrumbItems.push(
+        <Typography
+          key={currentPath}
+          variant="body2"
+          color="text.disabled"
+          sx={{
+            textDecoration: "none",
+            fontFamily: "'Karla', sans-serif",
+          }}
+        >
+          {displayName}
+        </Typography>
+      );
+    } else {
+      // Determine the correct link path
+      let linkTo = currentPath;
+
+      // Use the stored paths for special cases
+      if (value === "schoolSubmission") {
+        linkTo = schoolSubmissionPath;
+      } else if (value === "schoolDetail") {
+        linkTo = schoolDetailPath;
+      }
+
+      breadcrumbItems.push(
+        <Typography
+          key={currentPath}
+          variant="subtitle2"
+          color="text.primary"
+          component={Link}
+          to={linkTo}
+          sx={{
+            textDecoration: "none",
+            fontFamily: "'Karla', sans-serif",
+          }}
+        >
+          {displayName}
+        </Typography>
+      );
+    }
+  }
+
+  return (
+    <Breadcrumbs
+      separator={<NavigateNextIcon fontSize="small" />}
+      aria-label="breadcrumb"
+      sx={{
+        mb: 1,
+        pl: 10,
+        mt: 5,
+        fontFamily: "'Karla', sans-serif",
+        fontSize: "14px",
+        "& .MuiBreadcrumbs-separator": {
+          mx: "4px", // This reduces margin between items and separator
+        },
+      }}
+    >
+      {breadcrumbItems}
+    </Breadcrumbs>
+  );
 };
 
 export default Breadcrumb;

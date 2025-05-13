@@ -387,7 +387,7 @@ const StudentProfileView = () => {
 					</Grid>
 				</Grid>
 				{/* <AcademicOverviewGraph data={academicData} /> */}
-				<AcademicOverviewGraph chartData={mockData} />
+				<AcademicOverviewGraph studentData={student} />
 			</TabPanel>
 
 			{/* Academics tab content */}

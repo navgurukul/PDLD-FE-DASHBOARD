@@ -1,17 +1,3 @@
-/**
- * ModalSummary
- *
- * Props:
- * - isOpen (Boolean): Whether to show the modal
- * - onClose (Function): Handler to close the modal
- * - selectedGrades (Number[]): Array of grades selected
- * - selectedSubjects (Object): { [gradeNumber]: string[] } (map of grade => subjects)
- * - testDates (Object): { ['grade-subject']: 'YYYY-MM-DD' } date values
- * - testScores (Object): { ['grade-subject']: number } max scores
- * - testType (String): 'regular' or 'remedial'
- * - handleConfirm (Function): Called when user clicks “Confirm”
- */
-
 import { deadlineSummaryModal } from "../utils/imagePath";
 
 const ModalSummary = ({
