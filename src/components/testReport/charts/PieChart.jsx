@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
-const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, showAnimation, className }) => {
+const PieChart = ({
+	percentage,
+	primaryColor,
+	secondaryColor,
+	animation,
+	size,
+	showAnimation,
+	className,
+}) => {
 	const [hovered, setHovered] = useState(false);
 	const [displayPercentage, setDisplayPercentage] = useState(0);
-
-	// Generate unique IDs for gradients
-	const primaryGradientId = `primaryGradient-${Math.random().toString(36).substring(2, 9)}`;
-	const secondaryGradientId = `secondaryGradient-${Math.random().toString(36).substring(2, 9)}`;
-	const shadowId = `shadow-${Math.random().toString(36).substring(2, 9)}`;
-
-	// Calculate pie chart angles based on percentage
-	const angle = (percentage / 100) * 360;
 
 	// Animated counter effect
 	useEffect(() => {
@@ -28,20 +28,33 @@ const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, s
 		const timer = setInterval(() => {
 			const timeElapsed = Date.now() - startTime;
 			const progress = Math.min(timeElapsed / duration, 1);
-
-			// Use easeOutQuart for smooth animation
 			const easeProgress = 1 - Math.pow(1 - progress, 4);
 			const current = Math.round(easeProgress * end);
-
 			setDisplayPercentage(current);
-
-			if (progress === 1) {
-				clearInterval(timer);
-			}
+			if (progress === 1) clearInterval(timer);
 		}, 16);
 
 		return () => clearInterval(timer);
 	}, [percentage, showAnimation]);
+
+	// Convert angle to (x, y) point in percentage for clip-path
+	const getCoordinates = (angle) => {
+		const radians = (angle - 90) * (Math.PI / 180); // Rotate to start from top
+		const x = 50 + 50 * Math.cos(radians);
+		const y = 50 + 50 * Math.sin(radians);
+		return `${x}% ${y}%`;
+	};
+
+	const angle = (percentage / 100) * 360;
+	const clipPath1 =
+		angle <= 180
+			? `polygon(50% 50%, 50% 0%, ${getCoordinates(angle)}, 50% 50%)`
+			: `polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ${getCoordinates(angle)}, 50% 50%)`;
+
+	const clipPath2 =
+		angle > 180
+			? `polygon(50% 50%, 100% 0%, 100% 100%, ${getCoordinates(angle)}, 50% 50%)`
+			: "";
 
 	return (
 		<div
@@ -50,84 +63,48 @@ const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, s
 				width: `${size}px`,
 				height: `${size}px`,
 				transform: animation && hovered ? "scale(1.05)" : "scale(1)",
-				filter: hovered ? `drop-shadow(0 4px 10px rgba(0, 0, 0, 0.2))` : "none",
+				filter: hovered
+					? `drop-shadow(0 4px 10px rgba(0, 0, 0, 0.2))`
+					: "none",
 			}}
 			onMouseEnter={() => animation && setHovered(true)}
 			onMouseLeave={() => animation && setHovered(false)}
 			data-testid="pie-chart"
 		>
-			{/* SVG Definitions */}
-			<svg width="0" height="0" className="absolute">
-				<defs>
-					{/* Primary color solid fill (no gradient to avoid artifacts) */}
-					<linearGradient id={primaryGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-						<stop offset="0%" style={{ stopColor: primaryColor, stopOpacity: 1 }} />
-						<stop offset="100%" style={{ stopColor: primaryColor, stopOpacity: 1 }} />
-					</linearGradient>
-
-					{/* Secondary color solid fill (no gradient to avoid artifacts) */}
-					<linearGradient id={secondaryGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-						<stop offset="0%" style={{ stopColor: secondaryColor, stopOpacity: 1 }} />
-						<stop offset="100%" style={{ stopColor: secondaryColor, stopOpacity: 1 }} />
-					</linearGradient>
-
-					{/* Filter for inner shadow */}
-					<filter id={shadowId}>
-						<feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.3" />
-					</filter>
-				</defs>
-			</svg>
-
-			{/* Background circle (representing the secondary/fail portion) */}
+			{/* Background */}
 			<div
-				className="absolute inset-0 rounded-full transition-all duration-500"
+				className="absolute inset-0 rounded-full"
 				style={{
 					backgroundColor: secondaryColor,
 					boxShadow: `inset 0 2px 8px rgba(0, 0, 0, 0.1)`,
 				}}
 			></div>
 
-			{/* First segment (0° to 180° or percentage equivalent) */}
+			{/* First Segment */}
 			<div
 				className="absolute inset-0 rounded-full overflow-hidden transition-all duration-700"
-				style={{
-					clipPath: `polygon(50% 50%, 50% 0, ${
-						angle <= 180
-							? `${50 + 50 * Math.sin((angle * Math.PI) / 180)}% ${
-									50 - 50 * Math.cos((angle * Math.PI) / 180)
-							  }%`
-							: "100% 0, 100% 100%, 0 100%, 0 0"
-					}, 50% 50%)`,
-				}}
+				style={{ clipPath: clipPath1 }}
 			>
 				<div
-					className="absolute inset-0 rounded-full transition-all duration-700"
-					style={{
-						backgroundColor: primaryColor,
-					}}
+					className="absolute inset-0 rounded-full"
+					style={{ backgroundColor: primaryColor }}
 				></div>
 			</div>
 
-			{/* Second segment (180° to 360° if percentage > 50%) */}
+			{/* Second Segment (only for > 180) */}
 			{angle > 180 && (
 				<div
 					className="absolute inset-0 rounded-full overflow-hidden transition-all duration-700"
-					style={{
-						clipPath: `polygon(50% 50%, 100% 0, 100% 100%, ${50 + 50 * Math.sin(((angle - 180) * Math.PI) / 180)}% ${
-							50 + 50 * Math.cos(((angle - 180) * Math.PI) / 180)
-						}%, 50% 50%)`,
-					}}
+					style={{ clipPath: clipPath2 }}
 				>
 					<div
-						className="absolute inset-0 rounded-full transition-all duration-700"
-						style={{
-							backgroundColor: primaryColor,
-						}}
+						className="absolute inset-0 rounded-full"
+						style={{ backgroundColor: primaryColor }}
 					></div>
 				</div>
 			)}
 
-			{/* Center white circle with shadow effect */}
+			{/* Inner white circle */}
 			<div
 				className="absolute rounded-full bg-white transition-all duration-500"
 				style={{
@@ -137,14 +114,16 @@ const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, s
 				}}
 			></div>
 
-			{/* Percentage text with animated counter */}
+			{/* Text */}
 			<div className="absolute inset-0 flex flex-col items-center justify-center">
 				<span
 					className="font-bold transition-all duration-300"
 					style={{
 						fontSize: `${size * 0.18}px`,
 						color: hovered ? primaryColor : "#333",
-						textShadow: hovered ? `0 0 5px rgba(255, 255, 255, 0.8)` : "none",
+						textShadow: hovered
+							? `0 0 5px rgba(255, 255, 255, 0.8)`
+							: "none",
 					}}
 				>
 					{displayPercentage}%
@@ -161,7 +140,7 @@ const PieChart = ({ percentage, primaryColor, secondaryColor, animation, size, s
 				</span>
 			</div>
 
-			{/* Optional glowing effect when hovered */}
+			{/* Glowing effect */}
 			{hovered && (
 				<div
 					className="absolute inset-0 rounded-full pointer-events-none transition-opacity duration-500"
@@ -187,10 +166,10 @@ PieChart.propTypes = {
 
 PieChart.defaultProps = {
 	percentage: 0,
-	primaryColor: "#2F4F4F", // Dark slate gray (theme color)
-	secondaryColor: "#FFEBEB", // Light pink for "Needs Improvement"
+	primaryColor: "#2F4F4F",
+	secondaryColor: "#FFEBEB",
 	animation: true,
-	size: 160, // Default size in pixels
+	size: 160,
 	showAnimation: true,
 	className: "",
 };
