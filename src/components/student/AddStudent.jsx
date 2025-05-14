@@ -66,7 +66,7 @@ const theme = createTheme({
   },
 });
 
-// Define stream options 
+// Define stream options
 const streamOptions = [
   { value: "MATHS", label: "MATHS" },
   { value: "BIO", label: "BIO" },
@@ -304,75 +304,6 @@ export default function AddStudent({ isEditMode = false }) {
     }
   }, [formData.class, isHigherClass, isClass9or10]);
 
-  // Validate form
-  // const validateForm = () => {
-  //   const newErrors = {};
-  //   let isValid = true;
-
-  //   // Validate name
-  //   if (!formData.name.trim()) {
-  //     newErrors.name = "Student name is required";
-  //     isValid = false;
-  //   } else if (formData.name.trim().length < 3) {
-  //     newErrors.name = "Name must be at least 3 characters";
-  //     isValid = false;
-  //   } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
-  //     newErrors.name = "Name should only contain letters and spaces";
-  //     isValid = false;
-  //   }
-
-  //   // Validate father's name
-  //   if (!formData.fatherName.trim()) {
-  //     newErrors.fatherName = "Father's name is required";
-  //     isValid = false;
-  //   } else if (!/^[a-zA-Z\s]+$/.test(formData.fatherName.trim())) {
-  //     newErrors.fatherName = "Father's name should only contain letters and spaces";
-  //     isValid = false;
-  //   }
-
-  //   // Validate mother's name
-  //   if (!formData.motherName.trim()) {
-  //     newErrors.motherName = "Mother's name is required";
-  //     isValid = false;
-  //   } else if (!/^[a-zA-Z\s]+$/.test(formData.motherName.trim())) {
-  //     newErrors.motherName = "Mother's name should only contain letters and spaces";
-  //     isValid = false;
-  //   }
-
-  //   // Validate date of birth
-  //   if (!formData.dateOfBirth) {
-  //     newErrors.dateOfBirth = "Date of birth is required";
-  //     isValid = false;
-  //   } else {
-  //     const today = new Date();
-  //     const birthDate = new Date(formData.dateOfBirth);
-  //     const age = today.getFullYear() - birthDate.getFullYear();
-
-  //     if (age < 5 || age > 18) {
-  //       newErrors.dateOfBirth = "Age should be between 5 and 18 years";
-  //       isValid = false;
-  //     }
-  //   }
-
-  //   // Validate UDISE code
-  //   if (!formData.udiseCode.trim()) {
-  //     newErrors.udiseCode = "UDISE code is required";
-  //     isValid = false;
-  //   } else if (!/^\d{11}$/.test(formData.udiseCode.trim())) {
-  //     newErrors.udiseCode = "UDISE code should be 11 digits";
-  //     isValid = false;
-  //   }
-
-  //   // Validate Aadhar ID if provided
-  //   if (formData.aadharId && !/^\d{12}$/.test(formData.aadharId.trim())) {
-  //     newErrors.aadharId = "Aadhar ID should be 12 digits";
-  //     isValid = false;
-  //   }
-
-  //   setErrors(newErrors);
-  //   return isValid;
-  // };
-
   const validateForm = () => {
     const newErrors = {};
     let isValid = true;
@@ -434,6 +365,12 @@ export default function AddStudent({ isEditMode = false }) {
     // Validate Aadhar ID if provided
     if (formData.aadharId && !/^\d{12}$/.test(formData.aadharId.trim())) {
       newErrors.aadharId = "Aadhar ID should be 12 digits";
+      isValid = false;
+    }
+
+    // Add stream validation for higher classes (11-12)
+    if ((formData.class === "11" || formData.class === "12") && !formData.stream) {
+      newErrors.stream = "Stream is required for Class 11 and 12";
       isValid = false;
     }
 
@@ -759,16 +696,17 @@ export default function AddStudent({ isEditMode = false }) {
               </Grid>
 
               {/* Stream - Only for Classes 11-12, placed next to APAR ID */}
+              {/* Stream - Only for Classes 11-12 */}
               {isHigherClass && (
                 <Grid item xs={12} md={6}>
-                  <FormControl fullWidth error={!!errors.stream}>
+                  <FormControl fullWidth error={!!errors.stream} required>
                     <InputLabel id="stream-select-label">Stream</InputLabel>
                     <Select
                       labelId="stream-select-label"
                       id="stream-select"
                       name="stream"
                       value={formData.stream}
-                      label="Stream"
+                      label="Stream *"
                       onChange={handleInputChange}
                       sx={{
                         height: "48px",
