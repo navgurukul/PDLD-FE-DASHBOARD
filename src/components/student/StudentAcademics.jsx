@@ -106,6 +106,21 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
   const [subjectOptions, setSubjectOptions] = useState([]);
   const [testTypeOptions, setTestTypeOptions] = useState([]);
 
+  // Function to determine grade based on percentage
+  const getGrade = (percentage) => {
+    if (percentage >= 90) return "A";
+    if (percentage >= 80) return "B";
+    if (percentage >= 60) return "C";
+    if (percentage >= 40) return "D";
+    if (percentage >= 20) return "E";
+    return "F";
+  };
+
+  // Format percentage without % sign for display
+  const formatPercentage = (percentage) => {
+    return Math.round(percentage);
+  };
+
   // Organize data when academicData changes
   useEffect(() => {
     if (!academicData || !academicData.months) return;
@@ -119,6 +134,9 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
     const subjects = new Set();
     const maxMarks = new Set();
     const testTypes = new Set();
+    
+    // Track test numbers to create sequential test names (Test - 1, Test - 2, etc.)
+    let testNumber = 1;
 
     // Process data for each month
     academicData.months.forEach((monthData, monthIndex) => {
@@ -128,87 +146,76 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         const monthNames = ["January", "February", "March", "April", "May", "June",
                          "July", "August", "September", "October", "November", "December"];
         months.add(monthNames[testDate.getMonth()]);
+        
+        // Add subject to the set
+        if (test.subject) {
+          subjects.add(test.subject === "Maths" ? "Mathematics" : test.subject);
+        }
       });
 
-      // Group tests by test type for aggregate view
-      const testTypeGroups = {};
-      
-      // Process syllabus tests
+      // Group syllabus tests by month
       const syllabusTests = monthData.tests.filter(test => test.testType === "SYLLABUS");
       
-      // Process syllabus tests for each test type
-      syllabusTests.forEach(test => {
-        subjects.add(test.subject);
-        maxMarks.add(test.maxScore);
-        testTypes.add(test.testTag || "Monthly");
+      if (syllabusTests.length > 0) {
+        // Group tests by test tag to create aggregate entries
+        const testsByTag = {};
         
-        // Add to test type groups
-        const testType = test.testTag || "Monthly";
-        if (!testTypeGroups[testType]) {
-          testTypeGroups[testType] = {
-            testType: testType,
-            tests: [],
-            subjects: {},
-            totalScore: 0,
-            totalMaxScore: 0
-          };
-        }
-        
-        testTypeGroups[testType].tests.push(test);
-        
-        // Add subject scores
-        if (!testTypeGroups[testType].subjects[test.subject]) {
-          testTypeGroups[testType].subjects[test.subject] = test.score;
-        }
-        
-        // Track scores for percentage calculation
-        if (test.score !== null && test.maxScore !== null) {
-          testTypeGroups[testType].totalScore += test.score;
-          testTypeGroups[testType].totalMaxScore += test.maxScore;
-        }
-      });
-      
-      // Create aggregate rows for each test type
-      Object.values(testTypeGroups).forEach(group => {
-        // Calculate overall percentage
-        const overallPercentage = group.totalMaxScore > 0 
-          ? Math.round((group.totalScore / group.totalMaxScore) * 100) 
-          : 0;
+        syllabusTests.forEach(test => {
+          const testTag = test.testTag || "Monthly";
+          if (!testsByTag[testTag]) {
+            testsByTag[testTag] = {
+              tests: [],
+              subjectScores: {},
+              totalScore: 0,
+              totalMaxScore: 0
+            };
+          }
           
-        // Determine status based on percentage
-        let status = "Needs Improvement";
-        if (overallPercentage >= 75) {
-          status = "Excellent";
-        } else if (overallPercentage >= 60) {
-          status = "Satisfactory";
-        }
-        
-        // Find maximum score for any test in this group
-        let maxScoreForGroup = 0;
-        group.tests.forEach(test => {
-          if (test.maxScore > maxScoreForGroup) {
-            maxScoreForGroup = test.maxScore;
+          testsByTag[testTag].tests.push(test);
+          
+          // Process subject scores
+          const subjectName = test.subject === "Maths" ? "Mathematics" : test.subject;
+          if (subjectName) {
+            testsByTag[testTag].subjectScores[subjectName] = test.score;
+            
+            // Update total scores for percentage calculation
+            if (test.score !== null && test.maxScore !== null) {
+              testsByTag[testTag].totalScore += test.score;
+              testsByTag[testTag].totalMaxScore += test.maxScore;
+            }
+          }
+          
+          // Add maxScore to options
+          if (test.maxScore !== null) {
+            maxMarks.add(test.maxScore);
           }
         });
         
-        // Create a row for the syllabus table
-        const syllabusRow = {
-          testType: group.testType,
-          maxMarks: maxScoreForGroup,
-          ...group.subjects,
-          overallPercentage: `${overallPercentage}%`,
-          status: status,
-        };
-        
-        processedSyllabusData.push(syllabusRow);
-      });
+        // Create test entries for each tag group
+        Object.entries(testsByTag).forEach(([tag, data], tagIndex) => {
+          // Calculate percentage and determine grade
+          const percentage = data.totalMaxScore > 0 
+            ? Math.round((data.totalScore / data.totalMaxScore) * 100) 
+            : 0;
+          
+          // Create a test entry
+          const testEntry = {
+            testType: `Test - ${testNumber}`,
+            maxMarks: 30, // Default value from the image
+            overallPercentage: formatPercentage(percentage),
+            grade: getGrade(percentage),
+            ...data.subjectScores // Add subject scores dynamically
+          };
+          
+          processedSyllabusData.push(testEntry);
+          testNumber++;
+        });
+      }
       
       // Process remedial tests
       const remedialTests = monthData.tests.filter(test => test.testType === "REMEDIAL");
       
       remedialTests.forEach(test => {
-        subjects.add(test.subject);
-        
         // Extract month from test date
         const testDate = new Date(test.testDate);
         const monthNames = ["January", "February", "March", "April", "May", "June",
@@ -271,6 +278,9 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         fontWeight: 600,
         fontSize: "14px",
         fontStyle: "normal",
+        textAlign: "left",
+        display: "flex",
+        justifyContent: "flex-start"
       }}
     >
       {columnMeta.label}
@@ -285,19 +295,23 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
       options: {
         filter: false,
         sort: true,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
         customBodyRender: (value) => {
-          // Highlight low scores (less than 40% of max marks)
-          const isLowScore = value && value < 40;
-          return (
-            <span className={isLowScore ? "text-red-500 font-medium" : ""}>{value || "-"}</span>
-          );
+          if (value === "Absent") {
+            return <span className="text-red-500 font-medium">Absent</span>;
+          } else if (value !== null && value < 10) {
+            return <span className="text-red-500 font-medium">0{value}</span>;
+          } else if (value !== null && value < 40) {
+            return <span className="text-red-500 font-medium">{value}</span>;
+          }
+          return value !== null ? value : "-";
         },
         customHeadLabelRender: defaultCustomHeadLabelRender,
       },
     }));
   };
 
-  // Basic columns for the syllabus table
+      // Basic columns for the syllabus table
   const baseColumns = [
     {
       name: "testType",
@@ -306,6 +320,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         filter: false,
         sort: true,
         customHeadLabelRender: defaultCustomHeadLabelRender,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
       },
     },
     {
@@ -315,6 +330,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         filter: false,
         sort: true,
         customHeadLabelRender: defaultCustomHeadLabelRender,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
       },
     },
   ];
@@ -332,29 +348,45 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
       options: {
         filter: false,
         sort: true,
+        setCellProps: () => ({
+          style: {
+            textAlign: "left",
+            paddingLeft: "16px"
+          }
+        }),
+        customBodyRender: (value) => {
+          // Display the percentage value
+          const percentage = parseInt(value);
+          const style = {
+            display: "block",
+            textAlign: "left",
+            width: "100%"
+          };
+          
+          if (percentage < 40) {
+            return <span className="text-red-500 font-medium" style={style}>{value}%</span>;
+          }
+          return <span style={style}>{value}%</span>;
+        },
         customHeadLabelRender: defaultCustomHeadLabelRender,
       },
     },
     {
-      name: "status",
-      label: "Status",
+      name: "grade",
+      label: "Grade",
       options: {
         filter: false,
         sort: true,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
         customBodyRender: (value) => {
-          return (
-            <span
-              className={`px-2 py-1 text-xs font-medium rounded-full ${
-                value === "Excellent"
-                  ? "bg-green-100 text-green-800"
-                  : value === "Satisfactory"
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-red-100 text-red-800"
-              }`}
-            >
-              {value}
-            </span>
-          );
+          let color = "";
+          if (value === "A") color = "text-green-600";
+          else if (value === "B") color = "text-blue-600";
+          else if (value === "C") color = "text-yellow-600";
+          else if (value === "D") color = "text-orange-500";
+          else if (value === "E" || value === "F") color = "text-red-500";
+          
+          return <span className={`font-medium ${color}`}>{value}</span>;
         },
         customHeadLabelRender: defaultCustomHeadLabelRender,
       },
@@ -369,6 +401,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
       options: {
         filter: false,
         sort: true,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
         customHeadLabelRender: defaultCustomHeadLabelRender,
       },
     },
@@ -378,6 +411,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
       options: {
         filter: false,
         sort: true,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
         customHeadLabelRender: defaultCustomHeadLabelRender,
       },
     },
@@ -387,6 +421,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
       options: {
         filter: false,
         sort: true,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
         customHeadLabelRender: defaultCustomHeadLabelRender,
       },
     },
@@ -396,6 +431,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
       options: {
         filter: false,
         sort: true,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
         customBodyRender: (value) => {
           return (
             <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
@@ -419,6 +455,16 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
     elevation: 0,
     pagination: false,
     responsive: "standard",
+    tableBodyHeight: "100%",
+    tableBodyMaxHeight: "100%",
+    setTableProps: () => ({
+      style: {
+        tableLayout: "fixed",
+      },
+    }),
+    customTableBodyCellStyle: () => ({
+      textAlign: 'left'
+    }),
   };
 
   const handleToggleChange = (event, newView) => {
@@ -427,8 +473,20 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
     }
   };
 
+  // Override MUI styles for cells
+  const overrideStyles = `
+    .MuiTableCell-root {
+      text-align: left !important;
+    }
+    .MuiTableCell-body > div {
+      text-align: left !important;
+      justify-content: flex-start !important;
+    }
+  `;
+
   return (
     <ThemeProvider theme={theme}>
+      <style dangerouslySetInnerHTML={{ __html: overrideStyles }} />
       <div className="w-full mx-auto font-sans">
         {/* Syllabus Test Section */}
         <div className="mb-8">

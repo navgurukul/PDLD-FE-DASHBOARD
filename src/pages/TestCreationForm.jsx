@@ -237,12 +237,39 @@ const TestCreationForm = () => {
     }));
   };
 
-  // Handle subject row field changes
+  // 1. UPDATED SUBJECT ROW CHANGE HANDLER
   const handleSubjectRowChange = (className, rowId, field, value) => {
+    // Get current row data first to compare dates
+    const currentRow = subjectRows[className].find((row) => row.id === rowId);
+
+    // Create updated row with new value
+    const updatedRow = { ...currentRow, [field]: value };
+
+    // Date validation check
+    if (
+      (field === "testDate" || field === "submissionDeadline") &&
+      updatedRow.testDate &&
+      updatedRow.submissionDeadline
+    ) {
+      const testDate = new Date(updatedRow.testDate);
+      const submissionDate = new Date(updatedRow.submissionDeadline);
+
+      // Reset time part for accurate date comparison
+      testDate.setHours(0, 0, 0, 0);
+      submissionDate.setHours(0, 0, 0, 0);
+
+      // Check if submission date is not AFTER the test date
+      if (submissionDate.getTime() <= testDate.getTime()) {
+        toast.error("Submission deadline must be after the test date");
+        return; // Don't update the state with invalid dates
+      }
+    }
+
+    // If validation passes or isn't needed, update state
     setSubjectRows((prev) => {
       const updatedRows = prev[className].map((row) => {
         if (row.id === rowId) {
-          return { ...row, [field]: value };
+          return updatedRow;
         }
         return row;
       });
@@ -254,12 +281,124 @@ const TestCreationForm = () => {
     });
   };
 
-  // Handle max score changes
+  // 2. UPDATED FORM VALIDATION FUNCTION
+  const validateForm = () => {
+    // Check if class group is selected
+    if (!activeClassGroupId) {
+      toast.error("Please select a class group");
+      return false;
+    }
+
+    // Check if at least one class is selected
+    if (Object.keys(selectedClasses).length === 0) {
+      toast.error("Please select at least one class");
+      return false;
+    }
+
+    // Check test tag/category
+    if (!formData.testTag) {
+      toast.error("Please select a test tag");
+      return false;
+    }
+
+    // Validate each class's data
+    for (const className of Object.keys(selectedClasses)) {
+      // Validate max score exists
+      if (!maxScores[className]) {
+        toast.error(`Please enter a max score for ${className}`);
+        return false;
+      }
+
+      // Validate max score value <= 100
+      if (parseInt(maxScores[className]) > 100) {
+        toast.error(`Maximum score cannot exceed 100 for ${className}`);
+        return false;
+      }
+
+      // Check if at least one subject is added
+      if (!subjectRows[className] || subjectRows[className].length === 0) {
+        toast.error(`Please add at least one subject for ${className}`);
+        return false;
+      }
+
+      // Validate each subject row
+      for (const row of subjectRows[className]) {
+        // Validate subject is selected
+        if (!row.subject) {
+          toast.error(`Please select a subject for ${className}`);
+          return false;
+        }
+
+        // Validate test date is selected
+        if (!row.testDate) {
+          // Get formatted subject name for display
+          const subjectDisplay = row.subject
+            .split("_")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+
+          toast.error(`Please select a test date for ${subjectDisplay} in ${className}`);
+          return false;
+        }
+
+        // Validate submission deadline is selected
+        if (!row.submissionDeadline) {
+          // Get formatted subject name for display
+          const subjectDisplay = row.subject
+            .split("_")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+
+          toast.error(`Please select a submission deadline for ${subjectDisplay} in ${className}`);
+          return false;
+        }
+
+        // Validate submission date is after test date
+        const testDate = new Date(row.testDate);
+        const submissionDate = new Date(row.submissionDeadline);
+
+        // Reset time part for accurate date comparison
+        testDate.setHours(0, 0, 0, 0);
+        submissionDate.setHours(0, 0, 0, 0);
+
+        if (submissionDate.getTime() <= testDate.getTime()) {
+          // Get formatted subject name for display
+          const subjectDisplay = row.subject
+            .split("_")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+
+          toast.error(
+            `Submission deadline must be after the test date for ${subjectDisplay} in ${className}`
+          );
+          return false;
+        }
+      }
+    }
+
+    // All validations passed
+    return true;
+  };
+
   const handleMaxScoreChange = (className, value) => {
-    setMaxScores((prev) => ({
-      ...prev,
-      [className]: value,
-    }));
+    // Parse value to number
+    const scoreValue = parseInt(value);
+
+    // Check if score exceeds max allowed (100)
+    if (scoreValue > 100) {
+      toast.error("Maximum score cannot exceed 100");
+      // Cap the value at 100
+      setMaxScores((prev) => ({
+        ...prev,
+        [className]: 100,
+      }));
+    } else {
+      // Normal case, update as usual
+      setMaxScores((prev) => ({
+        ...prev,
+        [className]: value,
+      }));
+    }
   };
 
   // Prepare data for summary modal
@@ -391,67 +530,6 @@ const TestCreationForm = () => {
     setShowSummary(true);
   };
 
-  // Form validation
-  const validateForm = () => {
-    // Check if class group is selected
-    if (!activeClassGroupId) {
-      toast.error("Please select a class group");
-      return false;
-    }
-
-    // Check if at least one class is selected
-    if (Object.keys(selectedClasses).length === 0) {
-      toast.error("Please select at least one class");
-      return false;
-    }
-
-    if (!formData.testTag) {
-      toast.error("Please select a test tag");
-      return false;
-    }
-
-    // Check test category
-    if (!formData.testTag) {
-      toast.error("Please select a test category");
-      return false;
-    }
-
-    // Validate each class's data
-    for (const className of Object.keys(selectedClasses)) {
-      // Validate max score
-      if (!maxScores[className]) {
-        toast.error(`Please enter a max score for ${className}`);
-        return false;
-      }
-
-      // Check if at least one subject is added
-      if (!subjectRows[className] || subjectRows[className].length === 0) {
-        toast.error(`Please add at least one subject for ${className}`);
-        return false;
-      }
-
-      // Validate each subject row
-      for (const row of subjectRows[className]) {
-        if (!row.subject) {
-          toast.error(`Please select a subject for ${className}`);
-          return false;
-        }
-
-        if (!row.testDate) {
-          toast.error(`Please select a test date for ${row.subject} in ${className}`);
-          return false;
-        }
-
-        if (!row.submissionDeadline) {
-          toast.error(`Please select a submission deadline for ${row.subject} in ${className}`);
-          return false;
-        }
-      }
-    }
-
-    return true;
-  };
-
   // Handle modal confirmation - this triggers the API call
   const handleModalConfirm = () => {
     handleCreateTest();
@@ -466,15 +544,19 @@ const TestCreationForm = () => {
 
   return (
     <div className="main-page-wrapper text-[#2F4F4F] font-['Work_Sans']">
-      <header className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-[#2F4F4F] font-['Karla']">
+      <header className="mb-4">
+        {/* <h1 className="text-4xl font-bold text-[#2F4F4F] font-['Karla']">
           {editMode ? "Edit Test" : "Create New Test"}
-        </h1>
+        </h1> */}
+        <h5 className="text-lg font-bold text-[#2F4F4F]">
+          {editMode ? "Edit Test" : "Create New Test"}
+        </h5>
+        {/* 
         <p className="text-[#597272] mt-2 font-['Work_Sans']">
           {editMode
             ? "Update the test dates below. Other fields are read-only."
             : "Fill in the details below to schedule new tests."}
-        </p>
+        </p> */}
       </header>
 
       <form>
@@ -506,96 +588,25 @@ const TestCreationForm = () => {
               <label className="block font-medium text-[#597272] mb-2 text-sm" htmlFor="testTag">
                 Test Tag
               </label>
-              <Autocomplete
-                freeSolo
+              <select
                 id="testTag"
-                options={TEST_TAG_OPTIONS}
-                filterOptions={filterTestTagOptions}
-                getOptionLabel={(option) => {
-                  if (typeof option === "string") {
-                    return option;
-                  }
-                  if (option.isCreateNew) {
-                    return `Create new: ${option.name}`;
-                  }
-                  return option.name || "";
-                }}
-                value={formData.testTag || null}
-                inputValue={testTagInput}
-                onInputChange={(event, newInputValue) => {
-                  if (!editMode) {
-                    setTestTagInput(newInputValue);
-                    if (!event) {
-                      const trimmedValue = newInputValue.trim();
-                      setFormData({
-                        ...formData,
-                        testTag: trimmedValue,
-                      });
-                    }
-                  }
-                }}
-                onChange={(event, newValue) => {
-                  if (!editMode) {
-                    // Handle "Create new" option
-                    if (typeof newValue === "string") {
-                      setFormData({
-                        ...formData,
-                        testTag: newValue.trim(),
-                      });
-                    }
-                    // Handle direct string input
-                    else if (newValue && newValue.isCreateNew) {
-                      setFormData({
-                        ...formData,
-                        testTag: newValue.name,
-                      });
-                      toast.success(`New test tag "${newValue.name}" added`);
-                    }
-                    // Handle dropdown selection
-                    else if (newValue && newValue.name) {
-                      setFormData({
-                        ...formData,
-                        testTag: newValue.name,
-                      });
-                    }
-                    // Handle clearing
-                    else {
-                      setFormData({
-                        ...formData,
-                        testTag: "",
-                      });
-                    }
-                  }
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    placeholder={editMode ? "" : "Select or type a new test tag"}
-                    required
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        height: "42px",
-                        borderRadius: "6px",
-                        fontSize: "16px",
-                        backgroundColor: editMode ? "#f5f5f5" : "white",
-                      },
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "rgba(0, 0, 0, 0.23)",
-                      },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: editMode ? "rgba(0, 0, 0, 0.23)" : "rgba(0, 0, 0, 0.87)",
-                      },
-                      "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: editMode ? "rgba(0, 0, 0, 0.23)" : "#049796",
-                        borderWidth: "1px",
-                      },
-                    }}
-                    disabled={editMode}
-                  />
-                )}
+                name="testTag"
+                className={`w-full p-2.5 border border-slate-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#049796] focus:ring-2 focus:ring-[#CDEAEA] ${
+                  editMode ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
+                value={formData.testTag}
+                onChange={handleFormChange}
                 disabled={editMode}
-                className="w-full"
-              />
+              >
+                <option value="">Select Test Tag</option>
+                <option value="Monthly_1">Monthly_1</option>
+                <option value="Monthly_2">Monthly_2</option>
+                <option value="Monthly_3">Monthly_3</option>
+                <option value="Monthly_4">Monthly_4</option>
+                <option value="Quaterly">Quaterly</option>
+                <option value="Half_Yearly">Half_Yearly</option>
+                <option value="Pre_Board">Pre_Board</option>
+              </select>
             </div>
           </div>
         </div>
