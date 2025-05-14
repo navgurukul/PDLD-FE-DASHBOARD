@@ -105,12 +105,7 @@ const theme = createTheme({
   },
 });
 
-const StudentPerformanceTable = ({
-  students,
-  classAvg,
-  onViewProfile,
-  onExport,
-}) => {
+const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -123,9 +118,7 @@ const StudentPerformanceTable = ({
   // Filter students based on search query and status
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
-      const nameMatch = student.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+      const nameMatch = student.name.toLowerCase().includes(searchQuery.toLowerCase());
 
       if (!filterStatus) {
         return nameMatch;
@@ -147,9 +140,7 @@ const StudentPerformanceTable = ({
       if (sortConfig.key === "vsClassAvg") {
         const aVsAvg = a.score - classAvg;
         const bVsAvg = b.score - classAvg;
-        return sortConfig.direction === "asc"
-          ? aVsAvg - bVsAvg
-          : bVsAvg - aVsAvg;
+        return sortConfig.direction === "asc" ? aVsAvg - bVsAvg : bVsAvg - aVsAvg;
       }
 
       // Handle other fields
@@ -172,9 +163,10 @@ const StudentPerformanceTable = ({
     name: student.name,
     score: `${student.score}/100`,
     result: student.score >= 35 ? "Meets Standard" : "Needs Improvement", // Students with 35 or above "Meet Standard"
-    vsClassAvg: `${student.score > classAvg ? "+" : ""}${(
-      student.score - classAvg
-    ).toFixed(1)}`,
+    vsClassAvg:
+      isNaN(student.score - classAvg) || classAvg === 0
+        ? "N/A"
+        : `${student.score > classAvg ? "+" : ""}${(student.score - classAvg).toFixed(1)}`,
     isPass: student.score >= 35, // Students with 35 or above pass
     originalScore: student.score,
   }));
@@ -275,11 +267,8 @@ const StudentPerformanceTable = ({
           const isPositive = value && value.startsWith("+");
 
           return (
-            <div
-              className=""
-              style={{ color: isPositive ? "#2e7d32" : "#c62828" }}
-            >
-              {value}
+            <div className="" style={{ color: isPositive ? "#2e7d32" : "#c62828" }}>
+              {value === "N/A" ? <span style={{ color: "#949494" }}>N/A</span> : value}
             </div>
           );
         },
@@ -342,9 +331,7 @@ const StudentPerformanceTable = ({
   return (
     <ThemeProvider theme={theme}>
       <div className="">
-        <h3 className="text-lg font-semibold text-[#2F4F4F]">
-          Student Performance
-        </h3>
+        <h3 className="text-lg font-semibold text-[#2F4F4F]">Student Performance</h3>
 
         {/* Filters - Exact match to TestListTable */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
@@ -440,10 +427,7 @@ const StudentPerformanceTable = ({
                 {/* ButtonCustom for Export */}
                 <div>
                   {onExport && (
-                    <ButtonCustom
-                      text={"Export Data"}
-                      onClick={() => onExport(sortedStudents)}
-                    />
+                    <ButtonCustom text={"Export Data"} onClick={() => onExport(sortedStudents)} />
                   )}
                 </div>
               </div>
@@ -456,11 +440,7 @@ const StudentPerformanceTable = ({
           style={{ borderRadius: "8px" }}
           className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
         >
-          <MUIDataTable
-            data={paginatedTableData}
-            columns={columns}
-            options={options}
-          />
+          <MUIDataTable data={paginatedTableData} columns={columns} options={options} />
         </div>
 
         <div style={{ width: "max-content", margin: "25px auto" }}>
