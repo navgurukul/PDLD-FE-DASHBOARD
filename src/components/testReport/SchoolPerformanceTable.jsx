@@ -126,91 +126,18 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   // Alternative way to get testId from URL
   const getTestIdFromUrl = () => {
     const pathParts = location.pathname.split("/");
-    return (
-      testId ||
-      pathParts[pathParts.length - 1] ||
-      "b78a7596-7cd8-49e1-8c9e-7db0973fbbc0"
-    );
+    return testId || pathParts[pathParts.length - 1] || "b78a7596-7cd8-49e1-8c9e-7db0973fbbc0";
   };
 
   const currentTestId = getTestIdFromUrl();
 
-  // const fetchData = async () => {
-  // 	try {
-  // 		setLoading(true);
-
-  // 		let response;
-
-  // 		// First try with the API instance (which handles auth)
-  // 		try {
-  // 			response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`);
-  // 		} catch (apiInstanceError) {
-  // 			console.warn("Error with apiInstance, trying direct URL as fallback:", apiInstanceError);
-
-  // 			// If that fails with CORS, try with a direct URL as fallback
-  // 			// This can help if the issue is related to baseURL configuration
-  // 			const token = localStorage.getItem("authToken");
-
-  // 			response = await axios.get(`prod/schools/results/submitted/${currentTestId}`, {
-  // 				headers: {
-  // 					"Content-Type": "application/json",
-  // 					Accept: "application/json",
-  // 					...(token ? { Authorization: `Bearer ${token}` } : {}),
-  // 				},
-  // 			});
-  // 		}
-
-  // 		// Process the successful response
-  // 		if (response.data && response.data.success) {
-  // 			const { schools: apiSchools, totalSubmittedSchools, pagination } = response.data.data;
-
-  // 			// Transform API data to match the component's expected format
-  // 			const formattedSchools = apiSchools.map((school) => ({
-  // 				id: school.id,
-  // 				name: school.schoolName,
-  // 				schoolName: school.schoolName,
-  // 				blockName: school.blockName,
-  // 				clusterName: school.clusterName,
-  // 				udiseCode: school.udiseCode,
-  // 				passRate: school.successRate, // Map successRate to passRate
-  // 				submitted: true, // All schools in the response are submitted
-  // 				studentsTested: "-", // Not provided in API
-  // 				avgScore: "-", // Not provided in API
-  // 			}));
-
-  // 			setSchools(formattedSchools);
-  // 			setSchoolsSubmitted(totalSubmittedSchools);
-  // 			setTotalSchools(pagination.totalSchools || totalSubmittedSchools);
-  // 		} else {
-  // 			setError("Failed to load data");
-  // 		}
-  // 	} catch (err) {
-  // 		console.error("Error fetching school data:", err);
-  // 		if (err.message && err.message.includes("CORS")) {
-  // 			setError("CORS error: Unable to access the API. Please check network settings or try again later.");
-  // 		} else {
-  // 			setError("An error occurred while fetching data");
-  // 		}
-  // 	} finally {
-  // 		setLoading(false);
-  // 	}
-  // };
-
-  // Fetch data from API
-
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await apiInstance.get(
-        `/schools/results/submitted/${currentTestId}`
-      );
+      const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`);
 
       if (response.data && response.data.success) {
-        const {
-          schools: apiSchools,
-          totalSubmittedSchools,
-          pagination,
-        } = response.data.data;
+        const { schools: apiSchools, totalSubmittedSchools, pagination } = response.data.data;
 
         // Transform API data to match the component's expected format
         const formattedSchools = apiSchools.map((school) => ({
@@ -222,7 +149,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           udiseCode: school.udiseCode,
           passRate: school.successRate, // Map successRate to passRate
           submitted: true, // All schools in the response are submitted
-          studentsTested: "-", // Not provided in API
+          studentsTested: school.totalStudents, // Use totalStudents from the API
           avgScore: "-", // Not provided in API
         }));
 
@@ -234,9 +161,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       }
     } catch (error) {
       console.error("Error fetching school data:", error);
-      setError(
-        error.response?.data?.message || "An error occurred while fetching data"
-      );
+      setError(error.response?.data?.message || "An error occurred while fetching data");
     } finally {
       setLoading(false);
     }
@@ -276,9 +201,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       if (sortConfig.key === "vsPrev") {
         const aValue = a.vsPrev || 0;
         const bValue = b.vsPrev || 0;
-        return sortConfig.direction === "asc"
-          ? aValue - bValue
-          : bValue - aValue;
+        return sortConfig.direction === "asc" ? aValue - bValue : bValue - aValue;
       }
 
       // Default comparison for numeric fields
@@ -475,16 +398,12 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   // Calculate pending schools
   const pendingSchools = totalSchools - schoolsSubmitted;
-  const submissionRate =
-    totalSchools > 0 ? Math.round((schoolsSubmitted / totalSchools) * 100) : 0;
+  const submissionRate = totalSchools > 0 ? Math.round((schoolsSubmitted / totalSchools) * 100) : 0;
 
   // Show loading indicator while fetching data
   if (loading) {
     return (
-      <div
-        className="flex justify-center items-center p-10"
-        style={{ minHeight: "300px" }}
-      >
+      <div className="flex justify-center items-center p-10" style={{ minHeight: "300px" }}>
         <CircularProgress size={60} thickness={4} sx={{ color: "#2F4F4F" }} />
       </div>
     );
@@ -512,10 +431,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           <h3 className="text-lg font-semibold">Error Loading Data</h3>
         </div>
         <p className="text-gray-600">{error}</p>
-        <OutlinedButton
-          onClick={() => window.location.reload()}
-          text={"Retry"}
-        />
+        <OutlinedButton onClick={() => window.location.reload()} text={"Retry"} />
       </div>
     );
   }

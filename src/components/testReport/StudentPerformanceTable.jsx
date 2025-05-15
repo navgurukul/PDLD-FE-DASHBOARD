@@ -15,6 +15,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import PersonIcon from "@mui/icons-material/Person";
 import ButtonCustom from "../ButtonCustom";
 import { Pagination } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 // Create MUI theme to match TestListTable
 const theme = createTheme({
@@ -114,6 +115,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
     key: null,
     direction: "asc",
   });
+  const navigate = useNavigate();
 
   // Filter students based on search query and status
   const filteredStudents = useMemo(() => {
@@ -291,7 +293,10 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
               <Button
                 variant="outlined"
                 size="small"
-                onClick={() => onViewProfile && onViewProfile(studentId)}
+                onClick={() => {
+                  // Redirect using the extracted schoolId
+                  // navigate(`/schools/schoolDetail/${schoolId}/student-profile/${studentId}`);
+                }}
                 sx={{
                   borderColor: "transparent",
                   color: "#2F4F4F",
@@ -468,6 +473,7 @@ StudentPerformanceTable.propTypes = {
   classAvg: PropTypes.number.isRequired,
   onViewProfile: PropTypes.func,
   onExport: PropTypes.func,
+  schoolId: PropTypes.string.isRequired, // Add schoolId prop type
 };
 
 StudentPerformanceTable.defaultProps = {

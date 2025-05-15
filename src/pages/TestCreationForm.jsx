@@ -303,16 +303,19 @@ const TestCreationForm = () => {
 
     // Validate each class's data
     for (const className of Object.keys(selectedClasses)) {
-      // Validate max score exists
-      if (!maxScores[className]) {
-        toast.error(`Please enter a max score for ${className}`);
-        return false;
-      }
+      // Skip max score validation for remedial tests
+      if (formData.testType === "syllabus") {
+        // Validate max score exists
+        if (!maxScores[className]) {
+          toast.error(`Please enter a max score for ${className}`);
+          return false;
+        }
 
-      // Validate max score value <= 100
-      if (parseInt(maxScores[className]) > 100) {
-        toast.error(`Maximum score cannot exceed 100 for ${className}`);
-        return false;
+        // Validate max score value <= 100
+        if (parseInt(maxScores[className]) > 100) {
+          toast.error(`Maximum score cannot exceed 100 for ${className}`);
+          return false;
+        }
       }
 
       // Check if at least one subject is added
@@ -434,20 +437,31 @@ const TestCreationForm = () => {
           const key = `${grade}-${displaySubject}`;
           testDates[key] = row.testDate;
           testDeadlines[key] = row.submissionDeadline;
-          testScores[key] = maxScores[className];
+
+          // Only add maxScore for syllabus tests
+          if (formData.testType === "syllabus") {
+            testScores[key] = maxScores[className];
+          }
         }
       });
     });
 
-    return {
+    // Base data to return
+    const summaryData = {
       selectedGrades,
       selectedSubjects,
       testDates,
       testDeadlines,
-      testScores,
       testType: formData.testType === "syllabus" ? "regular" : "remedial",
       testTag: formData.testTag,
     };
+
+    // Only include testScores for syllabus tests
+    if (formData.testType === "syllabus") {
+      summaryData.testScores = testScores;
+    }
+
+    return summaryData;
   };
 
   // API call to create or update test
@@ -478,17 +492,28 @@ const TestCreationForm = () => {
               ? parseInt(className.replace("Class ", ""))
               : className;
 
-            return {
+            // Only include maxScore for syllabus tests
+            const classData = {
               class: classNum,
               subjects: subjectRows[className]
                 .filter((row) => row.subject)
-                .map((row) => ({
-                  subject: row.subject,
-                  testDate: row.testDate,
-                  deadline: row.submissionDeadline,
-                  maxScore: Number(maxScores[className]) || 100,
-                })),
+                .map((row) => {
+                  const subjectData = {
+                    subject: row.subject,
+                    testDate: row.testDate,
+                    deadline: row.submissionDeadline,
+                  };
+
+                  // Only add maxScore for syllabus tests
+                  if (formData.testType === "syllabus") {
+                    subjectData.maxScore = Number(maxScores[className]) || 100;
+                  }
+
+                  return subjectData;
+                }),
             };
+
+            return classData;
           }),
         };
       }
@@ -692,26 +717,30 @@ const TestCreationForm = () => {
                 <h3 className="text-lg font-semibold text-[#2F4F4F] font-['Karla']">
                   {className} - Test Details
                 </h3>
-                <div className="w-1/3 min-w-32">
-                  <label
-                    htmlFor={`max_score_${getClassId(className)}`}
-                    className="block text-xs font-medium text-[#597272] mb-1"
-                  >
-                    Overall Max Score:
-                  </label>
-                  <input
-                    type="number"
-                    id={`max_score_${getClassId(className)}`}
-                    className={`w-full p-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-2 focus:ring-[#D4DAE8] ${
-                      editMode ? "bg-gray-100 cursor-not-allowed" : ""
-                    }`}
-                    placeholder="e.g., 100"
-                    value={maxScores[className] || ""}
-                    onChange={(e) => !editMode && handleMaxScoreChange(className, e.target.value)}
-                    disabled={editMode}
-                    required
-                  />
-                </div>
+
+                {/* Only show max score field for syllabus tests */}
+                {formData.testType === "syllabus" && (
+                  <div className="w-1/3 min-w-32">
+                    <label
+                      htmlFor={`max_score_${getClassId(className)}`}
+                      className="block text-xs font-medium text-[#597272] mb-1"
+                    >
+                      Overall Max Score:
+                    </label>
+                    <input
+                      type="number"
+                      id={`max_score_${getClassId(className)}`}
+                      className={`w-full p-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-2 focus:ring-[#D4DAE8] ${
+                        editMode ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
+                      placeholder="e.g., 100"
+                      value={maxScores[className] || ""}
+                      onChange={(e) => !editMode && handleMaxScoreChange(className, e.target.value)}
+                      disabled={editMode}
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Subjects Table */}
@@ -873,6 +902,7 @@ const TestCreationForm = () => {
         {...prepareSummaryData()}
         handleConfirm={handleModalConfirm}
         modalTitle={editMode ? "Test Update Summary" : "Test Creation Summary"}
+        isSubmitting={isSubmitting} // Pass the isSubmitting state to the modal
       />
     </div>
   );
