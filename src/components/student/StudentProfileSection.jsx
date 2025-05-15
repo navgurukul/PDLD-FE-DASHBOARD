@@ -1,13 +1,13 @@
+//student profile page inside school flow
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { Typography, Box, Grid, Paper, Tabs, Tab, Button } from "@mui/material";
+import { Typography, Box, Grid, Paper, Tabs, Tab, Button, Alert } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useTheme } from "@mui/material/styles";
 import StudentAcademics from "./StudentAcademics";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import ButtonCustom from "../../components/ButtonCustom";
-import { mockData } from "../../data/testReportData";
 import apiInstance from "../../../api";
 import {
 	EditPencilIcon,
@@ -38,29 +38,6 @@ function TabPanel(props) {
 	);
 }
 
-// Dummy student data for when no data is passed through location state
-const dummyStudent = {
-	id: "123456",
-	fullName: "Raj Kumar",
-	gender: "Male",
-	class: "Class 1",
-	dob: "1994-12-11",
-	fatherName: "Raja Kumar",
-	motherName: "Rajshri Kumari",
-	aparId: "123456782",
-	hostel: "Hostel C",
-	schoolName: "Delhi Public School",
-	healthMetrics: {
-		lastUpdated: "03rd March 2025",
-		hemoglobin: "8.9",
-		height: "152",
-		weight: "55",
-	},
-};
-
-const dummySchoolName = "Delhi Public School";
-const dummyUdiseCode = "12345678901";
-
 const StudentProfileView = () => {
 	const theme = useTheme();
 	const { schoolId, studentId } = useParams();
@@ -71,6 +48,7 @@ const StudentProfileView = () => {
 	const [tabValue, setTabValue] = useState(0);
 	const [schoolName, setSchoolName] = useState("");
 	const [udiseCode, setUdiseCode] = useState("");
+	const [error, setError] = useState(null);
 
 	// Format date helper function
 	const formatDate = (dateString) => {
@@ -102,14 +80,12 @@ const StudentProfileView = () => {
 	// Fetch student profile data
 	const fetchStudentProfile = async () => {
 		setIsLoading(true);
+		setError(null);
 		try {
 			// Get contextual school information from location state if available
 			if (location.state) {
-				setSchoolName(location.state.schoolName || dummySchoolName);
-				setUdiseCode(location.state.udiseCode || dummyUdiseCode);
-			} else {
-				setSchoolName(dummySchoolName);
-				setUdiseCode(dummyUdiseCode);
+				setSchoolName(location.state.schoolName || "");
+				setUdiseCode(location.state.udiseCode || "");
 			}
 
 			// Fetch student profile data using the API
@@ -137,14 +113,12 @@ const StudentProfileView = () => {
 				});
 			} else {
 				toast.error("Failed to load student profile. Please try again.");
-				// Fall back to dummy data if needed
-				setStudent(dummyStudent);
+				setError("Unable to fetch student data. Please try again.");
 			}
 		} catch (error) {
 			console.error("Error fetching student profile:", error);
 			toast.error("Failed to load student profile. Please try again later.");
-			// Fall back to dummy data
-			setStudent(dummyStudent);
+			setError("Error fetching student data: " + (error.message || "Unknown error"));
 		} finally {
 			setIsLoading(false);
 		}
@@ -155,7 +129,7 @@ const StudentProfileView = () => {
 			fetchStudentProfile();
 		} else {
 			setIsLoading(false);
-			setStudent(dummyStudent);
+			setError("No student ID provided. Unable to fetch student information.");
 		}
 	}, [studentId]); // Re-fetch when studentId changes
 
@@ -203,12 +177,25 @@ const StudentProfileView = () => {
 		);
 	}
 
+	if (error) {
+		return (
+			<Box sx={{ p: 3 }}>
+				<Alert severity="error" sx={{ mb: 2 }}>
+					{error}
+				</Alert>
+				<Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleGoBack} sx={{ mt: 2 }}>
+					Back to Students
+				</Button>
+			</Box>
+		);
+	}
+
 	if (!student) {
 		return (
 			<Box sx={{ p: 3 }}>
-				<Typography variant="h6" color="error">
-					Student not found
-				</Typography>
+				<Alert severity="warning">
+					Information not available. Unable to fetch student details.
+				</Alert>
 				<Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleGoBack} sx={{ mt: 2 }}>
 					Back to Students
 				</Button>
