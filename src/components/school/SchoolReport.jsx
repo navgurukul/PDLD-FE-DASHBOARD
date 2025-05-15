@@ -1,10 +1,12 @@
+//school report inside tab
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import ButtonCustom from "../../components/ButtonCustom";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
+import api from "../../../api"; 
 
 // Internal styles
 const styles = {
@@ -29,7 +31,7 @@ const theme = createTheme({
     color: "#2F4F4F",
   },
   components: {
-    // Change the highlight color from blue to “Text Primary” color style.
+    // Change the highlight color from blue to "Text Primary" color style.
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
@@ -99,109 +101,98 @@ export default function SchoolReport() {
   const [reports, setReports] = useState([]);
   const [selectedClass, setSelectedClass] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [availableClasses, setAvailableClasses] = useState([]);
   const navigate = useNavigate();
 
-  // Class options for the dropdown
-  const CLASS_OPTIONS = ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5"];
+  // Extract school ID from URL
+  const { schoolId } = useParams();
 
-  // Mock data to simulate the API response
-  const mockData = {
-    "Class 1": [
-      {
-        name: "Test - 1",
-        students: 38,
-        maxMarks: 30,
-        subjects: {
-          hindi: 24,
-          english: 23,
-          mathematics: 25,
-          science: 27,
-          socialStudies: 29,
-          healthCare: 29,
-          it: 29,
-        },
-      },
-      {
-        name: "Test - 1",
-        students: 38,
-        maxMarks: 30,
-        subjects: {
-          hindi: 24,
-          english: 23,
-          mathematics: 25,
-          science: 27,
-          socialStudies: 29,
-          healthCare: 29,
-          it: 29,
-        },
-      },
-      {
-        name: "Test - 1",
-        students: 38,
-        maxMarks: 50,
-        subjects: {
-          hindi: 24,
-          english: 9,
-          mathematics: 25,
-          science: 12,
-          socialStudies: 29,
-          healthCare: 29,
-          it: 29,
-        },
-      },
-      {
-        name: "Test - 1",
-        students: 38,
-        maxMarks: 30,
-        subjects: {
-          hindi: 24,
-          english: 23,
-          mathematics: 25,
-          science: 27,
-          socialStudies: 29,
-          healthCare: 29,
-          it: 29,
-        },
-      },
-      {
-        name: "Test - 1",
-        students: 38,
-        maxMarks: 30,
-        subjects: {
-          hindi: 24,
-          english: 23,
-          mathematics: 25,
-          science: 27,
-          socialStudies: 28,
-          healthCare: 29,
-          it: 29,
-        },
-      },
-    ],
-    "Class 2": [],
-    "Class 3": [],
-    "Class 4": [],
-    "Class 5": [],
+  // Function to fetch all classes for the school
+  const fetchAvailableClasses = async () => {
+    try {
+      // Get all available classes from the API data
+      const result = await api.get(`/report/classes/${schoolId}`);
+      
+      if (result.data && result.data.success) {
+        // Extract unique class values and format for dropdown
+        const classes = result.data.data || [];
+        const uniqueClasses = [...new Set(classes.map(item => item.testClass))];
+        
+        // Format classes for dropdown
+        const formattedClasses = uniqueClasses
+          .filter(cls => cls) // Filter out any null/undefined values
+          .sort((a, b) => parseInt(a) - parseInt(b)) // Sort numerically
+          .map(cls => ({
+            value: cls,
+            label: `Class ${cls}`
+          }));
+        
+        setAvailableClasses(formattedClasses);
+        
+        // Set first class as default if available
+        if (formattedClasses.length > 0 && !selectedClass) {
+          setSelectedClass(parseInt(formattedClasses[0].value, 10));
+        }
+      } else {
+        console.error("API Error:", result.data?.error);
+        setAvailableClasses([]);
+      }
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      setAvailableClasses([]);
+    }
   };
 
-  // Function to fetch report data (simulated)
-  const fetchReportData = async (classVal) => {
+  // Function to fetch report data from API
+  const fetchReportData = async (classNumber) => {
     setIsLoading(true);
     try {
-      // Simulate API call with a timeout
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setReports(mockData[classVal] || []);
+      // Use the API instance with the schoolId from URL params
+      const result = await api.get(`/report/class/${schoolId}/${classNumber}`);
+
+      if (result.data && result.data.success) {
+        setReports(result.data.data || []);
+        
+        // If we don't have available classes yet, extract them from this response
+        if (availableClasses.length === 0) {
+          const uniqueClasses = [...new Set(result.data.data.map(item => item.testClass))];
+          const formattedClasses = uniqueClasses
+            .filter(cls => cls)
+            .sort((a, b) => parseInt(a) - parseInt(b))
+            .map(cls => ({
+              value: cls,
+              label: `Class ${cls}`
+            }));
+            
+          if (formattedClasses.length > 0) {
+            setAvailableClasses(formattedClasses);
+          }
+        }
+      } else {
+        console.error("API Error:", result.data?.error);
+        setReports([]);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
+      setReports([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Re-fetch data when selected class changes
+  // Fetch available classes when component mounts
   useEffect(() => {
-    fetchReportData(`Class ${selectedClass}`);
-  }, [selectedClass]);
+    if (schoolId) {
+      fetchAvailableClasses();
+    }
+  }, [schoolId]);
+
+  // Re-fetch data when selected class changes or when schoolId changes
+  useEffect(() => {
+    if (schoolId) {
+      fetchReportData(selectedClass);
+    }
+  }, [selectedClass, schoolId]);
 
   // Handle class change
   const handleClassChange = (e) => {
@@ -211,24 +202,14 @@ export default function SchoolReport() {
   // Handle report download
   const handleDownloadReport = () => {
     // This would typically trigger a download API call
-    // For now we'll just log a message
     console.log(`Downloading report for Class ${selectedClass}`);
     alert(`Report for Class ${selectedClass} will be downloaded`);
   };
 
-  // Format the data for MUIDataTable
-  const tableData = reports.map((report) => [
-    report.name,
-    report.students,
-    report.maxMarks,
-    report.subjects.hindi,
-    report.subjects.english,
-    report.subjects.mathematics,
-    report.subjects.science,
-    report.subjects.socialStudies,
-    report.subjects.healthCare,
-    report.subjects.it,
-  ]);
+  // Get all unique subjects from the reports
+  const allSubjects = [
+    ...new Set(reports.flatMap((report) => Object.keys(report.subjectAverages || {}))),
+  ];
 
   // Define columns for MUIDataTable
   const headerStyle = {
@@ -240,15 +221,14 @@ export default function SchoolReport() {
     color: "#2F4F4F",
   };
 
-  const columns = [
+  // Base columns (always present)
+  const baseColumns = [
     {
       name: "Name of Exam",
       options: {
         filter: false,
         sort: true,
-        customHeadLabelRender: ({ label }) => (
-          <span style={headerStyle}>{label}</span>
-        ),
+        customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
       },
     },
     {
@@ -256,10 +236,7 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
-        customHeadLabelRender: ({ label }) => (
-          <span style={headerStyle}>{label}</span>
-        ),
-        
+        customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
       },
     },
     {
@@ -267,97 +244,54 @@ export default function SchoolReport() {
       options: {
         filter: false,
         sort: true,
-        customHeadLabelRender: ({ label }) => (
-          <span style={headerStyle}>{label}</span>
-        ),
-      },
-    },
-    {
-      name: "Hindi",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: ({ label }) => (
-          <span style={headerStyle}>{label}</span>
-        ),
-        customBodyRender: (value) => (
-          <div style={parseInt(value) < 15 ? styles.lowScore : null}>
-            {value}
-          </div>
-        ),
-      },
-    },
-    {
-      name: "English",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: ({ label }) => (
-          <span style={headerStyle}>{label}</span>
-        ),
-        customBodyRender: (value) => (
-          <div style={parseInt(value) < 15 ? styles.lowScore : null}>
-            {value}
-          </div>
-        ),
-      },
-    },
-    {
-      name: "Mathematics",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: ({ label }) => (
-          <span style={headerStyle}>{label}</span>
-        ),
-      },
-    },
-    {
-      name: "Science",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: ({ label }) => (
-          <span style={headerStyle}>{label}</span>
-        ),
-        customBodyRender: (value) => (
-          <div style={parseInt(value) < 15 ? styles.lowScore : null}>
-            {value}
-          </div>
-        ),
-      },
-    },
-    {
-      name: "Social Studies",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: ({ label }) => (
-          <span style={headerStyle}>{label}</span>
-        ),
-      },
-    },
-    {
-      name: "Health Care",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: ({ label }) => (
-          <span style={headerStyle}>{label}</span>
-        ),
-      },
-    },
-    {
-      name: "IT",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: ({ label }) => (
-          <span style={headerStyle}>{label}</span>
-        ),
+        customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
       },
     },
   ];
+
+  // Dynamic subject columns based on the available subjects in the data
+  const subjectColumns = allSubjects.map((subject) => ({
+    name: subject,
+    options: {
+      filter: false,
+      sort: true,
+      customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
+      customBodyRender: (value) => {
+        // Check if value is a valid number and below the passing threshold
+        const numValue = parseFloat(value);
+        const report = reports.find(
+          (r) => r.subjectAverages && r.subjectAverages[subject] === numValue
+        );
+        const passingMark = report ? report.requiredMarksToPass / 3 : 15; // Default threshold if not specified
+
+        return (
+          <div style={!isNaN(numValue) && numValue < passingMark ? styles.lowScore : null}>
+            {!isNaN(numValue) ? numValue : "-"}
+          </div>
+        );
+      },
+    },
+  }));
+
+  // Combine base columns with subject columns
+  const columns = [...baseColumns, ...subjectColumns];
+
+  // Format the data for MUIDataTable
+  const tableData = reports.map((report) => {
+    // Start with base data
+    const rowData = [
+      report.testTag === "null" ? "Untitled Test" : report.testTag,
+      report.totalStudents || 0,
+      report.maxScore || 0,
+    ];
+
+    // Add subject data
+    allSubjects.forEach((subject) => {
+      rowData.push(report.subjectAverages?.[subject] ?? "-");
+    });
+
+    return rowData;
+  });
 
   // MUIDataTable options
   const options = {
@@ -426,21 +360,24 @@ export default function SchoolReport() {
                   },
                 }}
               >
-                {CLASS_OPTIONS.map((option, index) => (
-                  <MenuItem key={option} value={index + 1}>
-                    {option}
-                  </MenuItem>
-                ))}
+                {availableClasses.length > 0 ? (
+                  availableClasses.map((classOption) => (
+                    <MenuItem 
+                      key={classOption.value} 
+                      value={parseInt(classOption.value, 10)}
+                    >
+                      {classOption.label}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem value={1}>Class 1</MenuItem>
+                )}
               </Select>
             </FormControl>
           </div>
 
           {/* Download Report Button */}
-          <ButtonCustom
-            text={"Download Report"}
-            onClick={handleDownloadReport}
-            btnWidth={200}
-          />
+          <ButtonCustom text={"Download Report"} onClick={handleDownloadReport} btnWidth={200} />
         </div>
 
         {/* Data Table */}
@@ -450,9 +387,9 @@ export default function SchoolReport() {
 
         {/* Note text */}
         <div style={styles.noteText}>
-          <span className="font-bold">Note:</span> These marks represent the
-          subject-wise average score of the class, calculated as: (Total Marks
-          Obtained in the Subject + Number of Students Appeared)
+          <span className="font-bold">Note:</span> These marks represent the subject-wise average
+          score of the class, calculated as: (Total Marks Obtained in the Subject ÷ Number of
+          Students Appeared)
         </div>
 
         {/* Loading Overlay */}

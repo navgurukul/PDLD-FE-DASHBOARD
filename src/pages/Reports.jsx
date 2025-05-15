@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import MUIDataTable from "mui-datatables";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Button,
   TextField,
@@ -8,12 +7,16 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
+  Box,
 } from "@mui/material";
-
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, Select, InputLabel } from "@mui/material";
 import { Pagination } from "@mui/material";
-import { Search } from "lucide-react";
+import { Search, X as CloseIcon, RefreshCw } from "lucide-react";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -21,33 +24,35 @@ import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { noSchoolImage } from "../utils/imagePath";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import TableChartIcon from "@mui/icons-material/TableChart";
+import apiInstance from "../../api"; // Updated import path
+import { Typography } from "@mui/material";
+import ButtonCustom from "../components/ButtonCustom";
 
-// Create theme for consistent styling
 const theme = createTheme({
   typography: {
     fontFamily: "'Karla', sans-serif",
     color: "#2F4F4F",
   },
   components: {
-    // Change the highlight color from blue to “Text Primary” color style.
+    // Change the highlight color from blue to "Text Primary" color style.
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#2F4F4F", // Use text.primary color on focus
+            borderColor: "#2F4F4F",
           },
         },
         notchedOutline: {
-          borderColor: "#ccc", // default border color
+          borderColor: "#ccc",
         },
       },
     },
     MuiInputLabel: {
       styleOverrides: {
         root: {
-          color: "#949494", // Default label color
+          color: "#949494",
           "&.Mui-focused": {
-            color: "#2F4F4F", // Focused label color
+            color: "#2F4F4F",
           },
         },
       },
@@ -55,7 +60,7 @@ const theme = createTheme({
     MuiSelect: {
       styleOverrides: {
         icon: {
-          color: "#2F4F4F", // Dropdown arrow icon color
+          color: "#2F4F4F",
         },
       },
     },
@@ -121,130 +126,242 @@ const theme = createTheme({
 const Reports = () => {
   const [downloadMenuAnchorEl, setDownloadMenuAnchorEl] = useState(null);
   const downloadMenuOpen = Boolean(downloadMenuAnchorEl);
+
   // State management
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("English");
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
-  const [reportData, setReportData] = useState([]);
   const [schools, setSchools] = useState([]);
+  const [reportData, setReportData] = useState([]);
+  const [selectedBlock, setSelectedBlock] = useState("");
+  const [selectedCluster, setSelectedCluster] = useState("");
+  const [classModalOpen, setClassModalOpen] = useState(false);
+  const [selectedClassData, setSelectedClassData] = useState(null);
 
-  const pageSize = 10;
+  // State for available blocks and clusters
+  const [availableBlocks, setAvailableBlocks] = useState([]);
+  const [availableClusters, setAvailableClusters] = useState([]);
 
-  // Mock data for schools - in real implementation, this would come from an API
-  useEffect(() => {
-    // This would be an API call in a real implementation
-    const mockSchools = [
-      { id: "111223456", name: "Govt. Primary School Raiganj" },
-      { id: "111223457", name: "Govt. Primary School Manjhipadar" },
-      { id: "111223458", name: "Govt. Primary School Bhilaigarh" },
-      { id: "111223459", name: "Govt. Primary School Patrapali" },
-    ];
-    setSchools(mockSchools);
-  }, []);
+  // Fixed page size
+  const pageSize = 15;
 
-  // Filter schools based on search query
-  const filteredSchools = schools.filter(
-    (school) =>
-      school.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.id.includes(searchQuery)
-  );
+  // Extract unique blocks and clusters from the API response
+  const extractBlocksAndClusters = (schoolsData) => {
+    const blocks = new Set();
+    const clusters = new Set();
 
-  // Mock report data - in real implementation, this would come from an API
-  useEffect(() => {
-    if (selectedSchool) {
-      setIsLoading(true);
-      // Simulate API call delay
-      setTimeout(() => {
-        const mockReportData = [
-          {
-            name: "Test - 1",
-            noOfStudents: 38,
-            maxMarks: 30,
-            hindi: 24,
-            english: 23,
-            mathematics: 25,
-            science: 27,
-            socialScience: 29,
-            healthCare: 29,
-            it: 29,
-          },
-          {
-            name: "Test - 1",
-            noOfStudents: 38,
-            maxMarks: 30,
-            hindi: 24,
-            english: 23,
-            mathematics: 25,
-            science: 27,
-            socialScience: 29,
-            healthCare: 29,
-            it: 29,
-          },
-          {
-            name: "Test - 1",
-            noOfStudents: 38,
-            maxMarks: 50,
-            hindi: 24,
-            english: 23,
-            mathematics: 12,
-            science: 11,
-            socialScience: 29,
-            healthCare: 7,
-            it: 29,
-          },
-          {
-            name: "Test - 1",
-            noOfStudents: 38,
-            maxMarks: 30,
-            hindi: 24,
-            english: 23,
-            mathematics: 25,
-            science: 27,
-            socialScience: 29,
-            healthCare: 29,
-            it: 29,
-          },
-          {
-            name: "Test - 1",
-            noOfStudents: 38,
-            maxMarks: 30,
-            hindi: 24,
-            english: "03",
-            mathematics: 25,
-            science: 27,
-            socialScience: 29,
-            healthCare: 29,
-            it: 29,
-          },
-        ];
+    schoolsData.forEach((school) => {
+      if (school.blockName) blocks.add(school.blockName);
+      if (school.clusterName) clusters.add(school.clusterName);
+    });
 
-        setReportData(mockReportData);
-        setTotalRecords(mockReportData.length);
-        setIsLoading(false);
-      }, 800);
-    } else {
-      setReportData([]);
-    }
-  }, [selectedSchool, selectedClass, currentPage]);
-
-  // Handle school selection
-  const handleSchoolSelect = (school) => {
-    setSelectedSchool(school);
-    setSearchQuery(`${school.id} - ${school.name}`);
-    setShowDropdown(false);
+    setAvailableBlocks(Array.from(blocks).sort());
+    setAvailableClusters(Array.from(clusters).sort());
   };
 
-  // Handle search input change
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-    setShowDropdown(true);
-    if (!e.target.value) {
-      setSelectedSchool(null);
+  // Fetch schools data from API
+  useEffect(() => {
+    fetchSchoolsData();
+  }, [currentPage, selectedSubject, selectedBlock, selectedCluster]);
+
+  const fetchSchoolsData = async () => {
+    try {
+      setIsLoading(true);
+
+      let url = `/report/subject-performance/${selectedSubject}?page=${currentPage}&pageSize=${pageSize}`;
+
+      // Add block and cluster filters if selected - updated parameter names
+      if (selectedBlock) {
+        url += `&blockName=${selectedBlock}`;
+      }
+
+      if (selectedCluster) {
+        url += `&clusterName=${selectedCluster}`;
+      }
+
+      const response = await apiInstance.get(url);
+
+      if (response.data.success) {
+        const { schools, pagination } = response.data.data;
+        setReportData(schools);
+        setTotalRecords(pagination.totalSchools);
+        setTotalPages(pagination.totalPages);
+
+        // Extract blocks and clusters if not already done
+        if (availableBlocks.length === 0 || availableClusters.length === 0) {
+          extractBlocksAndClusters(schools);
+        }
+      } else {
+        toast.error("Failed to fetch report data");
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("An error occurred while fetching the report data");
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  // Fetch all blocks and clusters for dropdowns (separate API call)
+  useEffect(() => {
+    const fetchAllSchoolsForDropdowns = async () => {
+      try {
+        // This could be a separate API endpoint that returns all blocks and clusters
+        // For now, we'll just use the same endpoint with a larger page size
+        const response = await apiInstance.get(
+          `/report/subject-performance/${selectedSubject}?page=1&pageSize=100`
+        );
+
+        if (response.data.success) {
+          extractBlocksAndClusters(response.data.data.schools);
+        }
+      } catch (error) {
+        console.error("Error fetching dropdown data:", error);
+      }
+    };
+
+    fetchAllSchoolsForDropdowns();
+  }, []);
+
+  // Custom Table Component
+  const CustomTable = ({ data }) => {
+    return (
+      <div className="overflow-x-auto">
+        <style>
+          {`
+            .custom-table {
+              width: 100%;
+              border-collapse: collapse;
+              font-family: 'Karla', sans-serif;
+            }
+            .custom-table th, .custom-table td {
+              padding: 18px 16px; /* Increased row height */
+              text-align: left;
+              border-bottom: 1px solid #e0e0e0;
+              font-size: 13px; /* Reduced font size */
+            }
+            .custom-table th.group-header {
+              text-align: center;
+              color: #2F4F4F;
+              font-weight: 600;
+              font-size: 14px;
+              border-bottom: none;
+            }
+            .custom-table th.sub-header {
+              color: #2F4F4F;
+              font-weight: 500;
+              font-size: 12px;
+              text-align: center;
+            }
+            .custom-table tbody tr:hover {
+              background-color: rgba(47, 79, 79, 0.1);
+              cursor: pointer;
+            }
+            .custom-table td.low-score {
+              color: #FF0000;
+            }
+          `}
+        </style>
+        <table className="custom-table">
+          <thead>
+            <tr>
+              <th
+                rowSpan="2"
+                style={{
+                  borderBottom: "1px solid #e0e0e0",
+                  color: "#2F4F4F", // Theme color
+                  fontWeight: "600", // Make it bold
+                }}
+              >
+                School Name
+              </th>
+              <th colSpan="2" className="group-header">
+                Primary (1-5)
+              </th>
+              <th colSpan="2" className="group-header">
+                Upper Primary (6-8)
+              </th>
+              <th colSpan="2" className="group-header">
+                High School (9-10)
+              </th>
+              <th colSpan="2" className="group-header">
+                Higher Secondary (11-12)
+              </th>
+            </tr>
+            <tr>
+              <th className="sub-header">Avg. Marks</th>
+              <th className="sub-header">Pass Rate(%)</th>
+              <th className="sub-header">Avg. Marks</th>
+              <th className="sub-header">Pass Rate(%)</th>
+              <th className="sub-header">Avg. Marks</th>
+              <th className="sub-header">Pass Rate(%)</th>
+              <th className="sub-header">Avg. Marks</th>
+              <th className="sub-header">Pass Rate(%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((school, index) => (
+              <tr key={index}>
+                <td style={{ maxWidth: "300px", wordWrap: "break-word" }}>{school.schoolName}</td>
+                <td
+                  className={parseInt(school.primaryAvg) < 20 ? "low-score" : ""}
+                  onClick={() => handleCellClick(index, 1)}
+                >
+                  {school.primaryAvg !== null ? school.primaryAvg : "-"}
+                </td>
+                <td
+                  className={parseInt(school.primaryPass) < 20 ? "low-score" : ""}
+                  onClick={() => handleCellClick(index, 2)}
+                >
+                  {school.primaryPass !== null ? `${school.primaryPass}%` : "-"}
+                </td>
+                <td
+                  className={parseInt(school.upperPrimaryAvg) < 20 ? "low-score" : ""}
+                  onClick={() => handleCellClick(index, 3)}
+                >
+                  {school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : "-"}
+                </td>
+                <td
+                  className={parseInt(school.upperPrimaryPass) < 20 ? "low-score" : ""}
+                  onClick={() => handleCellClick(index, 4)}
+                >
+                  {school.upperPrimaryPass !== null ? `${school.upperPrimaryPass}%` : "-"}
+                </td>
+                <td
+                  className={parseInt(school.highSchoolAvg) < 20 ? "low-score" : ""}
+                  onClick={() => handleCellClick(index, 5)}
+                >
+                  {school.highSchoolAvg !== null ? school.highSchoolAvg : "-"}
+                </td>
+                <td
+                  className={parseInt(school.highSchoolPass) < 20 ? "low-score" : ""}
+                  onClick={() => handleCellClick(index, 6)}
+                >
+                  {school.highSchoolPass !== null ? `${school.highSchoolPass}%` : "-"}
+                </td>
+                <td
+                  className={parseInt(school.higherSecondaryAvg) < 20 ? "low-score" : ""}
+                  onClick={() => handleCellClick(index, 7)}
+                >
+                  {school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : "-"}
+                </td>
+                <td
+                  className={parseInt(school.higherSecondaryPass) < 20 ? "low-score" : ""}
+                  onClick={() => handleCellClick(index, 8)}
+                >
+                  {school.higherSecondaryPass !== null ? `${school.higherSecondaryPass}%` : "-"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   };
 
   // Function to determine text color based on value
@@ -258,11 +375,63 @@ const Reports = () => {
     return "#000000"; // Default color
   };
 
+  const handleCellClick = (rowIndex, colIndex) => {
+    const school = reportData[rowIndex];
+
+    // Skip if clicking on school name column (colIndex 0)
+    if (colIndex === 0) return;
+
+    // Determine which level based on column index
+    let levelIndex = -1;
+    let groupTitle = "";
+
+    if (colIndex === 1 || colIndex === 2) {
+      // Primary columns (Avg. Marks and Pass Rate)
+      levelIndex = 0;
+      groupTitle = "Primary (1-5)";
+    } else if (colIndex === 3 || colIndex === 4) {
+      // Upper Primary columns
+      levelIndex = 1;
+      groupTitle = "Upper Primary (6-8)";
+    } else if (colIndex === 5 || colIndex === 6) {
+      // High School columns
+      levelIndex = 2;
+      groupTitle = "High School (9-10)";
+    } else if (colIndex === 7 || colIndex === 8) {
+      // Higher Secondary columns
+      levelIndex = 3;
+      groupTitle = "Higher Secondary (11-12)";
+    }
+
+    // If valid level found
+    if (levelIndex >= 0 && levelIndex < school.subjectPerformance.length) {
+      const levelData = school.subjectPerformance[levelIndex];
+
+      // Only open modal if there are classes for this level
+      if (levelData && levelData.classes && levelData.classes.length > 0) {
+        setSelectedClassData({
+          school: school.schoolName,
+          id: school.id,
+          subject: selectedSubject,
+          data: [levelData], // Only include the selected level data
+          groupTitle: groupTitle,
+        });
+
+        setClassModalOpen(true);
+      }
+    }
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
   // Reset filters
   const resetFilters = () => {
-    setSelectedClass("");
+    setSelectedBlock("");
+    setSelectedCluster("");
     setSearchQuery("");
-    setSelectedSchool(null);
     setCurrentPage(1);
   };
 
@@ -280,92 +449,9 @@ const Reports = () => {
   const handleDownloadPDF = () => {
     toast.info("Generating PDF report...");
 
-    // In a real implementation, you would call an API endpoint to generate the PDF
-    // For now, we'll simulate with a timeout and then trigger the download
+    // Implement PDF generation and download logic here
     setTimeout(() => {
-      // In a real implementation, this would be the actual PDF data from your backend
-      // For demonstration, we'll create a simple HTML-to-PDF approach
-
-      // Create a hidden HTML element with the data formatted for PDF
-      const printContent = document.createElement("div");
-      printContent.style.display = "none";
-      printContent.innerHTML = `
-				<h2>${selectedSchool ? selectedSchool.name : "School"} Performance Report</h2>
-				<h3>${selectedClass || "All Classes"}</h3>
-				<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
-					<tr>
-						<th>Name of Exam</th>
-						<th>No. of Students</th>
-						<th>Max Marks</th>
-						<th>Hindi</th>
-						<th>English</th>
-						<th>Mathematics</th>
-						<th>Science</th>
-						<th>Social Science</th>
-						<th>Health Care</th>
-						<th>IT</th>
-					</tr>
-					${reportData
-            .map(
-              (row) => `
-						<tr>
-							<td>${row.name}</td>
-							<td>${row.noOfStudents}</td>
-							<td>${row.maxMarks}</td>
-							<td style="color: ${getTextColor(row.hindi)}">${row.hindi}</td>
-							<td style="color: ${getTextColor(row.english)}">${row.english}</td>
-							<td style="color: ${getTextColor(row.mathematics)}">${row.mathematics}</td>
-							<td style="color: ${getTextColor(row.science)}">${row.science}</td>
-							<td style="color: ${getTextColor(row.socialScience)}">${row.socialScience}</td>
-							<td style="color: ${getTextColor(row.healthCare)}">${row.healthCare}</td>
-							<td style="color: ${getTextColor(row.it)}">${row.it}</td>
-						</tr>
-					`
-            )
-            .join("")}
-				</table>
-				<p style="margin-top: 20px; font-size: 12px;">
-					<strong>Note:</strong> These marks represent the subject-wise average score of the class, 
-					calculated as: (Total Marks Obtained in the Subject ÷ Number of Students Appeared)
-				</p>
-			`;
-      document.body.appendChild(printContent);
-
-      // In a real implementation, you'd use a proper PDF library like jsPDF
-      // For this demo, we'll use the browser's print to PDF functionality
-      const pdfWindow = window.open("", "_blank");
-      pdfWindow.document.write(`
-				<html>
-					<head>
-						<title>${
-              selectedSchool ? selectedSchool.name : "School"
-            } Performance Report</title>
-						<style>
-							body { font-family: Arial, sans-serif; padding: 20px; }
-							table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-							th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-							th { background-color: #f2f2f2; }
-						</style>
-					</head>
-					<body>
-						${printContent.innerHTML}
-						<script>
-							// Auto-print and prompt save dialog
-							window.onload = function() {
-								window.print();
-								// Wait for print dialog to close
-								setTimeout(function() {
-									window.close();
-								}, 500);
-							};
-						</script>
-					</body>
-				</html>
-			`);
-      pdfWindow.document.close();
-
-      // Remove the temporary element
-      document.body.removeChild(printContent);
+      // Simulated PDF generation
       toast.success("PDF report generated");
     }, 1000);
 
@@ -376,38 +462,46 @@ const Reports = () => {
   const handleDownloadCSV = () => {
     toast.info("Generating CSV report...");
 
-    // Format the data for CSV
+    // Implement CSV generation and download logic here
     const headers = [
-      "Name of Exam",
-      "No. of Students",
-      "Max Marks",
-      "Hindi",
-      "English",
-      "Mathematics",
-      "Science",
-      "Social Science",
-      "Health Care",
-      "IT",
+      "School Name",
+      "Primary (1-5) Avg. Marks",
+      "Primary (1-5) Pass Rate(%)",
+      "Upper Primary (6-8) Avg. Marks",
+      "Upper Primary (6-8) Pass Rate(%)",
+      "High School (9-10) Avg. Marks",
+      "High School (9-10) Pass Rate(%)",
+      "Higher Secondary (11-12) Avg. Marks",
+      "Higher Secondary (11-12) Pass Rate(%)",
     ];
 
-    // Convert the report data to CSV format
     let csvContent = headers.join(",") + "\n";
 
-    reportData.forEach((row) => {
+    reportData.forEach((school) => {
+      // Extract data from each school for CSV
+      const primaryData = school.subjectPerformance[0] || { primaryAvg: "-", primaryPass: "-" };
+      const upperData = school.subjectPerformance[1] || {
+        upperPrimaryAvg: "-",
+        upperPrimaryPass: "-",
+      };
+      const highData = school.subjectPerformance[2] || { highSchoolAvg: "-", highSchoolPass: "-" };
+      const higherData = school.subjectPerformance[3] || {
+        higherSecondaryAvg: "-",
+        higherSecondaryPass: "-",
+      };
+
       const rowData = [
-        row.name,
-        row.noOfStudents,
-        row.maxMarks,
-        row.hindi,
-        row.english,
-        row.mathematics,
-        row.science,
-        row.socialScience,
-        row.healthCare,
-        row.it,
+        school.schoolName,
+        primaryData.primaryAvg || "-",
+        primaryData.primaryPass ? `${primaryData.primaryPass}%` : "-",
+        upperData.upperPrimaryAvg || "-",
+        upperData.upperPrimaryPass ? `${upperData.upperPrimaryPass}%` : "-",
+        highData.highSchoolAvg || "-",
+        highData.highSchoolPass ? `${highData.highSchoolPass}%` : "-",
+        higherData.higherSecondaryAvg || "-",
+        higherData.higherSecondaryPass ? `${higherData.higherSecondaryPass}%` : "-",
       ];
 
-      // Handle commas in data by wrapping in quotes if needed
       csvContent +=
         rowData
           .map((cell) => {
@@ -419,407 +513,417 @@ const Reports = () => {
           .join(",") + "\n";
     });
 
-    // Create a Blob from the CSV data
+    // Create download link
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-
-    // Create a download link for the CSV file
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const fileName = `${
-      selectedSchool ? selectedSchool.name.replace(/\s+/g, "_") : "School"
-    }_Performance_Report_${new Date().toISOString().split("T")[0]}.csv`;
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `${selectedSubject}_Performance_Report_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
 
-    // Create the download URL
-    if (window.navigator.msSaveOrOpenBlob) {
-      // For IE
-      window.navigator.msSaveBlob(blob, fileName);
-    } else {
-      // For other browsers
-      const url = window.URL.createObjectURL(blob);
-      link.href = url;
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      link.click();
-
-      // Cleanup
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        toast.success("CSV report downloaded");
-      }, 100);
-    }
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("CSV report downloaded");
+    }, 100);
 
     handleDownloadClose();
   };
-  // Download report
-  const handleDownloadReport = () => {
-    toast.info("Downloading report...");
-    // Implement download logic here
-  };
-  const defaultCustomHeadLabelRender = (columnMeta) => (
-    <span
-      style={{
-        color: "#2F4F4F",
-        fontFamily: "'Work Sans'",
-        fontSize: "14px",
-        lineHeight: "28px",
-        fontWeight: 600,
-      }}
-    >
-      {columnMeta.label}
-    </span>
-  );
-  // Table columns
-  const columns = [
-    {
-      name: "name",
-      label: "Name of Exam",
-      options: {
-        filter: false,
-        sort: true,
-      },
-    },
-    {
-      name: "noOfStudents",
-      label: "No. of Students",
-      options: {
-        filter: false,
-        sort: true,
-      },
-    },
-    {
-      name: "maxMarks",
-      label: "Max Marks",
-      options: {
-        filter: false,
-        sort: true,
-      },
-    },
-    {
-      name: "hindi",
-      label: "Hindi",
-      options: {
-        filter: false,
-        sort: true,
-        customBodyRender: (value) => {
-          return <div style={{ color: getTextColor(value) }}>{value}</div>;
-        },
-      },
-    },
-    {
-      name: "english",
-      label: "English",
-      options: {
-        filter: false,
-        sort: true,
-        customBodyRender: (value) => {
-          return <div style={{ color: getTextColor(value) }}>{value}</div>;
-        },
-      },
-    },
-    {
-      name: "mathematics",
-      label: "Mathematics",
-      options: {
-        filter: false,
-        sort: true,
-        customBodyRender: (value) => {
-          return <div style={{ color: getTextColor(value) }}>{value}</div>;
-        },
-      },
-    },
-    {
-      name: "science",
-      label: "Science",
-      options: {
-        filter: false,
-        sort: true,
-        customBodyRender: (value) => {
-          return <div style={{ color: getTextColor(value) }}>{value}</div>;
-        },
-      },
-    },
-    {
-      name: "socialScience",
-      label: "Social Science",
-      options: {
-        filter: false,
-        sort: true,
-        customBodyRender: (value) => {
-          return <div style={{ color: getTextColor(value) }}>{value}</div>;
-        },
-      },
-    },
-    {
-      name: "healthCare",
-      label: "Health Care",
-      options: {
-        filter: false,
-        sort: true,
-        customBodyRender: (value) => {
-          return <div style={{ color: getTextColor(value) }}>{value}</div>;
-        },
-      },
-    },
-    {
-      name: "it",
-      label: "IT",
-      options: {
-        filter: false,
-        sort: true,
-        customBodyRender: (value) => {
-          return <div style={{ color: getTextColor(value) }}>{value}</div>;
-        },
-      },
-    },
-  ];
-  // Apply default customHeadLabelRender to all columns
-  columns.forEach((column) => {
-    if (!column.options) column.options = {};
-    column.options.customHeadLabelRender = defaultCustomHeadLabelRender;
-  });
-  // Table options
-  const options = {
-    filter: false,
-    search: false,
-    download: false,
-    print: false,
-    viewColumns: false,
-    selectableRows: "none",
-    pagination: false,
-    responsive: "standard",
-    rowsPerPage: pageSize,
-    rowsPerPageOptions: [10],
-    tableBodyHeight: "auto",
-    tableBodyMaxHeight: "auto",
-    customFooter: () => {
-      return null; // Remove default footer
-    },
-  };
 
-  // Classes available for selection
-  const classes = ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5"];
+  // Transform API data for table display
+  const transformedData = reportData.map((school) => {
+    // Extract data from each section
+    const primaryData = school.subjectPerformance[0] || {};
+    const upperData = school.subjectPerformance[1] || {};
+    const highData = school.subjectPerformance[2] || {};
+    const higherData = school.subjectPerformance[3] || {};
+
+    return {
+      schoolName: school.schoolName,
+      id: school.id,
+      primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
+      primaryPass: primaryData.primaryPass !== undefined ? primaryData.primaryPass : null,
+      upperPrimaryAvg: upperData.upperPrimaryAvg !== undefined ? upperData.upperPrimaryAvg : null,
+      upperPrimaryPass:
+        upperData.upperPrimaryPass !== undefined ? upperData.upperPrimaryPass : null,
+      highSchoolAvg: highData.highSchoolAvg !== undefined ? highData.highSchoolAvg : null,
+      highSchoolPass: highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
+      higherSecondaryAvg:
+        higherData.higherSecondaryAvg !== undefined ? higherData.higherSecondaryAvg : null,
+      higherSecondaryPass:
+        higherData.higherSecondaryPass !== undefined ? higherData.higherSecondaryPass : null,
+    };
+  });
+
+  // Available subjects
+  const subjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
+
+  // Filter schools by search query and limit to current page's data
+  const filteredData = useMemo(() => {
+    let data = searchQuery
+      ? transformedData.filter((school) =>
+          school.schoolName.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : transformedData;
+
+    // Ensure we're only showing pageSize (15) items
+    if (data.length > pageSize) {
+      data = data.slice(0, pageSize);
+    }
+
+    return data;
+  }, [transformedData, searchQuery, pageSize]);
 
   return (
     <ThemeProvider theme={theme}>
       <div className="main-page-wrapper">
-        <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">
-          School Performance Report
-        </h5>
+        <div className="flex justify-between items-center">
+          <div>
+            <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">School Performance Report</h5>
+          </div>
 
-        {/* Search Bar and School Selection */}
-        <div className="mb-6">
-          <div className="relative">
-            <TextField
-              variant="outlined"
-              placeholder="Search by school name or ID"
-              size="small"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onFocus={() => setShowDropdown(true)}
-              InputProps={{
-                style: {
-                  backgroundColor: "#fff",
-                  borderRadius: "8px",
-                  height: "48px",
-                  minWidth: "636px",
-                  width: "636px",
-                },
-                startAdornment: (
-                  <div className="pr-2">
-                    <Search size={20} className="text-gray-500" />
-                  </div>
-                ),
-              }}
+          <div className="bg-gray-300 py-3 px-3 rounded">
+            <Typography
+              variant="subtitle1"
               sx={{
-                marginBottom: { xs: "10px", md: "0" },
-                "& .MuiOutlinedInput-root": {
-                  paddingLeft: "10px",
-                },
+                bgcolor: theme.palette.secondary.light,
+                color: theme.palette.primary,
+                padding: "4px 16px",
+                borderRadius: "8px",
+                height: "48px",
+                display: "flex",
+                alignItems: "center",
               }}
-            />
-
-            {/* Search dropdown with fixed width */}
-            {showDropdown && searchQuery && (
-              <div
-                className="absolute z-10 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto"
-                style={{ width: "636px" }}
-              >
-                {filteredSchools.map((school) => (
-                  <div
-                    key={school.id}
-                    className="p-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => handleSchoolSelect(school)}
-                  >
-                    <span className="font-semibold">{school.id}</span> -{" "}
-                    {school.name}
-                  </div>
-                ))}
-              </div>
-            )}
+            >
+              Academic Year {"2024-25"}
+            </Typography>
           </div>
         </div>
 
-        {selectedSchool ? (
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center">
+            <Typography variant="subtitle1">Generate Report for</Typography>
+            <div style={{ width: "120px", marginLeft: "16px", borderRadius: "8px" }}>
+              <FormControl fullWidth size="small">
+                <Select
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  displayEmpty
+                  sx={{
+                    height: "48px",
+                    borderRadius: "8px",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderRadius: "8px",
+                    },
+                    "& .MuiSelect-select": {
+                      padding: "12px 16px",
+                      paddingRight: "32px",
+                      height: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                    },
+                  }}
+                >
+                  {subjects.map((subject) => (
+                    <MenuItem key={subject} value={subject}>
+                      {subject}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex-1 max-w-sm">
+            <TextField
+              variant="outlined"
+              placeholder="Search by name or UDISE"
+              size="small"
+              fullWidth
+              value={searchQuery}
+              onChange={handleSearchChange}
+              InputProps={{
+                startAdornment: (
+                  <div className="pr-2">
+                    <Search size={18} className="text-gray-500" />
+                  </div>
+                ),
+                style: {
+                  height: "48px",
+                  borderRadius: "8px",
+                },
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  height: "48px",
+                },
+                "& .MuiOutlinedInput-input": {
+                  padding: "12px 16px",
+                  paddingLeft: "0",
+                },
+              }}
+            />
+          </div>
+
+          <div style={{ width: "110px" }}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={selectedBlock}
+                onChange={(e) => setSelectedBlock(e.target.value)}
+                displayEmpty
+                renderValue={(selected) => {
+                  return selected === "" ? "Block" : selected;
+                }}
+                sx={{
+                  height: "48px",
+                  borderRadius: "8px",
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderRadius: "8px",
+                  },
+                  "& .MuiSelect-select": {
+                    padding: "12px 16px",
+                    paddingRight: "32px",
+                    height: "24px",
+                    display: "flex",
+                    alignItems: "center",
+                  },
+                }}
+              >
+                <MenuItem value="">All Blocks</MenuItem>
+                {availableBlocks.map((block) => (
+                  <MenuItem key={block} value={block}>
+                    {block}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </div>
+
+          <div style={{ width: "110px" }}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={selectedCluster}
+                onChange={(e) => setSelectedCluster(e.target.value)}
+                displayEmpty
+                renderValue={(selected) => {
+                  return selected === "" ? "Cluster" : selected;
+                }}
+                sx={{
+                  height: "48px",
+                  borderRadius: "8px",
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderRadius: "8px",
+                  },
+                  "& .MuiSelect-select": {
+                    padding: "12px 16px",
+                    paddingRight: "32px",
+                    height: "24px",
+                    display: "flex",
+                    alignItems: "center",
+                  },
+                }}
+              >
+                <MenuItem value="">All Clusters</MenuItem>
+                {availableClusters.map((cluster) => (
+                  <MenuItem key={cluster} value={cluster}>
+                    {cluster}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </div>
+
+          {/* Reset filter button */}
+          <div>
+            <Button
+              variant="outlined"
+              onClick={resetFilters}
+              startIcon={<RestartAltIcon />}
+              sx={{
+                height: "48px",
+                borderRadius: "8px",
+                borderColor: "#2F4F4F",
+                color: "#2F4F4F",
+                "&:hover": {
+                  borderColor: "#2F4F4F",
+                  backgroundColor: "rgba(47, 79, 79, 0.04)",
+                },
+              }}
+            >
+              Reset
+            </Button>
+          </div>
+
+          <div className="ml-auto">
+            <ButtonCustom
+              onClick={handleDownloadClick}
+              text="Download Report"
+              style={{
+                height: "48px",
+                borderRadius: "8px",
+                padding: "12px 16px",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Report Table */}
+        {filteredData.length > 0 ? (
           <>
-            {selectedSchool && (
-              <div className="  mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                {/* <h2 className="text-xl text-blue-600">{selectedSchool.id} - {selectedSchool.name}</h2> */}
+            <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
+              <CustomTable data={filteredData} />
 
-                <div className="flex justify-between items-center w-full">
-                  <div className="flex items-center gap-4">
-                    <FormControl
-                      sx={{
-                        height: "48px",
-                        display: "flex",
-                        width: "150px",
-                      }}
-                    >
-                      <InputLabel id="class-select-label">Class</InputLabel>
-                      <Select
-                        labelId="class-select-label"
-                        id="class-select"
-                        value={selectedClass}
-                        label="Class"
-                        onChange={(e) => setSelectedClass(e.target.value)}
-                        sx={{
-                          height: "100%",
-                          borderRadius: "8px",
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderRadius: "8px",
-                          },
-                          "& .MuiSelect-select": {
-                            paddingTop: "12px",
-                            paddingBottom: "12px",
-                            display: "flex",
-                            alignItems: "center",
-                          },
-                        }}
-                      >
-                        <MenuItem value="">All Classes</MenuItem>
-                        {classes.map((option) => (
-                          <MenuItem key={option} value={option}>
-                            {option}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+              {/* Download Options Menu */}
+              <Menu
+                anchorEl={downloadMenuAnchorEl}
+                open={downloadMenuOpen}
+                onClose={handleDownloadClose}
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "right",
+                }}
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+              >
+                <MenuItem onClick={handleDownloadPDF}>
+                  <ListItemIcon>
+                    <PictureAsPdfIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Download as PDF</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleDownloadCSV}>
+                  <ListItemIcon>
+                    <TableChartIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Download as CSV</ListItemText>
+                </MenuItem>
+              </Menu>
+            </div>
 
-                    <Tooltip title="Reset Filters" placement="top">
-                      <div
-                        onClick={resetFilters}
-                        style={{
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          backgroundColor: "#f5f5f5",
-                          padding: "6px 12px",
-                          borderRadius: "4px",
-                          height: "48px",
-                        }}
-                      >
-                        <RestartAltIcon color="action" />
-                      </div>
-                    </Tooltip>
-                  </div>
-
-                  <Button
-                    variant="contained"
-                    onClick={handleDownloadClick}
-                    sx={{
-                      backgroundColor: "#f3c22c",
-                      color: "#000",
-                      fontWeight: "medium",
-                      "&:hover": {
-                        backgroundColor: "#e0b424",
-                      },
-                      height: "40px",
-                    }}
-                  >
-                    Download Report
-                  </Button>
-                </div>
+            {/* Pagination - always display */}
+            <div className="flex justify-center items-center mt-6 mb-4">
+              <div className="flex items-center">
+                <Pagination
+                  count={totalPages || 1}
+                  page={currentPage}
+                  onChange={(e, page) => setCurrentPage(page)}
+                  showFirstButton
+                  showLastButton
+                  size="medium"
+                  sx={{
+                    "& .MuiPaginationItem-root": {
+                      margin: "0 2px",
+                    },
+                    "& .MuiPaginationItem-page.Mui-selected": {
+                      backgroundColor: "#2F4F4F",
+                      color: "white",
+                    },
+                    "& .MuiPaginationItem-page:hover": {
+                      backgroundColor: "#A3BFBF",
+                    },
+                  }}
+                />
               </div>
-            )}
-
-            {/* Report Table */}
-            {selectedSchool && (
-              <>
-                <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
-                  <MUIDataTable
-                    data={reportData}
-                    columns={columns}
-                    options={options}
-                  />
-
-                  {/* Download Options Menu */}
-                  <Menu
-                    anchorEl={downloadMenuAnchorEl}
-                    open={downloadMenuOpen}
-                    onClose={handleDownloadClose}
-                    anchorOrigin={{
-                      vertical: "bottom",
-                      horizontal: "right",
-                    }}
-                    transformOrigin={{
-                      vertical: "top",
-                      horizontal: "right",
-                    }}
-                  >
-                    <MenuItem onClick={handleDownloadPDF}>
-                      <ListItemIcon>
-                        <PictureAsPdfIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText>Download as PDF</ListItemText>
-                    </MenuItem>
-                    <MenuItem onClick={handleDownloadCSV}>
-                      <ListItemIcon>
-                        <TableChartIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText>Download as CSV</ListItemText>
-                    </MenuItem>
-                  </Menu>
-                </div>
-                {/* Note */}
-                <div className="p-4 bg-gray-50 text-sm text-gray-600">
-                  <span className="font-semibold">Note:</span> These marks
-                  represent the subject-wise average score of the class,
-                  calculated as: (Total Marks Obtained in the Subject ÷ Number
-                  of Students Appeared)
-                </div>
-                {/* Pagination */}
-                {totalRecords > pageSize && (
-                  <div
-                    style={{
-                      width: "max-content",
-                      margin: "25px auto",
-                    }}
-                  >
-                    <Pagination
-                      count={Math.ceil(totalRecords / pageSize)}
-                      page={currentPage}
-                      onChange={(e, page) => setCurrentPage(page)}
-                      showFirstButton
-                      showLastButton
-                    />
-                  </div>
-                )}
-              </>
-            )}
+            </div>
           </>
         ) : (
-          // Show placeholder image when no school is selected (user first lands on page)
+          // Show placeholder when no data is available
           <div className="flex flex-col items-center justify-center p-10">
-            <img
-              src={noSchoolImage}
-              alt="Search for a school"
-              className="w-40 h-40 mb-6"
-            />
-            <h3 className="text-xl text-gray-600 mb-2">No School Selected</h3>
+            <img src={noSchoolImage} alt="No data available" className="w-40 h-40 mb-6" />
+            <h3 className="text-xl text-gray-600 mb-2">No Data Available</h3>
             <p className="text-gray-500">
-              Please search and select a school to view performance reports
+              {searchQuery
+                ? "No schools match your search criteria"
+                : "No school performance data available for the selected filters"}
             </p>
           </div>
         )}
+
+        {/* Class Detail Modal */}
+        <Dialog
+          open={classModalOpen}
+          onClose={() => setClassModalOpen(false)}
+          maxWidth="md"
+          PaperProps={{
+            style: {
+              width: "760px",
+              padding: "32px",
+              borderRadius: "8px",
+              boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
+            },
+          }}
+        >
+          {selectedClassData && (
+            <div className="flex flex-col w-full">
+              {/* Close button */}
+              <div className="self-end">
+                <IconButton onClick={() => setClassModalOpen(false)} size="small" edge="end">
+                  <CloseIcon />
+                </IconButton>
+              </div>
+
+              {/* School info */}
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold text-[#2F4F4F] mb-2">
+                  {selectedClassData.school}
+                </h2>
+
+                {/* Class group and subject header */}
+                <div className="bg-gray-100 p-4 rounded-md mb-6 flex justify-between">
+                  <div className="text-[#2F4F4F] font-medium">
+                    Class Group: {selectedClassData.groupTitle}
+                  </div>
+                  <div className="text-[#2F4F4F] font-medium">
+                    Subject: {selectedClassData.subject}
+                  </div>
+                </div>
+
+                {/* Class data in 2 columns */}
+                <div className="grid grid-cols-2 gap-x-8">
+                  {selectedClassData.data[0]?.classes?.map((classData, index) => (
+                    <div key={`class-${classData.class}-${index}`} className="mb-6">
+                      <div className="font-medium text-[#2F4F4F] mb-2">Class {classData.class}</div>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-gray-600">Avg. Marks</div>
+                        <div
+                          className={
+                            parseInt(classData.avgMarks) < 20
+                              ? "text-red-600 font-medium"
+                              : "font-medium"
+                          }
+                        >
+                          {classData.avgMarks}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                        <div className="text-gray-600">Pass Rate(%)</div>
+                        <div
+                          className={
+                            parseFloat(classData.successRate) < 30
+                              ? "text-red-600 font-medium"
+                              : "font-medium"
+                          }
+                        >
+                          {classData.successRate}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </Dialog>
 
         {/* Loading Indicator */}
         {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
