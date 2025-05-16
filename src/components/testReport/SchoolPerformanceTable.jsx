@@ -336,6 +336,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   sx={{
                     borderColor: "transparent",
                     color: "#2F4F4F",
+                    fontWeight: 600,
+                    fontFamily: "'Work Sans'",
+                    textTransform: "none",
                     "&:hover": { borderColor: "transparent" },
                   }}
                 >

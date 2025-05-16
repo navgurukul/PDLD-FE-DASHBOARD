@@ -339,6 +339,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
         fontWeight: 600,
         fontSize: "14px",
         fontStyle: "normal",
+        textTransform: "none",
       }}
     >
       {columnMeta.label}

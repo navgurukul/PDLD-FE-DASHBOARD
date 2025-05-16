@@ -193,6 +193,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         fontWeight: 600,
         fontSize: "14px",
         fontStyle: "normal",
+        textTransform: "none",
       }}
     >
       {columnMeta.label}
@@ -300,6 +301,9 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                 sx={{
                   borderColor: "transparent",
                   color: "#2F4F4F",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontFamily: "'Work Sans'",
                   "&:hover": { borderColor: "transparent" },
                 }}
               >
