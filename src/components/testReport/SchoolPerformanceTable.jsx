@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import PropTypes from "prop-types";
+import  { useState, useEffect, useMemo } from "react";
+ 
 import {
   Button,
   TextField,
@@ -12,16 +12,13 @@ import {
   Chip,
   CircularProgress,
 } from "@mui/material";
-import MUIDataTable from "mui-datatables";
-import SearchIcon from "@mui/icons-material/Search";
+import MUIDataTable from "mui-datatables"; 
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import DocScannerIcon from "@mui/icons-material/DocumentScanner";
-import MailOutlineIcon from "@mui/icons-material/MailOutline";
+import DocScannerIcon from "@mui/icons-material/DocumentScanner"; 
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import DoneIcon from "@mui/icons-material/Done";
-import PendingIcon from "@mui/icons-material/Pending";
-import PercentIcon from "@mui/icons-material/Percent";
+import PendingIcon from "@mui/icons-material/Pending"; 
 import { FileText } from "lucide-react";
 import apiInstance from "../../../api";
 import axios from "axios"; // Keep axios as fallback
@@ -340,10 +337,17 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       options: {
         filter: false,
         sort: false,
+        setCellProps: () => ({
+          style: {
+            borderBottom: "1px solid rgba(224, 224, 224, 1)",
+            textAlign: "center",
+            padding: "0px 16px",
+          },
+        }),
         setCellHeaderProps: () => ({
           style: {
-            display: "flex",
-            justifyContent: "center",
+            textAlign: "center",
+            borderBottom: "1px solid rgba(224, 224, 224, 1)",
           },
         }),
         customBodyRenderLite: (dataIndex) => {
@@ -356,8 +360,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                 display: "flex", 
                 justifyContent: "center",
                 alignItems: "center",
-                height: "100%",
-                padding: "8px 0"
+                padding: "10px 0",
               }}
             >
               <Button
@@ -368,13 +371,13 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   color: "#2F4F4F",
                   textTransform: "none",
                   fontSize: "14px",
-                  lineHeight: "1",
-                  padding: "4px 8px",
-                  margin: 0,
-                  minWidth: "auto",
-                  height: "auto",
                   fontWeight: 600,
                   fontFamily: "'Work Sans'",
+                  padding: "6px 12px",
+                  minWidth: "auto",
+                  "&:hover": {
+                    backgroundColor: "rgba(47, 79, 79, 0.08)",
+                  },
                 }}
               >
                 <DocScannerIcon style={{ width: "16px", height: "16px", marginRight: "4px" }} />
@@ -382,60 +385,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               </Button>
             </div>
           );
-          const isSubmitted = rowData.submitted;
-
-          if (isSubmitted) {
-            // Show View Details button for submitted schools
-            return (
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => onSchoolSelect(schoolId)}
-                  sx={{
-                    borderColor: "transparent",
-                    color: "#2F4F4F",
-                    fontWeight: 600,
-                    fontFamily: "'Work Sans'",
-                    textTransform: "none",
-                    "&:hover": { borderColor: "transparent" },
-                  }}
-                >
-                  <DocScannerIcon style={{ width: "20px", height: "20px" }} />
-                  &nbsp; View Details
-                </Button>
-              </div>
-            );
-          } else {
-            // Show Remind button for pending schools
-            return (
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    borderRadius: "8px",
-                    borderColor: "rgba(224, 224, 224, 0.6)", // Faded border color
-                    color: "rgba(47, 79, 79, 0.6)", // Faded text color
-                    opacity: 0.7, // Faded appearance
-                    fontSize: "0.75rem",
-                    padding: "4px 10px",
-                    fontWeight: 600,
-                    fontFamily: "'Work Sans'",
-                    textTransform: "none",
-                    "&:hover": {
-                      borderColor: "#2F4F4F",
-                      backgroundColor: "rgba(47, 79, 79, 0.08)",
-                      opacity: 1, // Full opacity on hover
-                    },
-                  }}
-                >
-                  <DocScannerIcon style={{ width: "20px", height: "20px" }} />
-                  &nbsp; View Details
-                </Button>
-              </div>
-            );
-          }
         },
       },
     },
@@ -468,8 +417,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     }),
     setRowProps: () => ({
       style: {
-        borderBottom: "1px solid rgba(224, 224, 224, 1)"
-      }
+        borderBottom: "1px solid rgba(224, 224, 224, 1)",
+      },
     }),
   };
 
@@ -683,14 +632,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <FileText 
-                size={64} 
-                className="text-gray-300 mb-4" 
-                strokeWidth={1}
-              />
-              <h3 className="text-lg font-medium text-gray-700 mb-1">
-                No Schools Data Available
-              </h3>
+              <FileText size={64} className="text-gray-300 mb-4" strokeWidth={1} />
+              <h3 className="text-lg font-medium text-gray-700 mb-1">No Schools Data Available</h3>
               <p className="text-gray-500 mb-4">
                 No school submissions have been recorded for this test yet.
               </p>
