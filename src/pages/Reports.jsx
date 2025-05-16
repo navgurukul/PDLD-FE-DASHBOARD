@@ -587,12 +587,12 @@ const Reports = () => {
             <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">School Performance Report</h5>
           </div>
 
-          <div className="bg-gray-300 py-3 px-3 rounded">
+          <div className="bg-gray-300 rounded">
             <Typography
               variant="subtitle1"
               sx={{
-                bgcolor: theme.palette.secondary.light,
-                color: theme.palette.primary,
+                // bgcolor: theme.palette.secondary.light,
+                // color: theme.palette.primary,
                 padding: "4px 16px",
                 borderRadius: "8px",
                 height: "48px",

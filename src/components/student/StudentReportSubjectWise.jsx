@@ -186,6 +186,7 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
         fontWeight: 600,
         fontSize: "14px",
         fontStyle: "normal",
+        testtranform: "none",
       }}
     >
       {columnMeta.label}

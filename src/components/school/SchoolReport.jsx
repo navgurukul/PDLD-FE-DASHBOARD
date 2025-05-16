@@ -219,6 +219,7 @@ export default function SchoolReport() {
     fontWeight: 600,
     lineHeight: "170%",
     color: "#2F4F4F",
+    textTransform: "none",
   };
 
   // Base columns (always present)
@@ -231,14 +232,14 @@ export default function SchoolReport() {
         customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
       },
     },
-    {
-      name: "No. Of Students",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
-      },
-    },
+    // {
+    //   name: "No. Of Students ss",
+    //   options: {
+    //     filter: false,
+    //     sort: true,
+    //     customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
+    //   },
+    // },
     {
       name: "Max Marks",
       options: {

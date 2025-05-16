@@ -16,7 +16,7 @@ const CreateTest = () => {
           <p className="text-center text-sm text-gray-600 mb-3">
             No tests yet? Create your first one now!
           </p>
-          <button
+          <button 
             onClick={handleCreateTest}
             className="flex items-center justify-center h-12 px-6 bg-[#FFD700] text-black font-medium rounded-lg shadow-md hover:bg-yellow-500 transition"
           >

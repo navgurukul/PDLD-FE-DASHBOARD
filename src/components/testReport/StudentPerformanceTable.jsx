@@ -15,6 +15,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import PersonIcon from "@mui/icons-material/Person";
 import ButtonCustom from "../ButtonCustom";
 import { Pagination } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 // Create MUI theme to match TestListTable
 const theme = createTheme({
@@ -114,6 +115,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
     key: null,
     direction: "asc",
   });
+  const navigate = useNavigate();
 
   // Filter students based on search query and status
   const filteredStudents = useMemo(() => {
@@ -191,6 +193,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         fontWeight: 600,
         fontSize: "14px",
         fontStyle: "normal",
+        textTransform: "none",
       }}
     >
       {columnMeta.label}
@@ -274,38 +277,41 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         },
       },
     },
-    {
-      name: "id",
-      label: "Actions",
-      options: {
-        filter: false,
-        sort: false,
-        setCellHeaderProps: () => ({
-          style: { display: "flex", justifyContent: "center" },
-        }),
-        customBodyRenderLite: (dataIndex) => {
-          const studentId = paginatedTableData[dataIndex].id;
+    // {
+    //   name: "id",
+    //   label: "Actions",
+    //   options: {
+    //     filter: false,
+    //     sort: false,
+    //     setCellHeaderProps: () => ({
+    //       style: { display: "flex", justifyContent: "center" },
+    //     }),
+    //     customBodyRenderLite: (dataIndex) => {
+    //       const studentId = paginatedTableData[dataIndex].id;
 
-          return (
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => onViewProfile && onViewProfile(studentId)}
-                sx={{
-                  borderColor: "transparent",
-                  color: "#2F4F4F",
-                  "&:hover": { borderColor: "transparent" },
-                }}
-              >
-                <PersonIcon style={{ width: "20px", height: "20px" }} />
-                &nbsp; View Profile
-              </Button>
-            </div>
-          );
-        },
-      },
-    },
+    //       return (
+    //         <div style={{ display: "flex", justifyContent: "center" }}>
+    //           <Button
+    //             variant="outlined"
+    //             size="small"
+    //             onClick={() => {
+    //               // Redirect using the extracted schoolId
+    //               // navigate(`/schools/schoolDetail/${schoolId}/student-profile/${studentId}`);
+    //             }}
+    //             sx={{
+    //               borderColor: "transparent",
+    //               color: "#2F4F4F",
+    //               "&:hover": { borderColor: "transparent" },
+    //             }}
+    //           >
+    //             <PersonIcon style={{ width: "20px", height: "20px" }} />
+    //             &nbsp; View Profile
+    //           </Button>
+    //         </div>
+    //       );
+    //     },
+    //   },
+    // },
   ];
 
   columns.forEach((column) => {
@@ -468,6 +474,7 @@ StudentPerformanceTable.propTypes = {
   classAvg: PropTypes.number.isRequired,
   onViewProfile: PropTypes.func,
   onExport: PropTypes.func,
+  schoolId: PropTypes.string.isRequired, // Add schoolId prop type
 };
 
 StudentPerformanceTable.defaultProps = {

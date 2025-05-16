@@ -206,7 +206,8 @@ export default function TestListTable() {
         url += `&page=1`;
       }
       if (selectedSubject) {
-        url += `&subject=${selectedSubject}`;
+        // Convert subject to lowercase before adding to URL
+        url += `&subject=${selectedSubject.toLowerCase()}`;
         url += `&page=1`;
       }
       if (selectedStatus) {
@@ -246,7 +247,7 @@ export default function TestListTable() {
   const tableData = filteredTests?.map((test) => ({
     id: test.id,
     testName: test.testName,
-     testTag: test.testTag || "N/A", 
+    testTag: test.testTag || "N/A",
     subject: test.subject || "N/A",
     class: `Class ${test.testClass || "N/A"}`,
     dateOfTest: new Date(test.testDate).toLocaleDateString("en-GB", {
@@ -260,21 +261,21 @@ export default function TestListTable() {
   }));
 
   const defaultCustomHeadLabelRender = (columnMeta) => (
-  <div
-    style={{
-      display: "flex",
-      justifyContent: columnMeta.name === "actions" ? "center" : "flex-start",
-      fontWeight: 600,
-      fontSize: "14px",
-      color: "#2F4F4F",
-      textTransform: "none",
-      fontFamily: "'Work Sans'",
-      fontStyle: "normal",
-    }}
-  >
-    {columnMeta.label}
-  </div>
-);
+    <div
+      style={{
+        display: "flex",
+        justifyContent: columnMeta.name === "actions" ? "center" : "flex-start",
+        fontWeight: 600,
+        fontSize: "14px",
+        color: "#2F4F4F",
+        textTransform: "none",
+        fontFamily: "'Work Sans'",
+        fontStyle: "normal",
+      }}
+    >
+      {columnMeta.label}
+    </div>
+  );
 
   // In the customBodyRender function of the actions column
   const handleEditClick = (event, testId) => {
@@ -285,12 +286,12 @@ export default function TestListTable() {
 
     // Navigate to test creation form with the test data
     navigate(`/editTest/${testId}`, {
-  state: {
-    isEditMode: true,
-    testData: testToEdit,
-  },
-});
-  }
+      state: {
+        isEditMode: true,
+        testData: testToEdit,
+      },
+    });
+  };
 
   // MUI DataTable columns
   const columns = [
@@ -307,27 +308,25 @@ export default function TestListTable() {
         sort: true,
       },
     },
-     {
-    name: "testTag", // New column for Test Tag
-    label: "Test Tag",
-    options: {
-      filter: false,
-      sort: true,
-      customBodyRender: (value) => {
-        return (
-          <span
-            className={`px-2 py-1 text-xs font-medium rounded-full ${
-              value === "Important"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-gray-100 text-gray-800"
-            }`}
-          >
-            {value || "N/A"} {/* Display "N/A" if no value is provided */}
-          </span>
-        );
+    {
+      name: "testTag", // New column for Test Tag
+      label: "Test Tag",
+      options: {
+        filter: false,
+        sort: true,
+        customBodyRender: (value) => {
+          return (
+            <span
+              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                value === "Important" ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {value || "N/A"} {/* Display "N/A" if no value is provided */}
+            </span>
+          );
+        },
       },
     },
-  },
     {
       name: "subject",
       label: "Subject",
@@ -397,7 +396,7 @@ export default function TestListTable() {
           style: {
             width: "250px",
             maxWidth: "250px",
-            textAlign: "center", 
+            textAlign: "center",
           },
         }),
         customBodyRender: (value, tableMeta) => {
@@ -429,10 +428,10 @@ export default function TestListTable() {
                 size="small"
                 sx={{
                   borderColor: "transparent",
-                   textTransform: "none",    
+                  textTransform: "none",
                   color: "#2F4F4F",
                   fontWeight: 600,
-                   fontFamily: "'Work Sans'",
+                  fontFamily: "'Work Sans'",
                   "&:hover": { borderColor: "transparent" },
                 }}
                 onClick={(event) => {
@@ -444,7 +443,7 @@ export default function TestListTable() {
                   });
                 }}
               >
-                <img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px"}} />
+                <img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
                 &nbsp; View Report
               </Button>
             </div>
@@ -735,9 +734,3 @@ export default function TestListTable() {
     </ThemeProvider>
   );
 }
-
-
-
-
-
-
