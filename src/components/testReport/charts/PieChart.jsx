@@ -45,15 +45,41 @@ const PieChart = ({
 		return `${x}% ${y}%`;
 	};
 
-	const angle = (percentage / 100) * 360;
-	const clipPath1 =
-		angle <= 180
-			? `polygon(50% 50%, 50% 0%, ${getCoordinates(angle)}, 50% 50%)`
-			: `polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ${getCoordinates(angle)}, 50% 50%)`;
+	// Generate points for the clip path
+	const generateClipPath = (startAngle, endAngle) => {
+		// Start from the center
+		let path = "50% 50%, ";
+		
+		// Add the first point (start angle)
+		path += getCoordinates(startAngle) + ", ";
+		
+		// Add intermediate points for a smooth arc
+		const step = 5; // Smaller step for smoother curve
+		for (let angle = startAngle + step; angle < endAngle; angle += step) {
+			path += getCoordinates(angle) + ", ";
+		}
+		
+		// Add the last point (end angle)
+		path += getCoordinates(endAngle) + ", ";
+		
+		// Close the path back to center
+		path += "50% 50%";
+		
+		return `polygon(${path})`;
+	};
 
-	const clipPath2 =
-		angle > 180
-			? `polygon(50% 50%, 100% 0%, 100% 100%, ${getCoordinates(angle)}, 50% 50%)`
+	const angle = (percentage / 100) * 360;
+	
+	// For percentages <= 50%, we need one segment from 0° to the calculated angle
+	// For percentages > 50%, we need one segment from 0° to 180° and another from 180° to the calculated angle
+	const clipPath1 = 
+		angle <= 180 
+			? generateClipPath(0, angle)
+			: generateClipPath(0, 180);
+			
+	const clipPath2 = 
+		angle > 180 
+			? generateClipPath(180, angle) 
 			: "";
 
 	return (
@@ -80,7 +106,7 @@ const PieChart = ({
 				}}
 			></div>
 
-			{/* First Segment */}
+			{/* First Segment (0° to angle or 0° to 180°) */}
 			<div
 				className="absolute inset-0 rounded-full overflow-hidden transition-all duration-700"
 				style={{ clipPath: clipPath1 }}
@@ -91,7 +117,7 @@ const PieChart = ({
 				></div>
 			</div>
 
-			{/* Second Segment (only for > 180) */}
+			{/* Second Segment (180° to angle, only if > 50%) */}
 			{angle > 180 && (
 				<div
 					className="absolute inset-0 rounded-full overflow-hidden transition-all duration-700"

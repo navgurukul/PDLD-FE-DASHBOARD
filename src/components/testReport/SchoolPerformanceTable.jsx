@@ -22,6 +22,7 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import DoneIcon from "@mui/icons-material/Done";
 import PendingIcon from "@mui/icons-material/Pending";
 import PercentIcon from "@mui/icons-material/Percent";
+import { FileText } from "lucide-react";
 import apiInstance from "../../../api";
 import axios from "axios"; // Keep axios as fallback
 import { useParams, useLocation, Navigate } from "react-router-dom";
@@ -149,8 +150,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           udiseCode: school.udiseCode,
           passRate: school.successRate, // Map successRate to passRate
           submitted: true, // All schools in the response are submitted
-          studentsTested: school.totalStudents, // Use totalStudents from the API
-          avgScore: "-", // Not provided in API
+          totalStudents: school.totalStudents,
+          presentStudents: school.presentStudents,
+          absentStudents: school.absentStudents,
+          averageScore: school.averageScore,
         }));
 
         setSchools(formattedSchools);
@@ -216,9 +219,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     id: school.id,
     name: school.name || school.schoolName || "",
     status: school.submitted ? "Submitted" : "Pending",
-    studentsTested: school.studentsTested || "-",
-    passRate: school.passRate ? `${school.passRate}%` : "-",
-    avgScore: school.avgScore || "-",
+    totalStudents: school.studentsTested || school.totalStudents || "-",
+    presentStudents: school.presentStudents || "-",
+    absentStudents: school.absentStudents || "-",
+    averageScore: school.averageScore || "-",
+    passRate: school.passRate || school.successRate || "-",
     submitted: school.submitted,
   }));
 
@@ -234,7 +239,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         color: "#2F4F4F",
         fontFamily: "'Work Sans'",
         fontWeight: 600,
-        fontSize: "14px",
+        fontSize: "12px",
         fontStyle: "normal",
       }}
     >
@@ -281,8 +286,35 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       },
     },
     {
-      name: "studentsTested",
-      label: "Students Tested",
+      name: "totalStudents",
+      label: "No. Of Students",
+      options: {
+        filter: false,
+        sort: true,
+        sortThirdClickReset: true,
+      },
+    },
+    {
+      name: "presentStudents",
+      label: "Students Present",
+      options: {
+        filter: false,
+        sort: true,
+        sortThirdClickReset: true,
+      },
+    },
+    {
+      name: "absentStudents",
+      label: "Student Absent",
+      options: {
+        filter: false,
+        sort: true,
+        sortThirdClickReset: true,
+      },
+    },
+    {
+      name: "averageScore",
+      label: "Average Score",
       options: {
         filter: false,
         sort: true,
@@ -291,29 +323,23 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     },
     {
       name: "passRate",
-      label: "Success Rate",
+      label: "Pass Percentage",
       options: {
         filter: false,
         sort: true,
         sortThirdClickReset: true,
+        customBodyRenderLite: (dataIndex) => {
+          const passRate = tableData[dataIndex].passRate;
+          return passRate !== "-" ? `${passRate}%` : "-";
+        },
       },
     },
-    // {
-    // 	name: "avgScore",
-    // 	label: "AVG SCORE",
-    // 	options: {
-    // 		filter: false,
-    // 		sort: true,
-    // 		sortThirdClickReset: true,
-    // 	},
-    // },
     {
       name: "submitted",
-      label: "Action",
+      label: "Actions",
       options: {
         filter: false,
         sort: false,
-
         setCellHeaderProps: () => ({
           style: {
             display: "flex",
@@ -323,55 +349,37 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         customBodyRenderLite: (dataIndex) => {
           const rowData = tableData[dataIndex];
           const schoolId = rowData.id;
-          const isSubmitted = rowData.submitted;
-
-          if (isSubmitted) {
-            // Show View Details button for submitted schools
-            return (
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => onSchoolSelect(schoolId)}
-                  sx={{
-                    borderColor: "transparent",
-                    color: "#2F4F4F",
-                    "&:hover": { borderColor: "transparent" },
-                  }}
-                >
-                  <DocScannerIcon style={{ width: "20px", height: "20px" }} />
-                  &nbsp; View Details
-                </Button>
-              </div>
-            );
-          } else {
-            // Show Remind button for pending schools
-            return (
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    borderRadius: "8px",
-                    borderColor: "rgba(224, 224, 224, 0.6)", // Faded border color
-                    color: "rgba(47, 79, 79, 0.6)", // Faded text color
-                    opacity: 0.7, // Faded appearance
-                    textTransform: "none",
-                    fontSize: "0.75rem",
-                    padding: "4px 10px",
-                    "&:hover": {
-                      borderColor: "#2F4F4F",
-                      backgroundColor: "rgba(47, 79, 79, 0.08)",
-                      opacity: 1, // Full opacity on hover
-                    },
-                  }}
-                >
-                  <DocScannerIcon style={{ width: "20px", height: "20px" }} />
-                  &nbsp; View Details
-                </Button>
-              </div>
-            );
-          }
+          
+          return (
+            <div
+              style={{ 
+                display: "flex", 
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100%",
+                padding: "8px 0"
+              }}
+            >
+              <Button
+                variant="text"
+                size="small"
+                onClick={() => onSchoolSelect(schoolId)}
+                sx={{
+                  color: "#2F4F4F",
+                  textTransform: "none",
+                  fontSize: "14px",
+                  lineHeight: "1",
+                  padding: "4px 8px",
+                  margin: 0,
+                  minWidth: "auto",
+                  height: "auto"
+                }}
+              >
+                <DocScannerIcon style={{ width: "16px", height: "16px", marginRight: "4px" }} />
+                View Details
+              </Button>
+            </div>
+          );
         },
       },
     },
@@ -394,6 +402,19 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     rowsPerPage: 10,
     rowsPerPageOptions: [10, 20, 30],
     pagination: false,
+    elevation: 0,
+    tableBodyMaxHeight: "calc(100vh - 300px)",
+    fixedHeader: true,
+    setTableProps: () => ({
+      style: {
+        borderCollapse: 'collapse',
+      },
+    }),
+    setRowProps: () => ({
+      style: {
+        borderBottom: "1px solid rgba(224, 224, 224, 1)"
+      }
+    }),
   };
 
   // Calculate pending schools
@@ -606,20 +627,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-16 w-16 text-gray-300 mb-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
+              <FileText 
+                size={64} 
+                className="text-gray-300 mb-4" 
+                strokeWidth={1}
+              />
               <h3 className="text-lg font-medium text-gray-700 mb-1">
                 No Schools Data Available
               </h3>

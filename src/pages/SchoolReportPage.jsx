@@ -226,7 +226,7 @@ const SchoolReportPage = () => {
 			</div>
 
 			{/* Line Chart - Full width */}
-			<div className="bg-white p-4 rounded shadow mb-6">
+			<div className="bg-white p-4 rounded shadow mb-20">
 				<h3 className="text-lg font-semibold mb-1 text-[#2F4F4F]">Student Score Analysis</h3>
 				<div className="h-80 flex items-center justify-center">
 					<LineChart
