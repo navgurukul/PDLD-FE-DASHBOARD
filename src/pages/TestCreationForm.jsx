@@ -499,7 +499,10 @@ const TestCreationForm = () => {
                 .filter((row) => row.subject)
                 .map((row) => {
                   const subjectData = {
-                    subject: row.subject,
+                    subject: row.subject
+                      .split("_")
+                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join("_"),
                     testDate: row.testDate,
                     deadline: row.submissionDeadline,
                   };
