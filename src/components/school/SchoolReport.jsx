@@ -219,6 +219,7 @@ export default function SchoolReport() {
     fontWeight: 600,
     lineHeight: "170%",
     color: "#2F4F4F",
+    textTransform: "none",
   };
 
   // Base columns (always present)

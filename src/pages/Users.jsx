@@ -366,6 +366,7 @@ export default function Users() {
         fontWeight: 600,
         fontSize: "14px",
         fontStyle: "normal",
+        textTransform: "none",
       }}
     >
       {columnMeta.label}

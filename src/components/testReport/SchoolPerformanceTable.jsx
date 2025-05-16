@@ -372,7 +372,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   padding: "4px 8px",
                   margin: 0,
                   minWidth: "auto",
-                  height: "auto"
+                  height: "auto",
+                  fontWeight: 600,
+                  fontFamily: "'Work Sans'",
                 }}
               >
                 <DocScannerIcon style={{ width: "16px", height: "16px", marginRight: "4px" }} />
@@ -380,6 +382,60 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               </Button>
             </div>
           );
+          const isSubmitted = rowData.submitted;
+
+          if (isSubmitted) {
+            // Show View Details button for submitted schools
+            return (
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => onSchoolSelect(schoolId)}
+                  sx={{
+                    borderColor: "transparent",
+                    color: "#2F4F4F",
+                    fontWeight: 600,
+                    fontFamily: "'Work Sans'",
+                    textTransform: "none",
+                    "&:hover": { borderColor: "transparent" },
+                  }}
+                >
+                  <DocScannerIcon style={{ width: "20px", height: "20px" }} />
+                  &nbsp; View Details
+                </Button>
+              </div>
+            );
+          } else {
+            // Show Remind button for pending schools
+            return (
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    borderRadius: "8px",
+                    borderColor: "rgba(224, 224, 224, 0.6)", // Faded border color
+                    color: "rgba(47, 79, 79, 0.6)", // Faded text color
+                    opacity: 0.7, // Faded appearance
+                    fontSize: "0.75rem",
+                    padding: "4px 10px",
+                    fontWeight: 600,
+                    fontFamily: "'Work Sans'",
+                    textTransform: "none",
+                    "&:hover": {
+                      borderColor: "#2F4F4F",
+                      backgroundColor: "rgba(47, 79, 79, 0.08)",
+                      opacity: 1, // Full opacity on hover
+                    },
+                  }}
+                >
+                  <DocScannerIcon style={{ width: "20px", height: "20px" }} />
+                  &nbsp; View Details
+                </Button>
+              </div>
+            );
+          }
         },
       },
     },
@@ -465,7 +521,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
             <div>
               <div>
-                <h5 className="text-[#2F4F4F]">{testNameVal} - Submission</h5>
+                <h5 className="text-[#2F4F4F]">{testNameVal} - Submission </h5>
               </div>
             </div>
 
