@@ -1,191 +1,196 @@
 import React, { useState, useEffect } from "react";
 import {
-	LineChart as RechartsLineChart,
-	Line,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-	Tooltip,
-	ReferenceLine,
-	Legend,
-	ResponsiveContainer,
-	Area,
-	AreaChart,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+  ResponsiveContainer,
 } from "recharts";
 
 const LineChart = ({ data, averageScore, primaryColor }) => {
-	const [stats, setStats] = useState({
-		mean: averageScore,
-		median: 0,
-		mode: [],
-		aboveAvg: 0,
-		belowAvg: 0,
-		kdeData: [],
-	});
+  const [stats, setStats] = useState({
+    mean: 0,
+    aboveAvg: 0,
+    belowAvg: 0,
+    kdeData: [],
+  });
 
-	useEffect(() => {
-		if (!data || data.length === 0) return;
+  useEffect(() => {
+    if (!data || data.length === 0) return;
 
-		// Calculate statistics
-		const scores = data.map((student) => student.score).sort((a, b) => a - b);
+    // Filter out absent students
+    const validStudents = data.filter(
+      (student) => !student.isAbsent && student.score !== undefined
+    );
+    
+    if (validStudents.length === 0) return;
 
-		// Median
-		const mid = Math.floor(scores.length / 2);
-		const median = scores.length % 2 === 0 ? (scores[mid - 1] + scores[mid]) / 2 : scores[mid];
+    // Use the provided average or calculate it
+    const mean = averageScore || 
+      Math.round(validStudents.reduce((sum, s) => sum + s.score, 0) / validStudents.length);
+    
+    // Count students above and below average
+    const studentsAbove = validStudents.filter((s) => s.score >= mean);
+    const studentsBelow = validStudents.filter((s) => s.score < mean);
+    
+    // Get all scores for distribution
+    const scores = validStudents.map((s) => s.score);
+    
+    // Simple distribution curve data
+    const distributionData = generateDistributionData(scores, mean);
 
-		// Mode
-		const scoreCount = {};
-		let maxCount = 0;
-		let mode = [];
+    setStats({
+      mean,
+      aboveAvg: studentsAbove.length,
+      belowAvg: studentsBelow.length,
+      kdeData: distributionData,
+    });
+  }, [data, averageScore]);
 
-		scores.forEach((score) => {
-			scoreCount[score] = (scoreCount[score] || 0) + 1;
-			if (scoreCount[score] > maxCount) {
-				maxCount = scoreCount[score];
-				mode = [score];
-			} else if (scoreCount[score] === maxCount) {
-				mode.push(score);
-			}
-		});
+  // Generate a smooth distribution curve
+  const generateDistributionData = (scores, mean) => {
+    const min = 0;
+    const max = 100;
+    const points = 50;
+    const step = (max - min) / points;
+    const bandwidth = 8; // Controls smoothness
+    
+    const result = [];
+    for (let x = min; x <= max; x += step) {
+      let density = 0;
+      for (const score of scores) {
+        const z = (x - score) / bandwidth;
+        density += Math.exp(-0.5 * z * z);
+      }
+      
+      // Scale for visibility
+      density = density * 100 / scores.length;
+      
+      result.push({
+        score: x,
+        density: density,
+      });
+    }
+    
+    return result;
+  };
 
-		// Generate kernel density estimate for a smooth curve
-		const bandwidth = 5;
-		// Ensure we show the full range from 0-100 for better visualization
-		const min = 0;
-		const max = 100;
-		const points = 100;
-		const step = (max - min) / points;
+  // Custom tooltip that shows how many students around this score
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const score = Math.round(payload[0].payload.score);
+      // Find students within ±5 points of this score
+      const range = 5;
+      const studentsInRange = data
+        .filter(s => !s.isAbsent && s.score !== undefined)
+        .filter(s => Math.abs(s.score - score) <= range)
+        .length;
+      
+      return (
+        <div className="bg-white p-2 border border-gray-300 rounded shadow-sm">
+          <p className="text-sm font-bold">{`Score: ${score}`}</p>
+          <p className="text-xs">{`${studentsInRange} students around this score`}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
-		const kdeData = [];
-		for (let x = min; x <= max; x += step) {
-			let sum = 0;
-			for (let i = 0; i < scores.length; i++) {
-				// Gaussian kernel
-				const z = (x - scores[i]) / bandwidth;
-				sum += Math.exp(-0.5 * z * z) / (bandwidth * Math.sqrt(2 * Math.PI));
-			}
-			sum /= scores.length;
-			kdeData.push({ score: x, density: sum });
-		}
+  return (
+    <div className="w-full h-full">
+      {/* Average and Count Header */}
+      <div className="mb-2 text-center">
+        <div className="font-medium text-lg">
+          Class Average: <span className="font-bold">{stats.mean}</span>
+        </div>
+        <div className="flex justify-center mt-1 space-x-8">
+          <div className="text-center">
+            <span className="inline-block px-2 py-1 bg-red-100 text-red-800 rounded font-medium">
+              {stats.belowAvg} students below average
+            </span>
+          </div>
+          <div className="text-center">
+            <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded font-medium">
+              {stats.aboveAvg} students above average
+            </span>
+          </div>
+        </div>
+      </div>
 
-		// Calculate students above and below mean
-		const aboveAvg = data.filter((s) => s.score >= averageScore).length;
-		const belowAvg = data.filter((s) => s.score < averageScore).length;
-
-		setStats({
-			mean: averageScore,
-			median,
-			mode,
-			aboveAvg,
-			belowAvg,
-			kdeData,
-		});
-	}, [data, averageScore]);
-
-	const CustomTooltip = ({ active, payload }) => {
-		if (active && payload && payload.length) {
-			return (
-				<div className="bg-white p-2 border border-gray-300 rounded shadow-sm">
-					<p className="text-sm font-semibold">{`Score: ${parseFloat(payload[0].payload.score).toFixed(
-						1
-					)}`}</p>
-				</div>
-			);
-		}
-		return null;
-	};
-
-	return (
-		<div className="w-full h-full">
-			<ResponsiveContainer width="100%" height="90%">
-				<AreaChart data={stats.kdeData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-					<CartesianGrid strokeDasharray="3 3" />
-					<XAxis
-						dataKey="score"
-						domain={[0, 100]}
-						type="number"
-						tickCount={6}
-						ticks={[15, 30, 45, 60, 75, 100]}
-						label={{ value: "Score", position: "insideBottom", offset: -5 }}
-					/>
-					<YAxis hide />
-					<Tooltip content={<CustomTooltip />} />
-					<defs>
-						<linearGradient id="colorDensity" x1="0" y1="0" x2="0" y2="1">
-							<stop offset="5%" stopColor={primaryColor} stopOpacity={0.8} />
-							<stop offset="95%" stopColor={primaryColor} stopOpacity={0.1} />
-						</linearGradient>
-					</defs>
-					<Area
-						type="monotone"
-						dataKey="density"
-						stroke={primaryColor}
-						fillOpacity={1}
-						fill="url(#colorDensity)"
-						name="Score Distribution"
-					/>
-
-					{/* Mean reference line */}
-					<ReferenceLine
-						x={stats.mean}
-						stroke="red"
-						strokeWidth={2}
-						label={{
-							value: `Average: ${stats.mean}`,
-							position: "top",
-							fill: "red",
-							fontSize: 12,
-							offset: 8,
-						}}
-					/>
-
-					{/* Median reference line */}
-					{/* <ReferenceLine
-						x={stats.median}
-						stroke="blue"
-						strokeWidth={2}
-						strokeDasharray="5 5"
-						label={{
-							value: `Median: ${stats.median}`,
-							position: "top",
-							fill: "blue",
-							fontSize: 12,
-						}}
-					/> */}
-
-					{/* Mode reference line(s) - only show if we have a mode */}
-					{/* {stats.mode.length > 0 && (
-						<ReferenceLine
-							x={stats.mode[0]}
-							stroke="green"
-							strokeWidth={2}
-							strokeDasharray="3 3"
-							label={{
-								value: `Mode: ${stats.mode.join(", ")}`,
-								position: "bottom",
-								fill: "green",
-								fontSize: 12,
-								offset: 20,
-							}}
-						/>
-					)} */}
-
-					<Legend />
-				</AreaChart>
-			</ResponsiveContainer>
-
-			{/* Stats display */}
-			<div className="flex justify-between text-sm mt-2 px-4">
-				<div className="text-red-500">Below Average: {stats.belowAvg} students</div>
-				<div className="text-green-500">Above Average: {stats.aboveAvg} students</div>
-			</div>
-
-			{/* Hidden element to help debug - you can remove this after confirming it works */}
-			<div className="hidden">
-				Mean: {stats.mean}, Median: {stats.median}, Mode: {stats.mode.join(", ")}
-			</div>
-		</div>
-	);
+      {/* Simple Distribution Chart */}
+      <ResponsiveContainer width="100%" height={300}>
+        <AreaChart
+          data={stats.kdeData}
+          margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+          <XAxis 
+            dataKey="score"
+            domain={[0, 100]}
+            ticks={[0, 20, 40, 60, 80, 100]}
+            label={{ value: "Score", position: "insideBottom", offset: -10 }}
+          />
+          <YAxis hide />
+          <Tooltip content={<CustomTooltip />} />
+          <defs>
+            <linearGradient id="colorDensity" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={primaryColor} stopOpacity={0.8} />
+              <stop offset="95%" stopColor={primaryColor} stopOpacity={0.1} />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey="density"
+            stroke={primaryColor}
+            fill="url(#colorDensity)"
+            strokeWidth={2}
+          />
+          
+          {/* Average score line */}
+          <ReferenceLine
+            x={stats.mean}
+            stroke="#FF4444"
+            strokeWidth={2}
+            label={{
+              position: "top",
+              value: `Average: ${stats.mean}`,
+              fill: "#FF4444",
+              fontSize: 12,
+              fontWeight: "bold"
+            }}
+          />
+          
+          {/* Pass threshold line */}
+          <ReferenceLine
+            x={33}
+            stroke="#FF9800"
+            strokeDasharray="3 3"
+            label={{
+              position: "insideBottomRight",
+              value: "Pass: 33",
+              fill: "#FF9800",
+              fontSize: 12
+            }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+      
+      {/* Bottom Stats */}
+      <div className="flex justify-center space-x-4 text-sm mt-4">
+        <div className="px-3 py-2 bg-red-50 rounded-full text-red-800">
+          <span className="font-bold">{stats.belowAvg}</span> below average 
+          ({Math.round((stats.belowAvg / (stats.aboveAvg + stats.belowAvg) * 100))}%)
+        </div>
+        <div className="px-3 py-2 bg-green-50 rounded-full text-green-800">
+          <span className="font-bold">{stats.aboveAvg}</span> above average
+          ({Math.round((stats.aboveAvg / (stats.aboveAvg + stats.belowAvg) * 100))}%)
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default LineChart;
