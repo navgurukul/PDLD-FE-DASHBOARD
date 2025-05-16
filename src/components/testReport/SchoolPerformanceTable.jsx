@@ -372,7 +372,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   padding: "4px 8px",
                   margin: 0,
                   minWidth: "auto",
-                  height: "auto"
+                  height: "auto",
+                  fontWeight: 600,
+                  fontFamily: "'Work Sans'",
                 }}
               >
                 <DocScannerIcon style={{ width: "16px", height: "16px", marginRight: "4px" }} />
@@ -519,7 +521,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
             <div>
               <div>
-                <h5 className="text-[#2F4F4F]">{testNameVal} - Submission fghj</h5>
+                <h5 className="text-[#2F4F4F]">{testNameVal} - Submission </h5>
               </div>
             </div>
 

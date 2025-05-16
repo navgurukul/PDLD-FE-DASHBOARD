@@ -303,7 +303,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                   color: "#2F4F4F",
                   textTransform: "none",
                   fontWeight: 600,
-                  fontFamily: "'Work Sans'",
+                  fontFamily: "Work Sans",
                   "&:hover": { borderColor: "transparent" },
                 }}
               >
