@@ -17,12 +17,7 @@ import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
 import { toast, ToastContainer } from "react-toastify";
 import ButtonCustom from "../components/ButtonCustom";
-import {
-  addSymbolBtn,
-  EditPencilIcon,
-  trash,
-  DocScanner,
-} from "../utils/imagePath";
+import { addSymbolBtn, EditPencilIcon, trash, DocScanner } from "../utils/imagePath";
 import apiInstance from "../../api";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AssessmentIcon from "@mui/icons-material/Assessment";
@@ -265,21 +260,14 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
     setIsDeleting(true);
     try {
-      const response = await apiInstance.delete(
-        `/student/delete/${studentToDelete.id}`
-      );
+      const response = await apiInstance.delete(`/student/delete/${studentToDelete.id}`);
 
       if (response.data && response.data.success) {
-        toast.success(
-          `Student ${studentToDelete.fullName} has been deleted successfully!`
-        );
+        toast.success(`Student ${studentToDelete.fullName} has been deleted successfully!`);
         // Refresh data instead of just updating local state
         fetchStudents();
       } else {
-        toast.error(
-          response.data?.message ||
-            "Failed to delete student. Please try again."
-        );
+        toast.error(response.data?.message || "Failed to delete student. Please try again.");
       }
     } catch (error) {
       console.error("Error deleting student:", error);
@@ -294,8 +282,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
   const filteredStudents = students.filter(
     (student) =>
       student?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (student?.aparId &&
-        student.aparId.toLowerCase().includes(searchQuery.toLowerCase()))
+      (student?.aparId && student.aparId.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const formatDate = (dateString) => {
@@ -319,16 +306,18 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     }
   };
 
+  // Fix the order in tableData mapping - swap aparId and aadharId
   const tableData = filteredStudents.map((student) => [
     student.fullName || "N/A",
     student.gender || "N/A",
     `Class ${student.class}` || "N/A",
-    formatDate(student.dob), // Format the date here
+    formatDate(student.dob),
     student.fatherName || "N/A",
     student.motherName || "N/A",
-    student.aparId || "N/A",
+    student.aadharId || "N/A", // Aadhar ID first (index 6)
+    student.aparId || "N/A", // APAR ID second (index 7)
     student.id,
-    student,
+    student, // Full student object now at index 9
   ]);
 
   const defaultCustomHeadLabelRender = (columnMeta) => (
@@ -354,8 +343,8 @@ const StudentDetails = ({ schoolId, schoolName }) => {
         sort: true,
         customBodyRenderLite: (dataIndex) => {
           const studentName = tableData[dataIndex][0]; // Name is at index 0
-          const studentId = tableData[dataIndex][7]; // ID is at index 7
-          const student = tableData[dataIndex][8]; // Full student object at index 8
+          const studentId = tableData[dataIndex][8]; // Update index (was 7)
+          const student = tableData[dataIndex][9];
 
           return (
             <div
@@ -427,6 +416,13 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       },
     },
     {
+      name: "Aadhar ID",
+      options: {
+        filter: false,
+        sort: true,
+      },
+    },
+    {
       name: "APAR ID",
       options: {
         filter: false,
@@ -441,6 +437,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
         }),
       },
     },
+
     {
       name: "ID",
       options: {
@@ -473,9 +470,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           const student = tableData[dataIndex][8]; // Get full student object
 
           return (
-            <div
-              style={{ display: "flex", justifyContent: "center", gap: "8px" }}
-            >
+            <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
               <Button
                 variant="text"
                 size="small"
@@ -488,11 +483,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                 onClick={() => handleEditStudent(studentId, student)}
                 title="Edit Student"
               >
-                <img
-                  src={EditPencilIcon}
-                  alt="Edit"
-                  style={{ width: "20px", height: "20px" }}
-                />
+                <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
               </Button>
 
               <Button
@@ -507,11 +498,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                 onClick={() => openDeleteModal(student)}
                 title="Delete Student"
               >
-                <img
-                  src={trash}
-                  alt="Delete"
-                  style={{ width: "20px", height: "20px" }}
-                />
+                <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
               </Button>
 
               {/* <Button
@@ -589,9 +576,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       <Box>
         <div className="flex justify-between items-center mb-2">
           <Typography variant="h6" className="text-xl font-bold">
-            <span>
-              Total Student Count ({schoolInfo.totalStudentsInSchool})
-            </span>
+            <span>Total Student Count ({schoolInfo.totalStudentsInSchool})</span>
           </Typography>
         </div>
 
@@ -641,10 +626,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                 renderValue={(value) => `Class ${value}`}
               >
                 {classes.map((classData) => (
-                  <MenuItem
-                    key={classData.class}
-                    value={classData.class.toString()}
-                  >
+                  <MenuItem key={classData.class} value={classData.class.toString()}>
                     Class {classData.class}
                   </MenuItem>
                 ))}
@@ -694,11 +676,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
-            <MUIDataTable
-              data={tableData}
-              columns={columns}
-              options={options}
-            />
+            <MUIDataTable data={tableData} columns={columns} options={options} />
           </div>
         )}
 
@@ -717,9 +695,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
             <Typography variant="body1" sx={{ mb: 2, color: "text.secondary" }}>
               No students found in Class {selectedClass}.
             </Typography>
-            <Typography variant="body1">
-              Click "Add Student" to register a new student.
-            </Typography>
+            <Typography variant="body1">Click "Add Student" to register a new student.</Typography>
           </Box>
         )}
 

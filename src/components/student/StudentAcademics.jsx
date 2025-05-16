@@ -211,7 +211,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
 
           // Create a test entry
           const testEntry = {
-            testType: `Test - ${testNumber}`,
+            testType: tag,
             maxMarks: data.tests[0]?.maxScore || 100,
             overallPercentage: formatPercentage(percentage),
             grade: getGrade(percentage),
@@ -229,27 +229,28 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
       remedialTests.forEach((test) => {
         // Extract month from test date
         const testDate = new Date(test.testDate);
-        const monthNames = [
-          "January",
-          "February",
-          "March",
-          "April",
+        const day = testDate.getDate();
+        const month = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
           "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December",
-        ];
-        const month = monthNames[testDate.getMonth()];
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ][testDate.getMonth()];
+        const year = testDate.getFullYear().toString().substr(-2); // last 2 digits
+        const formattedDate = `${day} ${month}' ${year}`;
 
         processedRemedialData.push({
-          month: month,
-          subject: test.subject,
-          testType: "Assessment",
-          grade: test.grade,
+          testName: test.testName || `Class ${test.class} ${test.subject} Remedial ${month}`,
+          examDate: formattedDate,
+          grade: test.grade || "N/A",
         });
       });
     });
@@ -273,11 +274,12 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
     );
   }, [syllabusData, maxMarks, status]);
 
+  // Filter data based on selections
   const filteredRemedialData = useMemo(() => {
     return remedialData.filter(
       (item) =>
-        (remedialMonth === "All" || item.month === remedialMonth) &&
-        (subject === "All" || item.subject === subject)
+        (remedialMonth === "All" || item.examDate.includes(remedialMonth)) &&
+        (subject === "All" || item.testName.toLowerCase().includes(subject.toLowerCase()))
     );
   }, [remedialData, remedialMonth, subject]);
 
@@ -303,7 +305,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         fontStyle: "normal",
         textAlign: "left",
         display: "flex",
-        justifyContent: "flex-start"
+        justifyContent: "flex-start",
       }}
     >
       {columnMeta.label}
@@ -374,8 +376,8 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         setCellProps: () => ({
           style: {
             textAlign: "left",
-            paddingLeft: "16px"
-          }
+            paddingLeft: "16px",
+          },
         }),
         customBodyRender: (value) => {
           // Display the percentage value
@@ -431,7 +433,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
   // Column definitions for Remedial MUIDataTable
   const remedialColumns = [
     {
-      name: "month",
+      name: "testName",
       label: "Name of Test",
       options: {
         filter: false,
@@ -441,18 +443,8 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
       },
     },
     {
-      name: "subject",
-      label: "Subject",
-      options: {
-        filter: false,
-        sort: true,
-        setCellProps: () => ({ style: { textAlign: "left" } }),
-        customHeadLabelRender: defaultCustomHeadLabelRender,
-      },
-    },
-    {
-      name: "testType",
-      label: "Test Type",
+      name: "examDate",
+      label: "Date Of Exam",
       options: {
         filter: false,
         sort: true,
@@ -468,9 +460,14 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         sort: true,
         setCellProps: () => ({ style: { textAlign: "left" } }),
         customBodyRender: (value) => {
+          // Format the grade to match Figma UI
+          const formattedGrade = value ? value.replace(/_/g, " ") : "-";
+          // Capitalize first letter of each word
+          const capitalizedGrade = formattedGrade.replace(/\b\w/g, (l) => l.toUpperCase());
+
           return (
-            <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-              {value ? value.replace(/_/g, " ") : "-"}
+            <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+              {capitalizedGrade}
             </span>
           );
         },
