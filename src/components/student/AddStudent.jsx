@@ -347,8 +347,8 @@ export default function AddStudent({ isEditMode = false }) {
       const birthDate = new Date(formData.dateOfBirth);
       const age = today.getFullYear() - birthDate.getFullYear();
 
-      if (age < 5 || age > 18) {
-        newErrors.dateOfBirth = "Age should be between 5 and 18 years";
+      if (age < 4) {
+        newErrors.dateOfBirth = "Age should be 4 years or above";
         isValid = false;
       }
     }
