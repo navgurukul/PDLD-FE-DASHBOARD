@@ -276,41 +276,41 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         },
       },
     },
-    {
-      name: "id",
-      label: "Actions",
-      options: {
-        filter: false,
-        sort: false,
-        setCellHeaderProps: () => ({
-          style: { display: "flex", justifyContent: "center" },
-        }),
-        customBodyRenderLite: (dataIndex) => {
-          const studentId = paginatedTableData[dataIndex].id;
+    // {
+    //   name: "id",
+    //   label: "Actions",
+    //   options: {
+    //     filter: false,
+    //     sort: false,
+    //     setCellHeaderProps: () => ({
+    //       style: { display: "flex", justifyContent: "center" },
+    //     }),
+    //     customBodyRenderLite: (dataIndex) => {
+    //       const studentId = paginatedTableData[dataIndex].id;
 
-          return (
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => {
-                  // Redirect using the extracted schoolId
-                  // navigate(`/schools/schoolDetail/${schoolId}/student-profile/${studentId}`);
-                }}
-                sx={{
-                  borderColor: "transparent",
-                  color: "#2F4F4F",
-                  "&:hover": { borderColor: "transparent" },
-                }}
-              >
-                <PersonIcon style={{ width: "20px", height: "20px" }} />
-                &nbsp; View Profile
-              </Button>
-            </div>
-          );
-        },
-      },
-    },
+    //       return (
+    //         <div style={{ display: "flex", justifyContent: "center" }}>
+    //           <Button
+    //             variant="outlined"
+    //             size="small"
+    //             onClick={() => {
+    //               // Redirect using the extracted schoolId
+    //               // navigate(`/schools/schoolDetail/${schoolId}/student-profile/${studentId}`);
+    //             }}
+    //             sx={{
+    //               borderColor: "transparent",
+    //               color: "#2F4F4F",
+    //               "&:hover": { borderColor: "transparent" },
+    //             }}
+    //           >
+    //             <PersonIcon style={{ width: "20px", height: "20px" }} />
+    //             &nbsp; View Profile
+    //           </Button>
+    //         </div>
+    //       );
+    //     },
+    //   },
+    // },
   ];
 
   columns.forEach((column) => {
