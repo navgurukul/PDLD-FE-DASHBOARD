@@ -1,5 +1,5 @@
-import  { useState, useEffect, useMemo } from "react";
- 
+import { useState, useEffect, useMemo } from "react";
+
 import {
   Button,
   TextField,
@@ -12,13 +12,13 @@ import {
   Chip,
   CircularProgress,
 } from "@mui/material";
-import MUIDataTable from "mui-datatables"; 
+import MUIDataTable from "mui-datatables";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import DocScannerIcon from "@mui/icons-material/DocumentScanner"; 
+import DocScannerIcon from "@mui/icons-material/DocumentScanner";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import DoneIcon from "@mui/icons-material/Done";
-import PendingIcon from "@mui/icons-material/Pending"; 
+import PendingIcon from "@mui/icons-material/Pending";
 import { FileText } from "lucide-react";
 import apiInstance from "../../../api";
 import axios from "axios"; // Keep axios as fallback
@@ -59,6 +59,24 @@ const theme = createTheme({
       styleOverrides: {
         icon: {
           color: "#2F4F4F", // Dropdown arrow icon color
+        },
+      },
+    },
+
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          "&:hover": {
+            backgroundColor: "inherit !important", // No highlight
+            cursor: "default",
+          },
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: "none",
         },
       },
     },
@@ -216,11 +234,20 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     id: school.id,
     name: school.name || school.schoolName || "",
     status: school.submitted ? "Submitted" : "Pending",
-    totalStudents: school.studentsTested || school.totalStudents || "-",
-    presentStudents: school.presentStudents || "-",
-    absentStudents: school.absentStudents || "-",
-    averageScore: school.averageScore || "-",
-    passRate: school.passRate || school.successRate || "-",
+    totalStudents: school.totalStudents === 0 ? "0" : school.totalStudents,
+    presentStudents: school.presentStudents === 0 ? "0" : school.presentStudents,
+    absentStudents: school.absentStudents === 0 ? "0" : school.absentStudents,
+    averageScore: school.averageScore === 0 ? "0" : school.averageScore,
+    passRate:
+      school.passRate === 0
+        ? "0%"
+        : school.passRate != null
+        ? `${school.passRate}%`
+        : school.successRate === 0
+        ? "0%"
+        : school.successRate != null
+        ? `${school.successRate}%`
+        : "-",
     submitted: school.submitted,
   }));
 
@@ -412,7 +439,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     fixedHeader: true,
     setTableProps: () => ({
       style: {
-        borderCollapse: 'collapse',
+        borderCollapse: "collapse",
       },
     }),
     setRowProps: () => ({
