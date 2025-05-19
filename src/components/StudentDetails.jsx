@@ -11,6 +11,7 @@ import {
   Button,
   ThemeProvider,
   createTheme,
+  Pagination,
 } from "@mui/material";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import MUIDataTable from "mui-datatables";
@@ -30,7 +31,7 @@ const theme = createTheme({
     color: "#2F4F4F",
   },
   components: {
-    // Change the highlight color from blue to “Text Primary” color style.
+    // Change the highlight color from blue to "Text Primary" color style.
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
@@ -136,6 +137,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     assignedCP: "NA",
   });
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const pageSize = 10; // Number of students per page
+
   // Delete confirmation modal state - separated like SchoolList
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState(null);
@@ -146,11 +152,17 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     setSelectedClass(event.target.value);
     // Filter students based on class
     filterStudentsByClass(event.target.value);
+    setCurrentPage(1); // Reset to first page when class changes
   };
 
   // Handle search query change
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
+  };
+
+  // Handle pagination change
+  const handlePageChange = (event, newPage) => {
+    setCurrentPage(newPage);
   };
 
   // Filter students by selected class
@@ -169,7 +181,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
   const fetchStudents = async () => {
     setIsLoadingStudents(true);
     try {
-      const response = await apiInstance.get(`/student/school/${schoolId}`);
+      const response = await apiInstance.get(`/student/school/${schoolId}?page=${currentPage}&pageSize=${pageSize}`);
       const result = response.data;
 
       if (result.success && result.data && result.data.data) {
@@ -187,6 +199,13 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
         // Store the list of classes
         setClasses(schoolData.classes || []);
+
+        // Set total students for pagination
+        if (schoolData.pagination) {
+          setTotalStudents(schoolData.pagination.totalRecords || 0);
+        } else {
+          setTotalStudents(schoolData.totalStudentsInSchool || 0);
+        }
 
         // Initialize with class 1 if available, else first available class
         const class1Data = schoolData.classes.find(
@@ -217,7 +236,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     if (schoolId) {
       fetchStudents();
     }
-  }, [schoolId, location.key]);
+  }, [schoolId, currentPage, location.key]);
 
   const handleEditStudent = (studentId, student) => {
     // Create a copy of the student object to avoid modifying the original
@@ -679,6 +698,19 @@ const StudentDetails = ({ schoolId, schoolName }) => {
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
             <MUIDataTable data={tableData} columns={columns} options={options} />
+          </div>
+        )}
+
+        {/* Pagination Component */}
+        {!isLoadingStudents && filteredStudents.length > 0 && (
+          <div style={{ width: "max-content", margin: "25px auto" }}>
+            <Pagination
+              count={Math.ceil(totalStudents / pageSize)}
+              page={currentPage}
+              onChange={handlePageChange}
+              showFirstButton
+              showLastButton
+            />
           </div>
         )}
 
