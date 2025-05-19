@@ -63,8 +63,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "&:hover": {
-            backgroundColor: "rgba(47, 79, 79, 0.1) !important",
-            cursor: "pointer",
+            backgroundColor: "inherit !important",
+            cursor: "default",
           },
         },
       },
@@ -306,6 +306,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         textAlign: "left",
         display: "flex",
         justifyContent: "flex-start",
+        textTransform:"none"
       }}
     >
       {columnMeta.label}

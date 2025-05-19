@@ -88,7 +88,7 @@ const theme = createTheme({
         },
       },
     },
-    MuiPaginationItem: {
+       MuiPaginationItem: {
       styleOverrides: {
         root: {
           color: "black", // Change default text color
@@ -265,6 +265,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         fontWeight: 600,
         fontSize: "12px",
         fontStyle: "normal",
+        textTransform: "none",
       }}
     >
       {columnMeta.label}
@@ -582,6 +583,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               <InputLabel
                 id="status-select-label"
                 sx={{
+                  color: "#2F4F4F",
                   transform: "translate(14px, 14px) scale(1)",
                   "&.Mui-focused, &.MuiFormLabel-filled": {
                     transform: "translate(14px, -9px) scale(0.75)",

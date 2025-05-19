@@ -80,6 +80,23 @@ const theme = createTheme({
         },
       },
     },
+    MuiTableRow: {
+  styleOverrides: {
+    root: {
+      "&:hover": {
+        backgroundColor: "inherit !important",
+        cursor: "default !important",
+      },
+    },
+  },
+},
+MuiTableCell: {
+  styleOverrides: {
+    root: {
+      borderBottom: "none",
+    },
+  },
+},
   },
 });
 
@@ -589,6 +606,7 @@ export default function Users() {
               <InputLabel
                 id="role-select-label"
                 sx={{
+                   color: "#2F4F4F",
                   transform: "translate(14px, 14px) scale(1)",
                   "&.Mui-focused, &.MuiFormLabel-filled": {
                     transform: "translate(14px, -9px) scale(0.75)",
@@ -659,6 +677,7 @@ export default function Users() {
               <InputLabel
                 id="block-select-label"
                 sx={{
+                   color: "#2F4F4F",
                   transform: "translate(14px, 14px) scale(1)",
                   "&.Mui-focused, &.MuiFormLabel-filled": {
                     transform: "translate(14px, -9px) scale(0.75)",

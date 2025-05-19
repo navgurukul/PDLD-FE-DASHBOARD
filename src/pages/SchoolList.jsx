@@ -14,12 +14,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import Tooltip from "@mui/material/Tooltip";
 import ButtonCustom from "../components/ButtonCustom";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
-import {
-  addSymbolBtn,
-  DocScanner,
-  EditPencilIcon,
-  trash,
-} from "../utils/imagePath";
+import { addSymbolBtn, DocScanner, EditPencilIcon, trash } from "../utils/imagePath";
 import apiInstance from "../../api";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { MenuItem } from "@mui/material";
@@ -86,6 +81,23 @@ const theme = createTheme({
         },
       },
     },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          "&:hover": {
+            backgroundColor: "inherit !important",
+            cursor: "default !important",
+          },
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: "none",
+        },
+      },
+    },
   },
 });
 
@@ -118,9 +130,7 @@ export default function SchoolList() {
     setIsLoading(true);
     try {
       // Ensure we're explicitly requesting only 20 records per page
-      const response = await apiInstance.get(
-        `/school/all?page=${currentPage}&pageSize=15`
-      );
+      const response = await apiInstance.get(`/school/all?page=${currentPage}&pageSize=15`);
       if (response.data.success) {
         // console.log("API Response:", response.data.data); // Debug: Log the full response
 
@@ -161,17 +171,13 @@ export default function SchoolList() {
   useEffect(() => {
     if (schools.length > 0) {
       // Extract unique clusters
-      const uniqueClusters = [
-        ...new Set(schools.map((school) => school.clusterName)),
-      ]
+      const uniqueClusters = [...new Set(schools.map((school) => school.clusterName))]
         .filter(Boolean)
         .sort();
       setClusters(uniqueClusters);
 
       // Extract unique blocks
-      const uniqueBlocks = [
-        ...new Set(schools.map((school) => school.blockName)),
-      ]
+      const uniqueBlocks = [...new Set(schools.map((school) => school.blockName))]
         .filter(Boolean)
         .sort();
       setBlocks(uniqueBlocks);
@@ -232,12 +238,10 @@ export default function SchoolList() {
       school.clusterName?.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Cluster filter
-    const matchesCluster =
-      selectedCluster === "" || school.clusterName === selectedCluster;
+    const matchesCluster = selectedCluster === "" || school.clusterName === selectedCluster;
 
     // Block filter
-    const matchesBlock =
-      selectedBlock === "" || school.blockName === selectedBlock;
+    const matchesBlock = selectedBlock === "" || school.blockName === selectedBlock;
 
     return matchesSearch && matchesCluster && matchesBlock;
   });
@@ -268,23 +272,17 @@ export default function SchoolList() {
       await apiInstance.delete(`/school/delete/${schoolToDelete.id}`);
 
       // Remove the school from the local state
-      const updatedSchools = schools.filter(
-        (school) => school.id !== schoolToDelete.id
-      );
+      const updatedSchools = schools.filter((school) => school.id !== schoolToDelete.id);
       setSchools(updatedSchools);
 
       // Show success message and update pagination if needed
-      toast.success(
-        `"${schoolToDelete.schoolName}" has been deleted successfully!`
-      );
+      toast.success(`"${schoolToDelete.schoolName}" has been deleted successfully!`);
 
       if (updatedSchools.length === 0 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       } else {
         // If we're on the last page and it's now empty, go back one page
-        const totalPages = Math.ceil(
-          (pagination.totalSchools - 1) / pagination.pageSize
-        );
+        const totalPages = Math.ceil((pagination.totalSchools - 1) / pagination.pageSize);
         if (currentPage > totalPages && totalPages > 0) {
           setCurrentPage(totalPages);
         } else {
@@ -327,6 +325,8 @@ export default function SchoolList() {
     actions: "Actions",
     schoolObj: school, // Pass the entire school object for the delete modal
   }));
+
+  const isAnyFilterActive = selectedCluster !== "" || selectedBlock !== "" || searchQuery !== "";
 
   const defaultCustomHeadLabelRender = (columnMeta) => (
     <span
@@ -426,15 +426,10 @@ export default function SchoolList() {
                 size="small"
                 sx={{ minWidth: "30px", marginRight: "14px" }}
                 onClick={() =>
-                  handleCopy(
-                    `UDISE: ${udiseCode}, Password: ${value}`,
-                    "UDISE and Password"
-                  )
+                  handleCopy(`UDISE: ${udiseCode}, Password: ${value}`, "UDISE and Password")
                 }
               >
-                <ContentCopyIcon
-                  style={{ fontSize: "18px", color: "#2F4F4F" }}
-                />
+                <ContentCopyIcon style={{ fontSize: "18px", color: "#2F4F4F" }} />
               </Button>
             </div>
           );
@@ -481,9 +476,7 @@ export default function SchoolList() {
           const schoolObj = tableMeta.rowData[6]; // Index of schoolObj in the rowData array
 
           return (
-            <div
-              style={{ display: "flex", justifyContent: "center", gap: "16px" }}
-            >
+            <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
               <Button
                 variant="text"
                 size="small"
@@ -500,11 +493,7 @@ export default function SchoolList() {
                   });
                 }}
               >
-                <img
-                  src={EditPencilIcon}
-                  alt="Edit"
-                  style={{ width: "20px", height: "20px" }}
-                />
+                <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
                 &nbsp;
               </Button>
               <Button
@@ -518,11 +507,7 @@ export default function SchoolList() {
                 }}
                 onClick={() => openDeleteModal(schoolObj)}
               >
-                <img
-                  src={trash}
-                  alt="Delete"
-                  style={{ width: "20px", height: "20px" }}
-                />
+                <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
                 &nbsp;
               </Button>
 
@@ -568,14 +553,9 @@ export default function SchoolList() {
   // Default view - List of schools
   return (
     <ThemeProvider theme={theme}>
-      <div
-        className="main-page-wrapper px-3 sm:px-4"
-        style={{ position: "relative" }}
-      >
+      <div className="main-page-wrapper px-3 sm:px-4" style={{ position: "relative" }}>
         <div className="header-container mb-1">
-          <h5 className="text-lg font-bold text-[#2F4F4F]">
-            School Management
-          </h5>
+          <h5 className="text-lg font-bold text-[#2F4F4F]">School Management</h5>
         </div>
 
         <div className="school-list-container mt-1 bg-white rounded-lg">
@@ -618,6 +598,7 @@ export default function SchoolList() {
                       <InputLabel
                         id="cluster-select-label"
                         sx={{
+                           color: "#2F4F4F",
                           transform: "translate(14px, 14px) scale(1)",
                           "&.Mui-focused, &.MuiFormLabel-filled": {
                             transform: "translate(14px, -9px) scale(0.75)",
@@ -689,6 +670,7 @@ export default function SchoolList() {
                       <InputLabel
                         id="block-select-label"
                         sx={{
+                           color: "#2F4F4F",
                           transform: "translate(14px, 14px) scale(1)",
                           "&.Mui-focused, &.MuiFormLabel-filled": {
                             transform: "translate(14px, -9px) scale(0.75)",
@@ -748,24 +730,31 @@ export default function SchoolList() {
                     </FormControl>
 
                     {/* Reset Button */}
-                    <div className="flex justify-start w-full sm:w-auto mr-13">
-                      <Tooltip title="Reset Filters" placement="top">
-                        <div
-                          onClick={resetFilters}
-                          style={{
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            backgroundColor: "#f5f5f5",
-                            padding: "6px 12px",
-                            borderRadius: "4px",
-                            height: "48px",
-                          }}
-                        >
-                          <RestartAltIcon color="action" />
-                        </div>
-                      </Tooltip>
-                    </div>
+                    {isAnyFilterActive && (
+                      <div className="flex justify-start w-full sm:w-auto mr-13">
+                        <Tooltip title="Clear Filters" placement="top">
+                          <Button
+                            type="button"
+                            onClick={resetFilters}
+                            variant="text"
+                            sx={{
+                              color: "#2F4F4F",
+                              fontWeight: 600,
+                              fontSize: 16,
+                              textTransform: "none",
+                              height: "48px",
+                              padding: "0 12px",
+                              background: "transparent",
+                              "&:hover": {
+                                background: "#f5f5f5",
+                              },
+                            }}
+                          >
+                            Clear Filters
+                          </Button>
+                        </Tooltip>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -808,11 +797,7 @@ export default function SchoolList() {
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
-            <MUIDataTable
-              data={tableData}
-              columns={columns}
-              options={options}
-            />
+            <MUIDataTable data={tableData} columns={columns} options={options} />
           </div>
 
           <div
