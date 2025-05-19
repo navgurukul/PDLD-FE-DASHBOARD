@@ -72,15 +72,15 @@ const theme = createTheme({
       },
     },
     MuiTableRow: {
-      styleOverrides: {
-        root: {
-          "&:hover": {
+  styleOverrides: {
+    root: {
+      "&:hover": {
             backgroundColor: "rgba(47, 79, 79, 0.1) !important",
             cursor: "pointer",
-          },
-        },
       },
     },
+  },
+},
     MuiPaper: {
       styleOverrides: {
         root: {
@@ -375,7 +375,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                     <InputLabel
                       id="result-select-label"
                       sx={{
-                        transform: "translate(14px, 14px) scale(1)",
+                                                transform: "translate(14px, 14px) scale(1)",
                         "&.Mui-focused, &.MuiFormLabel-filled": {
                           transform: "translate(14px, -9px) scale(0.75)",
                         },
