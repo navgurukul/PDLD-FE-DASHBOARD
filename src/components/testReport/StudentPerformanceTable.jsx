@@ -24,7 +24,7 @@ const theme = createTheme({
     color: "#2F4F4F",
   },
   components: {
-    // Change the highlight color from blue to “Text Primary” color style.
+    // Change the highlight color from blue to "Text Primary" color style.
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
@@ -60,6 +60,7 @@ const theme = createTheme({
           backgroundColor: "none",
           fontFamily: "Karla !important",
           textAlign: "left",
+          borderBottom: "none",
           "&.custom-cell": {
             width: "0px",
           },
@@ -72,15 +73,15 @@ const theme = createTheme({
       },
     },
     MuiTableRow: {
-  styleOverrides: {
-    root: {
-      "&:hover": {
-            backgroundColor: "rgba(47, 79, 79, 0.1) !important",
-            cursor: "pointer",
+      styleOverrides: {
+        root: {
+          "&:hover": {
+            backgroundColor: "inherit !important",
+            cursor: "default !important",
+          },
+        },
       },
     },
-  },
-},
     MuiPaper: {
       styleOverrides: {
         root: {
@@ -120,16 +121,25 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
   // Filter students based on search query and status
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
-      const nameMatch = student.name.toLowerCase().includes(searchQuery.toLowerCase());
+      // Handle both API formats for student name
+      const studentName = student.studentName || student.name;
+      const nameMatch = studentName.toLowerCase().includes(searchQuery.toLowerCase());
+      const isAbsent = student.isAbsent === true;
+
+      // Don't try to access score if student is absent
+      const score = isAbsent ? 0 : student.score;
 
       if (!filterStatus) {
         return nameMatch;
       } else if (filterStatus === "pass") {
-        return nameMatch && student.score >= 35; // Students with 35 or above pass
-      } else {
-        // 'fail'
-        return nameMatch && student.score < 35; // Students below 35 fail
+        return nameMatch && !isAbsent && score >= 35; // Students with 35 or above pass
+      } else if (filterStatus === "fail") {
+        return nameMatch && !isAbsent && score < 35; // Students below 35 fail (and not absent)
+      } else if (filterStatus === "absent") {
+        return nameMatch && isAbsent; // Only absent students
       }
+
+      return nameMatch;
     });
   }, [students, searchQuery, filterStatus]);
 
@@ -138,10 +148,30 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
     if (!sortConfig.key) return filteredStudents;
 
     return [...filteredStudents].sort((a, b) => {
+      // Check for absent students in both records
+      const aIsAbsent = a.isAbsent === true;
+      const bIsAbsent = b.isAbsent === true;
+
+      // Handle name sorting with both API formats
+      if (sortConfig.key === "name") {
+        const aName = a.studentName || a.name;
+        const bName = b.studentName || b.name;
+        return sortConfig.direction === "asc"
+          ? aName.localeCompare(bName)
+          : bName.localeCompare(aName);
+      }
+
+      // Handle absent students in scoring
+      if (sortConfig.key === "score") {
+        const aScore = aIsAbsent ? -1 : a.score;
+        const bScore = bIsAbsent ? -1 : b.score;
+        return sortConfig.direction === "asc" ? aScore - bScore : bScore - aScore;
+      }
+
       // Special case for comparing vs class avg
       if (sortConfig.key === "vsClassAvg") {
-        const aVsAvg = a.score - classAvg;
-        const bVsAvg = b.score - classAvg;
+        const aVsAvg = aIsAbsent ? -999 : a.score - classAvg;
+        const bVsAvg = bIsAbsent ? -999 : b.score - classAvg;
         return sortConfig.direction === "asc" ? aVsAvg - bVsAvg : bVsAvg - aVsAvg;
       }
 
@@ -160,18 +190,43 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
   }, [filteredStudents, sortConfig, classAvg]);
 
   // Format table data for MUIDataTable
-  const tableData = sortedStudents.map((student) => ({
-    id: student.id,
-    name: student.name,
-    score: `${student.score}/100`,
-    result: student.score >= 35 ? "Meets Standard" : "Needs Improvement", // Students with 35 or above "Meet Standard"
-    vsClassAvg:
-      isNaN(student.score - classAvg) || classAvg === 0
-        ? "N/A"
-        : `${student.score > classAvg ? "+" : ""}${(student.score - classAvg).toFixed(1)}`,
-    isPass: student.score >= 35, // Students with 35 or above pass
-    originalScore: student.score,
-  }));
+  const tableData = sortedStudents.map((student) => {
+    // For absent students, don't access score property (it might be undefined)
+    const isAbsent = student.isAbsent === true;
+
+    // Determine score display
+    const scoreDisplay = isAbsent ? "Absent" : `${student.score}/100`;
+
+    // Determine result status
+    let resultStatus;
+    if (isAbsent) {
+      resultStatus = "Absent";
+    } else {
+      resultStatus = student.score >= 35 ? "Meets Standard" : "Needs Improvement";
+    }
+
+    // Determine comparison to class average
+    let vsClassAvgDisplay;
+    if (isAbsent) {
+      vsClassAvgDisplay = "N/A";
+    } else {
+      vsClassAvgDisplay =
+        isNaN(student.score - classAvg) || classAvg === 0
+          ? "N/A"
+          : `${student.score > classAvg ? "+" : ""}${(student.score - classAvg).toFixed(1)}`;
+    }
+
+    return {
+      id: student.studentId || student.id, // Handle both API formats
+      name: student.studentName || student.name, // Handle both API formats
+      score: scoreDisplay,
+      result: resultStatus,
+      vsClassAvg: vsClassAvgDisplay,
+      isPass: !isAbsent && student.score >= 35,
+      isAbsent: isAbsent,
+      originalScore: isAbsent ? null : student.score,
+    };
+  });
 
   const paginatedTableData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
@@ -226,7 +281,12 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
           style: { textAlign: "center" },
         }),
         customBodyRenderLite: (dataIndex) => {
-          return <div className="">{paginatedTableData[dataIndex].score}</div>;
+          const student = paginatedTableData[dataIndex];
+          return (
+            <div className="">
+              {student.isAbsent ? <span style={{ color: "#949494" }}>Absent</span> : student.score}
+            </div>
+          );
         },
       },
     },
@@ -240,7 +300,24 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
           style: { textAlign: "center" },
         }),
         customBodyRenderLite: (dataIndex) => {
-          const isPass = paginatedTableData[dataIndex].isPass;
+          const student = paginatedTableData[dataIndex];
+          if (student.isAbsent) {
+            return (
+              <div className="">
+                <div
+                  className="inline-block px-2 py-1 rounded-full text-xs"
+                  style={{
+                    backgroundColor: "#e0e0e0", // Gray background for absent
+                    color: "#757575",  // Gray text for absent
+                  }}
+                >
+                  Absent
+                </div>
+              </div>
+            );
+          }
+
+          const isPass = student.isPass;
           return (
             <div className="">
               <div
@@ -250,7 +327,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                   color: isPass ? "#2e7d32" : "#c62828",
                 }}
               >
-                {paginatedTableData[dataIndex].result}
+                {student.result}
               </div>
             </div>
           );
@@ -264,9 +341,14 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         filter: false,
         sort: true,
         sortThirdClickReset: true,
-
         customBodyRenderLite: (dataIndex) => {
-          const value = paginatedTableData[dataIndex].vsClassAvg;
+          const student = paginatedTableData[dataIndex];
+
+          if (student.isAbsent) {
+            return <span style={{ color: "#949494" }}>N/A</span>;
+          }
+
+          const value = student.vsClassAvg;
           const isPositive = value && value.startsWith("+");
 
           return (
@@ -277,41 +359,6 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         },
       },
     },
-    // {
-    //   name: "id",
-    //   label: "Actions",
-    //   options: {
-    //     filter: false,
-    //     sort: false,
-    //     setCellHeaderProps: () => ({
-    //       style: { display: "flex", justifyContent: "center" },
-    //     }),
-    //     customBodyRenderLite: (dataIndex) => {
-    //       const studentId = paginatedTableData[dataIndex].id;
-
-    //       return (
-    //         <div style={{ display: "flex", justifyContent: "center" }}>
-    //           <Button
-    //             variant="outlined"
-    //             size="small"
-    //             onClick={() => {
-    //               // Redirect using the extracted schoolId
-    //               // navigate(`/schools/schoolDetail/${schoolId}/student-profile/${studentId}`);
-    //             }}
-    //             sx={{
-    //               borderColor: "transparent",
-    //               color: "#2F4F4F",
-    //               "&:hover": { borderColor: "transparent" },
-    //             }}
-    //           >
-    //             <PersonIcon style={{ width: "20px", height: "20px" }} />
-    //             &nbsp; View Profile
-    //           </Button>
-    //         </div>
-    //       );
-    //     },
-    //   },
-    // },
   ];
 
   columns.forEach((column) => {
@@ -375,7 +422,8 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                     <InputLabel
                       id="result-select-label"
                       sx={{
-                                                transform: "translate(14px, 14px) scale(1)",
+                        color: "#2F4F4F",
+                        transform: "translate(14px, 14px) scale(1)",
                         "&.Mui-focused, &.MuiFormLabel-filled": {
                           transform: "translate(14px, -9px) scale(0.75)",
                         },
@@ -406,6 +454,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                       <MenuItem value="">All Results</MenuItem>
                       <MenuItem value="pass">Meets Standard</MenuItem>
                       <MenuItem value="fail">Needs Improvement</MenuItem>
+                      <MenuItem value="absent">Absent</MenuItem>
                     </Select>
                   </FormControl>
 
@@ -466,15 +515,18 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
 StudentPerformanceTable.propTypes = {
   students: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      name: PropTypes.string.isRequired,
-      score: PropTypes.number.isRequired,
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      studentId: PropTypes.string, // Support API format
+      name: PropTypes.string,
+      studentName: PropTypes.string, // Support API format
+      score: PropTypes.number,
+      isAbsent: PropTypes.bool,
     })
   ).isRequired,
   classAvg: PropTypes.number.isRequired,
   onViewProfile: PropTypes.func,
   onExport: PropTypes.func,
-  schoolId: PropTypes.string.isRequired, // Add schoolId prop type
+  schoolId: PropTypes.string,
 };
 
 StudentPerformanceTable.defaultProps = {
