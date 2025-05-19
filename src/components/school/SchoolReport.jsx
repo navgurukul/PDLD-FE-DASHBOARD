@@ -232,14 +232,14 @@ export default function SchoolReport() {
         customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
       },
     },
-    {
-      name: "No. Of Students",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
-      },
-    },
+    // {
+    //   name: "No. Of Students ss",
+    //   options: {
+    //     filter: false,
+    //     sort: true,
+    //     customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
+    //   },
+    // },
     {
       name: "Max Marks",
       options: {

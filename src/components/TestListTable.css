@@ -14,7 +14,6 @@
   .my-date-picker {
     width: 220px !important;
     padding: 11.5px 10px !important;
-    border: 1px solid blue;
   }
 
 .my-date-picker input:active {
@@ -39,12 +38,10 @@
 	box-shadow: none !important;
 }
 
-/* .my-date-picker .react-datepicker__input-container input:focus,
-.my-date-picker .react-datepicker__input-container input:active {
-  outline: none !important;
-  box-shadow: none !important;
-  border: none !important;
-} */
+/* Add this to your TestListTable.css */
+.my-date-picker .react-datepicker__input-container input {
+  padding-right: 28px !important; /* Make space for the cross icon */
+}
 
 /* Apply a custom font to the entire date picker */
 .react-datepicker {
@@ -54,7 +51,6 @@
 
 /* Apply custom font to calendar days */
 .react-datepicker__day,
-.react-datepicker__day-name,
 .react-datepicker__current-month,
 .react-datepicker-time__header,
 .react-datepicker-year-header {
@@ -62,18 +58,30 @@
 	color: #2f4f4f; /* Optional: Change text color */
 }
 
-/* Optional: Change font style for selected date */
-.react-datepicker__day--selected,
-.react-datepicker__day--keyboard-selected {
-	font-weight: bold;
-	color: white;
-	background-color: #2f4f4f;
+/* Arrows Navigations */
+.react-datepicker__navigation--previous,
+.react-datepicker__navigation--next {
+  color: #2F4F4F !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+.react-datepicker__navigation-icon::before {
+  border-color: #2F4F4F !important;
 }
 
-/* Optional: Change font style for today's date */
-.react-datepicker__day--today {
-	font-weight: bold;
-	color: white;
+/* Day names (Su, Mo, etc.) */
+.react-datepicker__day-name {
+  color: #2F4F4F !important;
+  font-weight: 600 !important;
+}
+
+/* Ensure today in range gets in-range background */
+.react-datepicker__day--in-range.react-datepicker__day--today,
+.react-datepicker__day--in-selecting-range.react-datepicker__day--today {
+  background: #E0E0E0 !important;
+  color: #2F4F4F !important;
+  border-radius: 0 !important;
+  font-weight: 600;
 }
 
 /* ========================================================= */
@@ -81,17 +89,8 @@
 /* Change the selected date range background color */
 
 /* Change the hover effect on date cells */
-.react-datepicker__day:hover {
-	background-color: #527575 !important; /* Light red on hover */
-	color: white !important;
-}
 
-/* Apply red color to the selected date range */
-.react-datepicker__day--in-range,
-.react-datepicker__day--in-selecting-range {
-	background-color: #527575 !important; /* Red background */
-	color: white !important;
-}
+
 
 /* Change the color when hovering over a date */
 .react-datepicker__day:hover {
@@ -99,18 +98,45 @@
 	color: white !important;
 }
 
-/* Change the color of the currently selected date */
-.react-datepicker__day--selected,
-.react-datepicker__day--keyboard-selected {
-	background-color: #527575 !important; /* Darker red */
-	color: white !important;
+/* Start and end date: Secondary main (dark green), border-radius 50% */
+.react-datepicker__day--range-start,
+.react-datepicker__day--range-end {
+  background: #2F4F4F !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  z-index: 2;
 }
 
-/* Optional: Make sure the border and shadow also match the theme */
-.react-datepicker {
-	border: 1px solid #527575;
-	box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+/* Ensure dark background stays even with in-range + start/end date */
+.react-datepicker__day--range-start.react-datepicker__day--in-range,
+.react-datepicker__day--range-end.react-datepicker__day--in-range {
+  background: #2F4F4F !important;
+  color: #FFFFFF !important;
+  z-index: 2;
 }
+
+/* for Between dates*/
+.react-datepicker__day--in-range,
+.react-datepicker__day--in-selecting-range {
+  background: #E0E0E0 !important;
+  color: #2F4F4F !important;
+  border-radius: 10 !important;
+}
+
+/* Today: no special background, just font-weight 600 */
+.react-datepicker__day--today {
+  background: none !important;
+  color: #2F4F4F !important;
+}
+
+/* Remove border from calendar */
+.react-datepicker {
+  border: none !important;
+  box-shadow: 0px 4px 16px rgba(47, 79, 79, 0.18), 0px 1.5px 6px rgba(47, 79, 79, 0.12) !important;
+  border-radius: 12px !important;
+  font-family: 'Karla', sans-serif;
+}
+
 /* ========================================================= */
 /* table CSS */
 
@@ -184,3 +210,52 @@
   .MuiTableCell-body[data-colindex="6"] .MuiButton-root {
 	justify-content: center !important;
   }
+
+
+  
+
+
+  .class-count-badge {
+  margin-left: 10px;
+  background: #2F4F4F;
+  color: #fff;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(47,79,79,0.08);
+}
+
+.class-clear {
+  margin-left: 8px;
+  color: #999;
+  font-size: 18px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.subject-count-badge {
+  margin-left: 10px;
+  background: #2F4F4F;
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(47,79,79,0.08);
+}
+.subject-clear {
+  margin-left: 8px;
+  color: #999;
+  font-size: 18px;
+  cursor: pointer;
+  user-select: none;
+}

@@ -27,6 +27,7 @@ import TableChartIcon from "@mui/icons-material/TableChart";
 import apiInstance from "../../api"; // Updated import path
 import { Typography } from "@mui/material";
 import ButtonCustom from "../components/ButtonCustom";
+import { useTheme } from "@mui/material/styles";
 
 const theme = createTheme({
   typography: {
@@ -124,6 +125,7 @@ const theme = createTheme({
 });
 
 const Reports = () => {
+  const theme = useTheme();
   const [downloadMenuAnchorEl, setDownloadMenuAnchorEl] = useState(null);
   const downloadMenuOpen = Boolean(downloadMenuAnchorEl);
 
@@ -242,7 +244,7 @@ const Reports = () => {
             .custom-table th, .custom-table td {
               padding: 18px 16px; /* Increased row height */
               text-align: left;
-              border-bottom: 1px solid #e0e0e0;
+              border-bottom: none;
               font-size: 13px; /* Reduced font size */
             }
             .custom-table th.group-header {
@@ -259,8 +261,8 @@ const Reports = () => {
               text-align: center;
             }
             .custom-table tbody tr:hover {
-              background-color: rgba(47, 79, 79, 0.1);
-              cursor: pointer;
+              backgroundColor: "inherit !important",
+              cursor: default !important;
             }
             .custom-table td.low-score {
               color: #FF0000;
@@ -588,11 +590,11 @@ const Reports = () => {
           </div>
 
           <div className="bg-gray-300 rounded">
-            <Typography
+             <Typography
               variant="subtitle1"
               sx={{
-                // bgcolor: theme.palette.secondary.light,
-                // color: theme.palette.primary,
+                bgcolor: theme.palette.secondary.light,
+                color: theme.palette.primary.main,
                 padding: "4px 16px",
                 borderRadius: "8px",
                 height: "48px",

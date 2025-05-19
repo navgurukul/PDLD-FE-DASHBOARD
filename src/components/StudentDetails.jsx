@@ -66,6 +66,7 @@ const theme = createTheme({
           backgroundColor: "none",
           fontFamily: "Karla !important",
           textAlign: "left",
+            borderBottom: "none",
           "&.custom-cell": {
             width: "0px",
           },
@@ -81,8 +82,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "&:hover": {
-            backgroundColor: "rgba(47, 79, 79, 0.1) !important",
-            cursor: "pointer",
+            backgroundColor: "inherit !important",
+            cursor: "default",
           },
         },
       },
