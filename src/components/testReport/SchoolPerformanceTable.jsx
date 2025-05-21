@@ -13,7 +13,6 @@ import {
   CircularProgress,
 } from "@mui/material";
 import MUIDataTable from "mui-datatables";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import DocScannerIcon from "@mui/icons-material/DocumentScanner";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
@@ -88,7 +87,7 @@ const theme = createTheme({
         },
       },
     },
-       MuiPaginationItem: {
+    MuiPaginationItem: {
       styleOverrides: {
         root: {
           color: "black", // Change default text color
@@ -256,6 +255,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     setStatusFilter("");
     setSortConfig({ key: null, direction: "asc" });
   };
+  const isAnyFilterActive = !!searchQuery.trim() || !!statusFilter;
 
   const defaultCustomHeadLabelRender = (columnMeta) => (
     <span
@@ -381,11 +381,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         customBodyRenderLite: (dataIndex) => {
           const rowData = tableData[dataIndex];
           const schoolId = rowData.id;
-          
+
           return (
             <div
-              style={{ 
-                display: "flex", 
+              style={{
+                display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
                 padding: "10px 0",
@@ -445,7 +445,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     }),
     setRowProps: () => ({
       style: {
-        borderBottom: "1px solid rgba(224, 224, 224, 1)",
+         borderBottom: "none", 
       },
     }),
   };
@@ -618,28 +618,29 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               </Select>
             </FormControl>
 
-            {/* Reset Button */}
-            <Tooltip title="Reset Filters" placement="top">
-              <Button
-                onClick={resetFilters}
-                variant="outlined"
-                sx={{
-                  minWidth: "40px",
-                  width: "40px",
-                  height: "40px",
-                  padding: "8px",
-                  borderRadius: "8px",
-                  borderColor: "#f0f0f0",
-                  backgroundColor: "#f5f5f5",
-                  "&:hover": {
-                    backgroundColor: "#e0e0e0",
-                    borderColor: "#e0e0e0",
-                  },
-                }}
-              >
-                <RestartAltIcon color="action" />
-              </Button>
-            </Tooltip>
+            {/* Clear Filters */}
+            {isAnyFilterActive && (
+              <Tooltip title="Clear all filters" placement="top">
+                <Button
+                  onClick={resetFilters}
+                  variant="text"
+                  sx={{
+                    color: "#2F4F4F",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    textTransform: "none",
+                    height: "48px",
+                    padding: "0 12px",
+                    background: "transparent",
+                    "&:hover": {
+                      background: "#f5f5f5",
+                    },
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </Tooltip>
+            )}
           </div>
         </div>
 

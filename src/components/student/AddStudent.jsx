@@ -298,6 +298,34 @@ export default function AddStudent({ isEditMode = false }) {
   };
 
   useEffect(() => {
+    if (!(isFormDirty && !showUnsavedModal)) return;
+
+    const push = navigator.push;
+    const replace = navigator.replace;
+
+    function block(tx) {
+      setShowUnsavedModal(true);
+      setPendingNavigate(() => () => {
+        setShowUnsavedModal(false);
+        setIsFormDirty(false);
+        tx.retry();
+      });
+    }
+
+    navigator.push = (...args) => {
+      block({ action: "PUSH", retry: () => push(...args) });
+    };
+    navigator.replace = (...args) => {
+      block({ action: "REPLACE", retry: () => replace(...args) });
+    };
+
+    return () => {
+      navigator.push = push;
+      navigator.replace = replace;
+    };
+  }, [isFormDirty, showUnsavedModal, navigator]);
+
+  useEffect(() => {
     // We'll just use vocationalOptions for classes 9-12
     if (isHigherClass || isClass9or10) {
       setSubjectOptions(vocationalOptions);
