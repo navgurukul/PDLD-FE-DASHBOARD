@@ -134,6 +134,16 @@ const StudentProfileView = () => {
     }
   }, [studentId]); // Re-fetch when studentId changes
 
+  useEffect(() => {
+  if (student?.fullName) {
+    const locationState = location.state || {};
+    navigate(location.pathname, {
+      replace: true,
+      state: { ...locationState, studentName: student.fullName },
+    });
+  }
+}, [student?.fullName]);
+
   // Handle edit student
   const handleEditStudent = () => {
     navigate(`/schools/schoolDetail/${schoolId}/updateStudent`, {
