@@ -26,6 +26,7 @@ import ButtonCustom from "../../components/ButtonCustom";
 import { toast, ToastContainer } from "react-toastify";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { format } from "date-fns";
+import ConfirmationModal from "../modal/ConfirmationModal";
 
 const theme = createTheme({
   typography: {
@@ -136,6 +137,8 @@ export default function AddStudent({ isEditMode = false }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [subjectOptions, setSubjectOptions] = useState(getSubjectOptions("11")); // Default to class 11 options for higher classes
+  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
 
   //stream (and extraSubjects, aadharId) pass only when class is 11 or 12 (if not selected then no need to show in payload)
 
@@ -242,6 +245,55 @@ export default function AddStudent({ isEditMode = false }) {
     }
   }, [isEditMode, location]);
 
+  // Function to check if form has unsaved changes - add this after useEffect
+  const formHasUnsavedChanges = () => {
+    // Only check for unsaved changes in edit mode
+    if (!isEditMode) return false;
+
+    // Compare current form data with original data from studentData
+    if (!location.state?.studentData) return false;
+
+    const student = location.state.studentData;
+
+    // Check each field for changes
+    if (formData.name !== (student.fullName || "")) return true;
+    if (formData.fatherName !== (student.fatherName || "")) return true;
+    if (formData.motherName !== (student.motherName || "")) return true;
+    if (formData.gender !== (student.gender || "M")) return true;
+    if (formData.uniqueId !== (student.aparId || "")) return true;
+    if (formData.hostel !== (student.hostel || "")) return true;
+    if (formData.class !== (student.class?.toString() || "1")) return true;
+    if (formData.aadharId !== (student.aadharId || "")) return true;
+    if (formData.stream !== (student.stream || "")) return true;
+
+    // Check for extraSubjects changes
+    const originalExtraSubjects = Array.isArray(student.extraSubjects)
+      ? student.extraSubjects
+      : typeof student.extraSubjects === "string"
+      ? student.extraSubjects.split(",").map((s) => s.trim())
+      : [];
+
+    if (JSON.stringify(formData.extraSubjects) !== JSON.stringify(originalExtraSubjects))
+      return true;
+
+    return false;
+  };
+
+  // Add this function to handle confirmation modal action
+  const handleDiscardChanges = () => {
+    // Close the modal
+    setShowUnsavedChangesModal(false);
+
+    // Use a small timeout to ensure the modal is gone before navigating
+    if (pendingNavigation) {
+      setTimeout(() => {
+        navigate(pendingNavigation);
+        // Clear pending navigation after navigating
+        setPendingNavigation(null);
+      }, 10);
+    }
+  };
+
   // Handle input change with validation for specific fields
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -298,34 +350,6 @@ export default function AddStudent({ isEditMode = false }) {
   };
 
   useEffect(() => {
-    if (!(isFormDirty && !showUnsavedModal)) return;
-
-    const push = navigator.push;
-    const replace = navigator.replace;
-
-    function block(tx) {
-      setShowUnsavedModal(true);
-      setPendingNavigate(() => () => {
-        setShowUnsavedModal(false);
-        setIsFormDirty(false);
-        tx.retry();
-      });
-    }
-
-    navigator.push = (...args) => {
-      block({ action: "PUSH", retry: () => push(...args) });
-    };
-    navigator.replace = (...args) => {
-      block({ action: "REPLACE", retry: () => replace(...args) });
-    };
-
-    return () => {
-      navigator.push = push;
-      navigator.replace = replace;
-    };
-  }, [isFormDirty, showUnsavedModal, navigator]);
-
-  useEffect(() => {
     // We'll just use vocationalOptions for classes 9-12
     if (isHigherClass || isClass9or10) {
       setSubjectOptions(vocationalOptions);
@@ -367,10 +391,7 @@ export default function AddStudent({ isEditMode = false }) {
     }
 
     // Validate date of birth
-    if (!formData.dateOfBirth) {
-      newErrors.dateOfBirth = "Date of birth is required";
-      isValid = false;
-    } else {
+    if (formData.dateOfBirth) {
       const today = new Date();
       const birthDate = new Date(formData.dateOfBirth);
       const age = today.getFullYear() - birthDate.getFullYear();
@@ -408,6 +429,74 @@ export default function AddStudent({ isEditMode = false }) {
     return isValid;
   };
 
+  const handlePageNavigation = (destination) => {
+    if (isEditMode && formHasUnsavedChanges()) {
+      setPendingNavigation(destination);
+      setShowUnsavedChangesModal(true);
+      return false; // Prevent navigation
+    } else {
+      // If no changes or not in edit mode, navigate directly
+      navigate(destination);
+      return true;
+    }
+  };
+
+  // Replace the entire useEffect that has all the navigation code
+  useEffect(() => {
+    // Only add navigation protection in edit mode
+    if (!isEditMode) return;
+
+    // Function to handle browser navigation events (back/forward buttons)
+    const handleBeforeUnload = (event) => {
+      if (formHasUnsavedChanges()) {
+        event.preventDefault();
+        event.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+        return event.returnValue;
+      }
+    };
+
+    // Add event listener for tab close/refresh
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Create a single function to check for navigation
+    const handleClick = (e) => {
+      // Only if we're in edit mode and have unsaved changes
+      if (formHasUnsavedChanges()) {
+        // Find the link element that was clicked
+        let element = e.target;
+        while (element && element !== document && !element.href) {
+          element = element.parentNode;
+        }
+
+        // If we found a link element
+        if (element && element.href) {
+          try {
+            // Extract the pathname from the href
+            const url = new URL(element.href);
+            // Store the pathname for later navigation
+            setPendingNavigation(url.pathname + url.search);
+            // Show confirmation modal
+            setShowUnsavedChangesModal(true);
+            // Prevent default navigation
+            e.preventDefault();
+          } catch (err) {
+            // Not a valid URL, let navigation happen
+            console.error("Failed to parse URL:", err);
+          }
+        }
+      }
+    };
+
+    // Add a single click listener to the document
+    document.addEventListener("click", handleClick, true);
+
+    // Clean up
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleClick, true);
+    };
+  }, [isEditMode, formHasUnsavedChanges]);
+
   // Handle form submission
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -430,7 +519,6 @@ export default function AddStudent({ isEditMode = false }) {
         fullName: formData.name,
         fatherName: formData.fatherName,
         motherName: formData.motherName,
-        dob: formattedDate,
         class: formData.class,
         gender: formData.gender,
         schoolUdiseCode: formData.udiseCode,
@@ -439,6 +527,9 @@ export default function AddStudent({ isEditMode = false }) {
       // Only add optional fields if they have values
       if (formData.uniqueId) {
         studentData.aparId = formData.uniqueId;
+      }
+      if (formattedDate) {
+        studentData.dob = formattedDate;
       }
 
       if (formData.hostel) {
@@ -636,7 +727,7 @@ export default function AddStudent({ isEditMode = false }) {
               <Grid item xs={12} md={6}>
                 <TextField
                   type="date"
-                  label="Date of Birth *"
+                  label="Date of Birth" // Removed the asterisk (*)
                   name="dateOfBirth"
                   value={
                     formData.dateOfBirth instanceof Date && !isNaN(formData.dateOfBirth)
@@ -650,7 +741,7 @@ export default function AddStudent({ isEditMode = false }) {
                   fullWidth
                   InputLabelProps={{ shrink: true }}
                   error={!!errors.dateOfBirth}
-                  helperText={errors.dateOfBirth}
+                  helperText={errors.dateOfBirth || "Optional"}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       height: "48px",
@@ -864,6 +955,16 @@ export default function AddStudent({ isEditMode = false }) {
           </form>
         </Paper>
       </div>
+      <ConfirmationModal
+        isOpen={showUnsavedChangesModal}
+        onClose={() => setShowUnsavedChangesModal(false)}
+        onConfirm={handleDiscardChanges}
+        title="Unsaved Changes"
+        changeType="Page"
+        fromValue="Edit Student"
+        toValue="Another Page"
+        message="You're about to exit without saving your changes. All edits will be lost."
+      />
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
     </ThemeProvider>
   );
