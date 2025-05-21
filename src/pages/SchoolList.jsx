@@ -22,6 +22,7 @@ import { useLocation } from "react-router-dom";
 import { FormControl } from "@mui/material";
 import { Select } from "@mui/material";
 import { InputLabel } from "@mui/material";
+import { Typography } from "@mui/material";
 
 const theme = createTheme({
   typography: {
@@ -117,6 +118,8 @@ export default function SchoolList() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [schoolToDelete, setSchoolToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pageSize, setPageSize] = useState(15);
+
   const navigate = useNavigate();
 
   // New state for filters
@@ -129,16 +132,11 @@ export default function SchoolList() {
   const fetchSchools = async () => {
     setIsLoading(true);
     try {
-      // Ensure we're explicitly requesting only 20 records per page
-      const response = await apiInstance.get(`/school/all?page=${currentPage}&pageSize=15`);
+      const response = await apiInstance.get(
+        `/school/all?page=${currentPage}&pageSize=${pageSize}`
+      );
       if (response.data.success) {
-        // console.log("API Response:", response.data.data); // Debug: Log the full response
-
-        // Check if we're getting the expected 20 records max
-        const schoolsData = response.data.data.schools;
-        // console.log("Schools count from API:", schoolsData.length);
-
-        setSchools(schoolsData);
+        setSchools(response.data.data.schools);
         setPagination(response.data.data.pagination);
       } else {
         toast.error("Failed to fetch schools");
@@ -151,10 +149,15 @@ export default function SchoolList() {
     }
   };
 
+  const handlePageSizeChange = (event) => {
+    setPageSize(event.target.value);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
   // Load schools on component mount and when page changes
   useEffect(() => {
     fetchSchools();
-  }, [currentPage]);
+  }, [currentPage,pageSize]);
 
   // Add this in your SchoolList component, in the useEffect section
   useEffect(() => {
@@ -802,18 +805,82 @@ export default function SchoolList() {
 
           <div
             style={{
-              width: "max-content",
-              margin: "25px auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between", // This spreads items to the edges
+              width: "100%",
+              margin: "20px 0",
+              padding: "0 24px", // Add some padding on the sides
             }}
           >
-            <Pagination
-              count={pagination.totalPages}
-              page={currentPage}
-              onChange={handlePageChange}
-              showFirstButton
-              showLastButton
-            />
+            {/* Empty div for left spacing to help with centering */}
+            <div style={{ width: "180px" }}></div>
+
+            {/* Centered pagination */}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Pagination
+                count={pagination.totalPages}
+                page={currentPage}
+                onChange={handlePageChange}
+                showFirstButton
+                showLastButton
+              />
+            </div>
+
+            {/* Right-aligned compact rows selector */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "180px",
+                justifyContent: "flex-end",
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#2F4F4F",
+                  mr: 1,
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                }}
+              >
+                Rows per page:
+              </Typography>
+              <Select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                variant="standard" // More compact variant
+                disableUnderline
+                sx={{
+                  height: "32px",
+                  minWidth: "60px",
+                  "& .MuiSelect-select": {
+                    color: "#2F4F4F",
+                    fontWeight: "600",
+                    py: 0,
+                    pl: 1,
+                  },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    elevation: 2,
+                    sx: {
+                      borderRadius: "8px",
+                      mt: 0.5,
+                    },
+                  },
+                }}
+              >
+                <MenuItem value={10}>10</MenuItem>
+                <MenuItem value={15}>15</MenuItem>
+                <MenuItem value={20}>20</MenuItem>
+                <MenuItem value={50}>50</MenuItem>
+                <MenuItem value={100}>100</MenuItem>
+              </Select>
+            </div>
           </div>
+
           <ToastContainer
             position="top-right"
             autoClose={3000}

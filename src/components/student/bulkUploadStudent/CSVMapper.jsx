@@ -102,7 +102,7 @@ export default function StudentCSVMapper({ file, onMappingComplete }) {
 			{ id: "fullName", label: "Full Name", required: true },
 			{ id: "fatherName", label: "Father Name", required: true },
 			{ id: "motherName", label: "Mother Name", required: true },
-			{ id: "dob", label: "DOB", required: true },
+			{ id: "dob", label: "DOB", required: false },
 			{ id: "class", label: "Class", required: true },
 			{ id: "gender", label: "Gender", required: true },
 			// { id: "schoolUdiseCode", label: "School UDISE Code", required: true },
