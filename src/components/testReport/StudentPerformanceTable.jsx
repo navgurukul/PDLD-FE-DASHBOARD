@@ -10,7 +10,6 @@ import {
   Tooltip,
 } from "@mui/material";
 import MUIDataTable from "mui-datatables";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import PersonIcon from "@mui/icons-material/Person";
 import ButtonCustom from "../ButtonCustom";
@@ -239,6 +238,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
     setFilterStatus("");
     setSortConfig({ key: null, direction: "asc" });
   };
+  const isAnyFilterActive = !!searchQuery.trim() || !!filterStatus;
 
   const defaultCustomHeadLabelRender = (columnMeta) => (
     <span
@@ -458,24 +458,30 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                     </Select>
                   </FormControl>
 
-                  {/* Reset Button */}
+                  {/*  Clear Filters */}
                   <div className="flex justify-end sm:justify-start w-full sm:w-auto">
-                    <Tooltip title="Reset Filters" placement="top">
-                      <div
-                        onClick={resetFilters}
-                        style={{
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          backgroundColor: "#f5f5f5",
-                          padding: "6px 12px",
-                          borderRadius: "4px",
-                          height: "48px",
-                        }}
-                      >
-                        <RestartAltIcon color="action" />
-                      </div>
-                    </Tooltip>
+                    {isAnyFilterActive && (
+                      <Tooltip title="Clear all filters" placement="top">
+                        <Button
+                          onClick={resetFilters}
+                          variant="text"
+                          sx={{
+                            color: "#2F4F4F",
+                            fontWeight: 600,
+                            fontSize: 16,
+                            textTransform: "none",
+                            height: "48px",
+                            padding: "0 12px",
+                            background: "transparent",
+                            "&:hover": {
+                              background: "#f5f5f5",
+                            },
+                          }}
+                        >
+                          Clear Filters
+                        </Button>
+                      </Tooltip>
+                    )}
                   </div>
                 </div>
 

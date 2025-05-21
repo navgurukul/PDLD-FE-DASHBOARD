@@ -17,7 +17,6 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, Select, InputLabel } from "@mui/material";
 import { Pagination } from "@mui/material";
 import { Search, X as CloseIcon, RefreshCw } from "lucide-react";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
@@ -437,6 +436,8 @@ const Reports = () => {
     setCurrentPage(1);
   };
 
+  const isAnyFilterActive = !!searchQuery.trim() || !!selectedBlock || !!selectedCluster;
+
   // Handle opening download menu
   const handleDownloadClick = (event) => {
     setDownloadMenuAnchorEl(event.currentTarget);
@@ -590,7 +591,7 @@ const Reports = () => {
           </div>
 
           <div className="bg-gray-300 rounded">
-             <Typography
+            <Typography
               variant="subtitle1"
               sx={{
                 bgcolor: theme.palette.secondary.light,
@@ -745,23 +746,29 @@ const Reports = () => {
 
           {/* Reset filter button */}
           <div>
-            <Button
-              variant="outlined"
-              onClick={resetFilters}
-              startIcon={<RestartAltIcon />}
-              sx={{
-                height: "48px",
-                borderRadius: "8px",
-                borderColor: "#2F4F4F",
-                color: "#2F4F4F",
-                "&:hover": {
-                  borderColor: "#2F4F4F",
-                  backgroundColor: "rgba(47, 79, 79, 0.04)",
-                },
-              }}
-            >
-              Reset
-            </Button>
+            {isAnyFilterActive && (
+              <Tooltip title="Clear all filters" placement="top">
+                <Button
+                  type="button"
+                  onClick={resetFilters}
+                  variant="text"
+                  sx={{
+                    color: "#2F4F4F",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    textTransform: "none",
+                    height: "48px",
+                    padding: "0 12px",
+                    background: "transparent",
+                    "&:hover": {
+                      background: "#f5f5f5",
+                    },
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </Tooltip>
+            )}
           </div>
 
           <div className="ml-auto">
@@ -867,37 +874,46 @@ const Reports = () => {
         >
           {selectedClassData && (
             <div className="flex flex-col w-full">
-              {/* Close button */}
-              <div className="self-end">
+              {/* School Name and Close Button in one row */}
+              <div className="flex items-center justify-between mb-4">
+                <div
+                  className="text-[24px] font-bold"
+                  style={{ fontFamily: "'Philosopher', sans-serif" }}
+                >
+                  {selectedClassData.udiseCode} - {selectedClassData.school}
+                </div>
                 <IconButton onClick={() => setClassModalOpen(false)} size="small" edge="end">
                   <CloseIcon />
                 </IconButton>
               </div>
 
-              {/* School info */}
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold text-[#2F4F4F] mb-2">
-                  {selectedClassData.school}
-                </h2>
-
-                {/* Class group and subject header */}
-                <div className="bg-gray-100 p-4 rounded-md mb-6 flex justify-between">
-                  <div className="text-[#2F4F4F] font-medium">
-                    Class Group: {selectedClassData.groupTitle}
-                  </div>
-                  <div className="text-[#2F4F4F] font-medium">
-                    Subject: {selectedClassData.subject}
-                  </div>
+              {/* Class group and subject in one row, subject not at extreme right */}
+              <div
+                className="bg-gray-100 p-4 rounded-md mb-6 flex items-center"
+                style={{ fontFamily: "'Karla', sans-serif" }}
+              >
+                <div className="text-[#2F4F4F] font-medium mr-8">
+                  Class Group: {selectedClassData.groupTitle}
                 </div>
+                <div className="text-[#2F4F4F] font-medium">
+                  Subject: {selectedClassData.subject}
+                </div>
+              </div>
 
-                {/* Class data in 2 columns */}
-                <div className="grid grid-cols-2 gap-x-8">
-                  {selectedClassData.data[0]?.classes?.map((classData, index) => (
-                    <div key={`class-${classData.class}-${index}`} className="mb-6">
-                      <div className="font-medium text-[#2F4F4F] mb-2">Class {classData.class}</div>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="text-gray-600">Avg. Marks</div>
-                        <div
+              {/* Classes in 2 columns, Avg Marks & Pass Rate in one line */}
+              <div className="grid grid-cols-2 gap-y-4 gap-x-12">
+                {selectedClassData.data[0]?.classes?.map((classData, index) => (
+                  <div
+                    key={`class-${classData.class}-${index}`}
+                    style={{ fontFamily: "'Karla', sans-serif" }}
+                  >
+                    <div className="font-medium text-[#2F4F4F] mb-2 text-base">
+                      Class {classData.class}
+                    </div>
+                    <div className="flex items-center gap-6 text-sm text-gray-700">
+                      <span>
+                        Avg Marks{" "}
+                        <span
                           className={
                             parseInt(classData.avgMarks) < 20
                               ? "text-red-600 font-medium"
@@ -905,23 +921,23 @@ const Reports = () => {
                           }
                         >
                           {classData.avgMarks}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                        <div className="text-gray-600">Pass Rate(%)</div>
-                        <div
+                        </span>
+                      </span>
+                      <span>
+                        Pass Rate(%){" "}
+                        <span
                           className={
                             parseFloat(classData.successRate) < 30
                               ? "text-red-600 font-medium"
                               : "font-medium"
                           }
                         >
-                          {classData.successRate}
-                        </div>
-                      </div>
+                          {classData.successRate}%
+                        </span>
+                      </span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

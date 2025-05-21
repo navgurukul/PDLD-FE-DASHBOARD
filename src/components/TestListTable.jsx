@@ -1,4 +1,3 @@
-////////////////// trying to add new ///////////////////
 import { useState, useEffect, useMemo } from "react";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, DocScanner } from "../utils/imagePath";
@@ -141,6 +140,8 @@ export default function TestListTable() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [classOpen, setClassOpen] = useState(false);
+  const [subjectOpen, setSubjectOpen] = useState(false);
   useEffect(() => {
     if (location.state?.successMessage) {
       toast.success(location.state.successMessage);
@@ -200,29 +201,25 @@ export default function TestListTable() {
       }
 
       // Build your URL with all applicable filters, including status
+      // let url = `/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
       let url = `/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
 
-      if (!selectedClass && !selectedSubject && !selectedStatus) {
-        url += `&page=${currentPage}`;
-      }
-      if (selectedClass.length === 0 && !selectedSubject && !selectedStatus) {
-        url += `&page=${currentPage}`;
-      }
-
       if (selectedClass.length > 0) {
-        url += `&testClass=${selectedClass.map((c) => c.replace("Class ", "")).join(",")}`;
+        selectedClass.forEach((c) => {
+          url += `&testClass=${encodeURIComponent(c.replace("Class ", ""))}`;
+        });
         url += `&page=1`;
       }
       if (selectedSubject.length > 0) {
-        url += `&subject=${selectedSubject.join(",")}`; // make changes here
+        selectedSubject.forEach((s) => {
+          url += `&subject=${encodeURIComponent(s)}`;
+        });
         url += `&page=1`;
       }
-
       if (selectedStatus) {
         url += `&testStatus=${selectedStatus}`;
         url += `&page=1`;
       }
-
       const response = await apiInstance.get(url);
       if (response.data && response.data.data) {
         setTests(response.data.data.data);
@@ -522,410 +519,421 @@ export default function TestListTable() {
       <div className="main-page-wrapper px-3 sm:px-4">
         <h5 className="text-lg font-bold text-[#2F4F4F]">All Tests</h5>
 
-        {/* Filters and Action Button - Stack on mobile */}
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
-          {/* Search and Filters - Takes full width on mobile */}
-          <div className="w-full lg:flex-1">
-            <div
-              className="flex flex-col md:flex-row md:flex-wrap gap-2 my-[10px] mx-0"
-              style={{ marginBottom: 24 }}
-            >
-              {/* Filter Container - Wrap on mobile */}
-              <div className="flex justify-between w-full gap-2">
-                <div className="flex flex-wrap gap-2">
-                  <TextField
-                    variant="outlined"
-                    placeholder="Search by Test Name"
-                    size="small"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    InputProps={{
-                      style: {
-                        backgroundColor: "#fff",
-                        borderRadius: "8px",
-                        height: "48px",
-                        minWidth: "250px",
-                        width: "360px",
-                      },
-                    }}
-                    sx={{ marginBottom: { xs: "10px", md: "0" } }}
-                  />
-                  {/* Class Dropdown */}
-                  <Autocomplete
-                    multiple
-                    disableCloseOnSelect
-                    id="class-multi-select"
-                    options={CLASS_OPTIONS}
-                    value={selectedClass}
-                    onChange={(event, newValue) => setSelectedClass(newValue)}
-                    getOptionLabel={(option) => option}
-                    renderOption={(props, option, { selected }) => (
-                      <li {...props}>
-                        <Checkbox
-                          icon={<CheckBoxOutlineBlankIcon fontSize="small" />}
-                          checkedIcon={<CheckBoxIcon fontSize="small" />}
-                          style={{ marginRight: 8 }}
-                          checked={selected}
-                          sx={{
-                            color: "#2F4F4F",
-                            "&.Mui-checked": {
-                              color: "#2F4F4F",
-                            },
-                          }}
-                        />
-                        {option}
-                      </li>
-                    )}
-                    renderInput={(params) => (
-                      <div
-                        ref={params.InputProps.ref}
-                        className="custom-class-input"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          height: "48px",
-                          border: classFocused ? "2px solid #2F4F4F" : "1px solid #ccc", // <-- yahan change karein
-                          borderRadius: "8px",
-                          background: "#fff",
-                          padding: "0 12px",
-                          width: "150px",
-                          minWidth: "150px",
-                          maxWidth: "220px",
-                          cursor: "pointer",
-                          position: "relative",
-                          transition: "border-color 0.2s",
-                        }}
-                        onClick={params.inputProps.onClick}
-                        onMouseDown={params.inputProps.onMouseDown}
-                        tabIndex={0}
-                        onFocus={() => setClassFocused(true)}
-                        onBlur={() => setClassFocused(false)}
-                      >
-                        <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16 }}>
-                          Class
-                        </span>
-                        {selectedClass.length > 0 && (
-                          <span className="class-count-badge">{selectedClass.length}</span>
-                        )}
-                        {selectedClass.length > 0 && (
-                          <span
-                            className="class-clear"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedClass([]);
-                            }}
-                            style={{
-                              marginLeft: 8,
-                              color: "#999",
-                              fontSize: 18,
-                              cursor: "pointer",
-                              userSelect: "none",
-                            }}
-                            title="Clear"
-                          >
-                            &#10005;
-                          </span>
-                        )}
-                        <span style={{ marginLeft: "auto", color: "#2F4F4F", fontSize: 15 }}>
-                          &#9662;
-                        </span>
-                        {/* Hide the actual input */}
-                        <input
-                          type="text"
-                          {...params.inputProps}
-                          style={{
-                            border: "none",
-                            outline: "none",
-                            width: 0,
-                            padding: 0,
-                            height: 0,
-                            background: "transparent",
-                            position: "absolute",
-                          }}
-                          tabIndex={-1}
-                          readOnly
-                        />
-                      </div>
-                    )}
-                    sx={{
-                      width: "150px",
-                      "& .MuiAutocomplete-inputRoot": {
-                        padding: "0 !important",
-                      },
-                      "& .MuiAutocomplete-tag": {
-                        display: "none",
-                      },
-                    }}
-                    PaperComponent={(props) => (
-                      <Paper
-                        {...props}
-                        sx={{
-                          border: "1px solid #ccc",
-                          boxShadow: "0px 4px 10px rgba(0,0,0,0.12)",
-                          borderRadius: "8px",
-                          width: "220px",
-                          minWidth: "200px",
-                          maxWidth: "300px",
-                          margin: "14px 0",
-                        }}
-                      />
-                    )}
-                    ListboxProps={{
-                      sx: {
-                        maxHeight: "none",
-                        "& .MuiAutocomplete-option[aria-selected='true'], & .MuiAutocomplete-option:hover":
-                          {
-                            backgroundColor: "transparent !important",
-                            color: "#2F4F4F",
-                          },
-                        "&": {
-                          scrollbarWidth: "none",
-                          msOverflowStyle: "none",
-                        },
-                        "&::-webkit-scrollbar": {
-                          display: "none",
-                        },
-                      },
-                    }}
-                  />
-                  {/* Subject Dropdown */}
-                  <Autocomplete
-                    multiple
-                    disableCloseOnSelect
-                    id="subject-multi-select"
-                    options={SUBJECT_OPTIONS}
-                    value={selectedSubject}
-                    onChange={(event, newValue) => setSelectedSubject(newValue)}
-                    getOptionLabel={(option) => option}
-                    renderOption={(props, option, { selected }) => (
-                      <li {...props}>
-                        <Checkbox
-                          icon={<CheckBoxOutlineBlankIcon fontSize="small" />}
-                          checkedIcon={<CheckBoxIcon fontSize="small" />}
-                          style={{ marginRight: 8 }}
-                          checked={selected}
-                          sx={{
-                            color: "#2F4F4F",
-                            "&.Mui-checked": {
-                              color: "#2F4F4F",
-                            },
-                          }}
-                        />
-                        {option}
-                      </li>
-                    )}
-                    renderInput={(params) => (
-                      <div
-                        ref={params.InputProps.ref}
-                        className="custom-subject-input"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          height: "48px",
-                          border: subjectFocused ? "2px solid #2F4F4F" : "1px solid #ccc", // <-- yahan change karein
-                          borderRadius: "8px",
-                          background: "#fff",
-                          padding: "0 12px",
-                          width: "150px",
-                          minWidth: "150px",
-                          maxWidth: "220px",
-                          cursor: "pointer",
-                          position: "relative",
-                          transition: "border-color 0.2s",
-                        }}
-                        onClick={params.inputProps.onClick}
-                        onMouseDown={params.inputProps.onMouseDown}
-                        tabIndex={0}
-                        onFocus={() => setSubjectFocused(true)}
-                        onBlur={() => setSubjectFocused(false)}
-                      >
-                        <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16 }}>
-                          Subject
-                        </span>
-                        {selectedSubject.length > 0 && (
-                          <span className="subject-count-badge">{selectedSubject.length}</span>
-                        )}
-                        {selectedSubject.length > 0 && (
-                          <span
-                            className="subject-clear"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedSubject([]);
-                            }}
-                            style={{
-                              marginLeft: 8,
-                              color: "#999",
-                              fontSize: 18,
-                              cursor: "pointer",
-                              userSelect: "none",
-                            }}
-                            title="Clear"
-                          >
-                            &#10005;
-                          </span>
-                        )}
-                        <span style={{ marginLeft: "auto", color: "#2F4F4F", fontSize: 15 }}>
-                          &#9662;
-                        </span>
-                        {/* Hide the actual input */}
-                        <input
-                          type="text"
-                          {...params.inputProps}
-                          style={{
-                            border: "none",
-                            outline: "none",
-                            width: 0,
-                            padding: 0,
-                            height: 0,
-                            background: "transparent",
-                            position: "absolute",
-                          }}
-                          tabIndex={-1}
-                          readOnly
-                        />
-                      </div>
-                    )}
-                    sx={{
-                      width: "150px",
-                      "& .MuiAutocomplete-tag": {
-                        display: "none",
-                      },
-                    }}
-                    PaperComponent={(props) => (
-                      <Paper
-                        {...props}
-                        sx={{
-                          border: "1px solid #ccc",
-                          boxShadow: "0px 4px 10px rgba(0,0,0,0.12)",
-                          borderRadius: "8px",
-                          width: "220px",
-                          minWidth: "200px",
-                          maxWidth: "300px",
-                          margin: "14px 0",
-                        }}
-                      />
-                    )}
-                    ListboxProps={{
-                      sx: {
-                        maxHeight: "none",
-                        "& .MuiAutocomplete-option[aria-selected='true'], & .MuiAutocomplete-option:hover":
-                          {
-                            backgroundColor: "transparent !important",
-                            color: "#2F4F4F",
-                          },
-                        "&": {
-                          scrollbarWidth: "none",
-                          msOverflowStyle: "none",
-                        },
-                        "&::-webkit-scrollbar": {
-                          display: "none",
-                        },
-                      },
-                    }}
-                  />
+        {/* Filters and Action Button - Responsive Row */}
+        <div className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 flex-wrap mb-4">
+          {/* Filters Group */}
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Search bar */}
+            <div className="flex-1 min-w-[120px] max-w-sm lg:w-[360px]">
+              <TextField
+                variant="outlined"
+                placeholder="Search by Test Name"
+                size="small"
+                fullWidth
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  style: {
+                    backgroundColor: "#fff",
+                    borderRadius: "8px",
+                    height: "48px",
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "8px",
+                    height: "48px",
+                  },
+                  "& .MuiOutlinedInput-input": {
+                    padding: "12px 16px",
+                  },
+                }}
+              />
+            </div>
 
-                  {/* Date Range Picker */}
+            {/* Class Dropdown */}
+            <div style={{ width: 150 }}>
+              <Autocomplete
+                open={classOpen}
+                onOpen={() => setClassOpen(true)}
+                onClose={() => setClassOpen(false)}
+                multiple
+                disableCloseOnSelect
+                id="class-multi-select"
+                options={CLASS_OPTIONS}
+                value={selectedClass}
+                onChange={(event, newValue) => setSelectedClass(newValue)}
+                getOptionLabel={(option) => option}
+                renderOption={(props, option, { selected }) => (
+                  <li {...props}>
+                    <Checkbox
+                      icon={<CheckBoxOutlineBlankIcon fontSize="small" />}
+                      checkedIcon={<CheckBoxIcon fontSize="small" />}
+                      style={{ marginRight: 8 }}
+                      checked={selected}
+                      sx={{
+                        color: "#2F4F4F",
+                        "&.Mui-checked": {
+                          color: "#2F4F4F",
+                        },
+                      }}
+                    />
+                    {option}
+                  </li>
+                )}
+                renderInput={(params) => (
                   <div
+                    ref={params.InputProps.ref}
+                    className="custom-class-input"
                     style={{
-                      border: dateFocused ? "2px solid #2F4F4F" : "1px solid lightgrey",
-                      borderRadius: "7px",
-                      height: "48px",
-                      transition: "border-color 0.2s",
                       display: "flex",
                       alignItems: "center",
-                      paddingLeft: 12,
-                      paddingRight: 12,
+                      height: "48px",
+                      border: classFocused ? "2px solid #2F4F4F" : "1px solid #ccc",
+                      borderRadius: "8px",
+                      background: "#fff",
+                      padding: "0 12px",
+                      width: "100%",
+                      minWidth: "100px",
+                      maxWidth: "150px",
+                      cursor: "pointer",
+                      position: "relative",
+                      transition: "border-color 0.2s",
                     }}
-                    className="w-full sm:w-auto min-w-[120px] mb-2 sm:mb-0"
+                    onClick={(e) => {
+                      if (e.target.classList.contains("class-clear")) return;
+                      setClassOpen(true);
+                    }}
                     tabIndex={0}
-                    onFocus={() => setDateFocused(true)}
-                    onBlur={() => setDateFocused(false)}
+                    onFocus={() => setClassFocused(true)}
+                    onBlur={() => setClassFocused(false)}
                   >
-                    <span
-                      style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16, marginRight: 8 }}
-                    >
-                      Date Range
+                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16 }}>Class</span>
+                    {selectedClass.length > 0 && (
+                      <span className="class-count-badge">{selectedClass.length}</span>
+                    )}
+                    {selectedClass.length > 0 && (
+                      <span
+                        className="class-clear"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedClass([]);
+                          setClassOpen(false);
+                        }}
+                        style={{
+                          marginLeft: 8,
+                          color: "#999",
+                          fontSize: 18,
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                        title="Clear"
+                      >
+                        &#10005;
+                      </span>
+                    )}
+                    <span style={{ marginLeft: "auto", color: "#2F4F4F", fontSize: 15 }}>
+                      &#9662;
                     </span>
-                    <div style={{ position: "relative", flex: 1 }}>
-                      <DatePicker
-                        className="my-date-picker w-full"
-                        selectsRange
-                        startDate={startDate}
-                        endDate={endDate}
-                        shouldCloseOnSelect={false}
-                        isClearable={false}
-                        onChange={(dates) => setDateRange(dates)}
-                        placeholderText=""
-                        dateFormat="dd/MM/yyyy"
-                      />
-                      {(startDate || endDate) && (
-                        <span
-                          className="datepicker-clear"
-                          onClick={() => setDateRange([null, null])}
-                          style={{
-                            position: "absolute",
-                            right: 10,
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            cursor: "pointer",
-                            zIndex: 2,
-                            fontSize: "14px",
-                            color: "#999",
-                          }}
-                        >
-                          &#10005;
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Reset Button */}
-                  {isAnyFilterActive && (
-                    <div className="flex justify-end sm:justify-start w-full sm:w-auto">
-                      <Tooltip title="Clear all filters" placement="top">
-                        <Button
-                          type="button"
-                          onClick={resetFilters}
-                          variant="text"
-                          sx={{
-                            color: "#2F4F4F",
-                            fontWeight: 600,
-                            fontSize: 16,
-                            textTransform: "none",
-                            height: "48px",
-                            padding: "0 12px",
-                            background: "transparent",
-                            "&:hover": {
-                              background: "#f5f5f5",
-                            },
-                          }}
-                        >
-                          Clear Filters
-                        </Button>
-                      </Tooltip>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  {userRole === "DISTRICT_OFFICER" && (
-                    <ButtonCustom
-                      imageName={addSymbolBtn}
-                      text={"Create Test"}
-                      onClick={handleCreateTest}
+                    <input
+                      type="text"
+                      {...params.inputProps}
+                      style={{
+                        border: "none",
+                        outline: "none",
+                        width: 0,
+                        padding: 0,
+                        height: 0,
+                        background: "transparent",
+                        position: "absolute",
+                      }}
+                      tabIndex={-1}
+                      readOnly
                     />
+                  </div>
+                )}
+                sx={{
+                  width: "100%",
+                  "& .MuiAutocomplete-inputRoot": {
+                    padding: "0 !important",
+                  },
+                  "& .MuiAutocomplete-tag": {
+                    display: "none",
+                  },
+                }}
+                PaperComponent={(props) => (
+                  <Paper
+                    {...props}
+                    sx={{
+                      border: "1px solid #ccc",
+                      boxShadow: "0px 4px 10px rgba(0,0,0,0.12)",
+                      borderRadius: "8px",
+                      width: "260px",
+                      minWidth: "220px",
+                      maxWidth: "420px",
+                      margin: "14px 0",
+                    }}
+                  />
+                )}
+                ListboxProps={{
+                  sx: {
+                    maxHeight: "none",
+                    "& .MuiAutocomplete-option[aria-selected='true'], & .MuiAutocomplete-option:hover":
+                      {
+                        backgroundColor: "transparent !important",
+                        color: "#2F4F4F",
+                      },
+                    "&": {
+                      scrollbarWidth: "none",
+                      msOverflowStyle: "none",
+                    },
+                    "&::-webkit-scrollbar": {
+                      display: "none",
+                    },
+                  },
+                }}
+              />
+            </div>
+
+            {/* Subject Dropdown */}
+            <div style={{ width: 150 }}>
+              <Autocomplete
+                multiple
+                disableCloseOnSelect
+                id="subject-multi-select"
+                options={SUBJECT_OPTIONS}
+                value={selectedSubject}
+                onChange={(event, newValue) => setSelectedSubject(newValue)}
+                getOptionLabel={(option) => option}
+                open={subjectOpen}
+                onOpen={() => setSubjectOpen(true)}
+                onClose={() => setSubjectOpen(false)}
+                renderOption={(props, option, { selected }) => (
+                  <li {...props}>
+                    <Checkbox
+                      icon={<CheckBoxOutlineBlankIcon fontSize="small" />}
+                      checkedIcon={<CheckBoxIcon fontSize="small" />}
+                      style={{ marginRight: 8 }}
+                      checked={selected}
+                      sx={{
+                        color: "#2F4F4F",
+                        "&.Mui-checked": {
+                          color: "#2F4F4F",
+                        },
+                      }}
+                    />
+                    {option}
+                  </li>
+                )}
+                renderInput={(params) => (
+                  <div
+                    ref={params.InputProps.ref}
+                    className="custom-subject-input"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      height: "48px",
+                      border: subjectFocused ? "2px solid #2F4F4F" : "1px solid #ccc",
+                      borderRadius: "8px",
+                      background: "#fff",
+                      padding: "0 12px",
+                      width: "100%",
+                      minWidth: "100px",
+                      maxWidth: "150px",
+                      cursor: "pointer",
+                      position: "relative",
+                      transition: "border-color 0.2s",
+                    }}
+                    onClick={(e) => {
+                      if (e.target.classList.contains("subject-clear")) return;
+                      setSubjectOpen(true);
+                    }}
+                    tabIndex={0}
+                    onFocus={() => setSubjectFocused(true)}
+                    onBlur={() => setSubjectFocused(false)}
+                  >
+                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16 }}>Subject</span>
+                    {selectedSubject.length > 0 && (
+                      <span className="subject-count-badge">{selectedSubject.length}</span>
+                    )}
+                    {selectedSubject.length > 0 && (
+                      <span
+                        className="subject-clear"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSubject([]);
+                          setSubjectOpen(false); // <-- yahi main fix hai
+                        }}
+                        style={{
+                          marginLeft: 8,
+                          color: "#999",
+                          fontSize: 18,
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                        title="Clear"
+                      >
+                        &#10005;
+                      </span>
+                    )}
+                    <span style={{ marginLeft: "auto", color: "#2F4F4F", fontSize: 15 }}>
+                      &#9662;
+                    </span>
+                    <input
+                      type="text"
+                      {...params.inputProps}
+                      style={{
+                        border: "none",
+                        outline: "none",
+                        width: 0,
+                        padding: 0,
+                        height: 0,
+                        background: "transparent",
+                        position: "absolute",
+                      }}
+                      tabIndex={-1}
+                      readOnly
+                    />
+                  </div>
+                )}
+                sx={{
+                  width: "100%",
+                  "& .MuiAutocomplete-tag": {
+                    display: "none",
+                  },
+                }}
+                PaperComponent={(props) => (
+                  <Paper
+                    {...props}
+                    sx={{
+                      border: "1px solid #ccc",
+                      boxShadow: "0px 4px 10px rgba(0,0,0,0.12)",
+                      borderRadius: "8px",
+                      width: "260px",
+                      minWidth: "220px",
+                      maxWidth: "420px",
+                      margin: "14px 0",
+                    }}
+                  />
+                )}
+                ListboxProps={{
+                  sx: {
+                    maxHeight: "620px",
+                    overflowY: "auto",
+                    "& .MuiAutocomplete-option[aria-selected='true'], & .MuiAutocomplete-option:hover":
+                      {
+                        backgroundColor: "transparent !important",
+                        color: "#2F4F4F",
+                      },
+                    "&": {
+                      scrollbarWidth: "none",
+                      msOverflowStyle: "none",
+                    },
+                    "&::-webkit-scrollbar": {
+                      display: "none",
+                    },
+                  },
+                }}
+              />
+            </div>
+            {/* Date Range Picker */}
+            <div className="flex-1 min-w-[120px] max-w-sm lg:w-[360px]">
+              <div
+                style={{
+                  border: dateFocused ? "2px solid #2F4F4F" : "1px solid lightgrey",
+                  borderRadius: "7px",
+                  height: "48px",
+                  transition: "border-color 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  paddingLeft: 12,
+                  paddingRight: 12,
+                  whiteSpace: "nowrap",
+                  position: "relative",
+                }}
+                tabIndex={0}
+                onFocus={() => setDateFocused(true)}
+                onBlur={() => setDateFocused(false)}
+              >
+                <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16, marginRight: 8 }}>
+                  Date Range
+                </span>
+                <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+                  <DatePicker
+                    className="my-date-picker w-full"
+                    selectsRange
+                    startDate={startDate}
+                    endDate={endDate}
+                    shouldCloseOnSelect={false}
+                    isClearable={false}
+                    onChange={(dates) => setDateRange(dates)}
+                    placeholderText=""
+                    dateFormat="dd/MM/yyyy"
+                  />
+                  {(startDate || endDate) && (
+                    <span
+                      className="datepicker-clear"
+                      onClick={() => setDateRange([null, null])}
+                      style={{
+                        position: "absolute",
+                        right: 10,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        cursor: "pointer",
+                        zIndex: 2,
+                        fontSize: "14px",
+                        color: "#999",
+                      }}
+                    >
+                      &#10005;
+                    </span>
                   )}
                 </div>
               </div>
             </div>
+
+            {/* Clear Filters */}
+            {isAnyFilterActive && (
+              <div>
+                <Tooltip title="Clear all filters" placement="top">
+                  <Button
+                    type="button"
+                    onClick={resetFilters}
+                    variant="text"
+                    sx={{
+                      color: "#2F4F4F",
+                      fontWeight: 600,
+                      fontSize: 16,
+                      textTransform: "none",
+                      height: "48px",
+                      padding: "0 12px",
+                      background: "transparent",
+                      "&:hover": {
+                        background: "#f5f5f5",
+                      },
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                </Tooltip>
+              </div>
+            )}
           </div>
+
+          {/* Create Test Button */}
+          {userRole === "DISTRICT_OFFICER" && (
+            <div className="shrink-0">
+              <ButtonCustom
+                imageName={addSymbolBtn}
+                text={"Create Test"}
+                onClick={handleCreateTest}
+              />
+            </div>
+          )}
         </div>
 
         {/* Data Table */}
-        <div
-          style={{ borderRadius: "8px" }}
-          className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
-        >
+        <div className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto">
           <MUIDataTable data={tableData} columns={columns} options={options} />
         </div>
 
@@ -940,14 +948,13 @@ export default function TestListTable() {
           />
         </div>
 
+        {/* Toasts and loading */}
         <ToastContainer
           position="top-right"
           autoClose={3000}
           hideProgressBar={false}
           closeOnClick
         />
-
-        {/* Loading Overlay */}
         {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
       </div>
     </ThemeProvider>
