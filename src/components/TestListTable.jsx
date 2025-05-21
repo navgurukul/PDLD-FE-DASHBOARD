@@ -837,7 +837,7 @@ export default function TestListTable() {
               />
             </div>
             {/* Date Range Picker */}
-            <div className="flex-1 min-w-[120px] max-w-sm lg:w-[360px]">
+            <div className="flex-1 min-w-[120px] max-w-sm lg:w-[160px]">
               <div
                 style={{
                   border: dateFocused ? "2px solid #2F4F4F" : "1px solid lightgrey",
@@ -855,9 +855,9 @@ export default function TestListTable() {
                 onFocus={() => setDateFocused(true)}
                 onBlur={() => setDateFocused(false)}
               >
-                <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16, marginRight: 8 }}>
-                  Date Range
-                </span>
+                {/* <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16, marginRight: 8 }}>
+                  Date
+                </span> */}
                 <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
                   <DatePicker
                     className="my-date-picker w-full"
@@ -867,7 +867,7 @@ export default function TestListTable() {
                     shouldCloseOnSelect={false}
                     isClearable={false}
                     onChange={(dates) => setDateRange(dates)}
-                    placeholderText=""
+                    placeholderText="Date Range"
                     dateFormat="dd/MM/yyyy"
                   />
                   {(startDate || endDate) && (
