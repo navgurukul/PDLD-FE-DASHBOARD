@@ -105,7 +105,7 @@ export default function StudentCSVMapper({ file, onMappingComplete }) {
 			{ id: "dob", label: "DOB", required: true },
 			{ id: "class", label: "Class", required: true },
 			{ id: "gender", label: "Gender", required: true },
-			{ id: "schoolUdiseCode", label: "School UDISE Code", required: true },
+			// { id: "schoolUdiseCode", label: "School UDISE Code", required: true },
 			{ id: "aparId", label: "APAR ID", required: false },
 			{ id: "hostel", label: "Hostel", required: false },
 			// Add any other fields that might be optional

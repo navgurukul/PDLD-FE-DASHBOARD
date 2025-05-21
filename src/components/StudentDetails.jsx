@@ -279,8 +279,22 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     if (!studentToDelete) return;
 
     setIsDeleting(true);
+
+     
     try {
-      const response = await apiInstance.delete(`/student/delete/${studentToDelete.id}`);
+      // Try multiple possible ID property names
+      const studentId = studentToDelete.id || studentToDelete._id || studentToDelete.studentId;
+
+      console.log("Student ID being used:", studentId);
+
+      if (!studentId) {
+        toast.error("Student ID not found. Cannot delete student.");
+        setIsDeleting(false);
+        closeDeleteModal();
+        return;
+      }
+
+      const response = await apiInstance.delete(`/student/delete/${studentId}`);
 
       if (response.data && response.data.success) {
         toast.success(`Student ${studentToDelete.fullName} has been deleted successfully!`);
@@ -487,8 +501,8 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           },
         }),
         customBodyRenderLite: (dataIndex) => {
-          const studentId = tableData[dataIndex][7]; // Get ID from tableData
-          const student = tableData[dataIndex][8]; // Get full student object
+          const student = tableData[dataIndex][9]; // Rename to student for consistency
+          const studentId = tableData[dataIndex][8];
 
           return (
             <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
@@ -516,26 +530,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                   padding: "2px",
                   minWidth: "unset",
                 }}
-                onClick={() => openDeleteModal(student)}
+                onClick={() => openDeleteModal(student)} // Now student is defined
                 title="Delete Student"
               >
                 <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
               </Button>
-
-              {/* <Button
-								variant="text"
-								size="small"
-								sx={{
-									color: "#4caf50",
-									"&:hover": { backgroundColor: "transparent" },
-									padding: "2px",
-									minWidth: "unset",
-								}}
-								onClick={() => handleViewStudentReport(studentId, student)}
-								title="View Report"
-							>
-								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
-							</Button> */}
             </div>
           );
         },
