@@ -687,98 +687,125 @@ const TestCreationForm = () => {
             </div>
           </div>
 
-          <div className={`grid grid-cols-1 md:grid-cols-${formData.testTag === "Monthly" ? "2" : "1"} gap-x-6 gap-y-4`}>
-  {/* Test Tag Dropdown */}
-  <div className={formData.testTag === "Monthly" ? "" : "col-span-1"}>
-    <label
-      className="block mb-2 text-sm"
-      htmlFor="testTag"
-      style={{
-        fontFamily: "'Work Sans', sans-serif",
-        fontWeight: 600,
-        fontSize: "18px",
-        color: "#2F4F4F",
-      }}
-    >
-      Test Tag
-    </label>
-    <div className="relative">
-      <select
-        id="testTag"
-        name="testTag"
-        className={`w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none ${
-          editMode ? "bg-gray-100 cursor-not-allowed" : ""
-        }`}
-        value={formData.testTag}
-        onChange={handleFormChange}
-        disabled={editMode}
-      >
-        <option value="">Select Test Tag</option>
-        <option value="Monthly">Monthly</option>
-        <option value="Quarterly">Quarterly</option>
-        <option value="Half_Yearly">Half Yearly</option>
-        <option value="Pre_Board">Pre Boards</option>
-        <option value="Annual">Annual</option>
-      </select>
-      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-        <svg
-          className="fill-current h-4 w-4"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-        >
-          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-        </svg>
-      </div>
-    </div>
-  </div>
+          <div
+            className={`grid grid-cols-1 md:grid-cols-${
+              formData.testTag === "Monthly" && !editMode ? "2" : "1"
+            } gap-x-6 gap-y-4`}
+          >
+            {/* Test Tag - Show combined value in edit mode, separate dropdowns in create mode */}
+            {editMode ? (
+              // Edit Mode: Show combined test tag as readonly
+              <div className="col-span-1">
+                <label
+                  className="block mb-2 text-sm"
+                  htmlFor="testTagDisplay"
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: 600,
+                    fontSize: "18px",
+                    color: "#2F4F4F",
+                  }}
+                >
+                  Test Tag
+                </label>
+                <input
+                  id="testTagDisplay"
+                  type="text"
+                  className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100 text-[#2F4F4F] cursor-not-allowed"
+                  value={getFormattedTestTag()}
+                  readOnly
+                  disabled
+                />
+              </div>
+            ) : (
+              // Create Mode: Show separate dropdowns
+              <>
+                <div className={formData.testTag === "Monthly" ? "" : "col-span-1"}>
+                  <label
+                    className="block mb-2 text-sm"
+                    htmlFor="testTag"
+                    style={{
+                      fontFamily: "'Work Sans', sans-serif",
+                      fontWeight: 600,
+                      fontSize: "18px",
+                      color: "#2F4F4F",
+                    }}
+                  >
+                    Test Tag
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="testTag"
+                      name="testTag"
+                      className="w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none"
+                      value={formData.testTag}
+                      onChange={handleFormChange}
+                    >
+                      <option value="">Select Test Tag</option>
+                      <option value="Monthly">Monthly</option>
+                      <option value="Quarterly">Quarterly</option>
+                      <option value="Half_Yearly">Half Yearly</option>
+                      <option value="Pre_Board">Pre Boards</option>
+                      <option value="Annual">Annual</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                      <svg
+                        className="fill-current h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
 
-  {/* Test Series Month Dropdown - Only show if Monthly */}
-  {formData.testTag === "Monthly" && (
-    <div>
-      <label
-        className="block mb-2 text-sm"
-        htmlFor="testSeriesMonth"
-        style={{
-          fontFamily: "'Work Sans', sans-serif",
-          fontWeight: 600,
-          fontSize: "18px",
-          color: "#2F4F4F",
-        }}
-      >
-        Test Series Month
-      </label>
-      <div className="relative">
-        <select
-          id="testSeriesMonth"
-          name="testSeriesMonth"
-          className={`w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none ${
-            editMode ? "bg-gray-100 cursor-not-allowed" : ""
-          }`}
-          value={testSeriesMonth}
-          onChange={handleTestSeriesMonthChange}
-          disabled={editMode || formData.testTag !== "Monthly"}
-        >
-          <option value="">Select Month</option>
-          <option value="January">January</option>
-          <option value="February">February</option>
-          <option value="March">March</option>
-          <option value="April">April</option>
-          <option value="May">May</option>
-          <option value="June">June</option>
-          <option value="July">July</option>
-          <option value="August">August</option>
-          <option value="September">September</option>
-          <option value="October">October</option>
-          <option value="November">November</option>
-          <option value="December">December</option>
-        </select>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-          <ChevronDown className="h-4 w-4 text-gray-500" />
-        </div>
-      </div>
-    </div>
-  )}
-</div>
+                {/* Test Series Month Dropdown - Only show if Monthly in create mode */}
+                {formData.testTag === "Monthly" && (
+                  <div>
+                    <label
+                      className="block mb-2 text-sm"
+                      htmlFor="testSeriesMonth"
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 600,
+                        fontSize: "18px",
+                        color: "#2F4F4F",
+                      }}
+                    >
+                      Test Series Month
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="testSeriesMonth"
+                        name="testSeriesMonth"
+                        className="w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none"
+                        value={testSeriesMonth}
+                        onChange={handleTestSeriesMonthChange}
+                      >
+                        <option value="">Select Month</option>
+                        <option value="January">January</option>
+                        <option value="February">February</option>
+                        <option value="March">March</option>
+                        <option value="April">April</option>
+                        <option value="May">May</option>
+                        <option value="June">June</option>
+                        <option value="July">July</option>
+                        <option value="August">August</option>
+                        <option value="September">September</option>
+                        <option value="October">October</option>
+                        <option value="November">November</option>
+                        <option value="December">December</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Class Group Selection Section - Compressed */}
@@ -810,7 +837,10 @@ const TestCreationForm = () => {
                       ? "border-[#2F4F4F] shadow-sm bg-white"
                       : "border-[#E0E5E5] bg-white hover:border-[#597272]"
                   } ${editMode ? "opacity-75" : ""}`}
-                  style={{ height: activeClassGroupId === group.id ? "111px" : "63px",boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",}}
+                  style={{
+                    height: activeClassGroupId === group.id ? "111px" : "63px",
+                    boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
+                  }}
                   onClick={() => !editMode && handleGroupCardSelect(group.id)}
                   tabIndex={!editMode ? "0" : "-1"}
                   onKeyDown={(e) => {
@@ -883,7 +913,10 @@ const TestCreationForm = () => {
                       ? "border-[#2F4F4F] shadow-sm bg-white"
                       : "border-[#E0E5E5] bg-white hover:border-[#597272]"
                   } ${editMode ? "opacity-75" : ""}`}
-                  style={{ height: activeClassGroupId === group.id ? "111px" : "63px", boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",}}
+                  style={{
+                    height: activeClassGroupId === group.id ? "111px" : "63px",
+                    boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
+                  }}
                   onClick={() => !editMode && handleGroupCardSelect(group.id)}
                   tabIndex={!editMode ? "0" : "-1"}
                   onKeyDown={(e) => {
@@ -956,7 +989,10 @@ const TestCreationForm = () => {
                       ? "border-[#2F4F4F] shadow-sm bg-white"
                       : "border-[#E0E5E5] bg-white hover:border-[#597272]"
                   } ${editMode ? "opacity-75" : ""}`}
-                    style={{ height: activeClassGroupId === group.id ? "111px" : "63px",boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)", }}
+                  style={{
+                    height: activeClassGroupId === group.id ? "111px" : "63px",
+                    boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
+                  }}
                   onClick={() => !editMode && handleGroupCardSelect(group.id)}
                   tabIndex={!editMode ? "0" : "-1"}
                   onKeyDown={(e) => {

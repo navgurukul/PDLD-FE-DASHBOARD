@@ -11,7 +11,6 @@ import {
   Button,
   ThemeProvider,
   createTheme,
-  Pagination,
 } from "@mui/material";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import MUIDataTable from "mui-datatables";
@@ -103,31 +102,16 @@ const theme = createTheme({
         },
       },
     },
-    MuiPaginationItem: {
-      styleOverrides: {
-        root: {
-          color: "black", // Change default text color
-          backgroundColor: "white", // Change the background color of all buttons
-          "&.Mui-selected": {
-            backgroundColor: "#2F4F4F", // Change color when selected
-            color: "white",
-          },
-          "&:hover": {
-            backgroundColor: "#A3BFBF", // Hover color
-          },
-        },
-      },
-    },
   },
 });
 
 const StudentDetails = ({ schoolId, schoolName }) => {
   const navigate = useNavigate();
-  const [selectedClass, setSelectedClass] = useState("1");
+  const [selectedClass, setSelectedClass] = useState(""); // Empty string for "All Classes"
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
-  const [students, setStudents] = useState([]);
-  const [classes, setClasses] = useState([]);
+  const [allStudents, setAllStudents] = useState([]); // Store all students
+  const [availableClasses, setAvailableClasses] = useState([]); // Store unique classes
   const [schoolInfo, setSchoolInfo] = useState({
     udiseCode: "",
     blockName: "",
@@ -137,12 +121,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     assignedCP: "NA",
   });
 
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalStudents, setTotalStudents] = useState(0);
-  const pageSize = 10; // Number of students per page
-
-  // Delete confirmation modal state - separated like SchoolList
+  // Delete confirmation modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -150,9 +129,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
   // Handle class change
   const handleClassChange = (event) => {
     setSelectedClass(event.target.value);
-    // Filter students based on class
-    filterStudentsByClass(event.target.value);
-    setCurrentPage(1); // Reset to first page when class changes
   };
 
   // Handle search query change
@@ -160,28 +136,12 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     setSearchQuery(event.target.value);
   };
 
-  // Handle pagination change
-  const handlePageChange = (event, newPage) => {
-    setCurrentPage(newPage);
-  };
-
-  // Filter students by selected class
-  const filterStudentsByClass = (classValue) => {
-    const selectedClassData = classes.find(
-      (classData) => classData.class.toString() === classValue
-    );
-    if (selectedClassData) {
-      setStudents(selectedClassData.students || []);
-    } else {
-      setStudents([]);
-    }
-  };
-
-  // Fetch students from the API
+  // Fetch all students from the API
   const fetchStudents = async () => {
     setIsLoadingStudents(true);
     try {
-      const response = await apiInstance.get(`/student/school/${schoolId}?page=${currentPage}&pageSize=${pageSize}`);
+      // Fetch all students without pagination
+      const response = await apiInstance.get(`/student/school/${schoolId}`);
       const result = response.data;
 
       if (result.success && result.data && result.data.data) {
@@ -197,36 +157,39 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           assignedCP: schoolData.assignedCP || "NA",
         });
 
-        // Store the list of classes
-        setClasses(schoolData.classes || []);
-
-        // Set total students for pagination
-        if (schoolData.pagination) {
-          setTotalStudents(schoolData.pagination.totalRecords || 0);
-        } else {
-          setTotalStudents(schoolData.totalStudentsInSchool || 0);
+        // Extract all students from all classes
+        let students = [];
+        let classSet = new Set();
+        
+        if (schoolData.classes && Array.isArray(schoolData.classes)) {
+          schoolData.classes.forEach((classData) => {
+            if (classData.students && Array.isArray(classData.students)) {
+              // Add class information to each student
+              const studentsWithClass = classData.students.map(student => ({
+                ...student,
+                class: classData.class
+              }));
+              students = [...students, ...studentsWithClass];
+              classSet.add(classData.class);
+            }
+          });
         }
 
-        // Initialize with class 1 if available, else first available class
-        const class1Data = schoolData.classes.find(
-          (classData) => classData.class.toString() === "1"
-        );
+        // Set all students
+        setAllStudents(students);
+        
+        // Set available classes sorted numerically
+        const sortedClasses = Array.from(classSet).sort((a, b) => Number(a) - Number(b));
+        setAvailableClasses(sortedClasses);
 
-        if (class1Data) {
-          setStudents(class1Data.students || []);
-        } else if (schoolData.classes.length > 0) {
-          // If class 1 doesn't exist, default to first available class
-          setSelectedClass(schoolData.classes[0].class.toString());
-          setStudents(schoolData.classes[0].students || []);
-        }
       } else {
         console.error("API response format unexpected:", result);
-        setStudents([]);
+        setAllStudents([]);
       }
     } catch (error) {
       console.error("Error fetching students:", error);
       toast.error("Failed to load students. Please try again later.");
-      setStudents([]);
+      setAllStudents([]);
     } finally {
       setIsLoadingStudents(false);
     }
@@ -236,7 +199,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     if (schoolId) {
       fetchStudents();
     }
-  }, [schoolId, currentPage, location.key]);
+  }, [schoolId, location.key]);
 
   const handleEditStudent = (studentId, student) => {
     // Create a copy of the student object to avoid modifying the original
@@ -262,19 +225,19 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     });
   };
 
-  // Open delete confirmation modal - similar to SchoolList
+  // Open delete confirmation modal
   const openDeleteModal = (student) => {
     setStudentToDelete(student);
     setDeleteModalOpen(true);
   };
 
-  // Close delete confirmation modal - similar to SchoolList
+  // Close delete confirmation modal
   const closeDeleteModal = () => {
     setDeleteModalOpen(false);
     setStudentToDelete(null);
   };
 
-  // Function to handle deleting a student - similar to SchoolList's confirmDeleteSchool
+  // Function to handle deleting a student
   const confirmDeleteStudent = async () => {
     if (!studentToDelete) return;
 
@@ -312,12 +275,17 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     }
   };
 
-  // Filter students based on search query
-  const filteredStudents = students.filter(
-    (student) =>
-      student?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (student?.aparId && student.aparId.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Filter students based on search query and selected class
+  const filteredStudents = allStudents.filter((student) => {
+    // First filter by search query
+    const matchesSearch = student?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (student?.aparId && student.aparId.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // Then filter by class if a class is selected
+    const matchesClass = selectedClass === "" || student.class?.toString() === selectedClass;
+    
+    return matchesSearch && matchesClass;
+  });
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -566,7 +534,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     pagination: false,
     selectableRows: "none",
     responsive: "standard",
-    // onRowClick: handleRowClick, <-- REMOVE THIS LINE
     textLabels: {
       body: {
         noMatch: "No students found",
@@ -581,7 +548,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
   };
 
   const handleAddStudent = () => {
-    // () => navigate(`/schools/schoolDetail/addStudents`)
     navigate(`/schools/schoolDetail/${schoolId}/addStudents`, {
       state: {
         schoolId: schoolId,
@@ -642,11 +608,14 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                 value={selectedClass}
                 onChange={handleClassChange}
                 displayEmpty
-                renderValue={(value) => `Class ${value}`}
+                renderValue={(value) => value === "" ? "All Classes" : `Class ${value}`}
               >
-                {classes.map((classData) => (
-                  <MenuItem key={classData.class} value={classData.class.toString()}>
-                    Class {classData.class}
+                <MenuItem value="">
+                  <em>All Classes</em>
+                </MenuItem>
+                {availableClasses.map((classNum) => (
+                  <MenuItem key={classNum} value={classNum.toString()}>
+                    Class {classNum}
                   </MenuItem>
                 ))}
               </Select>
@@ -699,19 +668,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           </div>
         )}
 
-        {/* Pagination Component */}
-        {!isLoadingStudents && filteredStudents.length > 0 && (
-          <div style={{ width: "max-content", margin: "25px auto" }}>
-            <Pagination
-              count={Math.ceil(totalStudents / pageSize)}
-              page={currentPage}
-              onChange={handlePageChange}
-              showFirstButton
-              showLastButton
-            />
-          </div>
-        )}
-
         {filteredStudents.length === 0 && !isLoadingStudents && (
           <Box
             sx={{
@@ -725,13 +681,16 @@ const StudentDetails = ({ schoolId, schoolName }) => {
             }}
           >
             <Typography variant="body1" sx={{ mb: 2, color: "text.secondary" }}>
-              No students found in Class {selectedClass}.
+              {selectedClass ? 
+                `No students found in Class ${selectedClass}.` : 
+                "No students found."
+              }
             </Typography>
             <Typography variant="body1">Click "Add Student" to register a new student.</Typography>
           </Box>
         )}
 
-        {/* Delete Confirmation Modal - Following SchoolList approach exactly */}
+        {/* Delete Confirmation Modal */}
         <DeleteConfirmationModal
           open={deleteModalOpen}
           onClose={closeDeleteModal}
