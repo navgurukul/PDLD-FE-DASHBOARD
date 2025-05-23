@@ -624,7 +624,17 @@ const TestCreationForm = () => {
         <div className="bg-white   ">
           {/* Test Type with Radio Buttons */}
           <div className="mb-6">
-            <label className="block font-medium text-[#2F4F4F] mb-3 text-sm">Test Type</label>
+            <label
+              className="block mb-3 text-sm"
+              style={{
+                fontFamily: "'Work Sans', sans-serif",
+                fontWeight: 600,
+                fontSize: "18px",
+                color: "#2F4F4F",
+              }}
+            >
+              Test Type
+            </label>
             <div className="flex items-center space-x-6">
               <div className="flex items-center">
                 <input
@@ -637,7 +647,16 @@ const TestCreationForm = () => {
                   onChange={handleFormChange}
                   disabled={editMode}
                 />
-                <label htmlFor="syllabus" className="ml-2 block text-sm font-medium text-[#2F4F4F]">
+                <label
+                  htmlFor="syllabus"
+                  className="ml-2 block text-sm"
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: formData.testType === "syllabus" ? 600 : 400,
+                    fontSize: "18px",
+                    color: "#2F4F4F",
+                  }}
+                >
                   Syllabus
                 </label>
               </div>
@@ -652,95 +671,129 @@ const TestCreationForm = () => {
                   onChange={handleFormChange}
                   disabled={editMode}
                 />
-                <label htmlFor="remedial" className="ml-2 block text-sm font-medium text-[#2F4F4F]">
+                <label
+                  htmlFor="remedial"
+                  className="ml-2 block text-sm"
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: formData.testType === "remedial" ? 600 : 400,
+                    fontSize: "18px",
+                    color: "#2F4F4F",
+                  }}
+                >
                   Remedial
                 </label>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-            {/* Test Tag Dropdown */}
-            <div>
-              <label className="block font-medium text-[#2F4F4F] mb-2 text-sm" htmlFor="testTag">
-                Test Tag
-              </label>
-              <div className="relative">
-                <select
-                  id="testTag"
-                  name="testTag"
-                  className={`w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none ${
-                    editMode ? "bg-gray-100 cursor-not-allowed" : ""
-                  }`}
-                  value={formData.testTag}
-                  onChange={handleFormChange}
-                  disabled={editMode}
-                >
-                  <option value="">Select Test Tag</option>
-                  <option value="Monthly">Monthly</option>
-                  <option value="Quarterly">Quarterly</option>
-                  <option value="Half_Yearly">Half Yearly</option>
-                  <option value="Pre_Board">Pre Boards</option>
-                  <option value="Annual">Annual</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                  <svg
-                    className="fill-current h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+          <div className={`grid grid-cols-1 md:grid-cols-${formData.testTag === "Monthly" ? "2" : "1"} gap-x-6 gap-y-4`}>
+  {/* Test Tag Dropdown */}
+  <div className={formData.testTag === "Monthly" ? "" : "col-span-1"}>
+    <label
+      className="block mb-2 text-sm"
+      htmlFor="testTag"
+      style={{
+        fontFamily: "'Work Sans', sans-serif",
+        fontWeight: 600,
+        fontSize: "18px",
+        color: "#2F4F4F",
+      }}
+    >
+      Test Tag
+    </label>
+    <div className="relative">
+      <select
+        id="testTag"
+        name="testTag"
+        className={`w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none ${
+          editMode ? "bg-gray-100 cursor-not-allowed" : ""
+        }`}
+        value={formData.testTag}
+        onChange={handleFormChange}
+        disabled={editMode}
+      >
+        <option value="">Select Test Tag</option>
+        <option value="Monthly">Monthly</option>
+        <option value="Quarterly">Quarterly</option>
+        <option value="Half_Yearly">Half Yearly</option>
+        <option value="Pre_Board">Pre Boards</option>
+        <option value="Annual">Annual</option>
+      </select>
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+        <svg
+          className="fill-current h-4 w-4"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+        >
+          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+        </svg>
+      </div>
+    </div>
+  </div>
 
-            {/* Monthly Test Series Number */}
-            {/* Monthly Test Series Month */}
-            <div>
-              <label
-                className="block font-medium text-[#2F4F4F] mb-2 text-sm"
-                htmlFor="testSeriesMonth"
-              >
-                Test Series Month
-              </label>
-              <div className="relative">
-                <select
-                  id="testSeriesMonth"
-                  name="testSeriesMonth"
-                  className={`w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none ${
-                    editMode ? "bg-gray-100 cursor-not-allowed" : ""
-                  }`}
-                  value={testSeriesMonth}
-                  onChange={handleTestSeriesMonthChange}
-                  disabled={editMode || formData.testTag !== "Monthly"}
-                >
-                  <option value="">Select Month</option>
-                  <option value="January">January</option>
-                  <option value="February">February</option>
-                  <option value="March">March</option>
-                  <option value="April">April</option>
-                  <option value="May">May</option>
-                  <option value="June">June</option>
-                  <option value="July">July</option>
-                  <option value="August">August</option>
-                  <option value="September">September</option>
-                  <option value="October">October</option>
-                  <option value="November">November</option>
-                  <option value="December">December</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
-                </div>
-              </div>
-            </div>
-          </div>
+  {/* Test Series Month Dropdown - Only show if Monthly */}
+  {formData.testTag === "Monthly" && (
+    <div>
+      <label
+        className="block mb-2 text-sm"
+        htmlFor="testSeriesMonth"
+        style={{
+          fontFamily: "'Work Sans', sans-serif",
+          fontWeight: 600,
+          fontSize: "18px",
+          color: "#2F4F4F",
+        }}
+      >
+        Test Series Month
+      </label>
+      <div className="relative">
+        <select
+          id="testSeriesMonth"
+          name="testSeriesMonth"
+          className={`w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none ${
+            editMode ? "bg-gray-100 cursor-not-allowed" : ""
+          }`}
+          value={testSeriesMonth}
+          onChange={handleTestSeriesMonthChange}
+          disabled={editMode || formData.testTag !== "Monthly"}
+        >
+          <option value="">Select Month</option>
+          <option value="January">January</option>
+          <option value="February">February</option>
+          <option value="March">March</option>
+          <option value="April">April</option>
+          <option value="May">May</option>
+          <option value="June">June</option>
+          <option value="July">July</option>
+          <option value="August">August</option>
+          <option value="September">September</option>
+          <option value="October">October</option>
+          <option value="November">November</option>
+          <option value="December">December</option>
+        </select>
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+          <ChevronDown className="h-4 w-4 text-gray-500" />
+        </div>
+      </div>
+    </div>
+  )}
+</div>
         </div>
 
         {/* Class Group Selection Section - Compressed */}
 
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-[#2F4F4F] mb-4 font-['Karla']">
+          <h2
+            className="mb-4"
+            style={{
+              fontFamily: "'Work Sans', sans-serif",
+              fontWeight: 600,
+              fontSize: "18px",
+              color: "#2F4F4F",
+              marginTop: "30px",
+            }}
+          >
             {editMode ? "Target Class Group" : "Select Target Class Group"}
           </h2>
 
@@ -757,6 +810,7 @@ const TestCreationForm = () => {
                       ? "border-[#2F4F4F] shadow-sm bg-white"
                       : "border-[#E0E5E5] bg-white hover:border-[#597272]"
                   } ${editMode ? "opacity-75" : ""}`}
+                  style={{ height: activeClassGroupId === group.id ? "111px" : "63px",boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",}}
                   onClick={() => !editMode && handleGroupCardSelect(group.id)}
                   tabIndex={!editMode ? "0" : "-1"}
                   onKeyDown={(e) => {
@@ -767,7 +821,15 @@ const TestCreationForm = () => {
                   }}
                 >
                   <div className="p-6">
-                    <div className="text-base font-medium text-[#2F4F4F] mb-3 font-['Karla']">
+                    <div
+                      className="text-base mb-3"
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        fontSize: "18px",
+                        color: "#2F4F4F",
+                      }}
+                    >
                       {group.name}
                     </div>
                     {activeClassGroupId === group.id && (
@@ -781,7 +843,7 @@ const TestCreationForm = () => {
                               className={`px-3 py-1 rounded-full text-sm transition-all ${
                                 selectedClasses[className]
                                   ? "bg-[#2F4F4F] text-white border-[#2F4F4F] font-medium"
-                                  : "bg-white border border-[#2F4F4F] text-[#2F4F4F] hover:bg-[#F0F5F5]"
+                                  : "bg-[#EAEDED]  text-[#2F4F4F] hover:bg-[#F0F5F5]"
                               } ${editMode ? "pointer-events-none" : ""}`}
                               onClick={(e) => {
                                 if (!editMode) {
@@ -821,6 +883,7 @@ const TestCreationForm = () => {
                       ? "border-[#2F4F4F] shadow-sm bg-white"
                       : "border-[#E0E5E5] bg-white hover:border-[#597272]"
                   } ${editMode ? "opacity-75" : ""}`}
+                  style={{ height: activeClassGroupId === group.id ? "111px" : "63px", boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",}}
                   onClick={() => !editMode && handleGroupCardSelect(group.id)}
                   tabIndex={!editMode ? "0" : "-1"}
                   onKeyDown={(e) => {
@@ -831,7 +894,15 @@ const TestCreationForm = () => {
                   }}
                 >
                   <div className="p-6">
-                    <div className="text-base font-medium text-[#2F4F4F] mb-3 font-['Karla']">
+                    <div
+                      className="text-base mb-3"
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        fontSize: "18px",
+                        color: "#2F4F4F",
+                      }}
+                    >
                       {group.name}
                     </div>
                     {activeClassGroupId === group.id && (
@@ -845,7 +916,7 @@ const TestCreationForm = () => {
                               className={`px-3 py-1 rounded-full text-sm transition-all ${
                                 selectedClasses[className]
                                   ? "bg-[#2F4F4F] text-white border-[#2F4F4F] font-medium"
-                                  : "bg-white border border-[#2F4F4F] text-[#2F4F4F] hover:bg-[#F0F5F5]"
+                                  : "bg-[#EAEDED]  text-[#2F4F4F] hover:bg-[#F0F5F5]"
                               } ${editMode ? "pointer-events-none" : ""}`}
                               onClick={(e) => {
                                 if (!editMode) {
@@ -885,6 +956,7 @@ const TestCreationForm = () => {
                       ? "border-[#2F4F4F] shadow-sm bg-white"
                       : "border-[#E0E5E5] bg-white hover:border-[#597272]"
                   } ${editMode ? "opacity-75" : ""}`}
+                    style={{ height: activeClassGroupId === group.id ? "111px" : "63px",boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)", }}
                   onClick={() => !editMode && handleGroupCardSelect(group.id)}
                   tabIndex={!editMode ? "0" : "-1"}
                   onKeyDown={(e) => {
@@ -895,7 +967,15 @@ const TestCreationForm = () => {
                   }}
                 >
                   <div className="p-6">
-                    <div className="text-base font-medium text-[#2F4F4F] mb-3 font-['Karla']">
+                    <div
+                      className="text-base mb-3"
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        fontSize: "18px",
+                        color: "#2F4F4F",
+                      }}
+                    >
                       {group.name}
                     </div>
                     {activeClassGroupId === group.id && (
@@ -909,7 +989,7 @@ const TestCreationForm = () => {
                               className={`px-3 py-1 rounded-full text-sm transition-all ${
                                 selectedClasses[className]
                                   ? "bg-[#2F4F4F] text-white border-[#2F4F4F] font-medium"
-                                  : "bg-white border border-[#2F4F4F] text-[#2F4F4F] hover:bg-[#F0F5F5]"
+                                  : "bg-[#EAEDED]  text-[#2F4F4F] hover:bg-[#F0F5F5]"
                               } ${editMode ? "pointer-events-none" : ""}`}
                               onClick={(e) => {
                                 if (!editMode) {
@@ -959,7 +1039,7 @@ const TestCreationForm = () => {
                   <div className="mb-1">
                     <label
                       htmlFor={`max_score_${getClassId(className)}`}
-                      className="block text-sm font-medium text-[#597272]"
+                      className="block text-sm font-semibold text-[#2F4F4F]"
                     >
                       Overall Max Score
                     </label>
@@ -985,7 +1065,7 @@ const TestCreationForm = () => {
               {/* Subjects Table */}
               <div>
                 {/* Modified grid layout with 50-20-20-10 column widths */}
-                <div className="grid grid-cols-10 gap-4 text-sm text-[#2F4F4F] font-medium py-2 border-b border-gray-200">
+                <div className="grid grid-cols-10 gap-4 text-sm text-[#2F4F4F] font-semibold py-2 border-b border-gray-200">
                   <div className="col-span-5">Subject</div>
                   <div className="col-span-2">Test Date</div>
                   <div className="col-span-2">Submission Deadline</div>
@@ -1046,7 +1126,7 @@ const TestCreationForm = () => {
                       <div className="relative">
                         <input
                           type="date"
-                          className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8]"
+                          className="w-full min-w-[130px] p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8]"
                           value={row.testDate}
                           onChange={(e) =>
                             handleSubjectRowChange(className, row.id, "testDate", e.target.value)
@@ -1060,7 +1140,7 @@ const TestCreationForm = () => {
                       <div className="relative">
                         <input
                           type="date"
-                          className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8]"
+                          className="w-full min-w-[130px] p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8]"
                           value={row.submissionDeadline}
                           onChange={(e) =>
                             handleSubjectRowChange(
@@ -1197,7 +1277,7 @@ const TestCreationForm = () => {
         onClose={() => setShowSummary(false)}
         {...prepareSummaryData()}
         handleConfirm={handleModalConfirm}
-        modalTitle={editMode ? "Test Update Summary" : "Test Creation Summary"}
+        modalTitle={editMode ? "Test Update Summary" : "Confirm Test Creation"}
         isSubmitting={isSubmitting} // Pass the isSubmitting state to the modal
       />
 

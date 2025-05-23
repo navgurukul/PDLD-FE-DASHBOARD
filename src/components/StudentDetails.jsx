@@ -466,7 +466,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           style: {
             display: "flex",
             justifyContent: "flex-start",
-            borderBottom: "1px solid #E0E0E0",
             paddingBottom: "22px",
           },
         }),
