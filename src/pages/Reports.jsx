@@ -4,9 +4,6 @@ import {
   TextField,
   MenuItem,
   Tooltip,
-  Menu,
-  ListItemIcon,
-  ListItemText,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,12 +18,11 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { noSchoolImage } from "../utils/imagePath";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import TableChartIcon from "@mui/icons-material/TableChart";
 import apiInstance from "../../api"; // Updated import path
 import { Typography } from "@mui/material";
 import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
+import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
 
 const theme = createTheme({
   typography: {
@@ -125,8 +121,9 @@ const theme = createTheme({
 
 const Reports = () => {
   const theme = useTheme();
-  const [downloadMenuAnchorEl, setDownloadMenuAnchorEl] = useState(null);
-  const downloadMenuOpen = Boolean(downloadMenuAnchorEl);
+  
+  // Remove download menu state, add download modal state
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
 
   // State management
   const [searchQuery, setSearchQuery] = useState("");
@@ -438,34 +435,85 @@ const Reports = () => {
 
   const isAnyFilterActive = !!searchQuery.trim() || !!selectedBlock || !!selectedCluster;
 
-  // Handle opening download menu
-  const handleDownloadClick = (event) => {
-    setDownloadMenuAnchorEl(event.currentTarget);
+  // Handle opening download modal (replaces the old download menu logic)
+  const handleDownloadClick = () => {
+    setDownloadModalOpen(true);
   };
 
-  // Handle closing download menu
-  const handleDownloadClose = () => {
-    setDownloadMenuAnchorEl(null);
+  // Handle download confirmation from modal
+  const handleDownloadConfirm = async (downloadOptions) => {
+    const { format, rows, count } = downloadOptions;
+    
+    try {
+      setIsLoading(true);
+      toast.info(`Generating ${format.toUpperCase()} report for ${count} schools...`);
+
+      let dataToDownload = [];
+
+      // Fetch data based on selected option
+      if (rows === "current") {
+        dataToDownload = transformedData;
+      } else {
+        // Fetch more data from API
+        let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${count === totalRecords ? totalRecords : count}`;
+        
+        if (selectedBlock) {
+          url += `&blockName=${selectedBlock}`;
+        }
+        if (selectedCluster) {
+          url += `&clusterName=${selectedCluster}`;
+        }
+
+        const response = await apiInstance.get(url);
+        if (response.data.success) {
+          const apiData = response.data.data.schools;
+          dataToDownload = apiData.map((school) => {
+            const primaryData = school.subjectPerformance[0] || {};
+            const upperData = school.subjectPerformance[1] || {};
+            const highData = school.subjectPerformance[2] || {};
+            const higherData = school.subjectPerformance[3] || {};
+
+            return {
+              schoolName: school.schoolName,
+              primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
+              primaryPass: primaryData.primaryPass !== undefined ? primaryData.primaryPass : null,
+              upperPrimaryAvg: upperData.upperPrimaryAvg !== undefined ? upperData.upperPrimaryAvg : null,
+              upperPrimaryPass: upperData.upperPrimaryPass !== undefined ? upperData.upperPrimaryPass : null,
+              highSchoolAvg: highData.highSchoolAvg !== undefined ? highData.highSchoolAvg : null,
+              highSchoolPass: highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
+              higherSecondaryAvg: higherData.higherSecondaryAvg !== undefined ? higherData.higherSecondaryAvg : null,
+              higherSecondaryPass: higherData.higherSecondaryPass !== undefined ? higherData.higherSecondaryPass : null,
+            };
+          });
+        } else {
+          throw new Error("Failed to fetch extended data");
+        }
+      }
+
+      if (format === "csv") {
+        handleDownloadCSV(dataToDownload);
+      } else {
+        handleDownloadPDF(dataToDownload);
+      }
+
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      toast.error("An error occurred while generating the report");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Download report as PDF
-  const handleDownloadPDF = () => {
-    toast.info("Generating PDF report...");
-
+  const handleDownloadPDF = (data) => {
     // Implement PDF generation and download logic here
     setTimeout(() => {
-      // Simulated PDF generation
-      toast.success("PDF report generated");
+      toast.success(`PDF report generated with ${data.length} schools`);
     }, 1000);
-
-    handleDownloadClose();
   };
 
   // Download report as CSV
-  const handleDownloadCSV = () => {
-    toast.info("Generating CSV report...");
-
-    // Implement CSV generation and download logic here
+  const handleDownloadCSV = (data) => {
     const headers = [
       "School Name",
       "Primary (1-5) Avg. Marks",
@@ -480,29 +528,17 @@ const Reports = () => {
 
     let csvContent = headers.join(",") + "\n";
 
-    reportData.forEach((school) => {
-      // Extract data from each school for CSV
-      const primaryData = school.subjectPerformance[0] || { primaryAvg: "-", primaryPass: "-" };
-      const upperData = school.subjectPerformance[1] || {
-        upperPrimaryAvg: "-",
-        upperPrimaryPass: "-",
-      };
-      const highData = school.subjectPerformance[2] || { highSchoolAvg: "-", highSchoolPass: "-" };
-      const higherData = school.subjectPerformance[3] || {
-        higherSecondaryAvg: "-",
-        higherSecondaryPass: "-",
-      };
-
+    data.forEach((school) => {
       const rowData = [
         school.schoolName,
-        primaryData.primaryAvg || "-",
-        primaryData.primaryPass ? `${primaryData.primaryPass}%` : "-",
-        upperData.upperPrimaryAvg || "-",
-        upperData.upperPrimaryPass ? `${upperData.upperPrimaryPass}%` : "-",
-        highData.highSchoolAvg || "-",
-        highData.highSchoolPass ? `${highData.highSchoolPass}%` : "-",
-        higherData.higherSecondaryAvg || "-",
-        higherData.higherSecondaryPass ? `${higherData.higherSecondaryPass}%` : "-",
+        school.primaryAvg || "-",
+        school.primaryPass ? `${school.primaryPass}%` : "-",
+        school.upperPrimaryAvg || "-",
+        school.upperPrimaryPass ? `${school.upperPrimaryPass}%` : "-",
+        school.highSchoolAvg || "-",
+        school.highSchoolPass ? `${school.highSchoolPass}%` : "-",
+        school.higherSecondaryAvg || "-",
+        school.higherSecondaryPass ? `${school.higherSecondaryPass}%` : "-",
       ];
 
       csvContent +=
@@ -532,10 +568,8 @@ const Reports = () => {
     setTimeout(() => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success("CSV report downloaded");
+      toast.success(`CSV report downloaded with ${data.length} schools`);
     }, 100);
-
-    handleDownloadClose();
   };
 
   // Transform API data for table display
@@ -789,34 +823,6 @@ const Reports = () => {
           <>
             <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
               <CustomTable data={filteredData} />
-
-              {/* Download Options Menu */}
-              <Menu
-                anchorEl={downloadMenuAnchorEl}
-                open={downloadMenuOpen}
-                onClose={handleDownloadClose}
-                anchorOrigin={{
-                  vertical: "bottom",
-                  horizontal: "right",
-                }}
-                transformOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
-                }}
-              >
-                <MenuItem onClick={handleDownloadPDF}>
-                  <ListItemIcon>
-                    <PictureAsPdfIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Download as PDF</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleDownloadCSV}>
-                  <ListItemIcon>
-                    <TableChartIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Download as CSV</ListItemText>
-                </MenuItem>
-              </Menu>
             </div>
 
             {/* Pagination - always display */}
@@ -942,6 +948,16 @@ const Reports = () => {
             </div>
           )}
         </Dialog>
+
+        {/* Download Modal */}
+        <DownloadModal
+          isOpen={downloadModalOpen}
+          onClose={() => setDownloadModalOpen(false)}
+          onConfirm={handleDownloadConfirm}
+          currentPageCount={filteredData.length}
+          totalRecords={totalRecords}
+          subject={selectedSubject}
+        />
 
         {/* Loading Indicator */}
         {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}

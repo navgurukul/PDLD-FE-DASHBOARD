@@ -8,6 +8,7 @@ import { useTheme } from "@mui/material/styles";
 import StudentAcademics from "./StudentAcademics";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import ButtonCustom from "../../components/ButtonCustom";
+import DownloadModal from "../../components/modal/DownloadModal"; // Add this import
 import apiInstance from "../../../api";
 import {
   EditPencilIcon,
@@ -49,6 +50,14 @@ const StudentProfileView = () => {
   const [schoolName, setSchoolName] = useState("");
   const [udiseCode, setUdiseCode] = useState("");
   const [error, setError] = useState(null);
+  
+  // Add download modal states
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [currentAcademicTab, setCurrentAcademicTab] = useState("aggregate"); // Track which academic sub-tab is active
+  const [academicData, setAcademicData] = useState({
+    aggregate: { count: 0, data: [] },
+    subjectwise: { count: 0, data: [] }
+  });
 
   // Format date helper function
   const formatDate = (dateString) => {
@@ -75,6 +84,87 @@ const StudentProfileView = () => {
   // Handle tab change
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  // Handle download button click
+  const handleDownloadClick = () => {
+    // Only show modal if we're in the academics tab (tabValue === 1)
+    if (tabValue === 1) {
+      setShowDownloadModal(true);
+    }
+  };
+
+  // Handle download modal confirm
+  const handleDownloadConfirm = async (downloadOptions) => {
+    try {
+      const { format, rows, count } = downloadOptions;
+      
+      // Prepare download parameters
+      const downloadParams = {
+        studentId: studentId,
+        schoolId: schoolId,
+        format: format,
+        tableType: currentAcademicTab, // aggregate or subjectwise
+        rowCount: count,
+        academicYear: student?.academic?.year || "2024-25"
+      };
+
+      // Make API call to download report
+      const response = await apiInstance.post('/student/download-report', downloadParams, {
+        responseType: 'blob' // Important for file downloads
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Set filename based on format and table type
+      const filename = `${student.fullName}_${currentAcademicTab}_report.${format}`;
+      link.setAttribute('download', filename);
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`${currentAcademicTab} report downloaded successfully!`);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download report. Please try again.');
+    }
+  };
+
+  // Function to receive academic tab change from StudentAcademics component
+  const handleAcademicTabChange = (tabType, data) => {
+    setCurrentAcademicTab(tabType);
+    setAcademicData(prev => ({
+      ...prev,
+      [tabType]: data
+    }));
+  };
+
+  // Get current page count based on active academic tab
+  const getCurrentPageCount = () => {
+    return academicData[currentAcademicTab]?.count || 0;
+  };
+
+  // Get total records count
+  const getTotalRecords = () => {
+    return academicData[currentAcademicTab]?.data?.length || 0;
+  };
+
+  // Get display name for current table type
+  const getTableDisplayName = () => {
+    switch (currentAcademicTab) {
+      case "aggregate":
+        return "Aggregate Performance";
+      case "subjectwise":
+        return "Subject-wise Performance";
+      default:
+        return "Academic Performance";
+    }
   };
 
   // Fetch student profile data
@@ -135,14 +225,14 @@ const StudentProfileView = () => {
   }, [studentId]); // Re-fetch when studentId changes
 
   useEffect(() => {
-  if (student?.fullName) {
-    const locationState = location.state || {};
-    navigate(location.pathname, {
-      replace: true,
-      state: { ...locationState, studentName: student.fullName },
-    });
-  }
-}, [student?.fullName]);
+    if (student?.fullName) {
+      const locationState = location.state || {};
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...locationState, studentName: student.fullName },
+      });
+    }
+  }, [student?.fullName]);
 
   // Handle edit student
   const handleEditStudent = () => {
@@ -260,20 +350,36 @@ const StudentProfileView = () => {
 
         {/* Show academic year text in academic tab */}
         {tabValue === 1 && student.academic ? (
-          <Typography
-            variant="subtitle1"
-            sx={{
-              bgcolor: theme.palette.secondary.light,
-              color: theme.palette.primary,
-              padding: "4px 16px",
-              borderRadius: "8px",
-              height: "48px",
-              display: "flex",
-              alignItems: "center",
-            }}
+          <div
+            className="
+          flex
+           "
           >
-            Academic Year {student.academic.year || "2024-25"}
-          </Typography>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                bgcolor: theme.palette.secondary.light,
+                color: theme.palette.primary,
+                padding: "4px 16px",
+                borderRadius: "8px",
+                height: "48px",
+                display: "flex",
+                alignItems: "center",
+                marginRight: "16px",
+              }}
+            >
+              Academic Year {student.academic.year || "2024-25"}
+            </Typography>
+            <ButtonCustom
+              onClick={handleDownloadClick}
+              text="Download Report"
+              style={{
+                height: "48px",
+                borderRadius: "8px",
+                padding: "12px 16px",
+              }}
+            />
+          </div>
         ) : null}
       </Box>
 
@@ -416,8 +522,20 @@ const StudentProfileView = () => {
           studentId={studentId}
           schoolId={schoolId}
           academicData={student.academic}
+          onTabChange={handleAcademicTabChange}
         />
       </TabPanel>
+
+      {/* Download Modal */}
+      <DownloadModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+        onConfirm={handleDownloadConfirm}
+        currentPageCount={getCurrentPageCount()}
+        totalRecords={getTotalRecords()}
+        subject={getTableDisplayName()}
+        tableType={currentAcademicTab}
+      />
 
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
     </Box>

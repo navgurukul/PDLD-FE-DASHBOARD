@@ -86,7 +86,12 @@ const theme = createTheme({
   },
 });
 
-const StudentAcademics = ({ studentId, schoolId, academicData }) => {
+const StudentAcademics = ({ 
+  studentId, 
+  schoolId, 
+  academicData, 
+  onTabChange // Add this prop to communicate with parent
+}) => {
   // State for filter selections
   const [syllabusMonth, setSyllabusMonth] = useState("All");
   const [maxMarks, setMaxMarks] = useState("All");
@@ -282,6 +287,36 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         (subject === "All" || item.testName.toLowerCase().includes(subject.toLowerCase()))
     );
   }, [remedialData, remedialMonth, subject]);
+
+  // NEW: Get current page count for each view
+  const getCurrentPageCount = () => {
+    if (syllabusView === "aggregate") {
+      return Math.min(10, filteredSyllabusData.length); // Assuming 10 items per page
+    } else {
+      // For subjectwise, we need to calculate based on the StudentReportSubjectWise component
+      // This might need adjustment based on how StudentReportSubjectWise works
+      return Math.min(10, syllabusData.length);
+    }
+  };
+
+  const getTotalRecords = () => {
+    if (syllabusView === "aggregate") {
+      return filteredSyllabusData.length;
+    } else {
+      return syllabusData.length; // For subjectwise view
+    }
+  };
+
+  // NEW: Notify parent component when tab changes or data updates
+  useEffect(() => {
+    if (onTabChange) {
+      const tableType = syllabusView === "aggregate" ? "aggregate" : "subjectwise";
+      onTabChange(tableType, {
+        count: getCurrentPageCount(),
+        data: syllabusView === "aggregate" ? filteredSyllabusData : syllabusData
+      });
+    }
+  }, [syllabusView, filteredSyllabusData, syllabusData, onTabChange]);
 
   // Reset all filters
   const resetSyllabusFilters = () => {
@@ -504,9 +539,21 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
     }),
   };
 
+  // NEW: Updated handleToggleChange to notify parent
   const handleToggleChange = (event, newView) => {
     if (newView !== null) {
       setSyllabusView(newView);
+      
+      // Immediately notify parent of the change
+      if (onTabChange) {
+        const tableType = newView === "aggregate" ? "aggregate" : "subjectwise";
+        onTabChange(tableType, {
+          count: newView === "aggregate" ? 
+            Math.min(10, filteredSyllabusData.length) : 
+            Math.min(10, syllabusData.length),
+          data: newView === "aggregate" ? filteredSyllabusData : syllabusData
+        });
+      }
     }
   };
 
