@@ -81,11 +81,42 @@ const ModalSummary = ({
         style={{ width: "760px" }}
       >
         {/* Header - Changed based on edit/create mode */}
-        <div className="mb-4">
+        <div className="mb-4 relative">
           <h6 className="text-xl font-semibold text-[#2F4F4F]">
             {modalTitle || (isEditMode ? "Edit Test Details" : "Confirm Test Creation")}
           </h6>
-          <p className="text-sm text-gray-600 mt-1">
+          {/* Cross icon button */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute top-1 right-0 p-2 rounded hover:bg-gray-200 transition"
+            style={{
+              lineHeight: 0,
+              fontSize: "22px",
+              color: "#2F4F4F",
+              fontWeight: 700,
+            }}
+          >
+            {/* SVG Cross Icon */}
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path
+                d="M6 6L16 16M16 6L6 16"
+                stroke="#2F4F4F"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          <p
+            className="text-sm text-gray-600 mt-1"
+            style={{
+              fontFamily: "'Work Sans', sans-serif",
+              fontWeight: 400,
+              fontSize: "18px",
+              marginTop: "20px",
+            }}
+          >
             Please review the details of the {totalTests} test
             {totalTests > 1 && "s"} about to be {isEditMode ? "updated" : "created"}
           </p>
@@ -97,9 +128,26 @@ const ModalSummary = ({
             <div key={grade} className="mb-6">
               {/* Class Header - Now with Max Score here only for regular tests */}
               <div className="bg-gray-100 p-2 rounded-md flex items-center justify-between">
-                <span className="font-medium text-gray-700">Class {grade}</span>
+                <span
+                  className="font-semibold"
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: 600,
+                    fontSize: "18px",
+                    color: "#2F4F4F",
+                  }}
+                >
+                  Class {grade}
+                </span>
                 <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-700">
+                  <span
+                    style={{
+                      fontFamily: "'Work Sans', sans-serif",
+                      fontWeight: 400,
+                      fontSize: "18px",
+                      color: "#616161",
+                    }}
+                  >
                     {tests.length} {tests.length === 1 ? "Test" : "Tests"}
                   </span>
                   {/* Only show Max Score for regular (syllabus) tests */}
@@ -117,28 +165,33 @@ const ModalSummary = ({
                   return (
                     <div key={`${grade}-${test.subject}-${idx}`} className="pb-2">
                       {/* Test name */}
-                      <div className="font-semibold text-gray-700 mb-1">
-                        {test.subject}_Class{grade}
-                      </div>
-
-                      {/* Test details */}
-                      <div className="text-sm text-gray-600 grid grid-cols-3 gap-4 justify-items-start">
-                        {/* 1️⃣ Test Date */}
-                        <p>
-                          <span className="font-medium">Test Date:</span>{" "}
-                          {formatDate(test.testDate)}
-                        </p>
-
-                        {/* 2️⃣ Subject */}
-                        <p>
-                          <span className="font-medium">Subject:</span> {test.subject}
-                        </p>
-
-                        {/* 3️⃣ Deadline (with icon) */}
-                        <p className="flex items-center gap-1">
+                      <div
+                        className="flex gap-8"
+                        style={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: "14px",
+                        }}
+                      >
+                        <span>
+                          <span style={{ color: "#9E9E9E", fontWeight: 500 }}>Test Date:</span>
+                          <span style={{ color: "#2F4F4F", fontWeight: 400 }}>
+                            {" "}
+                            {formatDate(test.testDate)}
+                          </span>
+                        </span>
+                        <span>
+                          <span style={{ color: "#9E9E9E", fontWeight: 500 }}>Subject:</span>
+                          <span style={{ color: "#2F4F4F", fontWeight: 400 }}> {test.subject}</span>
+                        </span>
+                        <span className="flex items-center gap-1">
                           <img src={deadlineSummaryModal} alt="deadlineSummaryModal" />
-                          <span className="font-medium">Deadline:</span> {formatDate(test.deadline)}
-                        </p>
+                          <span style={{ color: "#9E9E9E", fontWeight: 500 }}>Deadline:</span>
+                          <span style={{ color: "#2F4F4F", fontWeight: 400 }}>
+                            {" "}
+                            {formatDate(test.deadline)}
+                          </span>
+                        </span>
                       </div>
                     </div>
                   );
@@ -153,7 +206,14 @@ const ModalSummary = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+            className="px-4 py-2 rounded-md border border-gray-300"
+            style={{
+              background: "#EAEDED",
+              color: "#2F4F4F",
+              fontFamily: "'Work Sans', sans-serif",
+              fontWeight: 600,
+              fontSize: "16px",
+            }}
             disabled={isSubmitting}
           >
             Back
