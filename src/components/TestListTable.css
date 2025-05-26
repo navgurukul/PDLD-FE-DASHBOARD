@@ -29,7 +29,93 @@
 	border: none !important;
 	outline: none !important;
 }
+/* === Datepicker Calendar 336x336px Responsive Grid === */
+.react-datepicker {
+  width: 336px !important;
+  height: 336px !important;
+  min-width: 336px !important;
+  min-height: 336px !important;
+  max-width: 336px !important;
+  max-height: 336px !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+}
 
+.react-datepicker__month-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.react-datepicker__header {
+  border-bottom: none !important;
+  padding-top: 8px !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.react-datepicker__current-month {
+  font-size: 1.1em !important;
+  margin-bottom: 2px !important;
+}
+
+.react-datepicker__day-names {
+  display: flex !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #2F4F4F !important;
+  font-weight: 600 !important;
+}
+
+.react-datepicker__day-name {
+  flex: 1 0 0% !important;
+  text-align: center !important;
+  margin: 0 !important;
+  padding: 0.5em 0 !important;
+  box-sizing: border-box !important;
+  color: #2F4F4F !important;
+}
+
+.react-datepicker__month {
+  width: 100% !important;
+  height: calc(100% - 72px) !important; /* 72px = header + day-names approx */
+  min-height: 0 !important;
+  max-height: none !important;
+  background: #fff !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: stretch !important;
+}
+
+.react-datepicker__week {
+  display: flex !important;
+  width: 100% !important;
+  gap: 4px !important;
+  margin-bottom: 4px !important;
+  box-sizing: border-box !important;
+}
+.react-datepicker__day {
+  flex: 1 0 0% !important;
+  text-align: center !important;
+  padding: 0.5em 0 !important;
+  box-sizing: border-box !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: unset !important;
+  max-height: unset !important;
+}
 /* Remove the border on focus */
 .my-date-picker:focus,
 .my-date-picker:active {
@@ -67,12 +153,6 @@
 }
 .react-datepicker__navigation-icon::before {
   border-color: #2F4F4F !important;
-}
-
-/* Day names (Su, Mo, etc.) */
-.react-datepicker__day-name {
-  color: #2F4F4F !important;
-  font-weight: 600 !important;
 }
 
 /* Ensure today in range gets in-range background */
