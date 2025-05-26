@@ -9,7 +9,7 @@ const DownloadModal = ({
   currentPageCount = 15,
   totalRecords = 0,
   subject = "English",
-  tableType = "aggregate", // New prop to indicate table type
+  tableType, // New prop to indicate table type - no default
 }) => {
   const [selectedFormat, setSelectedFormat] = useState("csv");
   const [selectedRows, setSelectedRows] = useState("current");
@@ -21,7 +21,7 @@ const DownloadModal = ({
       format: selectedFormat,
       rows: selectedRows,
       count: getRowCount(),
-      tableType: tableType,
+      ...(tableType && { tableType: tableType }),
     });
     onClose();
   };
@@ -40,7 +40,8 @@ const DownloadModal = ({
   };
 
   const getRowDisplayText = () => {
-    const recordType = tableType === "aggregate" ? "records" : "subject records";
+    const recordType = tableType === "aggregate" || tableType === "subjectwise" ? 
+      (tableType === "aggregate" ? "records" : "subject records") : "records";
     switch (selectedRows) {
       case "current":
         return `Current page (${currentPageCount} ${recordType})`;
@@ -58,6 +59,7 @@ const DownloadModal = ({
   };
 
   const getTableTypeDisplayName = () => {
+    if (!tableType) return "";
     switch (tableType) {
       case "aggregate":
         return "Aggregate Performance Data";
@@ -81,14 +83,16 @@ const DownloadModal = ({
           Download {subject} Report
         </h3>
         
-        {/* Table type indicator */}
-        <div className="flex items-center space-x-2 mb-4 p-3 bg-blue-50 rounded-md border border-blue-200">
-          {getTableTypeIcon()}
-          <div>
-            <p className="text-sm font-medium text-[#2F4F4F]">Data Source:</p>
-            <p className="text-sm text-[#2F4F4F]">{getTableTypeDisplayName()}</p>
+        {/* Table type indicator - only show for aggregate and subjectwise */}
+        {(tableType === "aggregate" || tableType === "subjectwise") && (
+          <div className="flex items-center space-x-2 mb-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+            {getTableTypeIcon()}
+            <div>
+              <p className="text-sm font-medium text-[#2F4F4F]">Data Source:</p>
+              <p className="text-sm text-[#2F4F4F]">{getTableTypeDisplayName()}</p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Modal body */}
         <div className="mb-6 space-y-6">
@@ -141,7 +145,7 @@ const DownloadModal = ({
                   className="text-[#2F4F4F] focus:ring-[#2F4F4F]"
                 />
                 <span className="text-[#2F4F4F]">
-                  Current page ({currentPageCount} {tableType === "aggregate" ? "records" : "subject records"})
+                  Current page ({currentPageCount} {tableType === "aggregate" || tableType === "subjectwise" ? (tableType === "aggregate" ? "records" : "subject records") : "records"})
                 </span>
               </label>
               <label className="flex items-center space-x-3 cursor-pointer">
@@ -154,7 +158,7 @@ const DownloadModal = ({
                   className="text-[#2F4F4F] focus:ring-[#2F4F4F]"
                 />
                 <span className="text-[#2F4F4F]">
-                  All {tableType === "aggregate" ? "records" : "subject records"} ({totalRecords} total)
+                  All {tableType === "aggregate" || tableType === "subjectwise" ? (tableType === "aggregate" ? "records" : "subject records") : "records"} ({totalRecords} total)
                 </span>
               </label>
             </div>
@@ -164,7 +168,7 @@ const DownloadModal = ({
           <div className="bg-gray-50 p-3 rounded-md">
             <p className="text-sm text-[#2F4F4F]">
               <strong>Download Summary:</strong> {selectedFormat.toUpperCase()} format with{" "}
-              {getRowDisplayText()} from {getTableTypeDisplayName()}
+              {getRowDisplayText()}{tableType === "aggregate" || tableType === "subjectwise" ? ` from ${getTableTypeDisplayName()}` : ""}
             </p>
           </div>
         </div>
