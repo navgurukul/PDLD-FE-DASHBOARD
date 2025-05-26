@@ -367,7 +367,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         sort: false,
         setCellProps: () => ({
           style: {
-            borderBottom: "1px solid rgba(224, 224, 224, 1)",
             textAlign: "center",
             padding: "0px 16px",
           },

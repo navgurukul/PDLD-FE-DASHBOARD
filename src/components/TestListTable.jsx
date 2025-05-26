@@ -35,7 +35,6 @@ const theme = createTheme({
         root: {
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             borderColor: "#2F4F4F", // Use text.primary color on focus
-            borderBottom: "none",
           },
         },
         notchedOutline: {
@@ -524,7 +523,8 @@ export default function TestListTable() {
           {/* Filters Group */}
           <div className="flex flex-wrap gap-2 items-center">
             {/* Search bar */}
-            <div className="flex-1 min-w-[120px] max-w-sm lg:w-[360px]">
+           <div className="w-full lg:w-[360px]">
+
               <TextField
                 variant="outlined"
                 placeholder="Search by Test Name"
@@ -837,7 +837,7 @@ export default function TestListTable() {
               />
             </div>
             {/* Date Range Picker */}
-            <div className="flex-1 min-w-[120px] max-w-sm lg:w-[160px]">
+            <div className="w-full lg:w-[280px]">
               <div
                 style={{
                   border: dateFocused ? "2px solid #2F4F4F" : "1px solid lightgrey",

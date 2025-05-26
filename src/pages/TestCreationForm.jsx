@@ -12,6 +12,11 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import ConfirmationModal from "../components/modal/ConfirmationModal";
 
+import Autocomplete from "@mui/material/Autocomplete";
+import TextField from "@mui/material/TextField";
+import Paper from "@mui/material/Paper";
+
+
 const TestCreationForm = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -762,47 +767,88 @@ const TestCreationForm = () => {
 
                 {/* Test Series Month Dropdown - Only show if Monthly in create mode */}
                 {formData.testTag === "Monthly" && (
-                  <div>
-                    <label
-                      className="block mb-2 text-sm"
-                      htmlFor="testSeriesMonth"
-                      style={{
-                        fontFamily: "'Work Sans', sans-serif",
-                        fontWeight: 600,
-                        fontSize: "18px",
-                        color: "#2F4F4F",
-                      }}
-                    >
-                      Test Series Month
-                    </label>
-                    <div className="relative">
-                      <select
-                        id="testSeriesMonth"
-                        name="testSeriesMonth"
-                        className="w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none"
-                        value={testSeriesMonth}
-                        onChange={handleTestSeriesMonthChange}
-                      >
-                        <option value="">Select Month</option>
-                        <option value="January">January</option>
-                        <option value="February">February</option>
-                        <option value="March">March</option>
-                        <option value="April">April</option>
-                        <option value="May">May</option>
-                        <option value="June">June</option>
-                        <option value="July">July</option>
-                        <option value="August">August</option>
-                        <option value="September">September</option>
-                        <option value="October">October</option>
-                        <option value="November">November</option>
-                        <option value="December">December</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                        <ChevronDown className="h-4 w-4 text-gray-500" />
-                      </div>
-                    </div>
-                  </div>
-                )}
+  <div>
+    <label
+      className="block mb-2 text-sm"
+      htmlFor="testSeriesMonth"
+      style={{
+        fontFamily: "'Work Sans', sans-serif",
+        fontWeight: 600,
+        fontSize: "18px",
+        color: "#2F4F4F",
+      }}
+    >
+      Test Series Month
+    </label>
+    <Autocomplete
+      disableClearable
+      options={[
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ]}
+      value={testSeriesMonth || ""}
+      onChange={(_, value) => setTestSeriesMonth(value)}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          placeholder="Select Month"
+          size="small"
+          sx={{
+            fontFamily: "'Work Sans', sans-serif",
+            fontWeight: 400,
+            fontSize: "14px",
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "8px",
+              background: "#fff",
+              color: "#2F4F4F",
+            },
+          }}
+        />
+      )}
+      PaperComponent={(props) => (
+        <Paper
+          {...props}
+          sx={{
+            boxShadow: "0px 8px 24px 0 rgba(72, 61, 139, 0.12)",
+            borderRadius: "8px",
+            mt: 1,
+          }}
+        />
+      )}
+      ListboxProps={{
+  sx: {
+    "& .MuiAutocomplete-option": {
+      px: 2,
+      py: 0.5,
+      borderRadius: "6px",
+      mb: 0.5,
+      fontFamily: "'Work Sans', sans-serif",
+      fontWeight: 400,
+      fontSize: "14px",
+      color: "#2F4F4F",
+      "&[aria-selected='true'], &:hover": {
+        backgroundColor: "#F0F5F5",
+        color: "#2F4F4F",
+      },
+    },
+     maxHeight: "none",
+     overflowY: "visible", 
+  },
+}}
+    />
+    <div
+      style={{
+        fontFamily: "'Work Sans', sans-serif",
+        fontWeight: 400,
+        color: "#483D8B",
+        fontSize: "14px",
+        marginTop: "4px",
+      }}
+    >
+      Groups the tests created under the selected month
+    </div>
+  </div>
+)}
               </>
             )}
           </div>
@@ -870,11 +916,11 @@ const TestCreationForm = () => {
                           return (
                             <div
                               key={className}
-                              className={`px-3 py-1 rounded-full text-sm transition-all ${
-                                selectedClasses[className]
-                                  ? "bg-[#2F4F4F] text-white border-[#2F4F4F] font-medium"
-                                  : "bg-[#EAEDED]  text-[#2F4F4F] hover:bg-[#F0F5F5]"
-                              } ${editMode ? "pointer-events-none" : ""}`}
+                              className={`px-3 py-1 rounded-full text-sm transition-all
+    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+    ${selectedClasses[className] ? "font-semibold" : "font-normal"}
+    ${editMode ? "pointer-events-none" : ""}
+  `}
                               onClick={(e) => {
                                 if (!editMode) {
                                   e.stopPropagation();
@@ -946,11 +992,11 @@ const TestCreationForm = () => {
                           return (
                             <div
                               key={className}
-                              className={`px-3 py-1 rounded-full text-sm transition-all ${
-                                selectedClasses[className]
-                                  ? "bg-[#2F4F4F] text-white border-[#2F4F4F] font-medium"
-                                  : "bg-[#EAEDED]  text-[#2F4F4F] hover:bg-[#F0F5F5]"
-                              } ${editMode ? "pointer-events-none" : ""}`}
+                              className={`px-3 py-1 rounded-full text-sm transition-all
+    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+    ${selectedClasses[className] ? "font-semibold" : "font-normal"}
+    ${editMode ? "pointer-events-none" : ""}
+  `}
                               onClick={(e) => {
                                 if (!editMode) {
                                   e.stopPropagation();
@@ -1022,11 +1068,11 @@ const TestCreationForm = () => {
                           return (
                             <div
                               key={className}
-                              className={`px-3 py-1 rounded-full text-sm transition-all ${
-                                selectedClasses[className]
-                                  ? "bg-[#2F4F4F] text-white border-[#2F4F4F] font-medium"
-                                  : "bg-[#EAEDED]  text-[#2F4F4F] hover:bg-[#F0F5F5]"
-                              } ${editMode ? "pointer-events-none" : ""}`}
+                              className={`px-3 py-1 rounded-full text-sm transition-all
+    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+    ${selectedClasses[className] ? "font-semibold" : "font-normal"}
+    ${editMode ? "pointer-events-none" : ""}
+  `}
                               onClick={(e) => {
                                 if (!editMode) {
                                   e.stopPropagation();
@@ -1264,8 +1310,13 @@ const TestCreationForm = () => {
                         className={`inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${
                           hasEmptySubjectRow
                             ? "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
-                            : "border-gray-300 text-[#2F4F4F] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2F4F4F]"
+                            : "border-[#2F4F4F] text-[#2F4F4F] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2F4F4F]"
                         }`}
+                        style={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 600,
+                          fontSize: "14px",
+                        }}
                       >
                         Add Subject
                       </button>
