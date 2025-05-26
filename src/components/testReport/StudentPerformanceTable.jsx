@@ -488,7 +488,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                 {/* ButtonCustom for Export */}
                 <div>
                   {onExport && (
-                    <ButtonCustom text={"Export Data"} onClick={() => onExport(sortedStudents)} />
+                    <ButtonCustom text={"Download Reports"} onClick={() => onExport(sortedStudents)} />
                   )}
                 </div>
               </div>

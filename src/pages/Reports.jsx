@@ -435,7 +435,7 @@ const Reports = () => {
 
   const isAnyFilterActive = !!searchQuery.trim() || !!selectedBlock || !!selectedCluster;
 
-  // Handle opening download modal (replaces the old download menu logic)
+  // Handle opening download modal
   const handleDownloadClick = () => {
     setDownloadModalOpen(true);
   };
@@ -506,12 +506,318 @@ const Reports = () => {
 
   // Download report as PDF
   const handleDownloadPDF = (data) => {
-    // Implement PDF generation and download logic here
-    setTimeout(() => {
-      toast.success(`PDF report generated with ${data.length} schools`);
-    }, 1000);
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Calculate statistics for the report
+    const totalSchools = data.length;
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    // Generate HTML content for the PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${selectedSubject} Performance Report</title>
+        <style>
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 15mm;
+            }
+          }
+          
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+            font-size: 11px;
+          }
+          
+          .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #2F4F4F;
+          }
+          
+          .header h1 {
+            color: #2F4F4F;
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+          }
+          
+          .header .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+          }
+          
+          .header .date {
+            color: #666;
+            font-size: 12px;
+          }
+          
+          .filter-info {
+            background-color: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+          }
+          
+          .filter-info h3 {
+            color: #2F4F4F;
+            font-size: 14px;
+            margin-bottom: 8px;
+          }
+          
+          .filter-info .filter-item {
+            display: inline-block;
+            margin-right: 20px;
+            color: #666;
+            font-size: 12px;
+          }
+          
+          .filter-info .filter-item strong {
+            color: #2F4F4F;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+            font-size: 10px;
+          }
+          
+          thead {
+            background-color: #2F4F4F;
+            color: white;
+          }
+          
+          th {
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 11px;
+            border: 1px solid #2F4F4F;
+          }
+          
+          th.school-header {
+            text-align: left;
+            padding-left: 10px;
+          }
+          
+          th.group-header {
+            background-color: #1a3a3a;
+            font-size: 12px;
+          }
+          
+          td {
+            padding: 6px;
+            border: 1px solid #ddd;
+            text-align: center;
+            font-size: 10px;
+          }
+          
+          td.school-name {
+            text-align: left;
+            padding-left: 10px;
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          
+          tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+          }
+          
+          tbody tr:hover {
+            background-color: #e8f5f9;
+          }
+          
+          .low-score {
+            color: #FF0000;
+            font-weight: 600;
+          }
+          
+          .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+          }
+          
+          .summary h3 {
+            color: #2F4F4F;
+            font-size: 14px;
+            margin-bottom: 10px;
+          }
+          
+          .summary-item {
+            display: inline-block;
+            margin-right: 30px;
+            margin-bottom: 5px;
+            font-size: 12px;
+          }
+          
+          .summary-item strong {
+            color: #2F4F4F;
+          }
+          
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+          }
+          
+          @media print {
+            .no-print {
+              display: none;
+            }
+            
+            table {
+              page-break-inside: auto;
+            }
+            
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>${selectedSubject} Performance Report</h1>
+            <div class="subtitle">Academic Year 2024-25</div>
+            <div class="date">Generated on: ${currentDate}</div>
+          </div>
+          
+          ${(selectedBlock || selectedCluster) ? `
+          <div class="filter-info">
+            <h3>Applied Filters:</h3>
+            ${selectedBlock ? `<div class="filter-item"><strong>Block:</strong> ${selectedBlock}</div>` : ''}
+            ${selectedCluster ? `<div class="filter-item"><strong>Cluster:</strong> ${selectedCluster}</div>` : ''}
+          </div>
+          ` : ''}
+          
+          <table>
+            <thead>
+              <tr>
+                <th rowspan="2" class="school-header">School Name</th>
+                <th colspan="2" class="group-header">Primary (1-5)</th>
+                <th colspan="2" class="group-header">Upper Primary (6-8)</th>
+                <th colspan="2" class="group-header">High School (9-10)</th>
+                <th colspan="2" class="group-header">Higher Secondary (11-12)</th>
+              </tr>
+              <tr>
+                <th>Avg. Marks</th>
+                <th>Pass Rate(%)</th>
+                <th>Avg. Marks</th>
+                <th>Pass Rate(%)</th>
+                <th>Avg. Marks</th>
+                <th>Pass Rate(%)</th>
+                <th>Avg. Marks</th>
+                <th>Pass Rate(%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(school => {
+                const isLowScore = (value) => {
+                  const num = parseInt(value);
+                  return !isNaN(num) && num < 20;
+                };
+                
+                return `
+                  <tr>
+                    <td class="school-name">${school.schoolName}</td>
+                    <td class="${isLowScore(school.primaryAvg) ? 'low-score' : ''}">
+                      ${school.primaryAvg !== null ? school.primaryAvg : '-'}
+                    </td>
+                    <td class="${isLowScore(school.primaryPass) ? 'low-score' : ''}">
+                      ${school.primaryPass !== null ? school.primaryPass + '%' : '-'}
+                    </td>
+                    <td class="${isLowScore(school.upperPrimaryAvg) ? 'low-score' : ''}">
+                      ${school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : '-'}
+                    </td>
+                    <td class="${isLowScore(school.upperPrimaryPass) ? 'low-score' : ''}">
+                      ${school.upperPrimaryPass !== null ? school.upperPrimaryPass + '%' : '-'}
+                    </td>
+                    <td class="${isLowScore(school.highSchoolAvg) ? 'low-score' : ''}">
+                      ${school.highSchoolAvg !== null ? school.highSchoolAvg : '-'}
+                    </td>
+                    <td class="${isLowScore(school.highSchoolPass) ? 'low-score' : ''}">
+                      ${school.highSchoolPass !== null ? school.highSchoolPass + '%' : '-'}
+                    </td>
+                    <td class="${isLowScore(school.higherSecondaryAvg) ? 'low-score' : ''}">
+                      ${school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : '-'}
+                    </td>
+                    <td class="${isLowScore(school.higherSecondaryPass) ? 'low-score' : ''}">
+                      ${school.higherSecondaryPass !== null ? school.higherSecondaryPass + '%' : '-'}
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+          
+          <div class="summary">
+            <h3>Report Summary</h3>
+            <div class="summary-item"><strong>Total Schools:</strong> ${totalSchools}</div>
+            <div class="summary-item"><strong>Subject:</strong> ${selectedSubject}</div>
+            <div class="summary-item"><strong>Report Type:</strong> School Performance Analysis</div>
+          </div>
+          
+          <div class="footer">
+            <p>This report is generated automatically from the School Performance System</p>
+            <p>© 2024-25 Academic Performance Tracking System</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    // Write the content to the new window
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Wait for content to load, then trigger print
+    printWindow.onload = function() {
+      setTimeout(() => {
+        printWindow.print();
+        toast.success(`PDF report ready with ${data.length} schools`);
+      }, 250);
+    };
   };
 
+  // [Keep all the existing code for handleDownloadCSV and other functions...]
   // Download report as CSV
   const handleDownloadCSV = (data) => {
     const headers = [
@@ -616,6 +922,7 @@ const Reports = () => {
     return data;
   }, [transformedData, searchQuery, pageSize]);
 
+  // [Keep all the remaining JSX code exactly as it is...]
   return (
     <ThemeProvider theme={theme}>
       <div className="main-page-wrapper">
