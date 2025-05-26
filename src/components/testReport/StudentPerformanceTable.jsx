@@ -8,40 +8,38 @@ import {
   Select,
   MenuItem,
   Tooltip,
+  Pagination,
 } from "@mui/material";
 import MUIDataTable from "mui-datatables";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import PersonIcon from "@mui/icons-material/Person";
 import ButtonCustom from "../ButtonCustom";
-import { Pagination } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import DownloadModal from "../modal/DownloadModal";
 
-// Create MUI theme to match TestListTable
 const theme = createTheme({
   typography: {
     fontFamily: "'Karla', sans-serif",
     color: "#2F4F4F",
   },
   components: {
-    // Change the highlight color from blue to "Text Primary" color style.
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#2F4F4F", // Use text.primary color on focus
+            borderColor: "#2F4F4F",
           },
         },
         notchedOutline: {
-          borderColor: "#ccc", // default border color
+          borderColor: "#ccc",
         },
       },
     },
     MuiInputLabel: {
       styleOverrides: {
         root: {
-          color: "#949494", // Default label color
+          color: "#949494",
           "&.Mui-focused": {
-            color: "#2F4F4F", // Focused label color
+            color: "#2F4F4F",
           },
         },
       },
@@ -49,7 +47,7 @@ const theme = createTheme({
     MuiSelect: {
       styleOverrides: {
         icon: {
-          color: "#2F4F4F", // Dropdown arrow icon color
+          color: "#2F4F4F",
         },
       },
     },
@@ -91,14 +89,14 @@ const theme = createTheme({
     MuiPaginationItem: {
       styleOverrides: {
         root: {
-          color: "black", // Change default text color
-          backgroundColor: "white", // Change the background color of all buttons
+          color: "black",
+          backgroundColor: "white",
           "&.Mui-selected": {
-            backgroundColor: "#2F4F4F", // Change color when selected
+            backgroundColor: "#2F4F4F",
             color: "white",
           },
           "&:hover": {
-            backgroundColor: "#A3BFBF ", // Hover color
+            backgroundColor: "#A3BFBF ",
           },
         },
       },
@@ -110,48 +108,41 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10; // Items per page
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const pageSize = 10;
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
   });
   const navigate = useNavigate();
 
-  // Filter students based on search query and status
+  // Filter students
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
-      // Handle both API formats for student name
       const studentName = student.studentName || student.name;
       const nameMatch = studentName.toLowerCase().includes(searchQuery.toLowerCase());
       const isAbsent = student.isAbsent === true;
-
-      // Don't try to access score if student is absent
       const score = isAbsent ? 0 : student.score;
 
       if (!filterStatus) {
         return nameMatch;
       } else if (filterStatus === "pass") {
-        return nameMatch && !isAbsent && score >= 35; // Students with 35 or above pass
+        return nameMatch && !isAbsent && score >= 35;
       } else if (filterStatus === "fail") {
-        return nameMatch && !isAbsent && score < 35; // Students below 35 fail (and not absent)
+        return nameMatch && !isAbsent && score < 35;
       } else if (filterStatus === "absent") {
-        return nameMatch && isAbsent; // Only absent students
+        return nameMatch && isAbsent;
       }
-
       return nameMatch;
     });
   }, [students, searchQuery, filterStatus]);
 
-  // Apply sorting based on which column is being sorted
+  // Sorting
   const sortedStudents = useMemo(() => {
     if (!sortConfig.key) return filteredStudents;
-
     return [...filteredStudents].sort((a, b) => {
-      // Check for absent students in both records
       const aIsAbsent = a.isAbsent === true;
       const bIsAbsent = b.isAbsent === true;
-
-      // Handle name sorting with both API formats
       if (sortConfig.key === "name") {
         const aName = a.studentName || a.name;
         const bName = b.studentName || b.name;
@@ -159,65 +150,51 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
           ? aName.localeCompare(bName)
           : bName.localeCompare(aName);
       }
-
-      // Handle absent students in scoring
       if (sortConfig.key === "score") {
         const aScore = aIsAbsent ? -1 : a.score;
         const bScore = bIsAbsent ? -1 : b.score;
         return sortConfig.direction === "asc" ? aScore - bScore : bScore - aScore;
       }
-
-      // Special case for comparing vs class avg
       if (sortConfig.key === "vsClassAvg") {
         const aVsAvg = aIsAbsent ? -999 : a.score - classAvg;
         const bVsAvg = bIsAbsent ? -999 : b.score - classAvg;
         return sortConfig.direction === "asc" ? aVsAvg - bVsAvg : bVsAvg - aVsAvg;
       }
-
-      // Handle other fields
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
-
       if (typeof aValue === "string" && typeof bValue === "string") {
         return sortConfig.direction === "asc"
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
-
       return sortConfig.direction === "asc" ? aValue - bValue : bValue - aValue;
     });
   }, [filteredStudents, sortConfig, classAvg]);
 
-  // Format table data for MUIDataTable
+  // Table data
   const tableData = sortedStudents.map((student) => {
-    // For absent students, don't access score property (it might be undefined)
     const isAbsent = student.isAbsent === true;
-
-    // Determine score display
     const scoreDisplay = isAbsent ? "Absent" : `${student.score}/100`;
-
-    // Determine result status
     let resultStatus;
     if (isAbsent) {
       resultStatus = "Absent";
     } else {
       resultStatus = student.score >= 35 ? "Meets Standard" : "Needs Improvement";
     }
-
-    // Determine comparison to class average
     let vsClassAvgDisplay;
     if (isAbsent) {
       vsClassAvgDisplay = "N/A";
     } else {
-      vsClassAvgDisplay =
-        isNaN(student.score - classAvg) || classAvg === 0
-          ? "N/A"
-          : `${student.score > classAvg ? "+" : ""}${(student.score - classAvg).toFixed(1)}`;
+      const diff = student.score - classAvg;
+      if (isNaN(diff) || classAvg === 0) {
+        vsClassAvgDisplay = "0.0";
+      } else {
+        vsClassAvgDisplay = `${student.score > classAvg ? "+" : ""}${diff.toFixed(1)}`;
+      }
     }
-
     return {
-      id: student.studentId || student.id, // Handle both API formats
-      name: student.studentName || student.name, // Handle both API formats
+      id: student.studentId || student.id,
+      name: student.studentName || student.name,
       score: scoreDisplay,
       result: resultStatus,
       vsClassAvg: vsClassAvgDisplay,
@@ -254,12 +231,148 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
       {columnMeta.label}
     </span>
   );
-  // MUI DataTable columns configuration
+
+  // Download logic
+  const handleDownloadCSV = (data) => {
+    const csvRows = [
+      ["Student Name", "Score", "Result", "VS Class Avg"],
+      ...data.map((student) => [student.name, student.score, student.result, student.vsClassAvg]),
+    ];
+    const csvContent = csvRows.map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "student_performance_report.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadPDF = (data) => {
+    const printWindow = window.open("", "_blank");
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Generate HTML table rows
+    const tableRows = data
+      .map(
+        (student) => `
+    <tr>
+      <td style="padding:6px;border:1px solid #ddd;text-align:left;">${student.name}</td>
+      <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.score}</td>
+      <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.result}</td>
+      <td style="padding:6px;border:1px solid #ddd;text-align:center;color:${
+        student.vsClassAvg === "0.0"
+          ? "#c62828"
+          : student.vsClassAvg.startsWith("+")
+          ? "#2e7d32"
+          : "#c62828"
+      };">${student.vsClassAvg}</td>
+    </tr>
+  `
+      )
+      .join("");
+
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Student Performance Report</title>
+      <style>
+        @media print {
+          @page { size: A4 landscape; margin: 15mm; }
+        }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { color: #2F4F4F; font-size: 22px; margin-bottom: 8px; }
+        .header .date { color: #666; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th { background: #2F4F4F; color: #fff; padding: 8px 6px; border: 1px solid #2F4F4F; }
+        td { padding: 6px; border: 1px solid #ddd; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        tr:hover { background: #e8f5f9; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Student Performance Report</h1>
+        <div class="date">Generated on: ${currentDate}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left;">Student Name</th>
+            <th>Score</th>
+            <th>Result</th>
+            <th>VS Class Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+
+    printWindow.onload = function () {
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    };
+  };
+
+  const handleDownloadConfirm = ({ format, rows }) => {
+    const dataToDownload =
+      rows === "all"
+        ? sortedStudents.map((student) => {
+            const isAbsent = student.isAbsent === true;
+            const scoreDisplay = isAbsent ? "Absent" : `${student.score}/100`;
+            let resultStatus;
+            if (isAbsent) {
+              resultStatus = "Absent";
+            } else {
+              resultStatus = student.score >= 35 ? "Meets Standard" : "Needs Improvement";
+            }
+            let vsClassAvgDisplay;
+            if (isAbsent) {
+              vsClassAvgDisplay = "N/A";
+            } else {
+              const diff = student.score - classAvg;
+              if (isNaN(diff) || classAvg === 0) {
+                vsClassAvgDisplay = "0.0";
+              } else {
+                vsClassAvgDisplay = `${student.score > classAvg ? "+" : ""}${diff.toFixed(1)}`;
+              }
+            }
+            return {
+              name: student.studentName || student.name,
+              score: scoreDisplay,
+              result: resultStatus,
+              vsClassAvg: vsClassAvgDisplay,
+            };
+          })
+        : paginatedTableData;
+    if (format === "csv") {
+      handleDownloadCSV(dataToDownload);
+    } else if (format === "pdf") {
+      handleDownloadPDF(dataToDownload);
+    }
+    setShowDownloadModal(false);
+  };
+
+  // Table columns
   const columns = [
     {
       name: "id",
       label: "ID",
-      options: { display: false }, // Keep the ID hidden in the table
+      options: { display: false },
     },
     {
       name: "name",
@@ -283,7 +396,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         customBodyRenderLite: (dataIndex) => {
           const student = paginatedTableData[dataIndex];
           return (
-            <div className="">
+            <div>
               {student.isAbsent ? <span style={{ color: "#949494" }}>Absent</span> : student.score}
             </div>
           );
@@ -303,12 +416,12 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
           const student = paginatedTableData[dataIndex];
           if (student.isAbsent) {
             return (
-              <div className="">
+              <div>
                 <div
                   className="inline-block px-2 py-1 rounded-full text-xs"
                   style={{
-                    backgroundColor: "#e0e0e0", // Gray background for absent
-                    color: "#757575", // Gray text for absent
+                    backgroundColor: "#e0e0e0",
+                    color: "#757575",
                   }}
                 >
                   Absent
@@ -316,10 +429,9 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
               </div>
             );
           }
-
           const isPass = student.isPass;
           return (
-            <div className="">
+            <div>
               <div
                 className="inline-block px-2 py-1 rounded-full text-xs"
                 style={{
@@ -343,19 +455,15 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         sortThirdClickReset: true,
         customBodyRenderLite: (dataIndex) => {
           const student = paginatedTableData[dataIndex];
-
           if (student.isAbsent) {
             return <span style={{ color: "#949494" }}>N/A</span>;
           }
-
           const value = student.vsClassAvg;
           const isPositive = value && value.startsWith("+");
-
-          return (
-            <div className="" style={{ color: isPositive ? "#2e7d32" : "#c62828" }}>
-              {value === "N/A" ? <span style={{ color: "#949494" }}>N/A</span> : value}
-            </div>
-          );
+          if (value === "0.0") {
+            return <span style={{ color: "#c62828" }}>0.0</span>;
+          }
+          return <div style={{ color: isPositive ? "#2e7d32" : "#c62828" }}>{value}</div>;
         },
       },
     },
@@ -366,7 +474,6 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
     column.options.customHeadLabelRender = defaultCustomHeadLabelRender;
   });
 
-  // MUI DataTable options
   const options = {
     filter: false,
     search: false,
@@ -377,16 +484,15 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
     responsive: "standard",
     rowsPerPage: pageSize,
     rowsPerPageOptions: [pageSize],
-    pagination: false, // We're handling pagination ourselves
+    pagination: false,
     count: tableData.length,
   };
 
   return (
     <ThemeProvider theme={theme}>
-      <div className="">
+      <div>
         <h3 className="text-lg font-semibold text-[#2F4F4F]">Student Performance</h3>
-
-        {/* Filters - Exact match to TestListTable */}
+        {/* Filters */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
           <div className="w-full lg:flex-1">
             <div className="flex flex-col md:flex-row md:flex-wrap gap-2 my-[10px] mx-0">
@@ -410,7 +516,6 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                     }}
                     sx={{ marginBottom: { xs: "10px", md: "0" } }}
                   />
-
                   {/* Status Dropdown */}
                   <FormControl
                     sx={{
@@ -457,7 +562,6 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                       <MenuItem value="absent">Absent</MenuItem>
                     </Select>
                   </FormControl>
-
                   {/*  Clear Filters */}
                   <div className="flex justify-end sm:justify-start w-full sm:w-auto">
                     {isAnyFilterActive && (
@@ -484,18 +588,17 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                     )}
                   </div>
                 </div>
-
-                {/* ButtonCustom for Export */}
+                {/* Download Reports Button */}
                 <div>
-                  {onExport && (
-                    <ButtonCustom text={"Download Reports"} onClick={() => onExport(sortedStudents)} />
-                  )}
+                  <ButtonCustom
+                    text={"Download Reports"}
+                    onClick={() => setShowDownloadModal(true)}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
-
         {/* Data Table */}
         <div
           style={{ borderRadius: "8px" }}
@@ -503,7 +606,6 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         >
           <MUIDataTable data={paginatedTableData} columns={columns} options={options} />
         </div>
-
         <div style={{ width: "max-content", margin: "25px auto" }}>
           <Pagination
             count={Math.ceil(tableData.length / pageSize)}
@@ -513,6 +615,15 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
             showLastButton
           />
         </div>
+        {/* Download Modal */}
+        <DownloadModal
+          isOpen={showDownloadModal}
+          onClose={() => setShowDownloadModal(false)}
+          onConfirm={handleDownloadConfirm}
+          totalRows={sortedStudents.length}
+          defaultRows="all"
+          formats={["csv", "pdf"]}
+        />
       </div>
     </ThemeProvider>
   );
@@ -522,9 +633,9 @@ StudentPerformanceTable.propTypes = {
   students: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-      studentId: PropTypes.string, // Support API format
+      studentId: PropTypes.string,
       name: PropTypes.string,
-      studentName: PropTypes.string, // Support API format
+      studentName: PropTypes.string,
       score: PropTypes.number,
       isAbsent: PropTypes.bool,
     })
