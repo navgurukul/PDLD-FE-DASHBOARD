@@ -14,12 +14,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import Tooltip from "@mui/material/Tooltip";
 import ButtonCustom from "../components/ButtonCustom";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
-import {
-  addSymbolBtn,
-  DocScanner,
-  EditPencilIcon,
-  trash,
-} from "../utils/imagePath";
+import { addSymbolBtn, DocScanner, EditPencilIcon, trash } from "../utils/imagePath";
 import apiInstance from "../../api";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { MenuItem } from "@mui/material";
@@ -27,6 +22,7 @@ import { useLocation } from "react-router-dom";
 import { FormControl } from "@mui/material";
 import { Select } from "@mui/material";
 import { InputLabel } from "@mui/material";
+import { Typography } from "@mui/material";
 
 const theme = createTheme({
   typography: {
@@ -86,6 +82,23 @@ const theme = createTheme({
         },
       },
     },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          "&:hover": {
+            backgroundColor: "inherit !important",
+            cursor: "default !important",
+          },
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: "none",
+        },
+      },
+    },
   },
 });
 
@@ -105,6 +118,8 @@ export default function SchoolList() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [schoolToDelete, setSchoolToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pageSize, setPageSize] = useState(15);
+
   const navigate = useNavigate();
 
   // New state for filters
@@ -117,18 +132,11 @@ export default function SchoolList() {
   const fetchSchools = async () => {
     setIsLoading(true);
     try {
-      // Ensure we're explicitly requesting only 20 records per page
       const response = await apiInstance.get(
-        `/school/all?page=${currentPage}&pageSize=15`
+        `/school/all?page=${currentPage}&pageSize=${pageSize}`
       );
       if (response.data.success) {
-        // console.log("API Response:", response.data.data); // Debug: Log the full response
-
-        // Check if we're getting the expected 20 records max
-        const schoolsData = response.data.data.schools;
-        // console.log("Schools count from API:", schoolsData.length);
-
-        setSchools(schoolsData);
+        setSchools(response.data.data.schools);
         setPagination(response.data.data.pagination);
       } else {
         toast.error("Failed to fetch schools");
@@ -141,10 +149,15 @@ export default function SchoolList() {
     }
   };
 
+  const handlePageSizeChange = (event) => {
+    setPageSize(event.target.value);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
   // Load schools on component mount and when page changes
   useEffect(() => {
     fetchSchools();
-  }, [currentPage]);
+  }, [currentPage,pageSize]);
 
   // Add this in your SchoolList component, in the useEffect section
   useEffect(() => {
@@ -161,17 +174,13 @@ export default function SchoolList() {
   useEffect(() => {
     if (schools.length > 0) {
       // Extract unique clusters
-      const uniqueClusters = [
-        ...new Set(schools.map((school) => school.clusterName)),
-      ]
+      const uniqueClusters = [...new Set(schools.map((school) => school.clusterName))]
         .filter(Boolean)
         .sort();
       setClusters(uniqueClusters);
 
       // Extract unique blocks
-      const uniqueBlocks = [
-        ...new Set(schools.map((school) => school.blockName)),
-      ]
+      const uniqueBlocks = [...new Set(schools.map((school) => school.blockName))]
         .filter(Boolean)
         .sort();
       setBlocks(uniqueBlocks);
@@ -232,12 +241,10 @@ export default function SchoolList() {
       school.clusterName?.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Cluster filter
-    const matchesCluster =
-      selectedCluster === "" || school.clusterName === selectedCluster;
+    const matchesCluster = selectedCluster === "" || school.clusterName === selectedCluster;
 
     // Block filter
-    const matchesBlock =
-      selectedBlock === "" || school.blockName === selectedBlock;
+    const matchesBlock = selectedBlock === "" || school.blockName === selectedBlock;
 
     return matchesSearch && matchesCluster && matchesBlock;
   });
@@ -268,23 +275,17 @@ export default function SchoolList() {
       await apiInstance.delete(`/school/delete/${schoolToDelete.id}`);
 
       // Remove the school from the local state
-      const updatedSchools = schools.filter(
-        (school) => school.id !== schoolToDelete.id
-      );
+      const updatedSchools = schools.filter((school) => school.id !== schoolToDelete.id);
       setSchools(updatedSchools);
 
       // Show success message and update pagination if needed
-      toast.success(
-        `"${schoolToDelete.schoolName}" has been deleted successfully!`
-      );
+      toast.success(`"${schoolToDelete.schoolName}" has been deleted successfully!`);
 
       if (updatedSchools.length === 0 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       } else {
         // If we're on the last page and it's now empty, go back one page
-        const totalPages = Math.ceil(
-          (pagination.totalSchools - 1) / pagination.pageSize
-        );
+        const totalPages = Math.ceil((pagination.totalSchools - 1) / pagination.pageSize);
         if (currentPage > totalPages && totalPages > 0) {
           setCurrentPage(totalPages);
         } else {
@@ -327,6 +328,8 @@ export default function SchoolList() {
     actions: "Actions",
     schoolObj: school, // Pass the entire school object for the delete modal
   }));
+
+  const isAnyFilterActive = selectedCluster !== "" || selectedBlock !== "" || searchQuery !== "";
 
   const defaultCustomHeadLabelRender = (columnMeta) => (
     <span
@@ -426,15 +429,10 @@ export default function SchoolList() {
                 size="small"
                 sx={{ minWidth: "30px", marginRight: "14px" }}
                 onClick={() =>
-                  handleCopy(
-                    `UDISE: ${udiseCode}, Password: ${value}`,
-                    "UDISE and Password"
-                  )
+                  handleCopy(`UDISE: ${udiseCode}, Password: ${value}`, "UDISE and Password")
                 }
               >
-                <ContentCopyIcon
-                  style={{ fontSize: "18px", color: "#2F4F4F" }}
-                />
+                <ContentCopyIcon style={{ fontSize: "18px", color: "#2F4F4F" }} />
               </Button>
             </div>
           );
@@ -481,9 +479,7 @@ export default function SchoolList() {
           const schoolObj = tableMeta.rowData[6]; // Index of schoolObj in the rowData array
 
           return (
-            <div
-              style={{ display: "flex", justifyContent: "center", gap: "16px" }}
-            >
+            <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
               <Button
                 variant="text"
                 size="small"
@@ -500,11 +496,7 @@ export default function SchoolList() {
                   });
                 }}
               >
-                <img
-                  src={EditPencilIcon}
-                  alt="Edit"
-                  style={{ width: "20px", height: "20px" }}
-                />
+                <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
                 &nbsp;
               </Button>
               <Button
@@ -518,11 +510,7 @@ export default function SchoolList() {
                 }}
                 onClick={() => openDeleteModal(schoolObj)}
               >
-                <img
-                  src={trash}
-                  alt="Delete"
-                  style={{ width: "20px", height: "20px" }}
-                />
+                <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
                 &nbsp;
               </Button>
 
@@ -568,14 +556,9 @@ export default function SchoolList() {
   // Default view - List of schools
   return (
     <ThemeProvider theme={theme}>
-      <div
-        className="main-page-wrapper px-3 sm:px-4"
-        style={{ position: "relative" }}
-      >
+      <div className="main-page-wrapper px-3 sm:px-4" style={{ position: "relative" }}>
         <div className="header-container mb-1">
-          <h5 className="text-lg font-bold text-[#2F4F4F]">
-            School Management
-          </h5>
+          <h5 className="text-lg font-bold text-[#2F4F4F]">School Management</h5>
         </div>
 
         <div className="school-list-container mt-1 bg-white rounded-lg">
@@ -618,6 +601,7 @@ export default function SchoolList() {
                       <InputLabel
                         id="cluster-select-label"
                         sx={{
+                           color: "#2F4F4F",
                           transform: "translate(14px, 14px) scale(1)",
                           "&.Mui-focused, &.MuiFormLabel-filled": {
                             transform: "translate(14px, -9px) scale(0.75)",
@@ -689,6 +673,7 @@ export default function SchoolList() {
                       <InputLabel
                         id="block-select-label"
                         sx={{
+                           color: "#2F4F4F",
                           transform: "translate(14px, 14px) scale(1)",
                           "&.Mui-focused, &.MuiFormLabel-filled": {
                             transform: "translate(14px, -9px) scale(0.75)",
@@ -748,24 +733,31 @@ export default function SchoolList() {
                     </FormControl>
 
                     {/* Reset Button */}
-                    <div className="flex justify-start w-full sm:w-auto mr-13">
-                      <Tooltip title="Reset Filters" placement="top">
-                        <div
-                          onClick={resetFilters}
-                          style={{
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            backgroundColor: "#f5f5f5",
-                            padding: "6px 12px",
-                            borderRadius: "4px",
-                            height: "48px",
-                          }}
-                        >
-                          <RestartAltIcon color="action" />
-                        </div>
-                      </Tooltip>
-                    </div>
+                    {isAnyFilterActive && (
+                      <div className="flex justify-start w-full sm:w-auto mr-13">
+                        <Tooltip title="Clear Filters" placement="top">
+                          <Button
+                            type="button"
+                            onClick={resetFilters}
+                            variant="text"
+                            sx={{
+                              color: "#2F4F4F",
+                              fontWeight: 600,
+                              fontSize: 16,
+                              textTransform: "none",
+                              height: "48px",
+                              padding: "0 12px",
+                              background: "transparent",
+                              "&:hover": {
+                                background: "#f5f5f5",
+                              },
+                            }}
+                          >
+                            Clear Filters
+                          </Button>
+                        </Tooltip>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -808,27 +800,87 @@ export default function SchoolList() {
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
-            <MUIDataTable
-              data={tableData}
-              columns={columns}
-              options={options}
-            />
+            <MUIDataTable data={tableData} columns={columns} options={options} />
           </div>
 
           <div
             style={{
-              width: "max-content",
-              margin: "25px auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between", // This spreads items to the edges
+              width: "100%",
+              margin: "20px 0",
+              padding: "0 24px", // Add some padding on the sides
             }}
           >
-            <Pagination
-              count={pagination.totalPages}
-              page={currentPage}
-              onChange={handlePageChange}
-              showFirstButton
-              showLastButton
-            />
+            {/* Empty div for left spacing to help with centering */}
+            <div style={{ width: "180px" }}></div>
+
+            {/* Centered pagination */}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Pagination
+                count={pagination.totalPages}
+                page={currentPage}
+                onChange={handlePageChange}
+                showFirstButton
+                showLastButton
+              />
+            </div>
+
+            {/* Right-aligned compact rows selector */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "180px",
+                justifyContent: "flex-end",
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#2F4F4F",
+                  mr: 1,
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                }}
+              >
+                Rows per page:
+              </Typography>
+              <Select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                variant="standard" // More compact variant
+                disableUnderline
+                sx={{
+                  height: "32px",
+                  minWidth: "60px",
+                  "& .MuiSelect-select": {
+                    color: "#2F4F4F",
+                    fontWeight: "600",
+                    py: 0,
+                    pl: 1,
+                  },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    elevation: 2,
+                    sx: {
+                      borderRadius: "8px",
+                      mt: 0.5,
+                    },
+                  },
+                }}
+              >
+                <MenuItem value={10}>10</MenuItem>
+                <MenuItem value={15}>15</MenuItem>
+                <MenuItem value={20}>20</MenuItem>
+                <MenuItem value={50}>50</MenuItem>
+                <MenuItem value={100}>100</MenuItem>
+              </Select>
+            </div>
           </div>
+
           <ToastContainer
             position="top-right"
             autoClose={3000}

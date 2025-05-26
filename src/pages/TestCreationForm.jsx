@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { SUBJECT_OPTIONS, CLASS_GROUPS, SUBJECTS_BY_GRADE } from "./../data/testData";
-import { CheckCircle, Plus, Trash2 } from "lucide-react";
+import { CLASS_GROUPS, SUBJECTS_BY_GRADE } from "./../data/testData";
+import { ChevronDown, Trash2 } from "lucide-react";
 import ButtonCustom from "../components/ButtonCustom";
 import ModalSummary from "../components/SummaryModal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiInstance from "../../api";
-import OutlinedButton from "../components/button/OutlinedButton";
-import { Autocomplete, TextField } from "@mui/material";
+
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import ConfirmationModal from "../components/modal/ConfirmationModal";
+
+import Autocomplete from "@mui/material/Autocomplete";
+import TextField from "@mui/material/TextField";
+import Paper from "@mui/material/Paper";
+
 
 const TestCreationForm = () => {
   const location = useLocation();
@@ -21,6 +26,12 @@ const TestCreationForm = () => {
   // State management
   const [activeClassGroupId, setActiveClassGroupId] = useState(null);
   const [selectedClasses, setSelectedClasses] = useState({});
+  // const [testSeriesNumber, setTestSeriesNumber] = useState("");
+  const [testSeriesMonth, setTestSeriesMonth] = useState("");
+  const [showClassGroupModal, setShowClassGroupModal] = useState(false);
+  const [pendingGroupId, setPendingGroupId] = useState(null);
+  const [showTestTypeModal, setShowTestTypeModal] = useState(false);
+  const [pendingTestType, setPendingTestType] = useState(null);
 
   const [formData, setFormData] = useState({
     testType: "syllabus",
@@ -37,13 +48,9 @@ const TestCreationForm = () => {
   // Add a state to track if we're in edit mode
   const [editMode, setEditMode] = useState(isEditMode);
 
-  const TEST_TAG_OPTIONS = [
-    { id: "Monthly", name: "Monthly" },
-    { id: "Quarterly", name: "Quarterly" },
-    { id: "Half Yearly", name: "Half Yearly" },
-    { id: "Pre Boards", name: "Pre Boards" },
-    { id: "Annual", name: "Annual" },
-  ];
+  const handleTestSeriesMonthChange = (e) => {
+    setTestSeriesMonth(e.target.value);
+  };
 
   // Improve the date formatting function to handle API date format
   const formatDateForInput = (dateString) => {
@@ -118,55 +125,6 @@ const TestCreationForm = () => {
     }
   }, [isEditMode, testData]);
 
-  const filterTestTagOptions = (options, params) => {
-    if (!params.inputValue) {
-      return options;
-    }
-
-    const inputValue = params.inputValue.toLowerCase().trim();
-
-    // Check for partial matches
-    const partialMatches = options.filter((option) =>
-      option.name.toLowerCase().includes(inputValue)
-    );
-
-    // Return matches if found
-    if (partialMatches.length > 0) {
-      return partialMatches;
-    }
-
-    // Check for exact match
-    const exactMatch = options.some((option) => option.name.toLowerCase() === inputValue);
-
-    // Add "Create new" option if no match found
-    if (!exactMatch && inputValue) {
-      return [
-        {
-          name: params.inputValue,
-          isCreateNew: true,
-        },
-      ];
-    }
-
-    return [];
-  };
-
-  // Handle class group selection
-  const handleGroupCardSelect = (groupId) => {
-    // If clicking the same group that's already active, collapse it
-    if (activeClassGroupId === groupId) {
-      setActiveClassGroupId(null);
-      setSelectedClasses({});
-      setSubjectRows({});
-      return;
-    }
-
-    // When switching to a new group, clear previous selections
-    setActiveClassGroupId(groupId);
-    setSelectedClasses({});
-    setSubjectRows({});
-  };
-
   // Toggle class selection within the active group
   const toggleClassSelection = (className) => {
     setSelectedClasses((prev) => {
@@ -228,15 +186,6 @@ const TestCreationForm = () => {
     });
   };
 
-  // Handle form field changes
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
   // 1. UPDATED SUBJECT ROW CHANGE HANDLER
   const handleSubjectRowChange = (className, rowId, field, value) => {
     // Get current row data first to compare dates
@@ -286,6 +235,11 @@ const TestCreationForm = () => {
     // Check if class group is selected
     if (!activeClassGroupId) {
       toast.error("Please select a class group");
+      return false;
+    }
+
+    if (formData.testTag === "Monthly" && !testSeriesMonth) {
+      toast.error("Please enter a Monthly Test Series Month");
       return false;
     }
 
@@ -464,6 +418,13 @@ const TestCreationForm = () => {
     return summaryData;
   };
 
+  const getFormattedTestTag = () => {
+    if (formData.testTag === "Monthly" && testSeriesMonth) {
+      return `${formData.testTag}_${testSeriesMonth}`;
+    }
+    return formData.testTag;
+  };
+
   // API call to create or update test
   const handleCreateTest = async () => {
     setIsSubmitting(true);
@@ -478,7 +439,7 @@ const TestCreationForm = () => {
 
         payload = {
           testType: formData.testType === "syllabus" ? "SYLLABUS" : "REMEDIAL",
-          testTag: formData.testTag,
+          testTag: getFormattedTestTag(),
           testDate: firstSubjectRow.testDate,
           deadline: firstSubjectRow.submissionDeadline,
         };
@@ -486,7 +447,7 @@ const TestCreationForm = () => {
         // Complex payload for create mode
         payload = {
           testType: formData.testType === "syllabus" ? "SYLLABUS" : "REMEDIAL",
-          testTag: formData.testTag,
+          testTag: getFormattedTestTag(),
           classes: Object.keys(selectedClasses).map((className) => {
             const classNum = className.includes("Class ")
               ? parseInt(className.replace("Class ", ""))
@@ -570,15 +531,91 @@ const TestCreationForm = () => {
       : `class_${className}`.replace(/\s+/g, "_").toLowerCase();
   };
 
+  const handleGroupCardSelect = (groupId) => {
+    // If there's no active group or no subjects added yet, just select it directly
+    if (
+      activeClassGroupId === null ||
+      !Object.keys(selectedClasses).length ||
+      !Object.values(subjectRows).some((rows) => rows.length > 0)
+    ) {
+      setActiveClassGroupId(groupId);
+      return;
+    }
+
+    // Otherwise, store the pending selection and show confirmation modal
+    if (activeClassGroupId !== groupId) {
+      setPendingGroupId(groupId);
+      setShowClassGroupModal(true);
+    } else {
+      // If clicking the active group again, just collapse it as before
+      setActiveClassGroupId(null);
+      setSelectedClasses({});
+      setSubjectRows({});
+    }
+  };
+
+  // Function to get group name by ID
+  const getGroupNameById = (id) => {
+    const group = CLASS_GROUPS.find((g) => g.id === id);
+    return group ? group.name : "";
+  };
+
+  // Confirmation handler for changing group
+  const handleConfirmGroupChange = () => {
+    setActiveClassGroupId(pendingGroupId);
+    setSelectedClasses({});
+    setSubjectRows({});
+    setShowClassGroupModal(false);
+  };
+
+  const getTestTypeName = (type) => {
+    if (!type) return ""; // Return empty string or some default value if type is null or undefined
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+
+    // Show confirmation for test type changes if data has been entered
+    if (
+      name === "testType" &&
+      value !== formData.testType &&
+      Object.keys(selectedClasses).length > 0
+    ) {
+      setPendingTestType(value);
+      setShowTestTypeModal(true);
+      return;
+    }
+
+    // Otherwise update normally
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Handle form field changes
+  // const handleFormChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [name]: value,
+  //   }));
+  // };
+
+  // Confirmation handler for changing test type
+  const handleConfirmTestTypeChange = () => {
+    setFormData((prev) => ({
+      ...prev,
+      testType: pendingTestType,
+    }));
+    setShowTestTypeModal(false);
+  };
+
   return (
-    <div className="main-page-wrapper text-[#2F4F4F] font-['Work_Sans']">
+    <div className="main-page-wrapper text-[#2F4F4F] font-['Work_Sans'] w-[840px] mx-auto">
       <header className="mb-4">
-        {/* <h1 className="text-4xl font-bold text-[#2F4F4F] font-['Karla']">
-          {editMode ? "Edit Test" : "Create New Test"}
-        </h1> */}
-        <h5 className="text-lg font-bold text-[#2F4F4F]">
-          {editMode ? "Edit Test" : "Create New Test"}
-        </h5>
+        <h5 className="text-lg font-bold text-[#2F4F4F]">{editMode ? "Edit Test" : "New Test"}</h5>
         {/* 
         <p className="text-[#597272] mt-2 font-['Work_Sans']">
           {editMode
@@ -589,180 +626,542 @@ const TestCreationForm = () => {
 
       <form>
         {/* Test Configuration Section */}
-        <div className="bg-white p-6 rounded-xl shadow-md mb-8">
-          <h2 className="text-xl font-semibold text-[#2F4F4F] mb-6 border-b pb-3 border-slate-200 font-['Karla']">
-            Test Configuration
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-            <div>
-              <label className="block font-medium text-[#597272] mb-2 text-sm" htmlFor="testType">
-                Test Type
-              </label>
-              <select
-                id="testType"
-                name="testType"
-                className={`w-full p-2.5 border border-slate-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#049796] focus:ring-2 focus:ring-[#CDEAEA] ${
-                  editMode ? "bg-gray-100 cursor-not-allowed" : ""
-                }`}
-                value={formData.testType}
-                onChange={handleFormChange}
-                disabled={editMode}
-              >
-                <option value="syllabus">Syllabus</option>
-                <option value="remedial">Remedial</option>
-              </select>
+        <div className="bg-white   ">
+          {/* Test Type with Radio Buttons */}
+          <div className="mb-6">
+            <label
+              className="block mb-3 text-sm"
+              style={{
+                fontFamily: "'Work Sans', sans-serif",
+                fontWeight: 600,
+                fontSize: "18px",
+                color: "#2F4F4F",
+              }}
+            >
+              Test Type
+            </label>
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center">
+                <input
+                  id="syllabus"
+                  name="testType"
+                  type="radio"
+                  className="h-4 w-4 text-[#2F4F4F] border-gray-300 focus:ring-[#2F4F4F]"
+                  value="syllabus"
+                  checked={formData.testType === "syllabus"}
+                  onChange={handleFormChange}
+                  disabled={editMode}
+                />
+                <label
+                  htmlFor="syllabus"
+                  className="ml-2 block text-sm"
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: formData.testType === "syllabus" ? 600 : 400,
+                    fontSize: "18px",
+                    color: "#2F4F4F",
+                  }}
+                >
+                  Syllabus
+                </label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  id="remedial"
+                  name="testType"
+                  type="radio"
+                  className="h-4 w-4 text-[#2F4F4F] border-gray-300 focus:ring-[#2F4F4F]"
+                  value="remedial"
+                  checked={formData.testType === "remedial"}
+                  onChange={handleFormChange}
+                  disabled={editMode}
+                />
+                <label
+                  htmlFor="remedial"
+                  className="ml-2 block text-sm"
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: formData.testType === "remedial" ? 600 : 400,
+                    fontSize: "18px",
+                    color: "#2F4F4F",
+                  }}
+                >
+                  Remedial
+                </label>
+              </div>
             </div>
-            <div>
-              <label className="block font-medium text-[#597272] mb-2 text-sm" htmlFor="testTag">
-                Test Tag
-              </label>
-              <select
-                id="testTag"
-                name="testTag"
-                className={`w-full p-2.5 border border-slate-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#049796] focus:ring-2 focus:ring-[#CDEAEA] ${
-                  editMode ? "bg-gray-100 cursor-not-allowed" : ""
-                }`}
-                value={formData.testTag}
-                onChange={handleFormChange}
-                disabled={editMode}
-              >
-                <option value="">Select Test Tag</option>
-                <option value="Monthly_1">Monthly_1</option>
-                <option value="Monthly_2">Monthly_2</option>
-                <option value="Monthly_3">Monthly_3</option>
-                <option value="Monthly_4">Monthly_4</option>
-                <option value="Quaterly">Quaterly</option>
-                <option value="Half_Yearly">Half_Yearly</option>
-                <option value="Pre_Board">Pre_Board</option>
-              </select>
-            </div>
+          </div>
+
+          <div
+            className={`grid grid-cols-1 md:grid-cols-${
+              formData.testTag === "Monthly" && !editMode ? "2" : "1"
+            } gap-x-6 gap-y-4`}
+          >
+            {/* Test Tag - Show combined value in edit mode, separate dropdowns in create mode */}
+            {editMode ? (
+              // Edit Mode: Show combined test tag as readonly
+              <div className="col-span-1">
+                <label
+                  className="block mb-2 text-sm"
+                  htmlFor="testTagDisplay"
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: 600,
+                    fontSize: "18px",
+                    color: "#2F4F4F",
+                  }}
+                >
+                  Test Tag
+                </label>
+                <input
+                  id="testTagDisplay"
+                  type="text"
+                  className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100 text-[#2F4F4F] cursor-not-allowed"
+                  value={getFormattedTestTag()}
+                  readOnly
+                  disabled
+                />
+              </div>
+            ) : (
+              // Create Mode: Show separate dropdowns
+              <>
+                <div className={formData.testTag === "Monthly" ? "" : "col-span-1"}>
+                  <label
+                    className="block mb-2 text-sm"
+                    htmlFor="testTag"
+                    style={{
+                      fontFamily: "'Work Sans', sans-serif",
+                      fontWeight: 600,
+                      fontSize: "18px",
+                      color: "#2F4F4F",
+                    }}
+                  >
+                    Test Tag
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="testTag"
+                      name="testTag"
+                      className="w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none"
+                      value={formData.testTag}
+                      onChange={handleFormChange}
+                    >
+                      <option value="">Select Test Tag</option>
+                      <option value="Monthly">Monthly</option>
+                      <option value="Quarterly">Quarterly</option>
+                      <option value="Half_Yearly">Half Yearly</option>
+                      <option value="Pre_Board">Pre Boards</option>
+                      <option value="Annual">Annual</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                      <svg
+                        className="fill-current h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Test Series Month Dropdown - Only show if Monthly in create mode */}
+                {formData.testTag === "Monthly" && (
+  <div>
+    <label
+      className="block mb-2 text-sm"
+      htmlFor="testSeriesMonth"
+      style={{
+        fontFamily: "'Work Sans', sans-serif",
+        fontWeight: 600,
+        fontSize: "18px",
+        color: "#2F4F4F",
+      }}
+    >
+      Test Series Month
+    </label>
+    <Autocomplete
+      disableClearable
+      options={[
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ]}
+      value={testSeriesMonth || ""}
+      onChange={(_, value) => setTestSeriesMonth(value)}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          placeholder="Select Month"
+          size="small"
+          sx={{
+            fontFamily: "'Work Sans', sans-serif",
+            fontWeight: 400,
+            fontSize: "14px",
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "8px",
+              background: "#fff",
+              color: "#2F4F4F",
+            },
+          }}
+        />
+      )}
+      PaperComponent={(props) => (
+        <Paper
+          {...props}
+          sx={{
+            boxShadow: "0px 8px 24px 0 rgba(72, 61, 139, 0.12)",
+            borderRadius: "8px",
+            mt: 1,
+          }}
+        />
+      )}
+      ListboxProps={{
+  sx: {
+    "& .MuiAutocomplete-option": {
+      px: 2,
+      py: 0.5,
+      borderRadius: "6px",
+      mb: 0.5,
+      fontFamily: "'Work Sans', sans-serif",
+      fontWeight: 400,
+      fontSize: "14px",
+      color: "#2F4F4F",
+      "&[aria-selected='true'], &:hover": {
+        backgroundColor: "#F0F5F5",
+        color: "#2F4F4F",
+      },
+    },
+     maxHeight: "none",
+     overflowY: "visible", 
+  },
+}}
+    />
+    <div
+      style={{
+        fontFamily: "'Work Sans', sans-serif",
+        fontWeight: 400,
+        color: "#483D8B",
+        fontSize: "14px",
+        marginTop: "4px",
+      }}
+    >
+      Groups the tests created under the selected month
+    </div>
+  </div>
+)}
+              </>
+            )}
           </div>
         </div>
 
         {/* Class Group Selection Section - Compressed */}
-        <div className="bg-white p-4 rounded-xl shadow-md mb-6">
-          <h2 className="text-lg font-semibold text-[#2F4F4F] mb-3 border-b pb-2 border-slate-200 font-['Karla']">
+
+        <div className="mb-8">
+          <h2
+            className="mb-4"
+            style={{
+              fontFamily: "'Work Sans', sans-serif",
+              fontWeight: 600,
+              fontSize: "18px",
+              color: "#2F4F4F",
+              marginTop: "30px",
+            }}
+          >
             {editMode ? "Target Class Group" : "Select Target Class Group"}
           </h2>
-          <div className="space-y-3">
-            {CLASS_GROUPS.map((group) => (
-              <div
-                key={group.id}
-                className={`bg-white border rounded-lg p-4 ${
-                  !editMode ? "cursor-pointer" : ""
-                } transition-all ${
-                  activeClassGroupId === group.id
-                    ? "border-[#2F4F4F] shadow-sm bg-[#D4DAE8]"
-                    : "border-slate-200 hover:border-slate-400"
-                } ${editMode ? "opacity-75" : ""}`}
-                onClick={() => !editMode && handleGroupCardSelect(group.id)}
-                tabIndex={!editMode ? "0" : "-1"}
-                onKeyDown={(e) => {
-                  if (!editMode && (e.key === "Enter" || e.key === " ")) {
-                    e.preventDefault();
-                    handleGroupCardSelect(group.id);
-                  }
-                }}
-              >
-                <div className="text-base font-semibold text-[#2F4F4F] mb-2 flex items-center font-['Karla']">
-                  {activeClassGroupId === group.id && (
-                    <CheckCircle className="w-5 h-5 text-[#2F4F4F] mr-2" />
-                  )}
-                  {group.name}
-                </div>
-                {activeClassGroupId === group.id && (
-                  <div className="flex flex-wrap gap-2">
-                    {group.classes.map((classItem) => {
-                      const className =
-                        typeof classItem === "number" ? `Class ${classItem}` : classItem;
-                      return (
-                        <div
-                          key={className}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
-                            selectedClasses[className]
-                              ? "bg-[#D4DAE8] text-[#2F4F4F] border-[#2F4F4F] font-semibold"
-                              : "bg-slate-100 border-slate-200 text-[#2F4F4F] hover:bg-[#CDEAEA] hover:border-[#049796]"
-                          } ${editMode ? "pointer-events-none" : ""}`}
-                          onClick={(e) => {
-                            if (!editMode) {
-                              e.stopPropagation();
-                              toggleClassSelection(className);
-                            }
-                          }}
-                          tabIndex={!editMode ? "0" : "-1"}
-                          onKeyDown={(e) => {
-                            if (!editMode && (e.key === "Enter" || e.key === " ")) {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              toggleClassSelection(className);
-                            }
-                          }}
-                        >
-                          {className}
-                        </div>
-                      );
-                    })}
+
+          <div className="space-y-4">
+            {/* Row 1: First 2 cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {CLASS_GROUPS.slice(0, 2).map((group) => (
+                <div
+                  key={group.id}
+                  className={`border rounded-lg ${
+                    !editMode ? "cursor-pointer" : ""
+                  } transition-all ${
+                    activeClassGroupId === group.id
+                      ? "border-[#2F4F4F] shadow-sm bg-white"
+                      : "border-[#E0E5E5] bg-white hover:border-[#597272]"
+                  } ${editMode ? "opacity-75" : ""}`}
+                  style={{
+                    height: activeClassGroupId === group.id ? "111px" : "63px",
+                    boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
+                  }}
+                  onClick={() => !editMode && handleGroupCardSelect(group.id)}
+                  tabIndex={!editMode ? "0" : "-1"}
+                  onKeyDown={(e) => {
+                    if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      handleGroupCardSelect(group.id);
+                    }
+                  }}
+                >
+                  <div className="p-6">
+                    <div
+                      className="text-base mb-3"
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        fontSize: "18px",
+                        color: "#2F4F4F",
+                      }}
+                    >
+                      {group.name}
+                    </div>
+                    {activeClassGroupId === group.id && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {group.classes.map((classItem) => {
+                          const className =
+                            typeof classItem === "number" ? `Class ${classItem}` : classItem;
+                          return (
+                            <div
+                              key={className}
+                              className={`px-3 py-1 rounded-full text-sm transition-all
+    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+    ${selectedClasses[className] ? "font-semibold" : "font-normal"}
+    ${editMode ? "pointer-events-none" : ""}
+  `}
+                              onClick={(e) => {
+                                if (!editMode) {
+                                  e.stopPropagation();
+                                  toggleClassSelection(className);
+                                }
+                              }}
+                              tabIndex={!editMode ? "0" : "-1"}
+                              onKeyDown={(e) => {
+                                if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleClassSelection(className);
+                                }
+                              }}
+                            >
+                              {className}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
+
+            {/* Row 2: Next 2 cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {CLASS_GROUPS.slice(2, 4).map((group) => (
+                <div
+                  key={group.id}
+                  className={`border rounded-lg ${
+                    !editMode ? "cursor-pointer" : ""
+                  } transition-all ${
+                    activeClassGroupId === group.id
+                      ? "border-[#2F4F4F] shadow-sm bg-white"
+                      : "border-[#E0E5E5] bg-white hover:border-[#597272]"
+                  } ${editMode ? "opacity-75" : ""}`}
+                  style={{
+                    height: activeClassGroupId === group.id ? "111px" : "63px",
+                    boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
+                  }}
+                  onClick={() => !editMode && handleGroupCardSelect(group.id)}
+                  tabIndex={!editMode ? "0" : "-1"}
+                  onKeyDown={(e) => {
+                    if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      handleGroupCardSelect(group.id);
+                    }
+                  }}
+                >
+                  <div className="p-6">
+                    <div
+                      className="text-base mb-3"
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        fontSize: "18px",
+                        color: "#2F4F4F",
+                      }}
+                    >
+                      {group.name}
+                    </div>
+                    {activeClassGroupId === group.id && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {group.classes.map((classItem) => {
+                          const className =
+                            typeof classItem === "number" ? `Class ${classItem}` : classItem;
+                          return (
+                            <div
+                              key={className}
+                              className={`px-3 py-1 rounded-full text-sm transition-all
+    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+    ${selectedClasses[className] ? "font-semibold" : "font-normal"}
+    ${editMode ? "pointer-events-none" : ""}
+  `}
+                              onClick={(e) => {
+                                if (!editMode) {
+                                  e.stopPropagation();
+                                  toggleClassSelection(className);
+                                }
+                              }}
+                              tabIndex={!editMode ? "0" : "-1"}
+                              onKeyDown={(e) => {
+                                if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleClassSelection(className);
+                                }
+                              }}
+                            >
+                              {className}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Row 3: Last card (centered) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {CLASS_GROUPS.slice(4, 5).map((group) => (
+                <div
+                  key={group.id}
+                  className={`border rounded-lg ${
+                    !editMode ? "cursor-pointer" : ""
+                  } transition-all ${
+                    activeClassGroupId === group.id
+                      ? "border-[#2F4F4F] shadow-sm bg-white"
+                      : "border-[#E0E5E5] bg-white hover:border-[#597272]"
+                  } ${editMode ? "opacity-75" : ""}`}
+                  style={{
+                    height: activeClassGroupId === group.id ? "111px" : "63px",
+                    boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
+                  }}
+                  onClick={() => !editMode && handleGroupCardSelect(group.id)}
+                  tabIndex={!editMode ? "0" : "-1"}
+                  onKeyDown={(e) => {
+                    if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      handleGroupCardSelect(group.id);
+                    }
+                  }}
+                >
+                  <div className="p-6">
+                    <div
+                      className="text-base mb-3"
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        fontSize: "18px",
+                        color: "#2F4F4F",
+                      }}
+                    >
+                      {group.name}
+                    </div>
+                    {activeClassGroupId === group.id && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {group.classes.map((classItem) => {
+                          const className =
+                            typeof classItem === "number" ? `Class ${classItem}` : classItem;
+                          return (
+                            <div
+                              key={className}
+                              className={`px-3 py-1 rounded-full text-sm transition-all
+    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+    ${selectedClasses[className] ? "font-semibold" : "font-normal"}
+    ${editMode ? "pointer-events-none" : ""}
+  `}
+                              onClick={(e) => {
+                                if (!editMode) {
+                                  e.stopPropagation();
+                                  toggleClassSelection(className);
+                                }
+                              }}
+                              tabIndex={!editMode ? "0" : "-1"}
+                              onKeyDown={(e) => {
+                                if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleClassSelection(className);
+                                }
+                              }}
+                            >
+                              {className}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {/* Add empty div to ensure proper spacing in a 2-column grid */}
+              <div className="hidden md:block"></div>
+            </div>
           </div>
         </div>
 
-        {/* Selected Classes Details */}
+        {/* Selected Classes Details Section */}
         <div className="space-y-6">
           {Object.keys(selectedClasses).map((className) => (
             <div
               key={getClassId(className)}
-              className="p-6 border border-[#E0E5E5] rounded-lg bg-[#F0F5F5] mt-6"
+              className="p-3 border border-gray-200 rounded-lg bg-white shadow-sm mt-6"
             >
-              <div className="flex justify-between items-center border-b border-[#CEDADA] pb-4 mb-4">
-                <h3 className="text-lg font-semibold text-[#2F4F4F] font-['Karla']">
-                  {className} - Test Details
-                </h3>
+              {/* Header */}
+              <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 font-['Karla']">
+                {className} - Subject and Test Details
+              </h3>
 
-                {/* Only show max score field for syllabus tests */}
-                {formData.testType === "syllabus" && (
-                  <div className="w-1/3 min-w-32">
+              {/* Only show max score field for syllabus tests */}
+              {formData.testType === "syllabus" && (
+                <div className="mb-6">
+                  <div className="mb-1">
                     <label
                       htmlFor={`max_score_${getClassId(className)}`}
-                      className="block text-xs font-medium text-[#597272] mb-1"
+                      className="block text-sm font-semibold text-[#2F4F4F]"
                     >
-                      Overall Max Score:
+                      Overall Max Score
                     </label>
-                    <input
-                      type="number"
-                      id={`max_score_${getClassId(className)}`}
-                      className={`w-full p-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-2 focus:ring-[#D4DAE8] ${
-                        editMode ? "bg-gray-100 cursor-not-allowed" : ""
-                      }`}
-                      placeholder="e.g., 100"
-                      value={maxScores[className] || ""}
-                      onChange={(e) => !editMode && handleMaxScoreChange(className, e.target.value)}
-                      disabled={editMode}
-                      required
-                    />
                   </div>
-                )}
-              </div>
+                  <input
+                    type="number"
+                    id={`max_score_${getClassId(className)}`}
+                    className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${
+                      editMode ? "bg-gray-100 cursor-not-allowed" : ""
+                    }`}
+                    placeholder="e.g., 100"
+                    value={maxScores[className] || ""}
+                    onChange={(e) => !editMode && handleMaxScoreChange(className, e.target.value)}
+                    disabled={editMode}
+                    required
+                  />
+                  <div className="mt-1">
+                    <span className="text-sm text-purple-700">Max Score upper limit is 100</span>
+                  </div>
+                </div>
+              )}
 
               {/* Subjects Table */}
               <div>
-                <div className="grid grid-cols-4 gap-4 font-semibold text-[#2F4F4F] text-sm pb-2 border-b border-[#CEDADA] mb-2 font-['Work_Sans']">
-                  <div>Subject</div>
-                  <div>Test Date</div>
-                  <div>Submission Deadline</div>
-                  <div>Action</div>
+                {/* Modified grid layout with 50-20-20-10 column widths */}
+                <div className="grid grid-cols-10 gap-4 text-sm text-[#2F4F4F] font-semibold py-2 border-b border-gray-200">
+                  <div className="col-span-5">Subject</div>
+                  <div className="col-span-2">Test Date</div>
+                  <div className="col-span-2">Submission Deadline</div>
+                  <div className="col-span-1">Actions</div>
                 </div>
 
                 {subjectRows[className]?.map((row) => (
                   <div
                     key={row.id}
-                    className="grid grid-cols-4 gap-4 items-center py-3 border-b border-[#E0E5E5]"
+                    className="grid grid-cols-10 gap-4 items-center py-3 border-b border-gray-100"
                   >
-                    <div>
+                    <div className="col-span-5">
                       <select
-                        className={`w-full p-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-2 focus:ring-[#D4DAE8] ${
+                        className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${
                           editMode ? "bg-gray-100 cursor-not-allowed" : ""
                         }`}
                         value={row.subject}
@@ -775,15 +1174,14 @@ const TestCreationForm = () => {
                       >
                         <option value="">Select Subject...</option>
                         {(() => {
-                          // Extract the class number from the className (e.g., "Class 9" → 9)
                           const classNum = className.includes("Class ")
                             ? parseInt(className.replace("Class ", ""))
                             : parseInt(className);
 
-                          // Get subjects for this class from SUBJECTS_BY_GRADE
+                          // Get all subjects for this class from SUBJECTS_BY_GRADE
                           const subjectsForClass = SUBJECTS_BY_GRADE[classNum] || [];
 
-                          // Get already selected subjects in this class (excluding the current row)
+                          // Get already selected subjects in this class (EXCLUDING the current row)
                           const selectedSubjects = subjectRows[className]
                             .filter((otherRow) => otherRow.id !== row.id && otherRow.subject)
                             .map((otherRow) => otherRow.subject);
@@ -806,47 +1204,49 @@ const TestCreationForm = () => {
                       </select>
                     </div>
                     {/* Test Date - EDITABLE EVEN IN EDIT MODE */}
-                    {/* Test Date - EDITABLE EVEN IN EDIT MODE */}
-                    <div>
-                      <input
-                        type="date"
-                        className="w-full p-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-2 focus:ring-[#D4DAE8]"
-                        value={row.testDate}
-                        onChange={(e) =>
-                          handleSubjectRowChange(className, row.id, "testDate", e.target.value)
-                        }
-                        required
-                      />
+                    <div className="col-span-2">
+                      <div className="relative">
+                        <input
+                          type="date"
+                          className="w-full min-w-[130px] p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8]"
+                          value={row.testDate}
+                          onChange={(e) =>
+                            handleSubjectRowChange(className, row.id, "testDate", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
                     </div>
                     {/* Submission Deadline - EDITABLE EVEN IN EDIT MODE */}
-                    {/* Submission Deadline - EDITABLE EVEN IN EDIT MODE */}
-                    <div>
-                      <input
-                        type="date"
-                        className="w-full p-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-2 focus:ring-[#D4DAE8]"
-                        value={row.submissionDeadline}
-                        onChange={(e) =>
-                          handleSubjectRowChange(
-                            className,
-                            row.id,
-                            "submissionDeadline",
-                            e.target.value
-                          )
-                        }
-                        required
-                      />
+                    <div className="col-span-2">
+                      <div className="relative">
+                        <input
+                          type="date"
+                          className="w-full min-w-[130px] p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8]"
+                          value={row.submissionDeadline}
+                          onChange={(e) =>
+                            handleSubjectRowChange(
+                              className,
+                              row.id,
+                              "submissionDeadline",
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                      </div>
                     </div>
-                    <div className="text-center">
+                    <div className="col-span-1 text-center">
                       <button
                         type="button"
-                        className={`bg-transparent text-[#F44336] hover:text-[#C3362B] hover:bg-[#FFE5E3] p-1 rounded-md ${
+                        className={`bg-transparent text-[#F44336] hover:text-[#C3362B] p-1 rounded-md ${
                           editMode ? "opacity-50 cursor-not-allowed" : ""
                         }`}
                         onClick={() => !editMode && removeSubjectRow(className, row.id)}
                         disabled={editMode}
                         aria-label="Remove subject"
                       >
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-5 h-5 text-red-500" />
                       </button>
                     </div>
                   </div>
@@ -854,15 +1254,75 @@ const TestCreationForm = () => {
               </div>
 
               {/* Add Subject Button - HIDE IN EDIT MODE */}
-              {!editMode && (
+              {/* {!editMode && (
                 <div className="mt-6">
-                  <OutlinedButton
+                  <button
+                    type="button"
                     onClick={() => addSubjectRow(className)}
-                    text="Add Subject"
-                    icon={true}
-                  />
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-[#2F4F4F] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2F4F4F]"
+                  >
+                    Add Subject
+                  </button>
                 </div>
-              )}
+              )} */}
+              {/* Add Subject Button - HIDE IN EDIT MODE */}
+              {/* Add Subject Button - HIDE IN EDIT MODE */}
+              {/* Add Subject Button - ONLY SHOW IF SUBJECTS ARE AVAILABLE */}
+              {!editMode &&
+                (() => {
+                  // Extract the class number from className
+                  const classNum = className.includes("Class ")
+                    ? parseInt(className.replace("Class ", ""))
+                    : parseInt(className);
+
+                  // Get all subjects for this class
+                  const subjectsForClass = SUBJECTS_BY_GRADE[classNum] || [];
+
+                  // Get already selected subjects in this class
+                  const selectedSubjects = subjectRows[className]
+                    .filter((row) => row.subject)
+                    .map((row) => row.subject);
+
+                  // Check if any row exists without a subject selected
+                  const hasEmptySubjectRow = subjectRows[className].some((row) => !row.subject);
+
+                  // Filter out already selected subjects
+                  const availableSubjects = subjectsForClass.filter(
+                    (subject) =>
+                      !selectedSubjects.includes(subject.toLowerCase().replace(/\s+/g, "_"))
+                  );
+
+                  // Handle add subject click with validation
+                  const handleAddSubject = () => {
+                    if (hasEmptySubjectRow) {
+                      toast.error("Please select a subject in the above dropdown first");
+                      return;
+                    }
+                    addSubjectRow(className);
+                  };
+
+                  // Only render button if there are available subjects left
+                  return availableSubjects.length > 0 ? (
+                    <div className="mt-6">
+                      <button
+                        type="button"
+                        onClick={handleAddSubject}
+                        className={`inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${
+                          hasEmptySubjectRow
+                            ? "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
+                            : "border-[#2F4F4F] text-[#2F4F4F] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2F4F4F]"
+                        }`}
+                        style={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 600,
+                          fontSize: "14px",
+                        }}
+                      >
+                        Add Subject
+                      </button>
+                    </div>
+                  ) : null;
+                })()}
             </div>
           ))}
         </div>
@@ -904,8 +1364,27 @@ const TestCreationForm = () => {
         onClose={() => setShowSummary(false)}
         {...prepareSummaryData()}
         handleConfirm={handleModalConfirm}
-        modalTitle={editMode ? "Test Update Summary" : "Test Creation Summary"}
+        modalTitle={editMode ? "Test Update Summary" : "Confirm Test Creation"}
         isSubmitting={isSubmitting} // Pass the isSubmitting state to the modal
+      />
+
+      <ConfirmationModal
+        isOpen={showClassGroupModal}
+        onClose={() => setShowClassGroupModal(false)}
+        onConfirm={handleConfirmGroupChange}
+        title="Target Class Group Change"
+        changeType="Class Group"
+        fromValue={getGroupNameById(activeClassGroupId)}
+        toValue={getGroupNameById(pendingGroupId)}
+      />
+      <ConfirmationModal
+        isOpen={showTestTypeModal}
+        onClose={() => setShowTestTypeModal(false)}
+        onConfirm={handleConfirmTestTypeChange}
+        title="Test Type Change"
+        changeType="Test Type"
+        fromValue={formData.testType ? getTestTypeName(formData.testType) : ""}
+        toValue={pendingTestType ? getTestTypeName(pendingTestType) : ""}
       />
     </div>
   );

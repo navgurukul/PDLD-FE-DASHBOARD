@@ -339,10 +339,7 @@ export default function AddStudent({ isEditMode = false }) {
     }
 
     // Validate date of birth
-    if (!formData.dateOfBirth) {
-      newErrors.dateOfBirth = "Date of birth is required";
-      isValid = false;
-    } else {
+    if (formData.dateOfBirth) {
       const today = new Date();
       const birthDate = new Date(formData.dateOfBirth);
       const age = today.getFullYear() - birthDate.getFullYear();
@@ -402,7 +399,6 @@ export default function AddStudent({ isEditMode = false }) {
         fullName: formData.name,
         fatherName: formData.fatherName,
         motherName: formData.motherName,
-        dob: formattedDate,
         class: formData.class,
         gender: formData.gender,
         schoolUdiseCode: formData.udiseCode,
@@ -411,6 +407,9 @@ export default function AddStudent({ isEditMode = false }) {
       // Only add optional fields if they have values
       if (formData.uniqueId) {
         studentData.aparId = formData.uniqueId;
+      }
+      if (formattedDate) {
+        studentData.dob = formattedDate;
       }
 
       if (formData.hostel) {
@@ -608,7 +607,7 @@ export default function AddStudent({ isEditMode = false }) {
               <Grid item xs={12} md={6}>
                 <TextField
                   type="date"
-                  label="Date of Birth *"
+                  label="Date of Birth" // Removed the asterisk (*)
                   name="dateOfBirth"
                   value={
                     formData.dateOfBirth instanceof Date && !isNaN(formData.dateOfBirth)
@@ -622,7 +621,7 @@ export default function AddStudent({ isEditMode = false }) {
                   fullWidth
                   InputLabelProps={{ shrink: true }}
                   error={!!errors.dateOfBirth}
-                  helperText={errors.dateOfBirth}
+                  helperText={errors.dateOfBirth || "Optional"}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       height: "48px",

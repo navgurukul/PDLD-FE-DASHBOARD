@@ -4,8 +4,11 @@ import MUIDataTable from "mui-datatables";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import ButtonCustom from "../../components/ButtonCustom";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
+import DownloadModal from "../../components/modal/DownloadModal"; // Import the download modal
 import api from "../../../api"; 
 
 // Internal styles
@@ -102,10 +105,24 @@ export default function SchoolReport() {
   const [selectedClass, setSelectedClass] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [availableClasses, setAvailableClasses] = useState([]);
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false); // Add download modal state
+  const [schoolInfo, setSchoolInfo] = useState(null); // Add school info state
   const navigate = useNavigate();
 
   // Extract school ID from URL
   const { schoolId } = useParams();
+
+  // Function to fetch school info
+  const fetchSchoolInfo = async () => {
+    try {
+      const result = await api.get(`/school/${schoolId}`);
+      if (result.data && result.data.success) {
+        setSchoolInfo(result.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching school info:", error);
+    }
+  };
 
   // Function to fetch all classes for the school
   const fetchAvailableClasses = async () => {
@@ -180,10 +197,11 @@ export default function SchoolReport() {
     }
   };
 
-  // Fetch available classes when component mounts
+  // Fetch available classes and school info when component mounts
   useEffect(() => {
     if (schoolId) {
       fetchAvailableClasses();
+      fetchSchoolInfo();
     }
   }, [schoolId]);
 
@@ -199,17 +217,402 @@ export default function SchoolReport() {
     setSelectedClass(parseInt(e.target.value, 10));
   };
 
-  // Handle report download
-  const handleDownloadReport = () => {
-    // This would typically trigger a download API call
-    console.log(`Downloading report for Class ${selectedClass}`);
-    alert(`Report for Class ${selectedClass} will be downloaded`);
+  // Handle opening download modal
+  const handleDownloadClick = () => {
+    setDownloadModalOpen(true);
   };
 
   // Get all unique subjects from the reports
   const allSubjects = [
     ...new Set(reports.flatMap((report) => Object.keys(report.subjectAverages || {}))),
   ];
+
+  // Transform data for download
+  const transformDataForDownload = () => {
+    return reports.map((report) => {
+      const transformedReport = {
+        examName: report.testTag === "null" ? "Untitled Test" : report.testTag,
+        totalStudents: report.totalStudents || 0,
+        maxMarks: report.maxScore || 0,
+      };
+
+      // Add subject averages
+      allSubjects.forEach((subject) => {
+        transformedReport[subject] = report.subjectAverages?.[subject] ?? "-";
+      });
+
+      return transformedReport;
+    });
+  };
+
+  // Handle download confirmation from modal
+  const handleDownloadConfirm = async (downloadOptions) => {
+    const { format, rows } = downloadOptions;
+    
+    try {
+      setIsLoading(true);
+      toast.info(`Generating ${format.toUpperCase()} report for Class ${selectedClass}...`);
+
+      const dataToDownload = transformDataForDownload();
+
+      if (format === "csv") {
+        handleDownloadCSV(dataToDownload);
+      } else {
+        handleDownloadPDF(dataToDownload);
+      }
+
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      toast.error("An error occurred while generating the report");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Download report as CSV
+  const handleDownloadCSV = (data) => {
+    const headers = [
+      "Name of Exam",
+      "Total Students",
+      "Max Marks",
+      ...allSubjects
+    ];
+
+    let csvContent = headers.join(",") + "\n";
+
+    data.forEach((report) => {
+      const rowData = [
+        report.examName,
+        report.totalStudents,
+        report.maxMarks,
+        ...allSubjects.map(subject => report[subject])
+      ];
+
+      csvContent +=
+        rowData
+          .map((cell) => {
+            if (cell && cell.toString().includes(",")) {
+              return `"${cell}"`;
+            }
+            return cell;
+          })
+          .join(",") + "\n";
+    });
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `Class_${selectedClass}_Report_${schoolInfo?.schoolName || 'School'}_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success(`CSV report downloaded for Class ${selectedClass}`);
+    }, 100);
+  };
+
+  // Download report as PDF
+  const handleDownloadPDF = (data) => {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Calculate statistics
+    const totalTests = data.length;
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    // Generate HTML content for the PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Class ${selectedClass} Test Report - ${schoolInfo?.schoolName || 'School'}</title>
+        <style>
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 15mm;
+            }
+          }
+          
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+            font-size: 12px;
+          }
+          
+          .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #2F4F4F;
+          }
+          
+          .header h1 {
+            color: #2F4F4F;
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+          }
+          
+          .header .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 5px;
+          }
+          
+          .header .date {
+            color: #666;
+            font-size: 12px;
+          }
+          
+          .school-info {
+            background-color: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+          }
+          
+          .school-info h3 {
+            color: #2F4F4F;
+            font-size: 14px;
+            margin-bottom: 8px;
+          }
+          
+          .school-info .info-item {
+            display: inline-block;
+            margin-right: 30px;
+            color: #666;
+            font-size: 12px;
+          }
+          
+          .school-info .info-item strong {
+            color: #2F4F4F;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+            font-size: 11px;
+          }
+          
+          thead {
+            background-color: #2F4F4F;
+            color: white;
+          }
+          
+          th {
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 12px;
+            border: 1px solid #2F4F4F;
+          }
+          
+          th.exam-header {
+            text-align: left;
+            padding-left: 12px;
+          }
+          
+          td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+            font-size: 11px;
+          }
+          
+          td.exam-name {
+            text-align: left;
+            padding-left: 12px;
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          
+          tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+          }
+          
+          tbody tr:hover {
+            background-color: #e8f5f9;
+          }
+          
+          .low-score {
+            color: #FF0000;
+            font-weight: 600;
+          }
+          
+          .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+          }
+          
+          .summary h3 {
+            color: #2F4F4F;
+            font-size: 14px;
+            margin-bottom: 10px;
+          }
+          
+          .summary-item {
+            display: inline-block;
+            margin-right: 30px;
+            margin-bottom: 5px;
+            font-size: 12px;
+          }
+          
+          .summary-item strong {
+            color: #2F4F4F;
+          }
+          
+          .note {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #856404;
+          }
+          
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+          }
+          
+          @media print {
+            .no-print {
+              display: none;
+            }
+            
+            table {
+              page-break-inside: auto;
+            }
+            
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Class ${selectedClass} Test Report</h1>
+            <div class="subtitle">${schoolInfo?.schoolName || 'School Report'}</div>
+            <div class="date">Generated on: ${currentDate}</div>
+          </div>
+          
+          <div class="school-info">
+            <h3>Report Information:</h3>
+            <div class="info-item"><strong>Class:</strong> ${selectedClass}</div>
+            <div class="info-item"><strong>Total Tests:</strong> ${totalTests}</div>
+            <div class="info-item"><strong>School:</strong> ${schoolInfo?.schoolName || 'N/A'}</div>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th class="exam-header">Name of Exam</th>
+                <th>Total Students</th>
+                <th>Max Marks</th>
+                ${allSubjects.map(subject => `<th>${subject}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(report => {
+                const isLowScore = (value, maxMarks) => {
+                  const num = parseFloat(value);
+                  const threshold = maxMarks ? maxMarks / 3 : 15;
+                  return !isNaN(num) && num < threshold;
+                };
+                
+                return `
+                  <tr>
+                    <td class="exam-name">${report.examName}</td>
+                    <td>${report.totalStudents}</td>
+                    <td>${report.maxMarks}</td>
+                    ${allSubjects.map(subject => {
+                      const value = report[subject];
+                      const isLow = isLowScore(value, report.maxMarks);
+                      return `<td class="${isLow ? 'low-score' : ''}">${value}</td>`;
+                    }).join('')}
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+          
+          <div class="note">
+            <strong>Note:</strong> These marks represent the subject-wise average score of the class, calculated as: (Total Marks Obtained in the Subject ÷ Number of Students Appeared). Red values indicate scores below the passing threshold.
+          </div>
+          
+          <div class="summary">
+            <h3>Report Summary</h3>
+            <div class="summary-item"><strong>Class:</strong> ${selectedClass}</div>
+            <div class="summary-item"><strong>Total Tests:</strong> ${totalTests}</div>
+            <div class="summary-item"><strong>Subjects Covered:</strong> ${allSubjects.length}</div>
+            <div class="summary-item"><strong>Report Type:</strong> Class Test Performance Analysis</div>
+          </div>
+          
+          <div class="footer">
+            <p>This report is generated automatically from the School Performance System</p>
+            <p>© 2024-25 Academic Performance Tracking System</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    // Write the content to the new window
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Wait for content to load, then trigger print
+    printWindow.onload = function() {
+      setTimeout(() => {
+        printWindow.print();
+        toast.success(`PDF report ready for Class ${selectedClass}`);
+      }, 250);
+    };
+  };
 
   // Define columns for MUIDataTable
   const headerStyle = {
@@ -232,14 +635,6 @@ export default function SchoolReport() {
         customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
       },
     },
-    // {
-    //   name: "No. Of Students ss",
-    //   options: {
-    //     filter: false,
-    //     sort: true,
-    //     customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
-    //   },
-    // },
     {
       name: "Max Marks",
       options: {
@@ -282,7 +677,6 @@ export default function SchoolReport() {
     // Start with base data
     const rowData = [
       report.testTag === "null" ? "Untitled Test" : report.testTag,
-      report.totalStudents || 0,
       report.maxScore || 0,
     ];
 
@@ -378,7 +772,11 @@ export default function SchoolReport() {
           </div>
 
           {/* Download Report Button */}
-          <ButtonCustom text={"Download Report"} onClick={handleDownloadReport} btnWidth={200} />
+          <ButtonCustom 
+            text={"Download Report"} 
+            onClick={handleDownloadClick} 
+            btnWidth={200} 
+          />
         </div>
 
         {/* Data Table */}
@@ -393,8 +791,27 @@ export default function SchoolReport() {
           Students Appeared)
         </div>
 
+        {/* Download Modal */}
+        <DownloadModal
+          isOpen={downloadModalOpen}
+          onClose={() => setDownloadModalOpen(false)}
+          onConfirm={handleDownloadConfirm}
+          currentPageCount={reports.length}
+          totalRecords={reports.length}
+          subject={`Class ${selectedClass}`}
+          hideRowOptions={true} // Since we only have current data
+        />
+
         {/* Loading Overlay */}
         {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
+
+        {/* Toast Container */}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          closeOnClick
+        />
       </div>
     </ThemeProvider>
   );

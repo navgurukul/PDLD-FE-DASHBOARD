@@ -4,9 +4,6 @@ import {
   TextField,
   MenuItem,
   Tooltip,
-  Menu,
-  ListItemIcon,
-  ListItemText,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -17,16 +14,15 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, Select, InputLabel } from "@mui/material";
 import { Pagination } from "@mui/material";
 import { Search, X as CloseIcon, RefreshCw } from "lucide-react";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { noSchoolImage } from "../utils/imagePath";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import TableChartIcon from "@mui/icons-material/TableChart";
 import apiInstance from "../../api"; // Updated import path
 import { Typography } from "@mui/material";
 import ButtonCustom from "../components/ButtonCustom";
+import { useTheme } from "@mui/material/styles";
+import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
 
 const theme = createTheme({
   typography: {
@@ -124,8 +120,10 @@ const theme = createTheme({
 });
 
 const Reports = () => {
-  const [downloadMenuAnchorEl, setDownloadMenuAnchorEl] = useState(null);
-  const downloadMenuOpen = Boolean(downloadMenuAnchorEl);
+  const theme = useTheme();
+  
+  // Remove download menu state, add download modal state
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
 
   // State management
   const [searchQuery, setSearchQuery] = useState("");
@@ -242,7 +240,7 @@ const Reports = () => {
             .custom-table th, .custom-table td {
               padding: 18px 16px; /* Increased row height */
               text-align: left;
-              border-bottom: 1px solid #e0e0e0;
+              border-bottom: none;
               font-size: 13px; /* Reduced font size */
             }
             .custom-table th.group-header {
@@ -259,8 +257,8 @@ const Reports = () => {
               text-align: center;
             }
             .custom-table tbody tr:hover {
-              background-color: rgba(47, 79, 79, 0.1);
-              cursor: pointer;
+              backgroundColor: "inherit !important",
+              cursor: default !important;
             }
             .custom-table td.low-score {
               color: #FF0000;
@@ -435,34 +433,393 @@ const Reports = () => {
     setCurrentPage(1);
   };
 
-  // Handle opening download menu
-  const handleDownloadClick = (event) => {
-    setDownloadMenuAnchorEl(event.currentTarget);
+  const isAnyFilterActive = !!searchQuery.trim() || !!selectedBlock || !!selectedCluster;
+
+  // Handle opening download modal
+  const handleDownloadClick = () => {
+    setDownloadModalOpen(true);
   };
 
-  // Handle closing download menu
-  const handleDownloadClose = () => {
-    setDownloadMenuAnchorEl(null);
+  // Handle download confirmation from modal
+  const handleDownloadConfirm = async (downloadOptions) => {
+    const { format, rows, count } = downloadOptions;
+    
+    try {
+      setIsLoading(true);
+      toast.info(`Generating ${format.toUpperCase()} report for ${count} schools...`);
+
+      let dataToDownload = [];
+
+      // Fetch data based on selected option
+      if (rows === "current") {
+        dataToDownload = transformedData;
+      } else {
+        // Fetch more data from API
+        let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${count === totalRecords ? totalRecords : count}`;
+        
+        if (selectedBlock) {
+          url += `&blockName=${selectedBlock}`;
+        }
+        if (selectedCluster) {
+          url += `&clusterName=${selectedCluster}`;
+        }
+
+        const response = await apiInstance.get(url);
+        if (response.data.success) {
+          const apiData = response.data.data.schools;
+          dataToDownload = apiData.map((school) => {
+            const primaryData = school.subjectPerformance[0] || {};
+            const upperData = school.subjectPerformance[1] || {};
+            const highData = school.subjectPerformance[2] || {};
+            const higherData = school.subjectPerformance[3] || {};
+
+            return {
+              schoolName: school.schoolName,
+              primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
+              primaryPass: primaryData.primaryPass !== undefined ? primaryData.primaryPass : null,
+              upperPrimaryAvg: upperData.upperPrimaryAvg !== undefined ? upperData.upperPrimaryAvg : null,
+              upperPrimaryPass: upperData.upperPrimaryPass !== undefined ? upperData.upperPrimaryPass : null,
+              highSchoolAvg: highData.highSchoolAvg !== undefined ? highData.highSchoolAvg : null,
+              highSchoolPass: highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
+              higherSecondaryAvg: higherData.higherSecondaryAvg !== undefined ? higherData.higherSecondaryAvg : null,
+              higherSecondaryPass: higherData.higherSecondaryPass !== undefined ? higherData.higherSecondaryPass : null,
+            };
+          });
+        } else {
+          throw new Error("Failed to fetch extended data");
+        }
+      }
+
+      if (format === "csv") {
+        handleDownloadCSV(dataToDownload);
+      } else {
+        handleDownloadPDF(dataToDownload);
+      }
+
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      toast.error("An error occurred while generating the report");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Download report as PDF
-  const handleDownloadPDF = () => {
-    toast.info("Generating PDF report...");
-
-    // Implement PDF generation and download logic here
-    setTimeout(() => {
-      // Simulated PDF generation
-      toast.success("PDF report generated");
-    }, 1000);
-
-    handleDownloadClose();
+  const handleDownloadPDF = (data) => {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Calculate statistics for the report
+    const totalSchools = data.length;
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    // Generate HTML content for the PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${selectedSubject} Performance Report</title>
+        <style>
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 15mm;
+            }
+          }
+          
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+            font-size: 11px;
+          }
+          
+          .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #2F4F4F;
+          }
+          
+          .header h1 {
+            color: #2F4F4F;
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+          }
+          
+          .header .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+          }
+          
+          .header .date {
+            color: #666;
+            font-size: 12px;
+          }
+          
+          .filter-info {
+            background-color: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+          }
+          
+          .filter-info h3 {
+            color: #2F4F4F;
+            font-size: 14px;
+            margin-bottom: 8px;
+          }
+          
+          .filter-info .filter-item {
+            display: inline-block;
+            margin-right: 20px;
+            color: #666;
+            font-size: 12px;
+          }
+          
+          .filter-info .filter-item strong {
+            color: #2F4F4F;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+            font-size: 10px;
+          }
+          
+          thead {
+            background-color: #2F4F4F;
+            color: white;
+          }
+          
+          th {
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 11px;
+            border: 1px solid #2F4F4F;
+          }
+          
+          th.school-header {
+            text-align: left;
+            padding-left: 10px;
+          }
+          
+          th.group-header {
+            background-color: #1a3a3a;
+            font-size: 12px;
+          }
+          
+          td {
+            padding: 6px;
+            border: 1px solid #ddd;
+            text-align: center;
+            font-size: 10px;
+          }
+          
+          td.school-name {
+            text-align: left;
+            padding-left: 10px;
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          
+          tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+          }
+          
+          tbody tr:hover {
+            background-color: #e8f5f9;
+          }
+          
+          .low-score {
+            color: #FF0000;
+            font-weight: 600;
+          }
+          
+          .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+          }
+          
+          .summary h3 {
+            color: #2F4F4F;
+            font-size: 14px;
+            margin-bottom: 10px;
+          }
+          
+          .summary-item {
+            display: inline-block;
+            margin-right: 30px;
+            margin-bottom: 5px;
+            font-size: 12px;
+          }
+          
+          .summary-item strong {
+            color: #2F4F4F;
+          }
+          
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+          }
+          
+          @media print {
+            .no-print {
+              display: none;
+            }
+            
+            table {
+              page-break-inside: auto;
+            }
+            
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>${selectedSubject} Performance Report</h1>
+            <div class="subtitle">Academic Year 2024-25</div>
+            <div class="date">Generated on: ${currentDate}</div>
+          </div>
+          
+          ${(selectedBlock || selectedCluster) ? `
+          <div class="filter-info">
+            <h3>Applied Filters:</h3>
+            ${selectedBlock ? `<div class="filter-item"><strong>Block:</strong> ${selectedBlock}</div>` : ''}
+            ${selectedCluster ? `<div class="filter-item"><strong>Cluster:</strong> ${selectedCluster}</div>` : ''}
+          </div>
+          ` : ''}
+          
+          <table>
+            <thead>
+              <tr>
+                <th rowspan="2" class="school-header">School Name</th>
+                <th colspan="2" class="group-header">Primary (1-5)</th>
+                <th colspan="2" class="group-header">Upper Primary (6-8)</th>
+                <th colspan="2" class="group-header">High School (9-10)</th>
+                <th colspan="2" class="group-header">Higher Secondary (11-12)</th>
+              </tr>
+              <tr>
+                <th>Avg. Marks</th>
+                <th>Pass Rate(%)</th>
+                <th>Avg. Marks</th>
+                <th>Pass Rate(%)</th>
+                <th>Avg. Marks</th>
+                <th>Pass Rate(%)</th>
+                <th>Avg. Marks</th>
+                <th>Pass Rate(%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(school => {
+                const isLowScore = (value) => {
+                  const num = parseInt(value);
+                  return !isNaN(num) && num < 20;
+                };
+                
+                return `
+                  <tr>
+                    <td class="school-name">${school.schoolName}</td>
+                    <td class="${isLowScore(school.primaryAvg) ? 'low-score' : ''}">
+                      ${school.primaryAvg !== null ? school.primaryAvg : '-'}
+                    </td>
+                    <td class="${isLowScore(school.primaryPass) ? 'low-score' : ''}">
+                      ${school.primaryPass !== null ? school.primaryPass + '%' : '-'}
+                    </td>
+                    <td class="${isLowScore(school.upperPrimaryAvg) ? 'low-score' : ''}">
+                      ${school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : '-'}
+                    </td>
+                    <td class="${isLowScore(school.upperPrimaryPass) ? 'low-score' : ''}">
+                      ${school.upperPrimaryPass !== null ? school.upperPrimaryPass + '%' : '-'}
+                    </td>
+                    <td class="${isLowScore(school.highSchoolAvg) ? 'low-score' : ''}">
+                      ${school.highSchoolAvg !== null ? school.highSchoolAvg : '-'}
+                    </td>
+                    <td class="${isLowScore(school.highSchoolPass) ? 'low-score' : ''}">
+                      ${school.highSchoolPass !== null ? school.highSchoolPass + '%' : '-'}
+                    </td>
+                    <td class="${isLowScore(school.higherSecondaryAvg) ? 'low-score' : ''}">
+                      ${school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : '-'}
+                    </td>
+                    <td class="${isLowScore(school.higherSecondaryPass) ? 'low-score' : ''}">
+                      ${school.higherSecondaryPass !== null ? school.higherSecondaryPass + '%' : '-'}
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+          
+          <div class="summary">
+            <h3>Report Summary</h3>
+            <div class="summary-item"><strong>Total Schools:</strong> ${totalSchools}</div>
+            <div class="summary-item"><strong>Subject:</strong> ${selectedSubject}</div>
+            <div class="summary-item"><strong>Report Type:</strong> School Performance Analysis</div>
+          </div>
+          
+          <div class="footer">
+            <p>This report is generated automatically from the School Performance System</p>
+            <p>© 2024-25 Academic Performance Tracking System</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    // Write the content to the new window
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Wait for content to load, then trigger print
+    printWindow.onload = function() {
+      setTimeout(() => {
+        printWindow.print();
+        toast.success(`PDF report ready with ${data.length} schools`);
+      }, 250);
+    };
   };
 
+  // [Keep all the existing code for handleDownloadCSV and other functions...]
   // Download report as CSV
-  const handleDownloadCSV = () => {
-    toast.info("Generating CSV report...");
-
-    // Implement CSV generation and download logic here
+  const handleDownloadCSV = (data) => {
     const headers = [
       "School Name",
       "Primary (1-5) Avg. Marks",
@@ -477,29 +834,17 @@ const Reports = () => {
 
     let csvContent = headers.join(",") + "\n";
 
-    reportData.forEach((school) => {
-      // Extract data from each school for CSV
-      const primaryData = school.subjectPerformance[0] || { primaryAvg: "-", primaryPass: "-" };
-      const upperData = school.subjectPerformance[1] || {
-        upperPrimaryAvg: "-",
-        upperPrimaryPass: "-",
-      };
-      const highData = school.subjectPerformance[2] || { highSchoolAvg: "-", highSchoolPass: "-" };
-      const higherData = school.subjectPerformance[3] || {
-        higherSecondaryAvg: "-",
-        higherSecondaryPass: "-",
-      };
-
+    data.forEach((school) => {
       const rowData = [
         school.schoolName,
-        primaryData.primaryAvg || "-",
-        primaryData.primaryPass ? `${primaryData.primaryPass}%` : "-",
-        upperData.upperPrimaryAvg || "-",
-        upperData.upperPrimaryPass ? `${upperData.upperPrimaryPass}%` : "-",
-        highData.highSchoolAvg || "-",
-        highData.highSchoolPass ? `${highData.highSchoolPass}%` : "-",
-        higherData.higherSecondaryAvg || "-",
-        higherData.higherSecondaryPass ? `${higherData.higherSecondaryPass}%` : "-",
+        school.primaryAvg || "-",
+        school.primaryPass ? `${school.primaryPass}%` : "-",
+        school.upperPrimaryAvg || "-",
+        school.upperPrimaryPass ? `${school.upperPrimaryPass}%` : "-",
+        school.highSchoolAvg || "-",
+        school.highSchoolPass ? `${school.highSchoolPass}%` : "-",
+        school.higherSecondaryAvg || "-",
+        school.higherSecondaryPass ? `${school.higherSecondaryPass}%` : "-",
       ];
 
       csvContent +=
@@ -529,10 +874,8 @@ const Reports = () => {
     setTimeout(() => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success("CSV report downloaded");
+      toast.success(`CSV report downloaded with ${data.length} schools`);
     }, 100);
-
-    handleDownloadClose();
   };
 
   // Transform API data for table display
@@ -579,6 +922,7 @@ const Reports = () => {
     return data;
   }, [transformedData, searchQuery, pageSize]);
 
+  // [Keep all the remaining JSX code exactly as it is...]
   return (
     <ThemeProvider theme={theme}>
       <div className="main-page-wrapper">
@@ -591,8 +935,8 @@ const Reports = () => {
             <Typography
               variant="subtitle1"
               sx={{
-                // bgcolor: theme.palette.secondary.light,
-                // color: theme.palette.primary,
+                bgcolor: theme.palette.secondary.light,
+                color: theme.palette.primary.main,
                 padding: "4px 16px",
                 borderRadius: "8px",
                 height: "48px",
@@ -743,23 +1087,29 @@ const Reports = () => {
 
           {/* Reset filter button */}
           <div>
-            <Button
-              variant="outlined"
-              onClick={resetFilters}
-              startIcon={<RestartAltIcon />}
-              sx={{
-                height: "48px",
-                borderRadius: "8px",
-                borderColor: "#2F4F4F",
-                color: "#2F4F4F",
-                "&:hover": {
-                  borderColor: "#2F4F4F",
-                  backgroundColor: "rgba(47, 79, 79, 0.04)",
-                },
-              }}
-            >
-              Reset
-            </Button>
+            {isAnyFilterActive && (
+              <Tooltip title="Clear all filters" placement="top">
+                <Button
+                  type="button"
+                  onClick={resetFilters}
+                  variant="text"
+                  sx={{
+                    color: "#2F4F4F",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    textTransform: "none",
+                    height: "48px",
+                    padding: "0 12px",
+                    background: "transparent",
+                    "&:hover": {
+                      background: "#f5f5f5",
+                    },
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </Tooltip>
+            )}
           </div>
 
           <div className="ml-auto">
@@ -780,34 +1130,6 @@ const Reports = () => {
           <>
             <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
               <CustomTable data={filteredData} />
-
-              {/* Download Options Menu */}
-              <Menu
-                anchorEl={downloadMenuAnchorEl}
-                open={downloadMenuOpen}
-                onClose={handleDownloadClose}
-                anchorOrigin={{
-                  vertical: "bottom",
-                  horizontal: "right",
-                }}
-                transformOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
-                }}
-              >
-                <MenuItem onClick={handleDownloadPDF}>
-                  <ListItemIcon>
-                    <PictureAsPdfIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Download as PDF</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleDownloadCSV}>
-                  <ListItemIcon>
-                    <TableChartIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Download as CSV</ListItemText>
-                </MenuItem>
-              </Menu>
             </div>
 
             {/* Pagination - always display */}
@@ -865,37 +1187,46 @@ const Reports = () => {
         >
           {selectedClassData && (
             <div className="flex flex-col w-full">
-              {/* Close button */}
-              <div className="self-end">
+              {/* School Name and Close Button in one row */}
+              <div className="flex items-center justify-between mb-4">
+                <div
+                  className="text-[24px] font-bold"
+                  style={{ fontFamily: "'Philosopher', sans-serif" }}
+                >
+                  {selectedClassData.udiseCode} - {selectedClassData.school}
+                </div>
                 <IconButton onClick={() => setClassModalOpen(false)} size="small" edge="end">
                   <CloseIcon />
                 </IconButton>
               </div>
 
-              {/* School info */}
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold text-[#2F4F4F] mb-2">
-                  {selectedClassData.school}
-                </h2>
-
-                {/* Class group and subject header */}
-                <div className="bg-gray-100 p-4 rounded-md mb-6 flex justify-between">
-                  <div className="text-[#2F4F4F] font-medium">
-                    Class Group: {selectedClassData.groupTitle}
-                  </div>
-                  <div className="text-[#2F4F4F] font-medium">
-                    Subject: {selectedClassData.subject}
-                  </div>
+              {/* Class group and subject in one row, subject not at extreme right */}
+              <div
+                className="bg-gray-100 p-4 rounded-md mb-6 flex items-center"
+                style={{ fontFamily: "'Karla', sans-serif" }}
+              >
+                <div className="text-[#2F4F4F] font-medium mr-8">
+                  Class Group: {selectedClassData.groupTitle}
                 </div>
+                <div className="text-[#2F4F4F] font-medium">
+                  Subject: {selectedClassData.subject}
+                </div>
+              </div>
 
-                {/* Class data in 2 columns */}
-                <div className="grid grid-cols-2 gap-x-8">
-                  {selectedClassData.data[0]?.classes?.map((classData, index) => (
-                    <div key={`class-${classData.class}-${index}`} className="mb-6">
-                      <div className="font-medium text-[#2F4F4F] mb-2">Class {classData.class}</div>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="text-gray-600">Avg. Marks</div>
-                        <div
+              {/* Classes in 2 columns, Avg Marks & Pass Rate in one line */}
+              <div className="grid grid-cols-2 gap-y-4 gap-x-12">
+                {selectedClassData.data[0]?.classes?.map((classData, index) => (
+                  <div
+                    key={`class-${classData.class}-${index}`}
+                    style={{ fontFamily: "'Karla', sans-serif" }}
+                  >
+                    <div className="font-medium text-[#2F4F4F] mb-2 text-base">
+                      Class {classData.class}
+                    </div>
+                    <div className="flex items-center gap-6 text-sm text-gray-700">
+                      <span>
+                        Avg Marks{" "}
+                        <span
                           className={
                             parseInt(classData.avgMarks) < 20
                               ? "text-red-600 font-medium"
@@ -903,27 +1234,37 @@ const Reports = () => {
                           }
                         >
                           {classData.avgMarks}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                        <div className="text-gray-600">Pass Rate(%)</div>
-                        <div
+                        </span>
+                      </span>
+                      <span>
+                        Pass Rate(%){" "}
+                        <span
                           className={
                             parseFloat(classData.successRate) < 30
                               ? "text-red-600 font-medium"
                               : "font-medium"
                           }
                         >
-                          {classData.successRate}
-                        </div>
-                      </div>
+                          {classData.successRate}%
+                        </span>
+                      </span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
         </Dialog>
+
+        {/* Download Modal */}
+        <DownloadModal
+          isOpen={downloadModalOpen}
+          onClose={() => setDownloadModalOpen(false)}
+          onConfirm={handleDownloadConfirm}
+          currentPageCount={filteredData.length}
+          totalRecords={totalRecords}
+          subject={selectedSubject}
+        />
 
         {/* Loading Indicator */}
         {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}

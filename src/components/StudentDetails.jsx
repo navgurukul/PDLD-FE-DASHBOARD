@@ -30,7 +30,7 @@ const theme = createTheme({
     color: "#2F4F4F",
   },
   components: {
-    // Change the highlight color from blue to “Text Primary” color style.
+    // Change the highlight color from blue to "Text Primary" color style.
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
@@ -66,6 +66,7 @@ const theme = createTheme({
           backgroundColor: "none",
           fontFamily: "Karla !important",
           textAlign: "left",
+            borderBottom: "none",
           "&.custom-cell": {
             width: "0px",
           },
@@ -81,8 +82,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "&:hover": {
-            backgroundColor: "rgba(47, 79, 79, 0.1) !important",
-            cursor: "pointer",
+            backgroundColor: "inherit !important",
+            cursor: "default",
           },
         },
       },
@@ -101,31 +102,16 @@ const theme = createTheme({
         },
       },
     },
-    MuiPaginationItem: {
-      styleOverrides: {
-        root: {
-          color: "black", // Change default text color
-          backgroundColor: "white", // Change the background color of all buttons
-          "&.Mui-selected": {
-            backgroundColor: "#2F4F4F", // Change color when selected
-            color: "white",
-          },
-          "&:hover": {
-            backgroundColor: "#A3BFBF", // Hover color
-          },
-        },
-      },
-    },
   },
 });
 
 const StudentDetails = ({ schoolId, schoolName }) => {
   const navigate = useNavigate();
-  const [selectedClass, setSelectedClass] = useState("1");
+  const [selectedClass, setSelectedClass] = useState(""); // Empty string for "All Classes"
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
-  const [students, setStudents] = useState([]);
-  const [classes, setClasses] = useState([]);
+  const [allStudents, setAllStudents] = useState([]); // Store all students
+  const [availableClasses, setAvailableClasses] = useState([]); // Store unique classes
   const [schoolInfo, setSchoolInfo] = useState({
     udiseCode: "",
     blockName: "",
@@ -135,7 +121,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     assignedCP: "NA",
   });
 
-  // Delete confirmation modal state - separated like SchoolList
+  // Delete confirmation modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -143,8 +129,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
   // Handle class change
   const handleClassChange = (event) => {
     setSelectedClass(event.target.value);
-    // Filter students based on class
-    filterStudentsByClass(event.target.value);
   };
 
   // Handle search query change
@@ -152,22 +136,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     setSearchQuery(event.target.value);
   };
 
-  // Filter students by selected class
-  const filterStudentsByClass = (classValue) => {
-    const selectedClassData = classes.find(
-      (classData) => classData.class.toString() === classValue
-    );
-    if (selectedClassData) {
-      setStudents(selectedClassData.students || []);
-    } else {
-      setStudents([]);
-    }
-  };
-
-  // Fetch students from the API
+  // Fetch all students from the API
   const fetchStudents = async () => {
     setIsLoadingStudents(true);
     try {
+      // Fetch all students without pagination
       const response = await apiInstance.get(`/student/school/${schoolId}`);
       const result = response.data;
 
@@ -184,29 +157,39 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           assignedCP: schoolData.assignedCP || "NA",
         });
 
-        // Store the list of classes
-        setClasses(schoolData.classes || []);
-
-        // Initialize with class 1 if available, else first available class
-        const class1Data = schoolData.classes.find(
-          (classData) => classData.class.toString() === "1"
-        );
-
-        if (class1Data) {
-          setStudents(class1Data.students || []);
-        } else if (schoolData.classes.length > 0) {
-          // If class 1 doesn't exist, default to first available class
-          setSelectedClass(schoolData.classes[0].class.toString());
-          setStudents(schoolData.classes[0].students || []);
+        // Extract all students from all classes
+        let students = [];
+        let classSet = new Set();
+        
+        if (schoolData.classes && Array.isArray(schoolData.classes)) {
+          schoolData.classes.forEach((classData) => {
+            if (classData.students && Array.isArray(classData.students)) {
+              // Add class information to each student
+              const studentsWithClass = classData.students.map(student => ({
+                ...student,
+                class: classData.class
+              }));
+              students = [...students, ...studentsWithClass];
+              classSet.add(classData.class);
+            }
+          });
         }
+
+        // Set all students
+        setAllStudents(students);
+        
+        // Set available classes sorted numerically
+        const sortedClasses = Array.from(classSet).sort((a, b) => Number(a) - Number(b));
+        setAvailableClasses(sortedClasses);
+
       } else {
         console.error("API response format unexpected:", result);
-        setStudents([]);
+        setAllStudents([]);
       }
     } catch (error) {
       console.error("Error fetching students:", error);
       toast.error("Failed to load students. Please try again later.");
-      setStudents([]);
+      setAllStudents([]);
     } finally {
       setIsLoadingStudents(false);
     }
@@ -242,25 +225,39 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     });
   };
 
-  // Open delete confirmation modal - similar to SchoolList
+  // Open delete confirmation modal
   const openDeleteModal = (student) => {
     setStudentToDelete(student);
     setDeleteModalOpen(true);
   };
 
-  // Close delete confirmation modal - similar to SchoolList
+  // Close delete confirmation modal
   const closeDeleteModal = () => {
     setDeleteModalOpen(false);
     setStudentToDelete(null);
   };
 
-  // Function to handle deleting a student - similar to SchoolList's confirmDeleteSchool
+  // Function to handle deleting a student
   const confirmDeleteStudent = async () => {
     if (!studentToDelete) return;
 
     setIsDeleting(true);
+
+     
     try {
-      const response = await apiInstance.delete(`/student/delete/${studentToDelete.id}`);
+      // Try multiple possible ID property names
+      const studentId = studentToDelete.id || studentToDelete._id || studentToDelete.studentId;
+
+      console.log("Student ID being used:", studentId);
+
+      if (!studentId) {
+        toast.error("Student ID not found. Cannot delete student.");
+        setIsDeleting(false);
+        closeDeleteModal();
+        return;
+      }
+
+      const response = await apiInstance.delete(`/student/delete/${studentId}`);
 
       if (response.data && response.data.success) {
         toast.success(`Student ${studentToDelete.fullName} has been deleted successfully!`);
@@ -278,12 +275,17 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     }
   };
 
-  // Filter students based on search query
-  const filteredStudents = students.filter(
-    (student) =>
-      student?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (student?.aparId && student.aparId.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Filter students based on search query and selected class
+  const filteredStudents = allStudents.filter((student) => {
+    // First filter by search query
+    const matchesSearch = student?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (student?.aparId && student.aparId.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // Then filter by class if a class is selected
+    const matchesClass = selectedClass === "" || student.class?.toString() === selectedClass;
+    
+    return matchesSearch && matchesClass;
+  });
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -432,7 +434,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           style: {
             display: "flex",
             justifyContent: "flex-start",
-            borderBottom: "1px solid #E0E0E0",
             paddingBottom: "22px",
           },
         }),
@@ -467,8 +468,8 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           },
         }),
         customBodyRenderLite: (dataIndex) => {
-          const studentId = tableData[dataIndex][7]; // Get ID from tableData
-          const student = tableData[dataIndex][8]; // Get full student object
+          const student = tableData[dataIndex][9]; // Rename to student for consistency
+          const studentId = tableData[dataIndex][8];
 
           return (
             <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
@@ -496,26 +497,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                   padding: "2px",
                   minWidth: "unset",
                 }}
-                onClick={() => openDeleteModal(student)}
+                onClick={() => openDeleteModal(student)} // Now student is defined
                 title="Delete Student"
               >
                 <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
               </Button>
-
-              {/* <Button
-								variant="text"
-								size="small"
-								sx={{
-									color: "#4caf50",
-									"&:hover": { backgroundColor: "transparent" },
-									padding: "2px",
-									minWidth: "unset",
-								}}
-								onClick={() => handleViewStudentReport(studentId, student)}
-								title="View Report"
-							>
-								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
-							</Button> */}
             </div>
           );
         },
@@ -548,7 +534,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     pagination: false,
     selectableRows: "none",
     responsive: "standard",
-    // onRowClick: handleRowClick, <-- REMOVE THIS LINE
     textLabels: {
       body: {
         noMatch: "No students found",
@@ -563,7 +548,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
   };
 
   const handleAddStudent = () => {
-    // () => navigate(`/schools/schoolDetail/addStudents`)
     navigate(`/schools/schoolDetail/${schoolId}/addStudents`, {
       state: {
         schoolId: schoolId,
@@ -624,11 +608,14 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                 value={selectedClass}
                 onChange={handleClassChange}
                 displayEmpty
-                renderValue={(value) => `Class ${value}`}
+                renderValue={(value) => value === "" ? "All Classes" : `Class ${value}`}
               >
-                {classes.map((classData) => (
-                  <MenuItem key={classData.class} value={classData.class.toString()}>
-                    Class {classData.class}
+                <MenuItem value="">
+                  <em>All Classes</em>
+                </MenuItem>
+                {availableClasses.map((classNum) => (
+                  <MenuItem key={classNum} value={classNum.toString()}>
+                    Class {classNum}
                   </MenuItem>
                 ))}
               </Select>
@@ -694,13 +681,16 @@ const StudentDetails = ({ schoolId, schoolName }) => {
             }}
           >
             <Typography variant="body1" sx={{ mb: 2, color: "text.secondary" }}>
-              No students found in Class {selectedClass}.
+              {selectedClass ? 
+                `No students found in Class ${selectedClass}.` : 
+                "No students found."
+              }
             </Typography>
             <Typography variant="body1">Click "Add Student" to register a new student.</Typography>
           </Box>
         )}
 
-        {/* Delete Confirmation Modal - Following SchoolList approach exactly */}
+        {/* Delete Confirmation Modal */}
         <DeleteConfirmationModal
           open={deleteModalOpen}
           onClose={closeDeleteModal}

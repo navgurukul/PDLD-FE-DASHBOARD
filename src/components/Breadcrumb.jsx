@@ -160,11 +160,31 @@ const Breadcrumb = () => {
     ) {
       schoolSubmissionPath = `/allTest/schoolSubmission/${pathnames[i + 1]}`;
     }
-
+if (value === "student-profile") continue;
     // Skip UUIDs and numeric IDs in breadcrumb display
-    if (isUUID(value) || (i === pathnames.length - 1 && isNumeric(value))) {
-      continue;
-    }
+    if (isUUID(value)) {
+  // Check if it's the last segment and part of student-profile
+  const isStudentProfile =
+    i > 0 && pathnames[i - 1] === "student-profile" && location.state?.studentName;
+
+  if (isStudentProfile) {
+    breadcrumbItems.push(
+      <Typography
+        key={currentPath}
+        variant="body2"
+        color="text.disabled"
+        sx={{
+          textDecoration: "none",
+          fontFamily: "'Karla', sans-serif",
+        }}
+      >
+        {location.state.studentName}
+      </Typography>
+    );
+  }
+
+  continue;
+}
 
     // Check if this is testDetails (which should be highlighted)
     const isTestDetails = value === "testDetails";

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import PropTypes from "prop-types";
+import { useState, useEffect, useMemo } from "react";
+
 import {
   Button,
   TextField,
@@ -13,15 +13,11 @@ import {
   CircularProgress,
 } from "@mui/material";
 import MUIDataTable from "mui-datatables";
-import SearchIcon from "@mui/icons-material/Search";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import DocScannerIcon from "@mui/icons-material/DocumentScanner";
-import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import DoneIcon from "@mui/icons-material/Done";
 import PendingIcon from "@mui/icons-material/Pending";
-import PercentIcon from "@mui/icons-material/Percent";
 import { FileText } from "lucide-react";
 import apiInstance from "../../../api";
 import axios from "axios"; // Keep axios as fallback
@@ -62,6 +58,24 @@ const theme = createTheme({
       styleOverrides: {
         icon: {
           color: "#2F4F4F", // Dropdown arrow icon color
+        },
+      },
+    },
+
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          "&:hover": {
+            backgroundColor: "inherit !important", // No highlight
+            cursor: "default",
+          },
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: "none",
         },
       },
     },
@@ -219,11 +233,20 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     id: school.id,
     name: school.name || school.schoolName || "",
     status: school.submitted ? "Submitted" : "Pending",
-    totalStudents: school.studentsTested || school.totalStudents || "-",
-    presentStudents: school.presentStudents || "-",
-    absentStudents: school.absentStudents || "-",
-    averageScore: school.averageScore || "-",
-    passRate: school.passRate || school.successRate || "-",
+    totalStudents: school.totalStudents === 0 ? "0" : school.totalStudents,
+    presentStudents: school.presentStudents === 0 ? "0" : school.presentStudents,
+    absentStudents: school.absentStudents === 0 ? "0" : school.absentStudents,
+    averageScore: school.averageScore === 0 ? "0" : school.averageScore,
+    passRate:
+      school.passRate === 0
+        ? "0%"
+        : school.passRate != null
+        ? `${school.passRate}%`
+        : school.successRate === 0
+        ? "0%"
+        : school.successRate != null
+        ? `${school.successRate}%`
+        : "-",
     submitted: school.submitted,
   }));
 
@@ -232,6 +255,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     setStatusFilter("");
     setSortConfig({ key: null, direction: "asc" });
   };
+  const isAnyFilterActive = !!searchQuery.trim() || !!statusFilter;
 
   const defaultCustomHeadLabelRender = (columnMeta) => (
     <span
@@ -241,6 +265,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         fontWeight: 600,
         fontSize: "12px",
         fontStyle: "normal",
+        textTransform: "none",
       }}
     >
       {columnMeta.label}
@@ -340,24 +365,29 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       options: {
         filter: false,
         sort: false,
+        setCellProps: () => ({
+          style: {
+            textAlign: "center",
+            padding: "0px 16px",
+          },
+        }),
         setCellHeaderProps: () => ({
           style: {
-            display: "flex",
-            justifyContent: "center",
+            textAlign: "center",
+            borderBottom: "1px solid rgba(224, 224, 224, 1)",
           },
         }),
         customBodyRenderLite: (dataIndex) => {
           const rowData = tableData[dataIndex];
           const schoolId = rowData.id;
-          
+
           return (
             <div
-              style={{ 
-                display: "flex", 
+              style={{
+                display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                height: "100%",
-                padding: "8px 0"
+                padding: "10px 0",
               }}
             >
               <Button
@@ -368,13 +398,13 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   color: "#2F4F4F",
                   textTransform: "none",
                   fontSize: "14px",
-                  lineHeight: "1",
-                  padding: "4px 8px",
-                  margin: 0,
-                  minWidth: "auto",
-                  height: "auto",
                   fontWeight: 600,
                   fontFamily: "'Work Sans'",
+                  padding: "6px 12px",
+                  minWidth: "auto",
+                  "&:hover": {
+                    backgroundColor: "rgba(47, 79, 79, 0.08)",
+                  },
                 }}
               >
                 <DocScannerIcon style={{ width: "16px", height: "16px", marginRight: "4px" }} />
@@ -382,60 +412,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               </Button>
             </div>
           );
-          const isSubmitted = rowData.submitted;
-
-          if (isSubmitted) {
-            // Show View Details button for submitted schools
-            return (
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => onSchoolSelect(schoolId)}
-                  sx={{
-                    borderColor: "transparent",
-                    color: "#2F4F4F",
-                    fontWeight: 600,
-                    fontFamily: "'Work Sans'",
-                    textTransform: "none",
-                    "&:hover": { borderColor: "transparent" },
-                  }}
-                >
-                  <DocScannerIcon style={{ width: "20px", height: "20px" }} />
-                  &nbsp; View Details
-                </Button>
-              </div>
-            );
-          } else {
-            // Show Remind button for pending schools
-            return (
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    borderRadius: "8px",
-                    borderColor: "rgba(224, 224, 224, 0.6)", // Faded border color
-                    color: "rgba(47, 79, 79, 0.6)", // Faded text color
-                    opacity: 0.7, // Faded appearance
-                    fontSize: "0.75rem",
-                    padding: "4px 10px",
-                    fontWeight: 600,
-                    fontFamily: "'Work Sans'",
-                    textTransform: "none",
-                    "&:hover": {
-                      borderColor: "#2F4F4F",
-                      backgroundColor: "rgba(47, 79, 79, 0.08)",
-                      opacity: 1, // Full opacity on hover
-                    },
-                  }}
-                >
-                  <DocScannerIcon style={{ width: "20px", height: "20px" }} />
-                  &nbsp; View Details
-                </Button>
-              </div>
-            );
-          }
         },
       },
     },
@@ -463,13 +439,13 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     fixedHeader: true,
     setTableProps: () => ({
       style: {
-        borderCollapse: 'collapse',
+        borderCollapse: "collapse",
       },
     }),
     setRowProps: () => ({
       style: {
-        borderBottom: "1px solid rgba(224, 224, 224, 1)"
-      }
+         borderBottom: "none", 
+      },
     }),
   };
 
@@ -606,6 +582,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               <InputLabel
                 id="status-select-label"
                 sx={{
+                  color: "#2F4F4F",
                   transform: "translate(14px, 14px) scale(1)",
                   "&.Mui-focused, &.MuiFormLabel-filled": {
                     transform: "translate(14px, -9px) scale(0.75)",
@@ -640,28 +617,29 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               </Select>
             </FormControl>
 
-            {/* Reset Button */}
-            <Tooltip title="Reset Filters" placement="top">
-              <Button
-                onClick={resetFilters}
-                variant="outlined"
-                sx={{
-                  minWidth: "40px",
-                  width: "40px",
-                  height: "40px",
-                  padding: "8px",
-                  borderRadius: "8px",
-                  borderColor: "#f0f0f0",
-                  backgroundColor: "#f5f5f5",
-                  "&:hover": {
-                    backgroundColor: "#e0e0e0",
-                    borderColor: "#e0e0e0",
-                  },
-                }}
-              >
-                <RestartAltIcon color="action" />
-              </Button>
-            </Tooltip>
+            {/* Clear Filters */}
+            {isAnyFilterActive && (
+              <Tooltip title="Clear all filters" placement="top">
+                <Button
+                  onClick={resetFilters}
+                  variant="text"
+                  sx={{
+                    color: "#2F4F4F",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    textTransform: "none",
+                    height: "48px",
+                    padding: "0 12px",
+                    background: "transparent",
+                    "&:hover": {
+                      background: "#f5f5f5",
+                    },
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </Tooltip>
+            )}
           </div>
         </div>
 
@@ -683,14 +661,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <FileText 
-                size={64} 
-                className="text-gray-300 mb-4" 
-                strokeWidth={1}
-              />
-              <h3 className="text-lg font-medium text-gray-700 mb-1">
-                No Schools Data Available
-              </h3>
+              <FileText size={64} className="text-gray-300 mb-4" strokeWidth={1} />
+              <h3 className="text-lg font-medium text-gray-700 mb-1">No Schools Data Available</h3>
               <p className="text-gray-500 mb-4">
                 No school submissions have been recorded for this test yet.
               </p>

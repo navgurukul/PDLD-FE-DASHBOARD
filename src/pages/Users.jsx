@@ -21,7 +21,6 @@ import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
 
 const theme = createTheme({
   typography: {
@@ -80,6 +79,23 @@ const theme = createTheme({
         },
       },
     },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          "&:hover": {
+            backgroundColor: "inherit !important",
+            cursor: "default !important",
+          },
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: "none",
+        },
+      },
+    },
   },
 });
 
@@ -118,9 +134,7 @@ export default function Users() {
   // Extract unique roles from users
   useEffect(() => {
     if (users.length > 0) {
-      const roles = [...new Set(users.map((user) => user.role))].filter(
-        Boolean
-      );
+      const roles = [...new Set(users.map((user) => user.role))].filter(Boolean);
       setAvailableRoles(roles);
 
       // Extract unique blocks from users
@@ -210,9 +224,7 @@ export default function Users() {
   const fetchData = async () => {
     try {
       setIsLoading(true); // Show loader when fetching data
-      const response = await apiInstance.get(
-        `/users?page=${currentPage}&pageSize=${pageSize}`
-      );
+      const response = await apiInstance.get(`/users?page=${currentPage}&pageSize=${pageSize}`);
 
       if (response.data?.success && response.data?.data) {
         // Extract users array from response
@@ -254,14 +266,11 @@ export default function Users() {
     setIsDeleting(true);
     try {
       // Call the API to delete the user
-      await apiInstance.delete(
-        `/user/delete/${userToDelete.userId || userToDelete.id}`
-      );
+      await apiInstance.delete(`/user/delete/${userToDelete.userId || userToDelete.id}`);
 
       // Remove the user from the local state
       const updatedUsers = users.filter(
-        (user) =>
-          (user.userId || user.id) !== (userToDelete.userId || userToDelete.id)
+        (user) => (user.userId || user.id) !== (userToDelete.userId || userToDelete.id)
       );
       setUsers(updatedUsers);
 
@@ -323,6 +332,8 @@ export default function Users() {
     setCurrentPage(1);
   };
 
+  const isAnyFilterActive = !!searchQuery.trim() || !!selectedRole || !!selectedBlock;
+
   const tableData = filteredUsers.map((user) => ({
     id: user.userId || user.id,
     name: user.name || "N/A",
@@ -350,9 +361,7 @@ export default function Users() {
     assignedCluster: `${
       user.role === "DISTRICT_OFFICER" || user.role === "district_officer"
         ? "All Clusters"
-        : user.assignedClusters
-            ?.map((c) => capitalizeFirstLetter(c))
-            .join(", ") || "N/A"
+        : user.assignedClusters?.map((c) => capitalizeFirstLetter(c)).join(", ") || "N/A"
     }`,
     actions: "Manage User",
     userObj: user, // Pass the entire user object for the delete modal
@@ -514,11 +523,7 @@ export default function Users() {
                 }}
                 onClick={() => openDeleteModal(user)}
               >
-                <img
-                  src={trash}
-                  alt="Delete"
-                  style={{ width: "20px", height: "20px" }}
-                />
+                <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
                 &nbsp;
               </Button>
             </div>
@@ -589,6 +594,7 @@ export default function Users() {
               <InputLabel
                 id="role-select-label"
                 sx={{
+                  color: "#2F4F4F",
                   transform: "translate(14px, 14px) scale(1)",
                   "&.Mui-focused, &.MuiFormLabel-filled": {
                     transform: "translate(14px, -9px) scale(0.75)",
@@ -659,6 +665,7 @@ export default function Users() {
               <InputLabel
                 id="block-select-label"
                 sx={{
+                  color: "#2F4F4F",
                   transform: "translate(14px, 14px) scale(1)",
                   "&.Mui-focused, &.MuiFormLabel-filled": {
                     transform: "translate(14px, -9px) scale(0.75)",
@@ -718,28 +725,31 @@ export default function Users() {
             </FormControl>
 
             {/* Reset Filters Button */}
-            <Tooltip title="Reset Filters" placement="top">
-              <div
-                onClick={resetFilters}
-                style={{
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  backgroundColor: "#f5f5f5",
-                  padding: "6px 12px",
-                  borderRadius: "4px",
-                  height: "48px",
-                }}
-              >
-                <RestartAltIcon color="action" />
-              </div>
-            </Tooltip>
+            {isAnyFilterActive && (
+              <Tooltip title="Clear all filters" placement="top">
+                <Button
+                  type="button"
+                  onClick={resetFilters}
+                  variant="text"
+                  sx={{
+                    color: "#2F4F4F",
+                    fontWeight: 600,
+                    fontSize: 16,
+                    textTransform: "none",
+                    height: "48px",
+                    padding: "0 12px",
+                    background: "transparent",
+                    "&:hover": {
+                      background: "#f5f5f5",
+                    },
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </Tooltip>
+            )}
           </div>
-          <ButtonCustom
-            imageName={addSymbolBtn}
-            text="Create User"
-            onClick={handleCreateUser}
-          />
+          <ButtonCustom imageName={addSymbolBtn} text="Create User" onClick={handleCreateUser} />
         </div>
 
         <div className="rounded-lg overflow-hidden border border-gray-200">

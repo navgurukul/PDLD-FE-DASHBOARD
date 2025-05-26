@@ -63,8 +63,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "&:hover": {
-            backgroundColor: "rgba(47, 79, 79, 0.1) !important",
-            cursor: "pointer",
+            backgroundColor: "inherit !important",
+            cursor: "default",
           },
         },
       },
@@ -86,7 +86,12 @@ const theme = createTheme({
   },
 });
 
-const StudentAcademics = ({ studentId, schoolId, academicData }) => {
+const StudentAcademics = ({ 
+  studentId, 
+  schoolId, 
+  academicData, 
+  onTabChange // Add this prop to communicate with parent
+}) => {
   // State for filter selections
   const [syllabusMonth, setSyllabusMonth] = useState("All");
   const [maxMarks, setMaxMarks] = useState("All");
@@ -283,17 +288,51 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
     );
   }, [remedialData, remedialMonth, subject]);
 
+  // NEW: Get current page count for each view
+  const getCurrentPageCount = () => {
+    if (syllabusView === "aggregate") {
+      return Math.min(10, filteredSyllabusData.length); // Assuming 10 items per page
+    } else {
+      // For subjectwise, we need to calculate based on the StudentReportSubjectWise component
+      // This might need adjustment based on how StudentReportSubjectWise works
+      return Math.min(10, syllabusData.length);
+    }
+  };
+
+  const getTotalRecords = () => {
+    if (syllabusView === "aggregate") {
+      return filteredSyllabusData.length;
+    } else {
+      return syllabusData.length; // For subjectwise view
+    }
+  };
+
+  // NEW: Notify parent component when tab changes or data updates
+  useEffect(() => {
+    if (onTabChange) {
+      const tableType = syllabusView === "aggregate" ? "aggregate" : "subjectwise";
+      onTabChange(tableType, {
+        count: getCurrentPageCount(),
+        data: syllabusView === "aggregate" ? filteredSyllabusData : syllabusData
+      });
+    }
+  }, [syllabusView, filteredSyllabusData, syllabusData, onTabChange]);
+
   // Reset all filters
   const resetSyllabusFilters = () => {
     setSyllabusMonth("All");
     setMaxMarks("All");
     setStatus("All");
   };
+  const isAnySyllabusFilterActive =
+    syllabusMonth !== "All" || maxMarks !== "All" || status !== "All";
 
   const resetRemedialFilters = () => {
     setRemedialMonth("All");
     setSubject("All");
   };
+
+  const isAnyRemedialFilterActive = remedialMonth !== "All" || subject !== "All";
 
   const defaultCustomHeadLabelRender = (columnMeta) => (
     <span
@@ -306,6 +345,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
         textAlign: "left",
         display: "flex",
         justifyContent: "flex-start",
+        textTransform: "none",
       }}
     >
       {columnMeta.label}
@@ -336,7 +376,7 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
     }));
   };
 
-      // Basic columns for the syllabus table
+  // Basic columns for the syllabus table
   const baseColumns = [
     {
       name: "testType",
@@ -499,9 +539,21 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
     }),
   };
 
+  // NEW: Updated handleToggleChange to notify parent
   const handleToggleChange = (event, newView) => {
     if (newView !== null) {
       setSyllabusView(newView);
+      
+      // Immediately notify parent of the change
+      if (onTabChange) {
+        const tableType = newView === "aggregate" ? "aggregate" : "subjectwise";
+        onTabChange(tableType, {
+          count: newView === "aggregate" ? 
+            Math.min(10, filteredSyllabusData.length) : 
+            Math.min(10, syllabusData.length),
+          data: newView === "aggregate" ? filteredSyllabusData : syllabusData
+        });
+      }
     }
   };
 
@@ -667,23 +719,27 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
                   </Select>
                 </FormControl>
 
-                {/* Reset Button */}
-                <Button
-                  variant="outlined"
-                  onClick={resetSyllabusFilters}
-                  sx={{
-                    borderRadius: "8px",
-                    height: "40px",
-                    borderColor: "#2F4F4F",
-                    color: "#2F4F4F",
-                    "&:hover": {
-                      borderColor: "#2F4F4F",
-                      backgroundColor: "rgba(47, 79, 79, 0.1)",
-                    },
-                  }}
-                >
-                  Reset
-                </Button>
+                {/*  Clear Filters  for the Syllabus*/}
+                {isAnySyllabusFilterActive && (
+                  <Button
+                    variant="text"
+                    onClick={resetSyllabusFilters}
+                    sx={{
+                      color: "#2F4F4F",
+                      fontWeight: 600,
+                      fontSize: 16,
+                      textTransform: "none",
+                      height: "40px",
+                      padding: "0 12px",
+                      background: "transparent",
+                      "&:hover": {
+                        background: "#f5f5f5",
+                      },
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
               </div>
 
               {/* Subject-wise view using the StudentReportSubjectWise component */}
@@ -760,23 +816,27 @@ const StudentAcademics = ({ studentId, schoolId, academicData }) => {
               </Select>
             </FormControl>
 
-            {/* Reset Button */}
-            <Button
-              variant="outlined"
-              onClick={resetRemedialFilters}
-              sx={{
-                borderRadius: "8px",
-                height: "40px",
-                borderColor: "#2F4F4F",
-                color: "#2F4F4F",
-                "&:hover": {
-                  borderColor: "#2F4F4F",
-                  backgroundColor: "rgba(47, 79, 79, 0.1)",
-                },
-              }}
-            >
-              Reset
-            </Button>
+            {/*  Clear Filters for the Remedial*/}
+            {isAnyRemedialFilterActive && (
+              <Button
+                variant="text"
+                onClick={resetRemedialFilters}
+                sx={{
+                  color: "#2F4F4F",
+                  fontWeight: 600,
+                  fontSize: 16,
+                  textTransform: "none",
+                  height: "40px",
+                  padding: "0 12px",
+                  background: "transparent",
+                  "&:hover": {
+                    background: "#f5f5f5",
+                  },
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
           </div>
 
           {/* Remedial Test MUIDataTable */}
