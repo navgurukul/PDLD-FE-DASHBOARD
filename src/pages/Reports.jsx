@@ -9,9 +9,11 @@ import {
   DialogContent,
   IconButton,
   Box,
+  Typography,
+  Select,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { FormControl, Select, InputLabel } from "@mui/material";
+import { FormControl, InputLabel } from "@mui/material";
 import { Pagination } from "@mui/material";
 import { Search, X as CloseIcon, RefreshCw } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
@@ -19,7 +21,6 @@ import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { noSchoolImage } from "../utils/imagePath";
 import apiInstance from "../../api"; // Updated import path
-import { Typography } from "@mui/material";
 import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
@@ -145,8 +146,14 @@ const Reports = () => {
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [availableClusters, setAvailableClusters] = useState([]);
 
-  // Fixed page size
-  const pageSize = 15;
+  // Changed from fixed pageSize to state
+  const [pageSize, setPageSize] = useState(15);
+
+  // Add page size change handler
+  const handlePageSizeChange = (event) => {
+    setPageSize(event.target.value);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   // Extract unique blocks and clusters from the API response
   const extractBlocksAndClusters = (schoolsData) => {
@@ -165,12 +172,13 @@ const Reports = () => {
   // Fetch schools data from API
   useEffect(() => {
     fetchSchoolsData();
-  }, [currentPage, selectedSubject, selectedBlock, selectedCluster]);
+  }, [currentPage, selectedSubject, selectedBlock, selectedCluster, pageSize]);
 
   const fetchSchoolsData = async () => {
     try {
       setIsLoading(true);
 
+      // Updated to use dynamic pageSize
       let url = `/report/subject-performance/${selectedSubject}?page=${currentPage}&pageSize=${pageSize}`;
 
       // Add block and cluster filters if selected - updated parameter names
@@ -423,6 +431,11 @@ const Reports = () => {
   // Handle search input change
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
+  };
+
+  // Handle page change
+  const handlePageChange = (event, page) => {
+    setCurrentPage(page);
   };
 
   // Reset filters
@@ -817,7 +830,6 @@ const Reports = () => {
     };
   };
 
-  // [Keep all the existing code for handleDownloadCSV and other functions...]
   // Download report as CSV
   const handleDownloadCSV = (data) => {
     const headers = [
@@ -914,7 +926,7 @@ const Reports = () => {
         )
       : transformedData;
 
-    // Ensure we're only showing pageSize (15) items
+    // Ensure we're only showing pageSize items
     if (data.length > pageSize) {
       data = data.slice(0, pageSize);
     }
@@ -922,7 +934,6 @@ const Reports = () => {
     return data;
   }, [transformedData, searchQuery, pageSize]);
 
-  // [Keep all the remaining JSX code exactly as it is...]
   return (
     <ThemeProvider theme={theme}>
       <div className="main-page-wrapper">
@@ -1132,13 +1143,26 @@ const Reports = () => {
               <CustomTable data={filteredData} />
             </div>
 
-            {/* Pagination - always display */}
-            <div className="flex justify-center items-center mt-6 mb-4">
-              <div className="flex items-center">
+            {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between", // This spreads items to the edges
+                width: "100%",
+                margin: "20px 0",
+                padding: "0 24px", // Add some padding on the sides
+              }}
+            >
+              {/* Empty div for left spacing to help with centering */}
+              <div style={{ width: "180px" }}></div>
+
+              {/* Centered pagination */}
+              <div style={{ display: "flex", justifyContent: "center" }}>
                 <Pagination
                   count={totalPages || 1}
                   page={currentPage}
-                  onChange={(e, page) => setCurrentPage(page)}
+                  onChange={handlePageChange}
                   showFirstButton
                   showLastButton
                   size="medium"
@@ -1155,6 +1179,59 @@ const Reports = () => {
                     },
                   }}
                 />
+              </div>
+
+              {/* Right-aligned compact rows selector */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  width: "180px",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#2F4F4F",
+                    mr: 1,
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                  }}
+                >
+                  Rows per page:
+                </Typography>
+                <Select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  variant="standard" // More compact variant
+                  disableUnderline
+                  sx={{
+                    height: "32px",
+                    minWidth: "60px",
+                    "& .MuiSelect-select": {
+                      color: "#2F4F4F",
+                      fontWeight: "600",
+                      py: 0,
+                      pl: 1,
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      elevation: 2,
+                      sx: {
+                        borderRadius: "8px",
+                        mt: 0.5,
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={15}>15</MenuItem>
+                  <MenuItem value={20}>20</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
+                  <MenuItem value={100}>100</MenuItem>
+                </Select>
               </div>
             </div>
           </>

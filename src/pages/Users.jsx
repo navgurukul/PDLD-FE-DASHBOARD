@@ -10,6 +10,7 @@ import {
   MenuItem,
   Tooltip,
   IconButton,
+  Typography,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination } from "@mui/material";
@@ -28,7 +29,7 @@ const theme = createTheme({
     color: "#2F4F4F",
   },
   components: {
-    // Change the highlight color from blue to “Text Primary” color style.
+    // Change the highlight color from blue to "Text Primary" color style.
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
@@ -112,11 +113,24 @@ export default function Users() {
   const [selectedBlock, setSelectedBlock] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
-  const pageSize = 15;
+  
+  // Changed from fixed pageSize to state
+  const [pageSize, setPageSize] = useState(15);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Add page size change handler
+  const handlePageSizeChange = (event) => {
+    setPageSize(event.target.value);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
+  // Handle page change
+  const handlePageChange = (event, page) => {
+    setCurrentPage(page);
+  };
 
   useEffect(() => {
     if (location.state?.successMessage) {
@@ -224,6 +238,7 @@ export default function Users() {
   const fetchData = async () => {
     try {
       setIsLoading(true); // Show loader when fetching data
+      // Updated to use dynamic pageSize
       const response = await apiInstance.get(`/users?page=${currentPage}&pageSize=${pageSize}`);
 
       if (response.data?.success && response.data?.data) {
@@ -245,7 +260,7 @@ export default function Users() {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage]);
+  }, [currentPage, pageSize]);
 
   // Open delete confirmation modal
   const openDeleteModal = (user) => {
@@ -756,15 +771,84 @@ export default function Users() {
           <MUIDataTable data={tableData} columns={columns} options={options} />
         </div>
 
-        <div className="flex justify-center mt-6">
-          <Pagination
-            count={Math.ceil(totalRecords / pageSize)}
-            page={currentPage}
-            onChange={(e, page) => setCurrentPage(page)}
-            showFirstButton
-            showLastButton
-            className="[&_.Mui-selected]:bg-[#2F4F4F] [&_.Mui-selected]:text-white"
-          />
+        {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between", // This spreads items to the edges
+            width: "100%",
+            margin: "20px 0",
+            padding: "0 24px", // Add some padding on the sides
+          }}
+        >
+          {/* Empty div for left spacing to help with centering */}
+          <div style={{ width: "180px" }}></div>
+
+          {/* Centered pagination */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <Pagination
+              count={Math.ceil(totalRecords / pageSize)}
+              page={currentPage}
+              onChange={handlePageChange}
+              showFirstButton
+              showLastButton
+              className="[&_.Mui-selected]:bg-[#2F4F4F] [&_.Mui-selected]:text-white"
+            />
+          </div>
+
+          {/* Right-aligned compact rows selector */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              width: "180px",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#2F4F4F",
+                mr: 1,
+                fontSize: "0.875rem",
+                fontWeight: 500,
+              }}
+            >
+              Rows per page:
+            </Typography>
+            <Select
+              value={pageSize}
+              onChange={handlePageSizeChange}
+              variant="standard" // More compact variant
+              disableUnderline
+              sx={{
+                height: "32px",
+                minWidth: "60px",
+                "& .MuiSelect-select": {
+                  color: "#2F4F4F",
+                  fontWeight: "600",
+                  py: 0,
+                  pl: 1,
+                },
+              }}
+              MenuProps={{
+                PaperProps: {
+                  elevation: 2,
+                  sx: {
+                    borderRadius: "8px",
+                    mt: 0.5,
+                  },
+                },
+              }}
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={15}>15</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+              <MenuItem value={100}>100</MenuItem>
+            </Select>
+          </div>
         </div>
 
         {/* Delete Confirmation Modal */}
