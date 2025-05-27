@@ -131,8 +131,19 @@ export default function AddStudent({ isEditMode = false }) {
   const originalNavigate = useNavigate();
   const location = useLocation();
 
-  // Get data from location state
-  const { studentId, schoolId, schoolName = "School", studentData } = location.state || {};
+  // Extract schoolId from URL path
+  const getSchoolIdFromUrl = () => {
+    const pathParts = location.pathname.split("/");
+    const schoolDetailIndex = pathParts.indexOf("schoolDetail");
+    if (schoolDetailIndex !== -1 && pathParts[schoolDetailIndex + 1]) {
+      return pathParts[schoolDetailIndex + 1];
+    }
+    return location.state?.schoolId || null;
+  };
+
+  // Get data from location state and URL
+  const extractedSchoolId = getSchoolIdFromUrl();
+  const { studentId, schoolName = "School", studentData } = location.state || {};
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -150,7 +161,6 @@ export default function AddStudent({ isEditMode = false }) {
     dateOfBirth: null,
     uniqueId: "",
     hostel: "",
-    udiseCode: location.state?.udiseCode || "",
     class: "1",
     aadharId: "",
     stream: "",
@@ -162,7 +172,6 @@ export default function AddStudent({ isEditMode = false }) {
     fatherName: "",
     motherName: "",
     dateOfBirth: "",
-    udiseCode: "",
     aadharId: "",
     stream: "",
   });
@@ -174,11 +183,11 @@ export default function AddStudent({ isEditMode = false }) {
   // Clean up localStorage when component mounts in edit mode
   useEffect(() => {
     if (isEditMode) {
-      localStorage.removeItem('initialStudentData');
+      localStorage.removeItem("initialStudentData");
     }
     // Cleanup when component unmounts
     return () => {
-      localStorage.removeItem('initialStudentData');
+      localStorage.removeItem("initialStudentData");
     };
   }, [isEditMode]);
 
@@ -253,17 +262,14 @@ export default function AddStudent({ isEditMode = false }) {
           if (typeof student.dob === "string" && /^\d{4}-\d{2}-\d{2}$/.test(student.dob)) {
             console.log("Date is in YYYY-MM-DD format, using directly");
             dob = new Date(student.dob);
-          }
-          else if (typeof student.dob === "string" && /^\d{2}-\d{2}-\d{4}$/.test(student.dob)) {
+          } else if (typeof student.dob === "string" && /^\d{2}-\d{2}-\d{4}$/.test(student.dob)) {
             const parts = student.dob.split("-");
             dob = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-          }
-          else if (typeof student.dob === "string" && /^\d{1,2}-\d{2}-\d{4}$/.test(student.dob)) {
+          } else if (typeof student.dob === "string" && /^\d{1,2}-\d{2}-\d{4}$/.test(student.dob)) {
             const parts = student.dob.split("-");
             const day = parts[0].padStart(2, "0");
             dob = new Date(`${parts[2]}-${parts[1]}-${day}`);
-          }
-          else {
+          } else {
             console.log("Trying direct date parsing");
             dob = new Date(student.dob);
           }
@@ -298,7 +304,6 @@ export default function AddStudent({ isEditMode = false }) {
         dateOfBirth: dob,
         uniqueId: student.aparId || "",
         hostel: student.hostel || "",
-        udiseCode: student.schoolUdiseCode || location.state?.udiseCode || "",
         class: student.class?.toString() || "1",
         gender: student.gender || "M",
         aadharId: student.aadharId || "",
@@ -314,7 +319,7 @@ export default function AddStudent({ isEditMode = false }) {
       (location.state?.isEditMode || isEditMode) &&
       location.state?.studentData &&
       formData.name &&
-      !localStorage.getItem('initialStudentData')
+      !localStorage.getItem("initialStudentData")
     ) {
       const initialData = {
         name: formData.name,
@@ -323,7 +328,6 @@ export default function AddStudent({ isEditMode = false }) {
         dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.toISOString() : null,
         uniqueId: formData.uniqueId,
         hostel: formData.hostel,
-        udiseCode: formData.udiseCode,
         class: formData.class,
         gender: formData.gender,
         aadharId: formData.aadharId,
@@ -331,7 +335,7 @@ export default function AddStudent({ isEditMode = false }) {
         extraSubjects: formData.extraSubjects,
       };
 
-      localStorage.setItem('initialStudentData', JSON.stringify(initialData));
+      localStorage.setItem("initialStudentData", JSON.stringify(initialData));
       console.log("✅ Initial data saved to localStorage (ONCE):", initialData);
     }
   }, [formData.name, isEditMode, location.state]);
@@ -351,7 +355,6 @@ export default function AddStudent({ isEditMode = false }) {
           dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.toISOString() : null,
           uniqueId: formData.uniqueId,
           hostel: formData.hostel,
-          udiseCode: formData.udiseCode,
           class: formData.class,
           gender: formData.gender,
           aadharId: formData.aadharId,
@@ -527,14 +530,6 @@ export default function AddStudent({ isEditMode = false }) {
       }
     }
 
-    if (!formData.udiseCode.trim()) {
-      newErrors.udiseCode = "UDISE code is required";
-      isValid = false;
-    } else if (!/^\d{11}$/.test(formData.udiseCode.trim())) {
-      newErrors.udiseCode = "UDISE code should be 11 digits";
-      isValid = false;
-    }
-
     if (formData.aadharId && !/^\d{12}$/.test(formData.aadharId.trim())) {
       newErrors.aadharId = "Aadhar ID should be 12 digits";
       isValid = false;
@@ -558,6 +553,11 @@ export default function AddStudent({ isEditMode = false }) {
       return;
     }
 
+    if (!extractedSchoolId) {
+      toast.error("School ID not found");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -571,7 +571,7 @@ export default function AddStudent({ isEditMode = false }) {
         motherName: formData.motherName,
         class: formData.class,
         gender: formData.gender,
-        schoolUdiseCode: formData.udiseCode,
+        // schoolUdiseCode: formData.udiseCode,
       };
 
       if (formData.uniqueId) {
@@ -598,17 +598,20 @@ export default function AddStudent({ isEditMode = false }) {
         toast.success("Student updated successfully!");
         setHasUnsavedChanges(false); // Clear the flag after successful save
         setTimeout(() => {
-          originalNavigate(`/schools/schoolDetail/${schoolId}`, {
+          originalNavigate(`/schools/schoolDetail/${extractedSchoolId}`, {
             state: { selectedTab: 1 },
           });
         }, 1200);
       } else {
-        const response = await apiInstance.post("/student/add", studentDataPayload);
+        const response = await apiInstance.post(
+          `/student/add/${extractedSchoolId}`,
+          studentDataPayload
+        );
 
         if (response.data && response.data.success) {
           toast.success("New Student added successfully!");
           setTimeout(() => {
-            originalNavigate(`/schools/schoolDetail/${schoolId}`, {
+            originalNavigate(`/schools/schoolDetail/${extractedSchoolId}`, {
               state: { selectedTab: 1 },
             });
           }, 1200);
@@ -794,27 +797,6 @@ export default function AddStudent({ isEditMode = false }) {
                 />
               </Grid>
 
-              {/* UDISE Code */}
-              <Grid item xs={12} md={6}>
-                <TextField
-                  label="UDISE Code *"
-                  name="udiseCode"
-                  value={formData.udiseCode}
-                  onChange={handleInputChange}
-                  fullWidth
-                  placeholder="Enter 11-digit UDISE code"
-                  variant="outlined"
-                  error={!!errors.udiseCode}
-                  helperText={errors.udiseCode}
-                  disabled={true}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      height: "48px",
-                    },
-                  }}
-                />
-              </Grid>
-
               {/* Aadhar ID (Optional) */}
               <Grid item xs={12} md={6}>
                 <TextField
@@ -859,8 +841,9 @@ export default function AddStudent({ isEditMode = false }) {
               </Grid>
 
               {/* Stream - Only for Classes 11-12 */}
+              {/* Stream - Only for Classes 11-12 */}
               {isHigherClass && (
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={12}>
                   <FormControl fullWidth error={!!errors.stream} required>
                     <InputLabel id="stream-select-label">Stream</InputLabel>
                     <Select
@@ -889,6 +872,8 @@ export default function AddStudent({ isEditMode = false }) {
                   </FormControl>
                 </Grid>
               )}
+
+             
 
               {/* Optional padding Grid item if no Stream is shown */}
               {!isHigherClass && <Grid item xs={12} md={6}></Grid>}
