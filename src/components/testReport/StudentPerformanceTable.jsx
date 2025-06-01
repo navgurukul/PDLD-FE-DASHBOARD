@@ -179,7 +179,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
     if (isAbsent) {
       resultStatus = "Absent";
     } else {
-      resultStatus = student.score >= 35 ? "Meets Standard" : "Needs Improvement";
+      resultStatus = student.score >= 35 ? "Pass" : "Fail";
     }
     let vsClassAvgDisplay;
     if (isAbsent) {
@@ -195,7 +195,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
     return {
       id: student.studentId || student.id,
       name: student.studentName || student.name,
-      score: scoreDisplay,
+      marks: isAbsent ? null : student.score,
       result: resultStatus,
       vsClassAvg: vsClassAvgDisplay,
       isPass: !isAbsent && student.score >= 35,
@@ -333,12 +333,12 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
       rows === "all"
         ? sortedStudents.map((student) => {
             const isAbsent = student.isAbsent === true;
-            const scoreDisplay = isAbsent ? "Absent" : `${student.score}/100`;
+            const marks = isAbsent ? null : student.score;
             let resultStatus;
             if (isAbsent) {
               resultStatus = "Absent";
             } else {
-              resultStatus = student.score >= 35 ? "Meets Standard" : "Needs Improvement";
+              resultStatus = student.score >= 35 ? "Pass" : "Fail";
             }
             let vsClassAvgDisplay;
             if (isAbsent) {
@@ -384,8 +384,8 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
       },
     },
     {
-      name: "score",
-      label: "Score",
+      name: "marks",
+      label: "Marks",
       options: {
         filter: false,
         sort: true,
@@ -395,17 +395,48 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         }),
         customBodyRenderLite: (dataIndex) => {
           const student = paginatedTableData[dataIndex];
+          // Only show marks, not "Absent" or "/100"
           return (
             <div>
-              {student.isAbsent ? <span style={{ color: "#949494" }}>Absent</span> : student.score}
+              {student.isAbsent ? (
+                <span style={{ color: "#949494" }}> - </span>
+              ) : (
+                student.originalScore
+              )}
             </div>
           );
         },
       },
     },
     {
+      name: "vsClassAvg",
+      label: "VS Class Avg",
+      options: {
+        filter: false,
+        sort: true,
+        sortThirdClickReset: true,
+        customBodyRenderLite: (dataIndex) => {
+          const student = paginatedTableData[dataIndex];
+          if (student.isAbsent) {
+            return <span style={{ color: "#949494" }}>-</span>;
+          }
+          let value = student.vsClassAvg;
+          // Remove + sign if present
+          if (typeof value === "string" && value.startsWith("+")) value = value.slice(1);
+          // Convert to number if possible
+          const num = Number(value);
+          let display = value;
+          if (!isNaN(num) && Number.isFinite(num)) {
+            display = Number.isInteger(num) ? num : num;
+          }
+          return <span style={{ color: "#2F4F4F" }}>{display}</span>;
+        },
+      },
+    },
+
+    {
       name: "result",
-      label: "Result",
+      label: "Status",
       options: {
         filter: true,
         sort: false,
@@ -446,27 +477,6 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         },
       },
     },
-    {
-      name: "vsClassAvg",
-      label: "VS Class Avg",
-      options: {
-        filter: false,
-        sort: true,
-        sortThirdClickReset: true,
-        customBodyRenderLite: (dataIndex) => {
-          const student = paginatedTableData[dataIndex];
-          if (student.isAbsent) {
-            return <span style={{ color: "#949494" }}>N/A</span>;
-          }
-          const value = student.vsClassAvg;
-          const isPositive = value && value.startsWith("+");
-          if (value === "0.0") {
-            return <span style={{ color: "#c62828" }}>0.0</span>;
-          }
-          return <div style={{ color: isPositive ? "#2e7d32" : "#c62828" }}>{value}</div>;
-        },
-      },
-    },
   ];
 
   columns.forEach((column) => {
@@ -491,7 +501,6 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
   return (
     <ThemeProvider theme={theme}>
       <div>
-        <h3 className="text-lg font-semibold text-[#2F4F4F]">Student Performance</h3>
         {/* Filters */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center">
           <div className="w-full lg:flex-1">
@@ -534,7 +543,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                         },
                       }}
                     >
-                      Result
+                      Status
                     </InputLabel>
                     <Select
                       labelId="result-select-label"
@@ -557,8 +566,8 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
                       }}
                     >
                       <MenuItem value="">All Results</MenuItem>
-                      <MenuItem value="pass">Meets Standard</MenuItem>
-                      <MenuItem value="fail">Needs Improvement</MenuItem>
+                      <MenuItem value="pass">Pass</MenuItem>
+                      <MenuItem value="fail">Fail</MenuItem>
                       <MenuItem value="absent">Absent</MenuItem>
                     </Select>
                   </FormControl>
@@ -599,10 +608,22 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
             </div>
           </div>
         </div>
+
+        <div
+          className="mt-2 mb-1"
+          style={{
+            fontFamily: "'Work Sans', sans-serif",
+            fontWeight: 600,
+            fontSize: "18px",
+            color: "#2F4F4F",
+          }}
+        >
+          Maximum Marks: 100 (Pass Percentage &ge; 33%)
+        </div>
         {/* Data Table */}
         <div
           style={{ borderRadius: "8px" }}
-          className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
+          className="rounded-lg overflow-hidden border mt-4 border-gray-200 overflow-x-auto"
         >
           <MUIDataTable data={paginatedTableData} columns={columns} options={options} />
         </div>

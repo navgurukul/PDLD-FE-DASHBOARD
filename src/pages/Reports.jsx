@@ -122,7 +122,7 @@ const theme = createTheme({
 
 const Reports = () => {
   const theme = useTheme();
-  
+
   // Remove download menu state, add download modal state
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
 
@@ -252,16 +252,18 @@ const Reports = () => {
               font-size: 13px; /* Reduced font size */
             }
             .custom-table th.group-header {
+              font-family: 'Work Sans', sans-serif !important;
               text-align: center;
               color: #2F4F4F;
-              font-weight: 600;
+              font-weight: 600 !important;
               font-size: 14px;
               border-bottom: none;
             }
             .custom-table th.sub-header {
+              font-family: 'Work Sans', sans-serif !important;
               color: #2F4F4F;
-              font-weight: 500;
-              font-size: 12px;
+              font-weight: 600 !important;
+              font-size: 14px;
               text-align: center;
             }
             .custom-table tbody tr:hover {
@@ -271,6 +273,14 @@ const Reports = () => {
             .custom-table td.low-score {
               color: #FF0000;
             }
+              .custom-table th.school-header {
+                font-family: 'Work Sans', sans-serif !important;
+                font-weight: 600 !important;
+                font-size: 14px !important;
+                color: #2F4F4F;
+                text-align: center;
+                border-bottom: 1px solid #e0e0e0;
+      }
           `}
         </style>
         <table className="custom-table">
@@ -278,11 +288,7 @@ const Reports = () => {
             <tr>
               <th
                 rowSpan="2"
-                style={{
-                  borderBottom: "1px solid #e0e0e0",
-                  color: "#2F4F4F", // Theme color
-                  fontWeight: "600", // Make it bold
-                }}
+                className="school-header" // <-- Add this
               >
                 School Name
               </th>
@@ -456,7 +462,7 @@ const Reports = () => {
   // Handle download confirmation from modal
   const handleDownloadConfirm = async (downloadOptions) => {
     const { format, rows, count } = downloadOptions;
-    
+
     try {
       setIsLoading(true);
       toast.info(`Generating ${format.toUpperCase()} report for ${count} schools...`);
@@ -468,8 +474,10 @@ const Reports = () => {
         dataToDownload = transformedData;
       } else {
         // Fetch more data from API
-        let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${count === totalRecords ? totalRecords : count}`;
-        
+        let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${
+          count === totalRecords ? totalRecords : count
+        }`;
+
         if (selectedBlock) {
           url += `&blockName=${selectedBlock}`;
         }
@@ -490,12 +498,19 @@ const Reports = () => {
               schoolName: school.schoolName,
               primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
               primaryPass: primaryData.primaryPass !== undefined ? primaryData.primaryPass : null,
-              upperPrimaryAvg: upperData.upperPrimaryAvg !== undefined ? upperData.upperPrimaryAvg : null,
-              upperPrimaryPass: upperData.upperPrimaryPass !== undefined ? upperData.upperPrimaryPass : null,
+              upperPrimaryAvg:
+                upperData.upperPrimaryAvg !== undefined ? upperData.upperPrimaryAvg : null,
+              upperPrimaryPass:
+                upperData.upperPrimaryPass !== undefined ? upperData.upperPrimaryPass : null,
               highSchoolAvg: highData.highSchoolAvg !== undefined ? highData.highSchoolAvg : null,
-              highSchoolPass: highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
-              higherSecondaryAvg: higherData.higherSecondaryAvg !== undefined ? higherData.higherSecondaryAvg : null,
-              higherSecondaryPass: higherData.higherSecondaryPass !== undefined ? higherData.higherSecondaryPass : null,
+              highSchoolPass:
+                highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
+              higherSecondaryAvg:
+                higherData.higherSecondaryAvg !== undefined ? higherData.higherSecondaryAvg : null,
+              higherSecondaryPass:
+                higherData.higherSecondaryPass !== undefined
+                  ? higherData.higherSecondaryPass
+                  : null,
             };
           });
         } else {
@@ -508,7 +523,6 @@ const Reports = () => {
       } else {
         handleDownloadPDF(dataToDownload);
       }
-
     } catch (error) {
       console.error("Error downloading report:", error);
       toast.error("An error occurred while generating the report");
@@ -520,16 +534,16 @@ const Reports = () => {
   // Download report as PDF
   const handleDownloadPDF = (data) => {
     // Create a new window for printing
-    const printWindow = window.open('', '_blank');
-    
+    const printWindow = window.open("", "_blank");
+
     // Calculate statistics for the report
     const totalSchools = data.length;
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
-    
+
     // Generate HTML content for the PDF
     const htmlContent = `
       <!DOCTYPE html>
@@ -733,13 +747,25 @@ const Reports = () => {
             <div class="date">Generated on: ${currentDate}</div>
           </div>
           
-          ${(selectedBlock || selectedCluster) ? `
+          ${
+            selectedBlock || selectedCluster
+              ? `
           <div class="filter-info">
             <h3>Applied Filters:</h3>
-            ${selectedBlock ? `<div class="filter-item"><strong>Block:</strong> ${selectedBlock}</div>` : ''}
-            ${selectedCluster ? `<div class="filter-item"><strong>Cluster:</strong> ${selectedCluster}</div>` : ''}
+            ${
+              selectedBlock
+                ? `<div class="filter-item"><strong>Block:</strong> ${selectedBlock}</div>`
+                : ""
+            }
+            ${
+              selectedCluster
+                ? `<div class="filter-item"><strong>Cluster:</strong> ${selectedCluster}</div>`
+                : ""
+            }
           </div>
-          ` : ''}
+          `
+              : ""
+          }
           
           <table>
             <thead>
@@ -762,42 +788,46 @@ const Reports = () => {
               </tr>
             </thead>
             <tbody>
-              ${data.map(school => {
-                const isLowScore = (value) => {
-                  const num = parseInt(value);
-                  return !isNaN(num) && num < 20;
-                };
-                
-                return `
+              ${data
+                .map((school) => {
+                  const isLowScore = (value) => {
+                    const num = parseInt(value);
+                    return !isNaN(num) && num < 20;
+                  };
+
+                  return `
                   <tr>
                     <td class="school-name">${school.schoolName}</td>
-                    <td class="${isLowScore(school.primaryAvg) ? 'low-score' : ''}">
-                      ${school.primaryAvg !== null ? school.primaryAvg : '-'}
+                    <td class="${isLowScore(school.primaryAvg) ? "low-score" : ""}">
+                      ${school.primaryAvg !== null ? school.primaryAvg : "-"}
                     </td>
-                    <td class="${isLowScore(school.primaryPass) ? 'low-score' : ''}">
-                      ${school.primaryPass !== null ? school.primaryPass + '%' : '-'}
+                    <td class="${isLowScore(school.primaryPass) ? "low-score" : ""}">
+                      ${school.primaryPass !== null ? school.primaryPass + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.upperPrimaryAvg) ? 'low-score' : ''}">
-                      ${school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : '-'}
+                    <td class="${isLowScore(school.upperPrimaryAvg) ? "low-score" : ""}">
+                      ${school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : "-"}
                     </td>
-                    <td class="${isLowScore(school.upperPrimaryPass) ? 'low-score' : ''}">
-                      ${school.upperPrimaryPass !== null ? school.upperPrimaryPass + '%' : '-'}
+                    <td class="${isLowScore(school.upperPrimaryPass) ? "low-score" : ""}">
+                      ${school.upperPrimaryPass !== null ? school.upperPrimaryPass + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.highSchoolAvg) ? 'low-score' : ''}">
-                      ${school.highSchoolAvg !== null ? school.highSchoolAvg : '-'}
+                    <td class="${isLowScore(school.highSchoolAvg) ? "low-score" : ""}">
+                      ${school.highSchoolAvg !== null ? school.highSchoolAvg : "-"}
                     </td>
-                    <td class="${isLowScore(school.highSchoolPass) ? 'low-score' : ''}">
-                      ${school.highSchoolPass !== null ? school.highSchoolPass + '%' : '-'}
+                    <td class="${isLowScore(school.highSchoolPass) ? "low-score" : ""}">
+                      ${school.highSchoolPass !== null ? school.highSchoolPass + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.higherSecondaryAvg) ? 'low-score' : ''}">
-                      ${school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : '-'}
+                    <td class="${isLowScore(school.higherSecondaryAvg) ? "low-score" : ""}">
+                      ${school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : "-"}
                     </td>
-                    <td class="${isLowScore(school.higherSecondaryPass) ? 'low-score' : ''}">
-                      ${school.higherSecondaryPass !== null ? school.higherSecondaryPass + '%' : '-'}
+                    <td class="${isLowScore(school.higherSecondaryPass) ? "low-score" : ""}">
+                      ${
+                        school.higherSecondaryPass !== null ? school.higherSecondaryPass + "%" : "-"
+                      }
                     </td>
                   </tr>
                 `;
-              }).join('')}
+                })
+                .join("")}
             </tbody>
           </table>
           
@@ -816,13 +846,13 @@ const Reports = () => {
       </body>
       </html>
     `;
-    
+
     // Write the content to the new window
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-    
+
     // Wait for content to load, then trigger print
-    printWindow.onload = function() {
+    printWindow.onload = function () {
       setTimeout(() => {
         printWindow.print();
         toast.success(`PDF report ready with ${data.length} schools`);
