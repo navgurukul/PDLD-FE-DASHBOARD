@@ -297,6 +297,10 @@ const Reports = () => {
               border-radius: 1px;
               font-weight: 400 !important;
             }
+            .custom-table th.school-header,
+            .custom-table td:first-child {
+              text-align: left;
+            }
           `}
         </style>
         <table className="custom-table">
