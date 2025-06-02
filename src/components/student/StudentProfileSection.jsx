@@ -51,13 +51,13 @@ const StudentProfileView = () => {
   const [schoolName, setSchoolName] = useState("");
   const [udiseCode, setUdiseCode] = useState("");
   const [error, setError] = useState(null);
-  
+
   // Download modal states
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
   const [academicData, setAcademicData] = useState({
     aggregate: [],
     subjectwise: [],
-    remedial: []
+    remedial: [],
   });
 
   // Format date helper function
@@ -92,17 +92,19 @@ const StudentProfileView = () => {
     try {
       // Fetch aggregate data
       const aggregateResponse = await apiInstance.get(`/student/academic/aggregate/${studentId}`);
-      
+
       // Fetch subjectwise data
-      const subjectwiseResponse = await apiInstance.get(`/student/academic/subjectwise/${studentId}`);
-      
+      const subjectwiseResponse = await apiInstance.get(
+        `/student/academic/subjectwise/${studentId}`
+      );
+
       // Fetch remedial data
       const remedialResponse = await apiInstance.get(`/student/academic/remedial/${studentId}`);
 
       setAcademicData({
         aggregate: aggregateResponse.data?.success ? aggregateResponse.data.data || [] : [],
         subjectwise: subjectwiseResponse.data?.success ? subjectwiseResponse.data.data || [] : [],
-        remedial: remedialResponse.data?.success ? remedialResponse.data.data || [] : []
+        remedial: remedialResponse.data?.success ? remedialResponse.data.data || [] : [],
       });
     } catch (error) {
       console.error("Error fetching academic data:", error);
@@ -110,7 +112,7 @@ const StudentProfileView = () => {
       setAcademicData({
         aggregate: [],
         subjectwise: [],
-        remedial: []
+        remedial: [],
       });
     }
   };
@@ -149,6 +151,8 @@ const StudentProfileView = () => {
           aadharId: profileData.aadharId || "N/A",
           hostel: profileData.hostel || "N/A",
           schoolName: schoolName,
+          stream: profileData.stream || "",
+          extraSubjects: profileData.extraSubjects || [],
         });
 
         // Fetch academic data after getting student profile
@@ -193,7 +197,7 @@ const StudentProfileView = () => {
   // Handle download confirmation from modal
   const handleDownloadConfirm = async (downloadOptions) => {
     const { format, reportType = "comprehensive" } = downloadOptions;
-    
+
     try {
       setIsLoading(true);
       toast.info(`Generating ${format.toUpperCase()} report for ${student.fullName}...`);
@@ -203,7 +207,6 @@ const StudentProfileView = () => {
       } else {
         handleDownloadPDF(reportType);
       }
-
     } catch (error) {
       console.error("Error downloading report:", error);
       toast.error("An error occurred while generating the report");
@@ -226,7 +229,7 @@ const StudentProfileView = () => {
         "Obtained Marks",
         "Percentage",
         "Grade",
-        "Rank"
+        "Rank",
       ];
 
       csvContent += "AGGREGATE PERFORMANCE REPORT\n";
@@ -243,20 +246,23 @@ const StudentProfileView = () => {
           test.obtainedMarks || "N/A",
           test.percentage || "N/A",
           test.grade || "N/A",
-          test.rank || "N/A"
+          test.rank || "N/A",
         ];
-        csvContent += rowData.map(cell => {
-          if (cell && cell.toString().includes(",")) {
-            return `"${cell}"`;
-          }
-          return cell;
-        }).join(",") + "\n";
+        csvContent +=
+          rowData
+            .map((cell) => {
+              if (cell && cell.toString().includes(",")) {
+                return `"${cell}"`;
+              }
+              return cell;
+            })
+            .join(",") + "\n";
       });
     }
 
     if (reportType === "subjectwise" || reportType === "comprehensive") {
       if (csvContent) csvContent += "\n\n";
-      
+
       // Subjectwise Report CSV
       const subjectwiseHeaders = [
         "Subject",
@@ -265,7 +271,7 @@ const StudentProfileView = () => {
         "Max Marks",
         "Obtained Marks",
         "Percentage",
-        "Grade"
+        "Grade",
       ];
 
       csvContent += "SUBJECT-WISE PERFORMANCE REPORT\n";
@@ -284,28 +290,25 @@ const StudentProfileView = () => {
           subject.maxMarks || "N/A",
           subject.obtainedMarks || "N/A",
           subject.percentage || "N/A",
-          subject.grade || "N/A"
+          subject.grade || "N/A",
         ];
-        csvContent += rowData.map(cell => {
-          if (cell && cell.toString().includes(",")) {
-            return `"${cell}"`;
-          }
-          return cell;
-        }).join(",") + "\n";
+        csvContent +=
+          rowData
+            .map((cell) => {
+              if (cell && cell.toString().includes(",")) {
+                return `"${cell}"`;
+              }
+              return cell;
+            })
+            .join(",") + "\n";
       });
     }
 
     if (reportType === "remedial" || reportType === "comprehensive") {
       if (csvContent) csvContent += "\n\n";
-      
+
       // Remedial Report CSV
-      const remedialHeaders = [
-        "Subject",
-        "Topic",
-        "Weakness Level",
-        "Recommendation",
-        "Priority"
-      ];
+      const remedialHeaders = ["Subject", "Topic", "Weakness Level", "Recommendation", "Priority"];
 
       csvContent += "REMEDIAL RECOMMENDATIONS\n";
       if (reportType === "remedial") {
@@ -321,23 +324,33 @@ const StudentProfileView = () => {
           item.topic || "N/A",
           item.weaknessLevel || "N/A",
           item.recommendation || "N/A",
-          item.priority || "N/A"
+          item.priority || "N/A",
         ];
-        csvContent += rowData.map(cell => {
-          if (cell && cell.toString().includes(",")) {
-            return `"${cell}"`;
-          }
-          return cell;
-        }).join(",") + "\n";
+        csvContent +=
+          rowData
+            .map((cell) => {
+              if (cell && cell.toString().includes(",")) {
+                return `"${cell}"`;
+              }
+              return cell;
+            })
+            .join(",") + "\n";
       });
     }
 
     // Set filename based on report type
-    const reportTypeText = reportType === "comprehensive" ? "Comprehensive" : 
-                          reportType === "aggregate" ? "Aggregate" :
-                          reportType === "subjectwise" ? "SubjectWise" : "Remedial";
-    
-    filename = `${student.fullName}_${reportTypeText}_Report_${new Date().toISOString().split("T")[0]}.csv`;
+    const reportTypeText =
+      reportType === "comprehensive"
+        ? "Comprehensive"
+        : reportType === "aggregate"
+        ? "Aggregate"
+        : reportType === "subjectwise"
+        ? "SubjectWise"
+        : "Remedial";
+
+    filename = `${student.fullName}_${reportTypeText}_Report_${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
 
     // Create download link
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
@@ -358,17 +371,22 @@ const StudentProfileView = () => {
 
   // Download report as PDF
   const handleDownloadPDF = (reportType) => {
-    const printWindow = window.open('', '_blank');
-    
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    const printWindow = window.open("", "_blank");
+
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
 
-    const reportTypeText = reportType === "comprehensive" ? "Comprehensive Academic" : 
-                          reportType === "aggregate" ? "Aggregate Performance" :
-                          reportType === "subjectwise" ? "Subject-wise Performance" : "Remedial";
+    const reportTypeText =
+      reportType === "comprehensive"
+        ? "Comprehensive Academic"
+        : reportType === "aggregate"
+        ? "Aggregate Performance"
+        : reportType === "subjectwise"
+        ? "Subject-wise Performance"
+        : "Remedial";
 
     // Generate HTML content for the PDF
     const htmlContent = `
@@ -604,11 +622,11 @@ const StudentProfileView = () => {
               </div>
               <div class="info-item">
                 <strong>Father's Name:</strong>
-                ${student.fatherName || 'N/A'}
+                ${student.fatherName || "N/A"}
               </div>
               <div class="info-item">
                 <strong>Mother's Name:</strong>
-                ${student.motherName || 'N/A'}
+                ${student.motherName || "N/A"}
               </div>
               <div class="info-item">
                 <strong>Date of Birth:</strong>
@@ -616,12 +634,15 @@ const StudentProfileView = () => {
               </div>
               <div class="info-item">
                 <strong>School:</strong>
-                ${schoolName || 'N/A'}
+                ${schoolName || "N/A"}
               </div>
             </div>
           </div>
           
-          ${(reportType === "aggregate" || reportType === "comprehensive") && academicData.aggregate.length > 0 ? `
+          ${
+            (reportType === "aggregate" || reportType === "comprehensive") &&
+            academicData.aggregate.length > 0
+              ? `
           <div class="section">
             <h2>Aggregate Performance</h2>
             <table>
@@ -637,28 +658,38 @@ const StudentProfileView = () => {
                 </tr>
               </thead>
               <tbody>
-                ${academicData.aggregate.map(test => {
-                  const percentage = parseFloat(test.percentage);
-                  const scoreClass = percentage < 40 ? 'low-score' : percentage >= 80 ? 'high-score' : '';
-                  
-                  return `
+                ${academicData.aggregate
+                  .map((test) => {
+                    const percentage = parseFloat(test.percentage);
+                    const scoreClass =
+                      percentage < 40 ? "low-score" : percentage >= 80 ? "high-score" : "";
+
+                    return `
                     <tr>
-                      <td>${test.testName || 'N/A'}</td>
-                      <td>${formatDate(test.testDate) || 'N/A'}</td>
-                      <td>${test.totalMarks || 'N/A'}</td>
-                      <td>${test.obtainedMarks || 'N/A'}</td>
-                      <td class="${scoreClass}">${test.percentage ? test.percentage + '%' : 'N/A'}</td>
-                      <td>${test.grade || 'N/A'}</td>
-                      <td>${test.rank || 'N/A'}</td>
+                      <td>${test.testName || "N/A"}</td>
+                      <td>${formatDate(test.testDate) || "N/A"}</td>
+                      <td>${test.totalMarks || "N/A"}</td>
+                      <td>${test.obtainedMarks || "N/A"}</td>
+                      <td class="${scoreClass}">${
+                      test.percentage ? test.percentage + "%" : "N/A"
+                    }</td>
+                      <td>${test.grade || "N/A"}</td>
+                      <td>${test.rank || "N/A"}</td>
                     </tr>
                   `;
-                }).join('')}
+                  })
+                  .join("")}
               </tbody>
             </table>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
           
-          ${(reportType === "subjectwise" || reportType === "comprehensive") && academicData.subjectwise.length > 0 ? `
+          ${
+            (reportType === "subjectwise" || reportType === "comprehensive") &&
+            academicData.subjectwise.length > 0
+              ? `
           <div class="section">
             <h2>Subject-wise Performance</h2>
             <table>
@@ -674,40 +705,56 @@ const StudentProfileView = () => {
                 </tr>
               </thead>
               <tbody>
-                ${academicData.subjectwise.map(subject => {
-                  const percentage = parseFloat(subject.percentage);
-                  const scoreClass = percentage < 40 ? 'low-score' : percentage >= 80 ? 'high-score' : '';
-                  
-                  return `
+                ${academicData.subjectwise
+                  .map((subject) => {
+                    const percentage = parseFloat(subject.percentage);
+                    const scoreClass =
+                      percentage < 40 ? "low-score" : percentage >= 80 ? "high-score" : "";
+
+                    return `
                     <tr>
-                      <td>${subject.subjectName || 'N/A'}</td>
-                      <td>${subject.testName || 'N/A'}</td>
-                      <td>${formatDate(subject.testDate) || 'N/A'}</td>
-                      <td>${subject.maxMarks || 'N/A'}</td>
-                      <td>${subject.obtainedMarks || 'N/A'}</td>
-                      <td class="${scoreClass}">${subject.percentage ? subject.percentage + '%' : 'N/A'}</td>
-                      <td>${subject.grade || 'N/A'}</td>
+                      <td>${subject.subjectName || "N/A"}</td>
+                      <td>${subject.testName || "N/A"}</td>
+                      <td>${formatDate(subject.testDate) || "N/A"}</td>
+                      <td>${subject.maxMarks || "N/A"}</td>
+                      <td>${subject.obtainedMarks || "N/A"}</td>
+                      <td class="${scoreClass}">${
+                      subject.percentage ? subject.percentage + "%" : "N/A"
+                    }</td>
+                      <td>${subject.grade || "N/A"}</td>
                     </tr>
                   `;
-                }).join('')}
+                  })
+                  .join("")}
               </tbody>
             </table>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
           
-          ${(reportType === "remedial" || reportType === "comprehensive") && academicData.remedial.length > 0 ? `
+          ${
+            (reportType === "remedial" || reportType === "comprehensive") &&
+            academicData.remedial.length > 0
+              ? `
           <div class="section">
             <h2>Remedial Recommendations</h2>
-            ${academicData.remedial.map(item => `
+            ${academicData.remedial
+              .map(
+                (item) => `
               <div class="remedial-item">
-                <h4>${item.subject || 'General'} - ${item.topic || 'N/A'}</h4>
-                <p><strong>Weakness Level:</strong> ${item.weaknessLevel || 'N/A'}</p>
-                <p><strong>Recommendation:</strong> ${item.recommendation || 'N/A'}</p>
-                <p><strong>Priority:</strong> ${item.priority || 'N/A'}</p>
+                <h4>${item.subject || "General"} - ${item.topic || "N/A"}</h4>
+                <p><strong>Weakness Level:</strong> ${item.weaknessLevel || "N/A"}</p>
+                <p><strong>Recommendation:</strong> ${item.recommendation || "N/A"}</p>
+                <p><strong>Priority:</strong> ${item.priority || "N/A"}</p>
               </div>
-            `).join('')}
+            `
+              )
+              .join("")}
           </div>
-          ` : ''}
+          `
+              : ""
+          }
           
           <div class="summary">
             <h3>Report Summary</h3>
@@ -718,7 +765,7 @@ const StudentProfileView = () => {
               </div>
               <div class="summary-item">
                 <strong>Academic Year:</strong>
-                ${student.academic?.year || '2024-25'}
+                ${student.academic?.year || "2024-25"}
               </div>
               <div class="summary-item">
                 <strong>Generated:</strong>
@@ -735,13 +782,13 @@ const StudentProfileView = () => {
       </body>
       </html>
     `;
-    
+
     // Write the content to the new window
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-    
+
     // Wait for content to load, then trigger print
-    printWindow.onload = function() {
+    printWindow.onload = function () {
       setTimeout(() => {
         printWindow.print();
         toast.success(`PDF report ready for ${student.fullName}`);
@@ -882,11 +929,7 @@ const StudentProfileView = () => {
               Academic Year {student.academic.year || "2024-25"}
             </Typography>
 
-            <ButtonCustom 
-              text={"Download Report"} 
-              onClick={handleDownloadClick} 
-              btnWidth={200} 
-            />
+            <ButtonCustom text={"Download Report"} onClick={handleDownloadClick} btnWidth={200} />
           </div>
         ) : null}
       </Box>
@@ -1007,6 +1050,29 @@ const StudentProfileView = () => {
                   </Typography>
                 </Box>
 
+                {(student.class === "11" || student.class === "12") && (
+                  <Box sx={{ width: "25%", pr: 2 }}>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                      Stream
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+                      {student.stream || "N/A"}
+                    </Typography>
+                  </Box>
+                )}
+                {/* Optional Subjects for class 9-12 */}
+                {["9", "10", "11", "12"].includes(student.class) && (
+                  <Box sx={{ width: "25%" }}>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                      Optional Subjects
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
+                      {student.extraSubjects && student.extraSubjects.length > 0
+                        ? student.extraSubjects.join(", ")
+                        : "N/A"}
+                    </Typography>
+                  </Box>
+                )}
                 {/* School Name */}
                 <Box sx={{ width: "25%" }}>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
@@ -1045,7 +1111,7 @@ const StudentProfileView = () => {
           { value: "comprehensive", label: "Comprehensive Report (All Data)" },
           { value: "aggregate", label: "Aggregate Performance" },
           { value: "subjectwise", label: "Subject-wise Performance" },
-          { value: "remedial", label: "Remedial Recommendations" }
+          { value: "remedial", label: "Remedial Recommendations" },
         ]}
         showReportTypes={true} // Enable report type selection
       />
