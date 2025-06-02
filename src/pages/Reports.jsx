@@ -1136,7 +1136,7 @@ const Reports = () => {
                   },
                 }}
               >
-                <MenuItem value="">All Clusters</MenuItem>
+                <MenuItem value=""> All Clusters</MenuItem>
                 {availableClusters.map((cluster) => (
                   <MenuItem key={cluster} value={cluster}>
                     {cluster}
