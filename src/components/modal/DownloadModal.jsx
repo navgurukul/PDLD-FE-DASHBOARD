@@ -107,7 +107,7 @@ const DownloadModal = ({
                   value="csv"
                   checked={selectedFormat === "csv"}
                   onChange={(e) => setSelectedFormat(e.target.value)}
-                  className="text-[#2F4F4F] focus:ring-[#2F4F4F]"
+                  className="text-[#2F4F4F] focus:ring-[#2F4F4F] accent-[#2F4F4F]"
                 />
                 <div className="flex items-center space-x-2">
                   <FileSpreadsheet size={20} className="text-[#2F4F4F]" />
@@ -121,7 +121,7 @@ const DownloadModal = ({
                   value="pdf"
                   checked={selectedFormat === "pdf"}
                   onChange={(e) => setSelectedFormat(e.target.value)}
-                  className="text-[#2F4F4F] focus:ring-[#2F4F4F]"
+                  className="text-[#2F4F4F] focus:ring-[#2F4F4F] accent-[#2F4F4F]"
                 />
                 <div className="flex items-center space-x-2">
                   <FileText size={20} className="text-[#2F4F4F]" />
@@ -142,7 +142,7 @@ const DownloadModal = ({
                   value="current"
                   checked={selectedRows === "current"}
                   onChange={(e) => setSelectedRows(e.target.value)}
-                  className="text-[#2F4F4F] focus:ring-[#2F4F4F]"
+                  className="text-[#2F4F4F] focus:ring-[#2F4F4F] accent-[#2F4F4F]"
                 />
                 <span className="text-[#2F4F4F]">
                   Current page ({currentPageCount} {tableType === "aggregate" || tableType === "subjectwise" ? (tableType === "aggregate" ? "records" : "subject records") : "records"})
@@ -155,7 +155,7 @@ const DownloadModal = ({
                   value="all"
                   checked={selectedRows === "all"}
                   onChange={(e) => setSelectedRows(e.target.value)}
-                  className="text-[#2F4F4F] focus:ring-[#2F4F4F]"
+                  className="text-[#2F4F4F] focus:ring-[#2F4F4F] accent-[#2F4F4F]"
                 />
                 <span className="text-[#2F4F4F]">
                   All {tableType === "aggregate" || tableType === "subjectwise" ? (tableType === "aggregate" ? "records" : "subject records") : "records"} ({totalRecords} total)

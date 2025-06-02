@@ -688,7 +688,7 @@ const TestCreationForm = () => {
                   id="syllabus"
                   name="testType"
                   type="radio"
-                  className="h-4 w-4 text-[#2F4F4F] border-gray-300 focus:ring-[#2F4F4F]"
+                  className="h-4 w-4 text-[#2F4F4F] accent-[#2F4F4F] border-gray-300 focus:ring-[#2F4F4F]"
                   value="syllabus"
                   checked={formData.testType === "syllabus"}
                   onChange={handleFormChange}
@@ -712,7 +712,7 @@ const TestCreationForm = () => {
                   id="remedial"
                   name="testType"
                   type="radio"
-                  className="h-4 w-4 text-[#2F4F4F] border-gray-300 focus:ring-[#2F4F4F]"
+                  className="h-4 w-4 text-[#2F4F4F] accent-[#2F4F4F] border-gray-300 focus:ring-[#2F4F4F]"
                   value="remedial"
                   checked={formData.testType === "remedial"}
                   onChange={handleFormChange}
