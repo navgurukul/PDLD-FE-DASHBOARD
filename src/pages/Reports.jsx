@@ -310,7 +310,7 @@ const Reports = () => {
                 rowSpan="2"
                 className="school-header" // <-- Add this
               >
-                School Name
+                 School Name
               </th>
               <th colSpan="2" className="group-header">
                 Primary (1-5)
