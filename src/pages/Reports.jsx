@@ -297,6 +297,10 @@ const Reports = () => {
               border-radius: 1px;
               font-weight: 400 !important;
             }
+            .custom-table th.school-header,
+            .custom-table td:first-child {
+              text-align: left;
+            }
           `}
         </style>
         <table className="custom-table">
@@ -306,7 +310,7 @@ const Reports = () => {
                 rowSpan="2"
                 className="school-header" // <-- Add this
               >
-                School Name
+                 School Name
               </th>
               <th colSpan="2" className="group-header">
                 Primary (1-5)
@@ -1132,7 +1136,7 @@ const Reports = () => {
                   },
                 }}
               >
-                <MenuItem value="">All Clusters</MenuItem>
+                <MenuItem value=""> All Clusters</MenuItem>
                 {availableClusters.map((cluster) => (
                   <MenuItem key={cluster} value={cluster}>
                     {cluster}
