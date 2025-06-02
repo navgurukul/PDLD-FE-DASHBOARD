@@ -523,7 +523,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         customBodyRenderLite: (dataIndex) => {
           const rowData = tableData[dataIndex];
           const schoolId = rowData.id;
-          const isPending = rowData.status === "Pending";
+           const isPending = rowData.status === "Pending";
           return (
             <div
               style={{
