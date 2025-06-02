@@ -415,6 +415,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     </span>
   );
 
+  const isRemedialTest = testNameVal?.toLowerCase().includes("remedial"); 
+
   // MUI DataTable columns configuration
   const columns = [
     {
@@ -480,28 +482,32 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         sortThirdClickReset: true,
       },
     },
-    {
-      name: "averageScore",
-      label: "Average Score",
-      options: {
-        filter: false,
-        sort: true,
-        sortThirdClickReset: true,
-      },
-    },
-    {
-      name: "passRate",
-      label: "Pass Percentage",
-      options: {
-        filter: false,
-        sort: true,
-        sortThirdClickReset: true,
-        customBodyRenderLite: (dataIndex) => {
-          const passRate = tableData[dataIndex].passRate;
-          return passRate !== "-" ? `${passRate}` : "-";
+    ...(!isRemedialTest
+    ? [
+        {
+          name: "averageScore",
+          label: "Average Score",
+          options: {
+            filter: false,
+            sort: true,
+            sortThirdClickReset: true,
+          },
         },
-      },
-    },
+        {
+          name: "passRate",
+          label: "Pass Percentage",
+          options: {
+            filter: false,
+            sort: true,
+            sortThirdClickReset: true,
+            customBodyRenderLite: (dataIndex) => {
+              const passRate = tableData[dataIndex].passRate;
+              return passRate !== "-" ? `${passRate}` : "-";
+            },
+          },
+        },
+      ]
+    : []),
     {
       name: "submitted",
       label: "Actions",
