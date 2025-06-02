@@ -35,7 +35,53 @@ const SchoolReportPage = () => {
   const [activeTab, setActiveTab] = useState("visualizations");
   const [passThreshold, setPassThreshold] = useState(0);
 
-  // Calculate score distribution for the bar chart
+  // Helper function to check if test type is syllabus
+  const isSyllabusTest = () => {
+    return (
+      testData?.testType?.toLowerCase().includes("syllabus") ||
+      testName?.toLowerCase().includes("syllabus")
+    );
+  };
+
+  // Helper function to check if test type is remedial
+  const isRemedialTest = () => {
+    return (
+      testData?.testType?.toLowerCase().includes("remedial") ||
+      testName?.toLowerCase().includes("remedial")
+    );
+  };
+
+  // Calculate grade distribution for remedial tests - DYNAMIC
+  const calculateGradeDistribution = (resultData) => {
+    // First, get all unique grades from the API data (excluding null/absent students)
+    const uniqueGrades = [...new Set(
+      resultData
+        .filter(student => !student.isAbsent && student.grade)
+        .map(student => student.grade)
+    )].sort();
+
+    // Initialize count object dynamically
+    const gradeCount = {};
+    uniqueGrades.forEach(grade => {
+      gradeCount[grade] = 0;
+    });
+
+    // Count students for each grade
+    resultData.forEach((student) => {
+      if (student.isAbsent || !student.grade) return;
+      
+      if (gradeCount.hasOwnProperty(student.grade)) {
+        gradeCount[student.grade]++;
+      }
+    });
+
+    // Convert to the format expected by BarChart
+    return uniqueGrades.map(grade => ({
+      label: grade.charAt(0).toUpperCase() + grade.slice(1).toLowerCase(), // Capitalize first letter
+      value: gradeCount[grade]
+    }));
+  };
+
   // Calculate score distribution for the bar chart
   const calculateScoreDistribution = (students, maxScore) => {
     // Create ranges based on percentage of max score
@@ -103,7 +149,6 @@ const SchoolReportPage = () => {
           const passRate = totalStudents ? Math.round((passedStudents / totalStudents) * 100) : 0;
 
           // Process data to match component structure
-          // Process data to match component structure
           const processedStudents = apiData.resultData.map((student) => ({
             id: student.studentId,
             name: student.studentName,
@@ -124,6 +169,7 @@ const SchoolReportPage = () => {
             maxScore: apiData.maxScore,
             passThreshold: threshold,
             scoreDistribution: calculateScoreDistribution(processedStudents, apiData.maxScore),
+            gradeDistribution: calculateGradeDistribution(apiData.resultData),
           };
 
           setTestData({
@@ -274,36 +320,43 @@ const SchoolReportPage = () => {
 
         {/* Score distribution chart */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="text-lg font-bold mb-4 text-[#2F4F4F] text-center">Marks Distribution</h3>
+          <h3 className="text-lg font-bold mb-4 text-[#2F4F4F] text-center">
+            {isRemedialTest() ? "Student Distribution by Grade" : "Marks Distribution"}
+          </h3>
           <div className="h-64 flex items-center justify-center">
             {/* Using the BarChart with the same theme color */}
-            <BarChart data={schoolData.scoreDistribution} primaryColor={THEME_COLOR} />
+            <BarChart 
+              data={isRemedialTest() ? schoolData.gradeDistribution : schoolData.scoreDistribution} 
+              primaryColor={THEME_COLOR} 
+            />
           </div>
         </div>
       </div>
 
-      {/* Line Chart - Full width */}
-      <div className="bg-white p-4 rounded shadow mb-20">
-        <h3
-          style={{
-            fontFamily: "'Work Sans', sans-serif",
-            fontWeight: 600,
-            fontSize: "18px",
-            color: "#2F4F4F",
-            textAlign: "center",
-            marginBottom: "4px",
-          }}
-        >
-          Student Marks Analysis
-        </h3>
-        <div className="h-90 flex items-center justify-center">
-          <LineChart
-            data={schoolData.students}
-            averageScore={schoolData.avgScore}
-            primaryColor={THEME_COLOR}
-          />
+      {/* Line Chart - Only show for syllabus tests */}
+      {isSyllabusTest() && (
+        <div className="bg-white p-4 rounded shadow mb-20">
+          <h3
+            style={{
+              fontFamily: "'Work Sans', sans-serif",
+              fontWeight: 600,
+              fontSize: "18px",
+              color: "#2F4F4F",
+              textAlign: "center",
+              marginBottom: "4px",
+            }}
+          >
+            Student Marks Analysis
+          </h3>
+          <div className="h-90 flex items-center justify-center">
+            <LineChart
+              data={schoolData.students}
+              averageScore={schoolData.avgScore}
+              primaryColor={THEME_COLOR}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 
@@ -337,14 +390,6 @@ const SchoolReportPage = () => {
             >
               {testName}
             </div>
-            {/* <div className="text-sm text-gray-600">
-              <span>{testData?.testName || "Test Details"}</span>
-              <span className="mx-1">•</span>
-              <span>
-                Pass Threshold: {schoolData.passThreshold} ({PASS_PERCENTAGE}% of{" "}
-                {schoolData.maxScore})
-              </span>
-            </div> */}
           </div>
 
           {/* Performance Metrics */}
