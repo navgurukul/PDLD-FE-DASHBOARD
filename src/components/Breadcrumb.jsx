@@ -6,7 +6,7 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 const Breadcrumb = () => {
   const location = useLocation();
   const pathnames = location.pathname.split("/").filter((x) => x);
-
+  const schoolName = location.state?.schoolName;
   // Define path to label mapping
   const pathMap = {
     schools: "School Management",
@@ -35,9 +35,7 @@ const Breadcrumb = () => {
 
   // Check if a string is a UUID
   const isUUID = (str) => {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      str
-    );
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
   };
 
   // Check if a string is numeric (for testDetails ID)
@@ -53,138 +51,145 @@ const Breadcrumb = () => {
   // Add Home link as the first item
   breadcrumbItems.push(
     <Typography
-     key="home"
-     variant="subtitle2"
-     color="text.primary"
-     component={Link}
-     to="/"
-     sx={{
-       textDecoration: "none",
-       fontFamily: "'Karla', sans-serif",
-     }}
-   >
-     Home
-   </Typography>
- );
-
-
+      key="home"
+      variant="subtitle2"
+      color="text.primary"
+      component={Link}
+      to="/"
+      sx={{
+        textDecoration: "none",
+        fontFamily: "'Karla', sans-serif",
+      }}
+    >
+      Home
+    </Typography>
+  );
 
   // Special handling for schoolSubmission path
   let schoolSubmissionPath = "";
 
   // Process each pathname segment
- for (let i = 0; i < pathnames.length; i++) {
-  const value = pathnames[i];
-  currentPath += `/${value}`;
+  for (let i = 0; i < pathnames.length; i++) {
+    const value = pathnames[i];
+    currentPath += `/${value}`;
 
-  // Handle Create Test breadcrumb
-  if (value === "testCreationForm") {
-    breadcrumbItems.push(
-      <Typography
-        key="/allTest"
-        variant="subtitle2"
-        color="text.primary"
-        component={Link}
-        to="/allTest"
-        sx={{
-          textDecoration: "none",
-          fontFamily: "'Karla', sans-serif",
-        }}
-      >
-        Tests
-      </Typography>
-    );
-    breadcrumbItems.push(
-      <Typography
-        key="/testCreationForm"
-        variant="body2"
-        color="text.disabled"
-        sx={{
-          textDecoration: "none",
-          fontFamily: "'Karla', sans-serif",
-        }}
-      >
-        Create Test
-      </Typography>
-    );
-    continue;
-  }
+    // Handle Create Test breadcrumb
+    if (value === "testCreationForm") {
+      breadcrumbItems.push(
+        <Typography
+          key="/allTest"
+          variant="subtitle2"
+          color="text.primary"
+          component={Link}
+          to="/allTest"
+          sx={{
+            textDecoration: "none",
+            fontFamily: "'Karla', sans-serif",
+          }}
+        >
+          Tests
+        </Typography>
+      );
+      breadcrumbItems.push(
+        <Typography
+          key="/testCreationForm"
+          variant="body2"
+          color="text.disabled"
+          sx={{
+            textDecoration: "none",
+            fontFamily: "'Karla', sans-serif",
+          }}
+        >
+          Create Test
+        </Typography>
+      );
+      continue;
+    }
+    // Handle testDetails breadcrumb
+    if (value === "testDetails") {
+      breadcrumbItems.push(
+        <Typography
+          key={currentPath}
+          variant="body2"
+          color="text.disabled"
+          sx={{
+            textDecoration: "none",
+            fontFamily: "'Karla', sans-serif",
+          }}
+        >
+          {(schoolName ? `${schoolName} ` : "") + "Test Details"}
+        </Typography>
+      );
+      continue;
+    }
 
-  // Handle Edit Test breadcrumb
-  if (value === "editTest") {
-    breadcrumbItems.push(
-      <Typography
-        key="/allTest"
-        variant="subtitle2"
-        color="text.primary"
-        component={Link}
-        to="/allTest"
-        sx={{
-          textDecoration: "none",
-          fontFamily: "'Karla', sans-serif",
-        }}
-      >
-        Tests
-      </Typography>
-    );
-    breadcrumbItems.push(
-      <Typography
-        key="/editTest"
-        variant="body2"
-        color="text.disabled"
-        sx={{
-          textDecoration: "none",
-          fontFamily: "'Karla', sans-serif",
-        }}
-      >
-        Edit Test
-      </Typography>
-    );
-    continue;
-  }
+    // Handle Edit Test breadcrumb
+    if (value === "editTest") {
+      breadcrumbItems.push(
+        <Typography
+          key="/allTest"
+          variant="subtitle2"
+          color="text.primary"
+          component={Link}
+          to="/allTest"
+          sx={{
+            textDecoration: "none",
+            fontFamily: "'Karla', sans-serif",
+          }}
+        >
+          Tests
+        </Typography>
+      );
+      breadcrumbItems.push(
+        <Typography
+          key="/editTest"
+          variant="body2"
+          color="text.disabled"
+          sx={{
+            textDecoration: "none",
+            fontFamily: "'Karla', sans-serif",
+          }}
+        >
+          Edit Test
+        </Typography>
+      );
+      continue;
+    }
 
     // Save schoolDetail path with its UUID
-    if (
-      value === "schoolDetail" &&
-      i + 1 < pathnames.length &&
-      isUUID(pathnames[i + 1])
-    ) {
+    if (value === "schoolDetail" && i + 1 < pathnames.length && isUUID(pathnames[i + 1])) {
       schoolDetailPath = `/schools/schoolDetail/${pathnames[i + 1]}`;
     }
 
     // Save the path to schoolSubmission including its UUID
-    if (
-      value === "schoolSubmission" &&
-      i + 1 < pathnames.length &&
-      isUUID(pathnames[i + 1])
-    ) {
+    if (value === "schoolSubmission" && i + 1 < pathnames.length && isUUID(pathnames[i + 1])) {
       schoolSubmissionPath = `/allTest/schoolSubmission/${pathnames[i + 1]}`;
     }
-if (value === "student-profile") continue;
+    if (value === "student-profile") continue;
     // Skip UUIDs and numeric IDs in breadcrumb display
     if (isUUID(value)) {
-  // Check if it's the last segment and part of student-profile
-  const isStudentProfile =
-    i > 0 && pathnames[i - 1] === "student-profile" && location.state?.studentName;
+      // Check if it's the last segment and part of student-profile
+      const isStudentProfile =
+        i > 0 && pathnames[i - 1] === "student-profile" && location.state?.studentName;
 
-  if (isStudentProfile) {
-    breadcrumbItems.push(
-      <Typography
-        key={currentPath}
-        variant="body2"
-        color="text.disabled"
-        sx={{
-          textDecoration: "none",
-          fontFamily: "'Karla', sans-serif",
-        }}
-      >
-        {location.state.studentName}
-      </Typography>
-    );
-  }
+      if (isStudentProfile) {
+        breadcrumbItems.push(
+          <Typography
+            key={currentPath}
+            variant="body2"
+            color="text.disabled"
+            sx={{
+              textDecoration: "none",
+              fontFamily: "'Karla', sans-serif",
+            }}
+          >
+            {location.state.studentName}
+          </Typography>
+        );
+      }
 
-  continue;
-}
+      continue;
+    }
 
     // Check if this is testDetails (which should be highlighted)
     const isTestDetails = value === "testDetails";
@@ -198,8 +203,7 @@ if (value === "student-profile") continue;
         i + 1 === pathnames.length - 1);
 
     // Use the path map to get a friendly name, or capitalize the first letter
-    const displayName =
-      pathMap[value] || value.charAt(0).toUpperCase() + value.slice(1);
+    const displayName = pathMap[value] || value.charAt(0).toUpperCase() + value.slice(1);
 
     if (isLast) {
       breadcrumbItems.push(

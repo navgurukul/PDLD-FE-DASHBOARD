@@ -26,6 +26,7 @@ import ButtonCustom from "../../components/ButtonCustom";
 import { toast, ToastContainer } from "react-toastify";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { format } from "date-fns";
+import ConfirmationModal from "../modal/ConfirmationModal";
 
 const theme = createTheme({
   typography: {
@@ -127,17 +128,30 @@ const getSubjectOptions = (classLevel) => {
 };
 
 export default function AddStudent({ isEditMode = false }) {
-  const navigate = useNavigate();
+  const originalNavigate = useNavigate();
   const location = useLocation();
 
-  // Get data from location state
-  const { studentId, schoolId, schoolName = "School", studentData } = location.state || {};
+  // Extract schoolId from URL path
+  const getSchoolIdFromUrl = () => {
+    const pathParts = location.pathname.split("/");
+    const schoolDetailIndex = pathParts.indexOf("schoolDetail");
+    if (schoolDetailIndex !== -1 && pathParts[schoolDetailIndex + 1]) {
+      return pathParts[schoolDetailIndex + 1];
+    }
+    return location.state?.schoolId || null;
+  };
+
+  // Get data from location state and URL
+  const extractedSchoolId = getSchoolIdFromUrl();
+  const { studentId, schoolName = "School", studentData } = location.state || {};
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [subjectOptions, setSubjectOptions] = useState(getSubjectOptions("11")); // Default to class 11 options for higher classes
+  const [subjectOptions, setSubjectOptions] = useState(getSubjectOptions("11"));
 
-  //stream (and extraSubjects, aadharId) pass only when class is 11 or 12 (if not selected then no need to show in payload)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -147,11 +161,10 @@ export default function AddStudent({ isEditMode = false }) {
     dateOfBirth: null,
     uniqueId: "",
     hostel: "",
-    udiseCode: location.state?.udiseCode || "",
     class: "1",
-    aadharId: "", // New field for Aadhar ID
-    stream: "", // New field for Stream
-    extraSubjects: [], // New field for Extra Subjects
+    aadharId: "",
+    stream: "",
+    extraSubjects: [],
   });
 
   const [errors, setErrors] = useState({
@@ -159,15 +172,85 @@ export default function AddStudent({ isEditMode = false }) {
     fatherName: "",
     motherName: "",
     dateOfBirth: "",
-    udiseCode: "",
-    aadharId: "", // Error for Aadhar ID
-    stream: "", // Error for Stream
+    aadharId: "",
+    stream: "",
   });
 
   // Check if student is in higher class (11 or 12)
   const isHigherClass = formData.class === "11" || formData.class === "12";
   const isClass9or10 = formData.class === "9" || formData.class === "10";
 
+  // Clean up localStorage when component mounts in edit mode
+  useEffect(() => {
+    if (isEditMode) {
+      localStorage.removeItem("initialStudentData");
+    }
+    // Cleanup when component unmounts
+    return () => {
+      localStorage.removeItem("initialStudentData");
+    };
+  }, [isEditMode]);
+
+  // Navigation history interception
+  useEffect(() => {
+    if (hasUnsavedChanges) {
+      const originalPushState = window.history.pushState;
+      const originalReplaceState = window.history.replaceState;
+
+      window.history.pushState = function (state, title, url) {
+        console.log("🚨 Intercepted pushState navigation to:", url);
+        setPendingRoute(url);
+        setShowConfirmModal(true);
+        return; // Prevent navigation
+      };
+
+      window.history.replaceState = function (state, title, url) {
+        console.log("🚨 Intercepted replaceState navigation to:", url);
+        setPendingRoute(url);
+        setShowConfirmModal(true);
+        return; // Prevent navigation
+      };
+
+      // Cleanup - restore original methods
+      return () => {
+        window.history.pushState = originalPushState;
+        window.history.replaceState = originalReplaceState;
+      };
+    }
+  }, [hasUnsavedChanges]);
+
+  // Link click interception
+  useEffect(() => {
+    if (hasUnsavedChanges) {
+      const handleClickCapture = (event) => {
+        const clickedElement = event.target;
+        const isNavigationLink = clickedElement.closest(
+          "a[href], [data-navigate], .sidebar-link, nav a"
+        );
+
+        if (isNavigationLink) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const href =
+            isNavigationLink.getAttribute("href") ||
+            isNavigationLink.getAttribute("data-navigate") ||
+            "Unknown route";
+
+          console.log("🚨 Intercepted link click to:", href);
+          setPendingRoute(href);
+          setShowConfirmModal(true);
+        }
+      };
+
+      document.addEventListener("click", handleClickCapture, true);
+      return () => {
+        document.removeEventListener("click", handleClickCapture, true);
+      };
+    }
+  }, [hasUnsavedChanges]);
+
+  // Form data population
   useEffect(() => {
     if ((location.state?.isEditMode || isEditMode) && location.state?.studentData) {
       const student = location.state.studentData;
@@ -176,31 +259,21 @@ export default function AddStudent({ isEditMode = false }) {
       let dob = null;
       if (student.dob) {
         try {
-          // First, check if it's already in YYYY-MM-DD format (like "2011-06-21")
           if (typeof student.dob === "string" && /^\d{4}-\d{2}-\d{2}$/.test(student.dob)) {
             console.log("Date is in YYYY-MM-DD format, using directly");
             dob = new Date(student.dob);
-          }
-          // Then check if it's in DD-MM-YYYY format
-          else if (typeof student.dob === "string" && /^\d{2}-\d{2}-\d{4}$/.test(student.dob)) {
+          } else if (typeof student.dob === "string" && /^\d{2}-\d{2}-\d{4}$/.test(student.dob)) {
             const parts = student.dob.split("-");
-            // Create a valid date string in YYYY-MM-DD format
             dob = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-          }
-          // Check for D-MM-YYYY format like "6-03-2003"
-          else if (typeof student.dob === "string" && /^\d{1,2}-\d{2}-\d{4}$/.test(student.dob)) {
+          } else if (typeof student.dob === "string" && /^\d{1,2}-\d{2}-\d{4}$/.test(student.dob)) {
             const parts = student.dob.split("-");
-            // Ensure day is two digits
             const day = parts[0].padStart(2, "0");
             dob = new Date(`${parts[2]}-${parts[1]}-${day}`);
-          }
-          // Fallback to direct date parsing
-          else {
+          } else {
             console.log("Trying direct date parsing");
             dob = new Date(student.dob);
           }
 
-          // Validate the date object
           if (isNaN(dob.getTime())) {
             console.error("Invalid date created:", student.dob);
             dob = null;
@@ -219,7 +292,6 @@ export default function AddStudent({ isEditMode = false }) {
         if (Array.isArray(student.extraSubjects)) {
           extraSubjects = student.extraSubjects;
         } else if (typeof student.extraSubjects === "string") {
-          // If it's a string (possibly comma-separated), convert to array
           extraSubjects = student.extraSubjects.split(",").map((s) => s.trim());
         }
       }
@@ -229,10 +301,9 @@ export default function AddStudent({ isEditMode = false }) {
         name: student.fullName || "",
         fatherName: student.fatherName || "",
         motherName: student.motherName || "",
-        dateOfBirth: dob, // Now this will be either a valid Date object or null
+        dateOfBirth: dob,
         uniqueId: student.aparId || "",
         hostel: student.hostel || "",
-        udiseCode: student.schoolUdiseCode || location.state?.udiseCode || "",
         class: student.class?.toString() || "1",
         gender: student.gender || "M",
         aadharId: student.aadharId || "",
@@ -242,13 +313,135 @@ export default function AddStudent({ isEditMode = false }) {
     }
   }, [isEditMode, location]);
 
+  // Save initial data ONLY ONCE when form is first populated
+  useEffect(() => {
+    if (
+      (location.state?.isEditMode || isEditMode) &&
+      location.state?.studentData &&
+      formData.name &&
+      !localStorage.getItem("initialStudentData")
+    ) {
+      const initialData = {
+        name: formData.name,
+        fatherName: formData.fatherName,
+        motherName: formData.motherName,
+        dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.toISOString() : null,
+        uniqueId: formData.uniqueId,
+        hostel: formData.hostel,
+        class: formData.class,
+        gender: formData.gender,
+        aadharId: formData.aadharId,
+        stream: formData.stream,
+        extraSubjects: formData.extraSubjects,
+      };
+
+      localStorage.setItem("initialStudentData", JSON.stringify(initialData));
+      console.log("✅ Initial data saved to localStorage (ONCE):", initialData);
+    }
+  }, [formData.name, isEditMode, location.state]);
+
+  // Change detection
+  useEffect(() => {
+    if (isEditMode && window.location.pathname.includes("updateStudent")) {
+      const initialDataString = localStorage.getItem("initialStudentData");
+
+      if (initialDataString) {
+        const initialData = JSON.parse(initialDataString);
+
+        const currentData = {
+          name: formData.name,
+          fatherName: formData.fatherName,
+          motherName: formData.motherName,
+          dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.toISOString() : null,
+          uniqueId: formData.uniqueId,
+          hostel: formData.hostel,
+          class: formData.class,
+          gender: formData.gender,
+          aadharId: formData.aadharId,
+          stream: formData.stream,
+          extraSubjects: JSON.stringify(formData.extraSubjects),
+        };
+
+        const initialDataForComparison = {
+          ...initialData,
+          extraSubjects: JSON.stringify(initialData.extraSubjects),
+        };
+
+        const changes = {};
+        let hasChanges = false;
+
+        Object.keys(currentData).forEach((key) => {
+          if (currentData[key] !== initialDataForComparison[key]) {
+            changes[key] = {
+              from: initialDataForComparison[key],
+              to: currentData[key],
+            };
+            hasChanges = true;
+          }
+        });
+
+        setHasUnsavedChanges(hasChanges);
+
+        if (hasChanges) {
+          console.log("🔄 CHANGES DETECTED:");
+          console.log(changes);
+          Object.keys(changes).forEach((key) => {
+            console.log(`📝 ${key}: "${changes[key].from}" → "${changes[key].to}"`);
+          });
+        } else {
+          console.log("✅ No changes detected");
+        }
+      }
+    }
+  }, [formData, isEditMode]);
+
+  // Subject options based on class
+  useEffect(() => {
+    if (isHigherClass || isClass9or10) {
+      setSubjectOptions(vocationalOptions);
+    }
+  }, [formData.class, isHigherClass, isClass9or10]);
+
+  // Custom navigate function
+  const navigate = (to, options) => {
+    if (hasUnsavedChanges && !options?.force) {
+      console.log("🚨 Attempted programmatic navigation to:", to);
+      setPendingRoute(to);
+      setShowConfirmModal(true);
+    } else {
+      originalNavigate(to, options);
+    }
+  };
+
+  // Modal handlers
+  const handleModalConfirm = () => {
+    console.log("✅ User confirmed navigation to:", pendingRoute);
+    setHasUnsavedChanges(false);
+    setShowConfirmModal(false);
+
+    setTimeout(() => {
+      if (pendingRoute) {
+        if (pendingRoute.startsWith("http") || pendingRoute.startsWith("/")) {
+          window.location.href = pendingRoute;
+        } else {
+          originalNavigate(pendingRoute, { replace: true });
+        }
+      }
+      setPendingRoute(null);
+    }, 100);
+  };
+
+  const handleModalClose = () => {
+    console.log("❌ User cancelled navigation to:", pendingRoute);
+    setShowConfirmModal(false);
+    setPendingRoute(null);
+  };
+
   // Handle input change with validation for specific fields
   const handleInputChange = (event) => {
     const { name, value } = event.target;
 
-    // Special handling for Aadhar ID - only allow numbers and limit to 12 digits
     if (name === "aadharId") {
-      // Replace any non-digit characters and limit to 12 digits
       const numericValue = value.replace(/\D/g, "").slice(0, 12);
       setFormData({
         ...formData,
@@ -261,7 +454,6 @@ export default function AddStudent({ isEditMode = false }) {
       });
     }
 
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors({
         ...errors,
@@ -288,7 +480,6 @@ export default function AddStudent({ isEditMode = false }) {
       dateOfBirth: newDate,
     });
 
-    // Clear date error when user selects a new date
     if (errors.dateOfBirth) {
       setErrors({
         ...errors,
@@ -297,18 +488,10 @@ export default function AddStudent({ isEditMode = false }) {
     }
   };
 
-  useEffect(() => {
-    // We'll just use vocationalOptions for classes 9-12
-    if (isHigherClass || isClass9or10) {
-      setSubjectOptions(vocationalOptions);
-    }
-  }, [formData.class, isHigherClass, isClass9or10]);
-
   const validateForm = () => {
     const newErrors = {};
     let isValid = true;
 
-    // Validate name
     if (!formData.name.trim()) {
       newErrors.name = "Student name is required";
       isValid = false;
@@ -320,7 +503,6 @@ export default function AddStudent({ isEditMode = false }) {
       isValid = false;
     }
 
-    // Validate father's name
     if (!formData.fatherName.trim()) {
       newErrors.fatherName = "Father's name is required";
       isValid = false;
@@ -329,7 +511,6 @@ export default function AddStudent({ isEditMode = false }) {
       isValid = false;
     }
 
-    // Validate mother's name
     if (!formData.motherName.trim()) {
       newErrors.motherName = "Mother's name is required";
       isValid = false;
@@ -338,7 +519,6 @@ export default function AddStudent({ isEditMode = false }) {
       isValid = false;
     }
 
-    // Validate date of birth
     if (formData.dateOfBirth) {
       const today = new Date();
       const birthDate = new Date(formData.dateOfBirth);
@@ -350,28 +530,15 @@ export default function AddStudent({ isEditMode = false }) {
       }
     }
 
-    // Validate UDISE code
-    if (!formData.udiseCode.trim()) {
-      newErrors.udiseCode = "UDISE code is required";
-      isValid = false;
-    } else if (!/^\d{11}$/.test(formData.udiseCode.trim())) {
-      newErrors.udiseCode = "UDISE code should be 11 digits";
-      isValid = false;
-    }
-
-    // Validate Aadhar ID if provided
     if (formData.aadharId && !/^\d{12}$/.test(formData.aadharId.trim())) {
       newErrors.aadharId = "Aadhar ID should be 12 digits";
       isValid = false;
     }
 
-    // Add stream validation for higher classes (11-12)
     if ((formData.class === "11" || formData.class === "12") && !formData.stream) {
       newErrors.stream = "Stream is required for Class 11 and 12";
       isValid = false;
     }
-
-    // Note: No validation for stream or extraSubjects since they're optional
 
     setErrors(newErrors);
     return isValid;
@@ -386,66 +553,66 @@ export default function AddStudent({ isEditMode = false }) {
       return;
     }
 
+    if (!extractedSchoolId) {
+      toast.error("School ID not found");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Format date to D-MM-YYYY format as expected by the API
       const formattedDate = formData.dateOfBirth
         ? `${format(new Date(formData.dateOfBirth), "d-MM-yyyy")}`
         : "";
 
-      // Create base payload with required fields
-      const studentData = {
+      const studentDataPayload = {
         fullName: formData.name,
         fatherName: formData.fatherName,
         motherName: formData.motherName,
         class: formData.class,
         gender: formData.gender,
-        schoolUdiseCode: formData.udiseCode,
+        // schoolUdiseCode: formData.udiseCode,
       };
 
-      // Only add optional fields if they have values
       if (formData.uniqueId) {
-        studentData.aparId = formData.uniqueId;
+        studentDataPayload.aparId = formData.uniqueId;
       }
       if (formattedDate) {
-        studentData.dob = formattedDate;
+        studentDataPayload.dob = formattedDate;
       }
-
       if (formData.hostel) {
-        studentData.hostel = formData.hostel;
+        studentDataPayload.hostel = formData.hostel;
       }
-
       if (formData.aadharId) {
-        studentData.aadharId = formData.aadharId;
+        studentDataPayload.aadharId = formData.aadharId;
       }
-
       if (formData.stream) {
-        studentData.stream = formData.stream;
+        studentDataPayload.stream = formData.stream;
       }
-
       if (formData.extraSubjects && formData.extraSubjects.length > 0) {
-        studentData.extraSubjects = formData.extraSubjects;
+        studentDataPayload.extraSubjects = formData.extraSubjects;
       }
 
       if (isEditMode && studentId) {
-        // Update existing student
-        await apiInstance.put(`/student/update/${studentId}`, studentData);
+        await apiInstance.put(`/student/update/${studentId}`, studentDataPayload);
         toast.success("Student updated successfully!");
+        setHasUnsavedChanges(false); // Clear the flag after successful save
         setTimeout(() => {
-          navigate(`/schools/schoolDetail/${schoolId}`, {
-            state: { selectedTab: 1 }, // Set to Students tab
+          originalNavigate(`/schools/schoolDetail/${extractedSchoolId}`, {
+            state: { selectedTab: 1 },
           });
         }, 1200);
       } else {
-        // Create new student
-        const response = await apiInstance.post("/student/add", studentData);
+        const response = await apiInstance.post(
+          `/student/add/${extractedSchoolId}`,
+          studentDataPayload
+        );
 
         if (response.data && response.data.success) {
           toast.success("New Student added successfully!");
           setTimeout(() => {
-            navigate(`/schools/schoolDetail/${schoolId}`, {
-              state: { selectedTab: 1 }, // Set to Students tab
+            originalNavigate(`/schools/schoolDetail/${extractedSchoolId}`, {
+              state: { selectedTab: 1 },
             });
           }, 1200);
         } else {
@@ -491,7 +658,7 @@ export default function AddStudent({ isEditMode = false }) {
           </Typography>
         </div>
 
-        <Paper elevation={0} className="max-w-3xl mx-auto p-6 rounded-lg ">
+        <Paper elevation={0} className="max-w-3xl mx-auto p-6 rounded-lg">
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               {/* Student Name */}
@@ -607,7 +774,7 @@ export default function AddStudent({ isEditMode = false }) {
               <Grid item xs={12} md={6}>
                 <TextField
                   type="date"
-                  label="Date of Birth" // Removed the asterisk (*)
+                  label="Date of Birth"
                   name="dateOfBirth"
                   value={
                     formData.dateOfBirth instanceof Date && !isNaN(formData.dateOfBirth)
@@ -622,27 +789,6 @@ export default function AddStudent({ isEditMode = false }) {
                   InputLabelProps={{ shrink: true }}
                   error={!!errors.dateOfBirth}
                   helperText={errors.dateOfBirth || "Optional"}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      height: "48px",
-                    },
-                  }}
-                />
-              </Grid>
-
-              {/* UDISE Code */}
-              <Grid item xs={12} md={6}>
-                <TextField
-                  label="UDISE Code *"
-                  name="udiseCode"
-                  value={formData.udiseCode}
-                  onChange={handleInputChange}
-                  fullWidth
-                  placeholder="Enter 11-digit UDISE code"
-                  variant="outlined"
-                  error={!!errors.udiseCode}
-                  helperText={errors.udiseCode}
-                  disabled={true} // Disable the field as UDISE code should not be edited directly
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       height: "48px",
@@ -694,10 +840,10 @@ export default function AddStudent({ isEditMode = false }) {
                 />
               </Grid>
 
-              {/* Stream - Only for Classes 11-12, placed next to APAR ID */}
+              {/* Stream - Only for Classes 11-12 */}
               {/* Stream - Only for Classes 11-12 */}
               {isHigherClass && (
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={12}>
                   <FormControl fullWidth error={!!errors.stream} required>
                     <InputLabel id="stream-select-label">Stream</InputLabel>
                     <Select
@@ -726,6 +872,8 @@ export default function AddStudent({ isEditMode = false }) {
                   </FormControl>
                 </Grid>
               )}
+
+             
 
               {/* Optional padding Grid item if no Stream is shown */}
               {!isHigherClass && <Grid item xs={12} md={6}></Grid>}
@@ -835,6 +983,20 @@ export default function AddStudent({ isEditMode = false }) {
           </form>
         </Paper>
       </div>
+
+      {showConfirmModal && (
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          onClose={handleModalClose}
+          onConfirm={handleModalConfirm}
+          title="Unsaved Changes"
+          changeType="Page"
+          fromValue="Current page with unsaved changes"
+          toValue={pendingRoute || "New page"}
+          message="You have unsaved changes that will be lost if you leave this page."
+        />
+      )}
+
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
     </ThemeProvider>
   );

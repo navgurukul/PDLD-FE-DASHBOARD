@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, DocScanner } from "../utils/imagePath";
-import { Button, TextField, MenuItem, CircularProgress } from "@mui/material";
+import { Button, TextField, MenuItem, CircularProgress, Typography, Select } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -136,11 +136,21 @@ export default function TestListTable() {
   const [totalRecords, setTotalRecords] = useState(0);
 
   const [currentPage, setCurrentPage] = useState(1);
+  // Changed from fixed pageSize to state
+  const [pageSize, setPageSize] = useState(15);
+  
   const location = useLocation();
   const navigate = useNavigate();
 
   const [classOpen, setClassOpen] = useState(false);
   const [subjectOpen, setSubjectOpen] = useState(false);
+
+  // Add page size change handler
+  const handlePageSizeChange = (event) => {
+    setPageSize(event.target.value);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
   useEffect(() => {
     if (location.state?.successMessage) {
       toast.success(location.state.successMessage);
@@ -168,8 +178,6 @@ export default function TestListTable() {
       setUserRole("");
     }
   }, []);
-
-  const pageSize = 15; // The fixed page size
 
   const handleCreateTest = () => {
     navigate("/testCreationForm"); // Replace with your target route
@@ -200,7 +208,7 @@ export default function TestListTable() {
       }
 
       // Build your URL with all applicable filters, including status
-      // let url = `/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
+      // Updated to use dynamic pageSize
       let url = `/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
 
       if (selectedClass.length > 0) {
@@ -236,7 +244,7 @@ export default function TestListTable() {
     if ((startDate && endDate) || (!startDate && !endDate)) {
       fetchData();
     }
-  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage]);
+  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage, pageSize]);
 
   // Filter tests based on search query (local filter for "testName")
   const filteredTests = tests?.filter((test) =>
@@ -308,6 +316,11 @@ export default function TestListTable() {
         testData: testToEdit,
       },
     });
+  };
+
+  // Handle page change
+  const handlePageChange = (event, page) => {
+    setCurrentPage(page);
   };
 
   // MUI DataTable columns
@@ -937,15 +950,83 @@ export default function TestListTable() {
           <MUIDataTable data={tableData} columns={columns} options={options} />
         </div>
 
-        {/* Pagination - centered */}
-        <div style={{ width: "max-content", margin: "25px auto" }}>
-          <Pagination
-            count={Math.ceil(totalRecords / pageSize)}
-            page={currentPage}
-            onChange={(e, page) => setCurrentPage(page)}
-            showFirstButton
-            showLastButton
-          />
+        {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between", // This spreads items to the edges
+            width: "100%",
+            margin: "20px 0",
+            padding: "0 24px", // Add some padding on the sides
+          }}
+        >
+          {/* Empty div for left spacing to help with centering */}
+          <div style={{ width: "180px" }}></div>
+
+          {/* Centered pagination */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <Pagination
+              count={Math.ceil(totalRecords / pageSize)}
+              page={currentPage}
+              onChange={handlePageChange}
+              showFirstButton
+              showLastButton
+            />
+          </div>
+
+          {/* Right-aligned compact rows selector */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              width: "180px",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#2F4F4F",
+                mr: 1,
+                fontSize: "0.875rem",
+                fontWeight: 500,
+              }}
+            >
+              Rows per page:
+            </Typography>
+            <Select
+              value={pageSize}
+              onChange={handlePageSizeChange}
+              variant="standard" // More compact variant
+              disableUnderline
+              sx={{
+                height: "32px",
+                minWidth: "60px",
+                "& .MuiSelect-select": {
+                  color: "#2F4F4F",
+                  fontWeight: "600",
+                  py: 0,
+                  pl: 1,
+                },
+              }}
+              MenuProps={{
+                PaperProps: {
+                  elevation: 2,
+                  sx: {
+                    borderRadius: "8px",
+                    mt: 0.5,
+                  },
+                },
+              }}
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={15}>15</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+              <MenuItem value={100}>100</MenuItem>
+            </Select>
+          </div>
         </div>
 
         {/* Toasts and loading */}

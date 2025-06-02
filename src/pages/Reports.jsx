@@ -9,9 +9,11 @@ import {
   DialogContent,
   IconButton,
   Box,
+  Typography,
+  Select,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { FormControl, Select, InputLabel } from "@mui/material";
+import { FormControl, InputLabel } from "@mui/material";
 import { Pagination } from "@mui/material";
 import { Search, X as CloseIcon, RefreshCw } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
@@ -19,7 +21,6 @@ import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { noSchoolImage } from "../utils/imagePath";
 import apiInstance from "../../api"; // Updated import path
-import { Typography } from "@mui/material";
 import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
@@ -121,7 +122,7 @@ const theme = createTheme({
 
 const Reports = () => {
   const theme = useTheme();
-  
+
   // Remove download menu state, add download modal state
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
 
@@ -145,8 +146,14 @@ const Reports = () => {
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [availableClusters, setAvailableClusters] = useState([]);
 
-  // Fixed page size
-  const pageSize = 15;
+  // Changed from fixed pageSize to state
+  const [pageSize, setPageSize] = useState(15);
+
+  // Add page size change handler
+  const handlePageSizeChange = (event) => {
+    setPageSize(event.target.value);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   // Extract unique blocks and clusters from the API response
   const extractBlocksAndClusters = (schoolsData) => {
@@ -165,12 +172,13 @@ const Reports = () => {
   // Fetch schools data from API
   useEffect(() => {
     fetchSchoolsData();
-  }, [currentPage, selectedSubject, selectedBlock, selectedCluster]);
+  }, [currentPage, selectedSubject, selectedBlock, selectedCluster, pageSize]);
 
   const fetchSchoolsData = async () => {
     try {
       setIsLoading(true);
 
+      // Updated to use dynamic pageSize
       let url = `/report/subject-performance/${selectedSubject}?page=${currentPage}&pageSize=${pageSize}`;
 
       // Add block and cluster filters if selected - updated parameter names
@@ -244,16 +252,18 @@ const Reports = () => {
               font-size: 13px; /* Reduced font size */
             }
             .custom-table th.group-header {
+              font-family: 'Work Sans', sans-serif !important;
               text-align: center;
               color: #2F4F4F;
-              font-weight: 600;
+              font-weight: 600 !important;
               font-size: 14px;
               border-bottom: none;
             }
             .custom-table th.sub-header {
+              font-family: 'Work Sans', sans-serif !important;
               color: #2F4F4F;
-              font-weight: 500;
-              font-size: 12px;
+              font-weight: 600 !important;
+              font-size: 14px;
               text-align: center;
             }
             .custom-table tbody tr:hover {
@@ -263,6 +273,14 @@ const Reports = () => {
             .custom-table td.low-score {
               color: #FF0000;
             }
+              .custom-table th.school-header {
+                font-family: 'Work Sans', sans-serif !important;
+                font-weight: 600 !important;
+                font-size: 14px !important;
+                color: #2F4F4F;
+                text-align: center;
+                border-bottom: 1px solid #e0e0e0;
+      }
           `}
         </style>
         <table className="custom-table">
@@ -270,11 +288,7 @@ const Reports = () => {
             <tr>
               <th
                 rowSpan="2"
-                style={{
-                  borderBottom: "1px solid #e0e0e0",
-                  color: "#2F4F4F", // Theme color
-                  fontWeight: "600", // Make it bold
-                }}
+                className="school-header" // <-- Add this
               >
                 School Name
               </th>
@@ -425,6 +439,11 @@ const Reports = () => {
     setSearchQuery(e.target.value);
   };
 
+  // Handle page change
+  const handlePageChange = (event, page) => {
+    setCurrentPage(page);
+  };
+
   // Reset filters
   const resetFilters = () => {
     setSelectedBlock("");
@@ -443,7 +462,7 @@ const Reports = () => {
   // Handle download confirmation from modal
   const handleDownloadConfirm = async (downloadOptions) => {
     const { format, rows, count } = downloadOptions;
-    
+
     try {
       setIsLoading(true);
       toast.info(`Generating ${format.toUpperCase()} report for ${count} schools...`);
@@ -455,8 +474,10 @@ const Reports = () => {
         dataToDownload = transformedData;
       } else {
         // Fetch more data from API
-        let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${count === totalRecords ? totalRecords : count}`;
-        
+        let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${
+          count === totalRecords ? totalRecords : count
+        }`;
+
         if (selectedBlock) {
           url += `&blockName=${selectedBlock}`;
         }
@@ -477,12 +498,19 @@ const Reports = () => {
               schoolName: school.schoolName,
               primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
               primaryPass: primaryData.primaryPass !== undefined ? primaryData.primaryPass : null,
-              upperPrimaryAvg: upperData.upperPrimaryAvg !== undefined ? upperData.upperPrimaryAvg : null,
-              upperPrimaryPass: upperData.upperPrimaryPass !== undefined ? upperData.upperPrimaryPass : null,
+              upperPrimaryAvg:
+                upperData.upperPrimaryAvg !== undefined ? upperData.upperPrimaryAvg : null,
+              upperPrimaryPass:
+                upperData.upperPrimaryPass !== undefined ? upperData.upperPrimaryPass : null,
               highSchoolAvg: highData.highSchoolAvg !== undefined ? highData.highSchoolAvg : null,
-              highSchoolPass: highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
-              higherSecondaryAvg: higherData.higherSecondaryAvg !== undefined ? higherData.higherSecondaryAvg : null,
-              higherSecondaryPass: higherData.higherSecondaryPass !== undefined ? higherData.higherSecondaryPass : null,
+              highSchoolPass:
+                highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
+              higherSecondaryAvg:
+                higherData.higherSecondaryAvg !== undefined ? higherData.higherSecondaryAvg : null,
+              higherSecondaryPass:
+                higherData.higherSecondaryPass !== undefined
+                  ? higherData.higherSecondaryPass
+                  : null,
             };
           });
         } else {
@@ -495,7 +523,6 @@ const Reports = () => {
       } else {
         handleDownloadPDF(dataToDownload);
       }
-
     } catch (error) {
       console.error("Error downloading report:", error);
       toast.error("An error occurred while generating the report");
@@ -507,16 +534,16 @@ const Reports = () => {
   // Download report as PDF
   const handleDownloadPDF = (data) => {
     // Create a new window for printing
-    const printWindow = window.open('', '_blank');
-    
+    const printWindow = window.open("", "_blank");
+
     // Calculate statistics for the report
     const totalSchools = data.length;
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
-    
+
     // Generate HTML content for the PDF
     const htmlContent = `
       <!DOCTYPE html>
@@ -720,13 +747,25 @@ const Reports = () => {
             <div class="date">Generated on: ${currentDate}</div>
           </div>
           
-          ${(selectedBlock || selectedCluster) ? `
+          ${
+            selectedBlock || selectedCluster
+              ? `
           <div class="filter-info">
             <h3>Applied Filters:</h3>
-            ${selectedBlock ? `<div class="filter-item"><strong>Block:</strong> ${selectedBlock}</div>` : ''}
-            ${selectedCluster ? `<div class="filter-item"><strong>Cluster:</strong> ${selectedCluster}</div>` : ''}
+            ${
+              selectedBlock
+                ? `<div class="filter-item"><strong>Block:</strong> ${selectedBlock}</div>`
+                : ""
+            }
+            ${
+              selectedCluster
+                ? `<div class="filter-item"><strong>Cluster:</strong> ${selectedCluster}</div>`
+                : ""
+            }
           </div>
-          ` : ''}
+          `
+              : ""
+          }
           
           <table>
             <thead>
@@ -749,42 +788,46 @@ const Reports = () => {
               </tr>
             </thead>
             <tbody>
-              ${data.map(school => {
-                const isLowScore = (value) => {
-                  const num = parseInt(value);
-                  return !isNaN(num) && num < 20;
-                };
-                
-                return `
+              ${data
+                .map((school) => {
+                  const isLowScore = (value) => {
+                    const num = parseInt(value);
+                    return !isNaN(num) && num < 20;
+                  };
+
+                  return `
                   <tr>
                     <td class="school-name">${school.schoolName}</td>
-                    <td class="${isLowScore(school.primaryAvg) ? 'low-score' : ''}">
-                      ${school.primaryAvg !== null ? school.primaryAvg : '-'}
+                    <td class="${isLowScore(school.primaryAvg) ? "low-score" : ""}">
+                      ${school.primaryAvg !== null ? school.primaryAvg : "-"}
                     </td>
-                    <td class="${isLowScore(school.primaryPass) ? 'low-score' : ''}">
-                      ${school.primaryPass !== null ? school.primaryPass + '%' : '-'}
+                    <td class="${isLowScore(school.primaryPass) ? "low-score" : ""}">
+                      ${school.primaryPass !== null ? school.primaryPass + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.upperPrimaryAvg) ? 'low-score' : ''}">
-                      ${school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : '-'}
+                    <td class="${isLowScore(school.upperPrimaryAvg) ? "low-score" : ""}">
+                      ${school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : "-"}
                     </td>
-                    <td class="${isLowScore(school.upperPrimaryPass) ? 'low-score' : ''}">
-                      ${school.upperPrimaryPass !== null ? school.upperPrimaryPass + '%' : '-'}
+                    <td class="${isLowScore(school.upperPrimaryPass) ? "low-score" : ""}">
+                      ${school.upperPrimaryPass !== null ? school.upperPrimaryPass + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.highSchoolAvg) ? 'low-score' : ''}">
-                      ${school.highSchoolAvg !== null ? school.highSchoolAvg : '-'}
+                    <td class="${isLowScore(school.highSchoolAvg) ? "low-score" : ""}">
+                      ${school.highSchoolAvg !== null ? school.highSchoolAvg : "-"}
                     </td>
-                    <td class="${isLowScore(school.highSchoolPass) ? 'low-score' : ''}">
-                      ${school.highSchoolPass !== null ? school.highSchoolPass + '%' : '-'}
+                    <td class="${isLowScore(school.highSchoolPass) ? "low-score" : ""}">
+                      ${school.highSchoolPass !== null ? school.highSchoolPass + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.higherSecondaryAvg) ? 'low-score' : ''}">
-                      ${school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : '-'}
+                    <td class="${isLowScore(school.higherSecondaryAvg) ? "low-score" : ""}">
+                      ${school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : "-"}
                     </td>
-                    <td class="${isLowScore(school.higherSecondaryPass) ? 'low-score' : ''}">
-                      ${school.higherSecondaryPass !== null ? school.higherSecondaryPass + '%' : '-'}
+                    <td class="${isLowScore(school.higherSecondaryPass) ? "low-score" : ""}">
+                      ${
+                        school.higherSecondaryPass !== null ? school.higherSecondaryPass + "%" : "-"
+                      }
                     </td>
                   </tr>
                 `;
-              }).join('')}
+                })
+                .join("")}
             </tbody>
           </table>
           
@@ -803,13 +846,13 @@ const Reports = () => {
       </body>
       </html>
     `;
-    
+
     // Write the content to the new window
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-    
+
     // Wait for content to load, then trigger print
-    printWindow.onload = function() {
+    printWindow.onload = function () {
       setTimeout(() => {
         printWindow.print();
         toast.success(`PDF report ready with ${data.length} schools`);
@@ -817,7 +860,6 @@ const Reports = () => {
     };
   };
 
-  // [Keep all the existing code for handleDownloadCSV and other functions...]
   // Download report as CSV
   const handleDownloadCSV = (data) => {
     const headers = [
@@ -914,7 +956,7 @@ const Reports = () => {
         )
       : transformedData;
 
-    // Ensure we're only showing pageSize (15) items
+    // Ensure we're only showing pageSize items
     if (data.length > pageSize) {
       data = data.slice(0, pageSize);
     }
@@ -922,7 +964,6 @@ const Reports = () => {
     return data;
   }, [transformedData, searchQuery, pageSize]);
 
-  // [Keep all the remaining JSX code exactly as it is...]
   return (
     <ThemeProvider theme={theme}>
       <div className="main-page-wrapper">
@@ -1132,13 +1173,26 @@ const Reports = () => {
               <CustomTable data={filteredData} />
             </div>
 
-            {/* Pagination - always display */}
-            <div className="flex justify-center items-center mt-6 mb-4">
-              <div className="flex items-center">
+            {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between", // This spreads items to the edges
+                width: "100%",
+                margin: "20px 0",
+                padding: "0 24px", // Add some padding on the sides
+              }}
+            >
+              {/* Empty div for left spacing to help with centering */}
+              <div style={{ width: "180px" }}></div>
+
+              {/* Centered pagination */}
+              <div style={{ display: "flex", justifyContent: "center" }}>
                 <Pagination
                   count={totalPages || 1}
                   page={currentPage}
-                  onChange={(e, page) => setCurrentPage(page)}
+                  onChange={handlePageChange}
                   showFirstButton
                   showLastButton
                   size="medium"
@@ -1155,6 +1209,59 @@ const Reports = () => {
                     },
                   }}
                 />
+              </div>
+
+              {/* Right-aligned compact rows selector */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  width: "180px",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#2F4F4F",
+                    mr: 1,
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                  }}
+                >
+                  Rows per page:
+                </Typography>
+                <Select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  variant="standard" // More compact variant
+                  disableUnderline
+                  sx={{
+                    height: "32px",
+                    minWidth: "60px",
+                    "& .MuiSelect-select": {
+                      color: "#2F4F4F",
+                      fontWeight: "600",
+                      py: 0,
+                      pl: 1,
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      elevation: 2,
+                      sx: {
+                        borderRadius: "8px",
+                        mt: 0.5,
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={15}>15</MenuItem>
+                  <MenuItem value={20}>20</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
+                  <MenuItem value={100}>100</MenuItem>
+                </Select>
               </div>
             </div>
           </>

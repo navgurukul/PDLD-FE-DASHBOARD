@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -13,7 +13,7 @@ import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import LineChart from "../components/testReport/charts/LineChart";
 import { Chip, Box } from "@mui/material";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
-import PercentIcon from "@mui/icons-material/Percent";
+import DoneIcon from "@mui/icons-material/Done";
 
 // Define the theme colors
 const THEME_COLOR = "#2F4F4F";
@@ -23,6 +23,8 @@ const SECONDARY_COLOR = "#FFEBEB";
 const PASS_PERCENTAGE = 35;
 
 const SchoolReportPage = () => {
+  const location = useLocation();
+  const { schoolName, testName } = location.state || {};
   const { testId, schoolId } = useParams();
   const navigate = useNavigate();
 
@@ -33,7 +35,53 @@ const SchoolReportPage = () => {
   const [activeTab, setActiveTab] = useState("visualizations");
   const [passThreshold, setPassThreshold] = useState(0);
 
-  // Calculate score distribution for the bar chart
+  // Helper function to check if test type is syllabus
+  const isSyllabusTest = () => {
+    return (
+      testData?.testType?.toLowerCase().includes("syllabus") ||
+      testName?.toLowerCase().includes("syllabus")
+    );
+  };
+
+  // Helper function to check if test type is remedial
+  const isRemedialTest = () => {
+    return (
+      testData?.testType?.toLowerCase().includes("remedial") ||
+      testName?.toLowerCase().includes("remedial")
+    );
+  };
+
+  // Calculate grade distribution for remedial tests - DYNAMIC
+  const calculateGradeDistribution = (resultData) => {
+    // First, get all unique grades from the API data (excluding null/absent students)
+    const uniqueGrades = [...new Set(
+      resultData
+        .filter(student => !student.isAbsent && student.grade)
+        .map(student => student.grade)
+    )].sort();
+
+    // Initialize count object dynamically
+    const gradeCount = {};
+    uniqueGrades.forEach(grade => {
+      gradeCount[grade] = 0;
+    });
+
+    // Count students for each grade
+    resultData.forEach((student) => {
+      if (student.isAbsent || !student.grade) return;
+      
+      if (gradeCount.hasOwnProperty(student.grade)) {
+        gradeCount[student.grade]++;
+      }
+    });
+
+    // Convert to the format expected by BarChart
+    return uniqueGrades.map(grade => ({
+      label: grade.charAt(0).toUpperCase() + grade.slice(1).toLowerCase(), // Capitalize first letter
+      value: gradeCount[grade]
+    }));
+  };
+
   // Calculate score distribution for the bar chart
   const calculateScoreDistribution = (students, maxScore) => {
     // Create ranges based on percentage of max score
@@ -101,7 +149,6 @@ const SchoolReportPage = () => {
           const passRate = totalStudents ? Math.round((passedStudents / totalStudents) * 100) : 0;
 
           // Process data to match component structure
-          // Process data to match component structure
           const processedStudents = apiData.resultData.map((student) => ({
             id: student.studentId,
             name: student.studentName,
@@ -122,6 +169,7 @@ const SchoolReportPage = () => {
             maxScore: apiData.maxScore,
             passThreshold: threshold,
             scoreDistribution: calculateScoreDistribution(processedStudents, apiData.maxScore),
+            gradeDistribution: calculateGradeDistribution(apiData.resultData),
           };
 
           setTestData({
@@ -195,6 +243,10 @@ const SchoolReportPage = () => {
     );
   }
 
+  const totalStudents = schoolData.students?.length || 0;
+  const passedStudents = schoolData.students?.filter((s) => s.passed).length || 0;
+  const failedStudents = totalStudents - passedStudents;
+
   // Component for the Visualizations Tab
   const VisualizationsTab = () => (
     <>
@@ -202,7 +254,7 @@ const SchoolReportPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Pass/Fail ratio chart */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Performance Summary</h3>
+          <h3 className="text-lg font-bold mb-4 text-[#2F4F4F] text-center">Class Performance</h3>
           <div className="h-64 flex items-center justify-center">
             <div className="text-center">
               {/* Using the PieChart with single color theme */}
@@ -211,41 +263,100 @@ const SchoolReportPage = () => {
                 primaryColor={THEME_COLOR}
                 secondaryColor={SECONDARY_COLOR}
               />
-              <div className="mt-4">
-                <div className="flex items-center justify-center">
-                  <span className="w-4 h-4 bg-[#2F4F4F] inline-block mr-2"></span>
-                  <span>ACHIEVED TARGET: {schoolData.passRate}%</span>
-                </div>
-                <div className="flex items-center justify-center mt-1">
-                  <span className="w-4 h-4 bg-[#FFEBEB] inline-block mr-2"></span>
-                  <span>NEEDS IMPROVEMENT: {100 - schoolData.passRate}%</span>
-                </div>
+              <div className="mt-4 flex items-center justify-center gap-4">
+                {/* Passed */}
+                <span
+                  className="inline-block mr-1"
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    background: "#228B22",
+                    display: "inline-block",
+                  }}
+                ></span>
+                <span
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: 400,
+                    fontSize: 14,
+                    color: "#2F4F4F",
+                    marginRight: 18,
+                  }}
+                >
+                  Passed ({schoolData.passRate}%)
+                </span>
+                {/* Failed */}
+                <span
+                  className="inline-block mr-1"
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    background: "#F45050",
+                    display: "inline-block",
+                  }}
+                ></span>
+                <span
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: 400,
+                    fontSize: 14,
+                    color: "#2F4F4F",
+                  }}
+                >
+                  Failed ({100 - schoolData.passRate}%)
+                </span>
               </div>
             </div>
+          </div>
+          <div
+            className="mt-2 text-center font-semibold text-[#2F4F4F]"
+            style={{ fontFamily: "'Work Sans', sans-serif", fontSize: 14 }}
+          >
+            {passedStudents} out of {totalStudents} Students Passed
           </div>
         </div>
 
         {/* Score distribution chart */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="text-lg font-semibold mb-4 text-[#2F4F4F]">Score Distribution</h3>
+          <h3 className="text-lg font-bold mb-4 text-[#2F4F4F] text-center">
+            {isRemedialTest() ? "Student Distribution by Grade" : "Marks Distribution"}
+          </h3>
           <div className="h-64 flex items-center justify-center">
             {/* Using the BarChart with the same theme color */}
-            <BarChart data={schoolData.scoreDistribution} primaryColor={THEME_COLOR} />
+            <BarChart 
+              data={isRemedialTest() ? schoolData.gradeDistribution : schoolData.scoreDistribution} 
+              primaryColor={THEME_COLOR} 
+            />
           </div>
         </div>
       </div>
 
-      {/* Line Chart - Full width */}
-      <div className="bg-white p-4 rounded shadow mb-20">
-        <h3 className="text-lg font-semibold mb-1 text-[#2F4F4F]">Student Score Analysis</h3>
-        <div className="h-80 flex items-center justify-center">
-          <LineChart
-            data={schoolData.students}
-            averageScore={schoolData.avgScore}
-            primaryColor={THEME_COLOR}
-          />
+      {/* Line Chart - Only show for syllabus tests */}
+      {isSyllabusTest() && (
+        <div className="bg-white p-4 rounded shadow mb-20">
+          <h3
+            style={{
+              fontFamily: "'Work Sans', sans-serif",
+              fontWeight: 600,
+              fontSize: "18px",
+              color: "#2F4F4F",
+              textAlign: "center",
+              marginBottom: "4px",
+            }}
+          >
+            Student Marks Analysis
+          </h3>
+          <div className="h-90 flex items-center justify-center">
+            <LineChart
+              data={schoolData.students}
+              averageScore={schoolData.avgScore}
+              primaryColor={THEME_COLOR}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 
@@ -267,14 +378,17 @@ const SchoolReportPage = () => {
         {/* School Header */}
         <div className="mb-6 flex justify-between">
           <div>
-            <h5 className="text-2xl font-bold text-[#2F4F4F]">{schoolData.name}</h5>
-            <div className="text-sm text-gray-600">
-              <span>{testData?.testName || "Test Details"}</span>
-              <span className="mx-1">•</span>
-              <span>
-                Pass Threshold: {schoolData.passThreshold} ({PASS_PERCENTAGE}% of{" "}
-                {schoolData.maxScore})
-              </span>
+            <h5
+              className="mt-5"
+              style={{ fontFamily: "'Philosopher', sans-serif", fontWeight: 700 }}
+            >
+              {schoolName} Test Details
+            </h5>
+            <div
+              className="mt-6 font-bold text-[24px] text-[#2F4F4F]"
+              style={{ fontFamily: "'Philosopher', sans-serif", fontWeight: 700 }}
+            >
+              {testName}
             </div>
           </div>
 
@@ -294,7 +408,7 @@ const SchoolReportPage = () => {
               }}
             />
             <Chip
-              icon={<PercentIcon style={{ fontSize: "16px" }} />}
+              icon={<DoneIcon style={{ fontSize: "16px" }} />}
               label={`Success Rate: ${schoolData.passRate}%`}
               variant="outlined"
               size="small"
@@ -312,24 +426,34 @@ const SchoolReportPage = () => {
         {/* Tabs Navigation */}
         <div className="flex border-b mb-6">
           <button
-            className={`py-2 px-1 mr-4 font-medium ${
-              activeTab === "visualizations"
-                ? "border-b-2 border-[#2F4F4F] text-[#2F4F4F]"
-                : "text-gray-500 hover:text-[#2F4F4F]"
-            }`}
+            className={`py-2 px-1 mr-4 font-medium`}
+            style={{
+              fontFamily: "'Work Sans', sans-serif",
+              fontWeight: activeTab === "visualizations" ? 600 : 400,
+              fontSize: "18px",
+              color: activeTab === "visualizations" ? "#2F4F4F" : "#949494",
+              borderBottom: activeTab === "visualizations" ? "2px solid #2F4F4F" : "none",
+              background: "none",
+              outline: "none",
+            }}
             onClick={() => setActiveTab("visualizations")}
           >
-            Performance Metrics
+            Overall Class Performance
           </button>
           <button
-            className={`py-2 px-4 font-medium ${
-              activeTab === "students"
-                ? "border-b-2 border-[#2F4F4F] text-[#2F4F4F]"
-                : "text-gray-500 hover:text-[#2F4F4F]"
-            }`}
+            className={`py-2 px-4 font-medium`}
+            style={{
+              fontFamily: "'Work Sans', sans-serif",
+              fontWeight: activeTab === "students" ? 600 : 400,
+              fontSize: "18px",
+              color: activeTab === "students" ? "#2F4F4F" : "#949494",
+              borderBottom: activeTab === "students" ? "2px solid #2F4F4F" : "none",
+              background: "none",
+              outline: "none",
+            }}
             onClick={() => setActiveTab("students")}
           >
-            Student Performance
+            Student Wise Performance
           </button>
         </div>
 

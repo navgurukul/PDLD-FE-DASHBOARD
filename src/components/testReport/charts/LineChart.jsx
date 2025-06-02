@@ -25,20 +25,22 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
     const validStudents = data.filter(
       (student) => !student.isAbsent && student.score !== undefined
     );
-    
+
     if (validStudents.length === 0) return;
 
     // Use the provided average or calculate it
-    const mean = averageScore || 
+    const mean =
+      averageScore ||
       Math.round(validStudents.reduce((sum, s) => sum + s.score, 0) / validStudents.length);
-    
+
     // Count students above and below average
+    const studentsAtAvg = validStudents.filter((s) => s.score === mean);
     const studentsAbove = validStudents.filter((s) => s.score >= mean);
     const studentsBelow = validStudents.filter((s) => s.score < mean);
-    
+
     // Get all scores for distribution
     const scores = validStudents.map((s) => s.score);
-    
+
     // Simple distribution curve data
     const distributionData = generateDistributionData(scores, mean);
 
@@ -46,6 +48,7 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
       mean,
       aboveAvg: studentsAbove.length,
       belowAvg: studentsBelow.length,
+      atAvg: studentsAtAvg.length,
       kdeData: distributionData,
     });
   }, [data, averageScore]);
@@ -57,7 +60,7 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
     const points = 50;
     const step = (max - min) / points;
     const bandwidth = 8; // Controls smoothness
-    
+
     const result = [];
     for (let x = min; x <= max; x += step) {
       let density = 0;
@@ -65,16 +68,16 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
         const z = (x - score) / bandwidth;
         density += Math.exp(-0.5 * z * z);
       }
-      
+
       // Scale for visibility
-      density = density * 100 / scores.length;
-      
+      density = (density * 100) / scores.length;
+
       result.push({
         score: x,
         density: density,
       });
     }
-    
+
     return result;
   };
 
@@ -85,10 +88,9 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
       // Find students within ±5 points of this score
       const range = 5;
       const studentsInRange = data
-        .filter(s => !s.isAbsent && s.score !== undefined)
-        .filter(s => Math.abs(s.score - score) <= range)
-        .length;
-      
+        .filter((s) => !s.isAbsent && s.score !== undefined)
+        .filter((s) => Math.abs(s.score - score) <= range).length;
+
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow-sm">
           <p className="text-sm font-bold">{`Score: ${score}`}</p>
@@ -101,8 +103,21 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
 
   return (
     <div className="w-full h-full">
+      <div
+      style={{
+        fontFamily: "'Work Sans', sans-serif",
+        fontWeight: 400,
+        fontSize: "12px",
+        color: "#2F4F4F",
+        textAlign: "center",
+        marginBottom: "12px",
+      }}
+    >
+      Score Distribution Model(Average: {stats.mean})
+    </div>
+
       {/* Average and Count Header */}
-      <div className="mb-2 text-center">
+      {/* <div className="mb-2 text-center">
         <div className="font-medium text-lg">
           Class Average: <span className="font-bold">{stats.mean}</span>
         </div>
@@ -118,19 +133,16 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
             </span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Simple Distribution Chart */}
       <ResponsiveContainer width="100%" height={300}>
-        <AreaChart
-          data={stats.kdeData}
-          margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
-        >
+        <AreaChart data={stats.kdeData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-          <XAxis 
+          <XAxis
             dataKey="score"
             domain={[0, 100]}
-            ticks={[0, 20, 40, 60, 80, 100]}
+            ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
             label={{ value: "Score", position: "insideBottom", offset: -10 }}
           />
           <YAxis hide />
@@ -148,7 +160,7 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
             fill="url(#colorDensity)"
             strokeWidth={2}
           />
-          
+
           {/* Average score line */}
           <ReferenceLine
             x={stats.mean}
@@ -159,10 +171,10 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
               value: `Average: ${stats.mean}`,
               fill: "#FF4444",
               fontSize: 12,
-              fontWeight: "bold"
+              fontWeight: "bold",
             }}
           />
-          
+
           {/* Pass threshold line */}
           <ReferenceLine
             x={33}
@@ -172,21 +184,26 @@ const LineChart = ({ data, averageScore, primaryColor }) => {
               position: "insideBottomRight",
               value: "Pass: 33",
               fill: "#FF9800",
-              fontSize: 12
+              fontSize: 12,
             }}
           />
         </AreaChart>
       </ResponsiveContainer>
-      
+
       {/* Bottom Stats */}
-      <div className="flex justify-center space-x-4 text-sm mt-4">
-        <div className="px-3 py-2 bg-red-50 rounded-full text-red-800">
-          <span className="font-bold">{stats.belowAvg}</span> below average 
-          ({Math.round((stats.belowAvg / (stats.aboveAvg + stats.belowAvg) * 100))}%)
-        </div>
-        <div className="px-3 py-2 bg-green-50 rounded-full text-green-800">
-          <span className="font-bold">{stats.aboveAvg}</span> above average
-          ({Math.round((stats.aboveAvg / (stats.aboveAvg + stats.belowAvg) * 100))}%)
+      <div className="mb-2 text-center">
+        <div className="mb-2 text-center">
+          <div className="flex justify-center mt-1 space-x-8">
+            <span className="inline-block px-2 py-1 bg-red-100 text-red-800 rounded font-medium">
+              {stats.belowAvg} students below average
+            </span>
+            <span className="inline-block px-2 py-1 bg-gray-100 text-[#2F4F4F] rounded font-medium mx-2">
+              {stats.atAvg} Students at average of {stats.mean},
+            </span>
+            <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded font-medium">
+              {stats.aboveAvg} students above average
+            </span>
+          </div>
         </div>
       </div>
     </div>
