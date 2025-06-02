@@ -16,7 +16,6 @@ import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import Paper from "@mui/material/Paper";
 
-
 const TestCreationForm = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,8 +47,27 @@ const TestCreationForm = () => {
   // Add a state to track if we're in edit mode
   const [editMode, setEditMode] = useState(isEditMode);
 
+  // Add state to track original test dates for edit mode
+  const [originalTestDates, setOriginalTestDates] = useState({});
+
   const handleTestSeriesMonthChange = (e) => {
     setTestSeriesMonth(e.target.value);
+  };
+
+  // Helper function to check if a class group should be enabled for remedial
+  const isGroupEnabledForRemedial = (group) => {
+    // For remedial, only enable groups that contain classes 1-3 or 4-5
+    const allowedClasses = [1, 2, 3, 4, 5];
+    return group.classes.some((classNum) => allowedClasses.includes(classNum));
+  };
+
+  // Helper function to get remedial subjects based on class
+  const getRemedialSubjects = (classNum) => {
+    // For remedial tests, all classes (1-5) have only 3 subjects
+    if (classNum >= 1 && classNum <= 5) {
+      return ["Hindi", "English", "Mathematics"];
+    }
+    return [];
   };
 
   // Improve the date formatting function to handle API date format
@@ -105,15 +123,24 @@ const TestCreationForm = () => {
       // Set subject rows with test date and deadline
       if (test.subject) {
         const subjectRowObj = {};
+        const rowId = `${className}_1`;
+        const testDate = formatDateForInput(test.testDate);
+        const submissionDeadline = formatDateForInput(test.deadline);
+
         subjectRowObj[className] = [
           {
-            id: `${className}_1`,
+            id: rowId,
             subject: test.subject.toLowerCase().replace(/\s+/g, "_"),
-            testDate: formatDateForInput(test.testDate),
-            submissionDeadline: formatDateForInput(test.deadline),
+            testDate: testDate,
+            submissionDeadline: submissionDeadline,
           },
         ];
         setSubjectRows(subjectRowObj);
+
+        // Store original test dates for edit mode tracking
+        const originalDates = {};
+        originalDates[rowId] = testDate;
+        setOriginalTestDates(originalDates);
       }
     }
   };
@@ -193,6 +220,15 @@ const TestCreationForm = () => {
 
     // Create updated row with new value
     const updatedRow = { ...currentRow, [field]: value };
+
+    // Special logic for edit mode when test date changes
+    if (editMode && field === "testDate") {
+      const originalDate = originalTestDates[rowId];
+      // If test date is being changed from its original value, reset submission deadline
+      if (originalDate && value !== originalDate) {
+        updatedRow.submissionDeadline = "";
+      }
+    }
 
     // Date validation check
     if (
@@ -609,6 +645,12 @@ const TestCreationForm = () => {
       ...prev,
       testType: pendingTestType,
     }));
+
+    // Reset class group selection when changing test type
+    setActiveClassGroupId(null);
+    setSelectedClasses({});
+    setSubjectRows({});
+
     setShowTestTypeModal(false);
   };
 
@@ -767,88 +809,98 @@ const TestCreationForm = () => {
 
                 {/* Test Series Month Dropdown - Only show if Monthly in create mode */}
                 {formData.testTag === "Monthly" && (
-  <div>
-    <label
-      className="block mb-2 text-sm"
-      htmlFor="testSeriesMonth"
-      style={{
-        fontFamily: "'Work Sans', sans-serif",
-        fontWeight: 600,
-        fontSize: "18px",
-        color: "#2F4F4F",
-      }}
-    >
-      Test Series Month
-    </label>
-    <Autocomplete
-      disableClearable
-      options={[
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-      ]}
-      value={testSeriesMonth || ""}
-      onChange={(_, value) => setTestSeriesMonth(value)}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          placeholder="Select Month"
-          size="small"
-          sx={{
-            fontFamily: "'Work Sans', sans-serif",
-            fontWeight: 400,
-            fontSize: "14px",
-            "& .MuiOutlinedInput-root": {
-              borderRadius: "8px",
-              background: "#fff",
-              color: "#2F4F4F",
-            },
-          }}
-        />
-      )}
-      PaperComponent={(props) => (
-        <Paper
-          {...props}
-          sx={{
-            boxShadow: "0px 8px 24px 0 rgba(72, 61, 139, 0.12)",
-            borderRadius: "8px",
-            mt: 1,
-          }}
-        />
-      )}
-      ListboxProps={{
-  sx: {
-    "& .MuiAutocomplete-option": {
-      px: 2,
-      py: 0.5,
-      borderRadius: "6px",
-      mb: 0.5,
-      fontFamily: "'Work Sans', sans-serif",
-      fontWeight: 400,
-      fontSize: "14px",
-      color: "#2F4F4F",
-      "&[aria-selected='true'], &:hover": {
-        backgroundColor: "#F0F5F5",
-        color: "#2F4F4F",
-      },
-    },
-     maxHeight: "none",
-     overflowY: "visible", 
-  },
-}}
-    />
-    <div
-      style={{
-        fontFamily: "'Work Sans', sans-serif",
-        fontWeight: 400,
-        color: "#483D8B",
-        fontSize: "14px",
-        marginTop: "4px",
-      }}
-    >
-      Groups the tests created under the selected month
-    </div>
-  </div>
-)}
+                  <div>
+                    <label
+                      className="block mb-2 text-sm"
+                      htmlFor="testSeriesMonth"
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 600,
+                        fontSize: "18px",
+                        color: "#2F4F4F",
+                      }}
+                    >
+                      Test Series Month
+                    </label>
+                    <Autocomplete
+                      disableClearable
+                      options={[
+                        "January",
+                        "February",
+                        "March",
+                        "April",
+                        "May",
+                        "June",
+                        "July",
+                        "August",
+                        "September",
+                        "October",
+                        "November",
+                        "December",
+                      ]}
+                      value={testSeriesMonth || ""}
+                      onChange={(_, value) => setTestSeriesMonth(value)}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          placeholder="Select Month"
+                          size="small"
+                          sx={{
+                            fontFamily: "'Work Sans', sans-serif",
+                            fontWeight: 400,
+                            fontSize: "14px",
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "8px",
+                              background: "#fff",
+                              color: "#2F4F4F",
+                            },
+                          }}
+                        />
+                      )}
+                      PaperComponent={(props) => (
+                        <Paper
+                          {...props}
+                          sx={{
+                            boxShadow: "0px 8px 24px 0 rgba(72, 61, 139, 0.12)",
+                            borderRadius: "8px",
+                            mt: 1,
+                          }}
+                        />
+                      )}
+                      ListboxProps={{
+                        sx: {
+                          "& .MuiAutocomplete-option": {
+                            px: 2,
+                            py: 0.5,
+                            borderRadius: "6px",
+                            mb: 0.5,
+                            fontFamily: "'Work Sans', sans-serif",
+                            fontWeight: 400,
+                            fontSize: "14px",
+                            color: "#2F4F4F",
+                            "&[aria-selected='true'], &:hover": {
+                              backgroundColor: "#F0F5F5",
+                              color: "#2F4F4F",
+                            },
+                          },
+                          maxHeight: "none",
+                          overflowY: "visible",
+                        },
+                      }}
+                    />
+                    <div
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        color: "#483D8B",
+                        fontSize: "14px",
+                        marginTop: "4px",
+                      }}
+                    >
+                      Groups the tests created under the selected month
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -873,230 +925,254 @@ const TestCreationForm = () => {
           <div className="space-y-4">
             {/* Row 1: First 2 cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {CLASS_GROUPS.slice(0, 2).map((group) => (
-                <div
-                  key={group.id}
-                  className={`border rounded-lg ${
-                    !editMode ? "cursor-pointer" : ""
-                  } transition-all ${
-                    activeClassGroupId === group.id
-                      ? "border-[#2F4F4F] shadow-sm bg-white"
-                      : "border-[#E0E5E5] bg-white hover:border-[#597272]"
-                  } ${editMode ? "opacity-75" : ""}`}
-                  style={{
-                    height: activeClassGroupId === group.id ? "111px" : "63px",
-                    boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
-                  }}
-                  onClick={() => !editMode && handleGroupCardSelect(group.id)}
-                  tabIndex={!editMode ? "0" : "-1"}
-                  onKeyDown={(e) => {
-                    if (!editMode && (e.key === "Enter" || e.key === " ")) {
-                      e.preventDefault();
-                      handleGroupCardSelect(group.id);
-                    }
-                  }}
-                >
-                  <div className="p-6">
-                    <div
-                      className="text-base mb-3"
-                      style={{
-                        fontFamily: "'Work Sans', sans-serif",
-                        fontWeight: 400,
-                        fontSize: "18px",
-                        color: "#2F4F4F",
-                      }}
-                    >
-                      {group.name}
-                    </div>
-                    {activeClassGroupId === group.id && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {group.classes.map((classItem) => {
-                          const className =
-                            typeof classItem === "number" ? `Class ${classItem}` : classItem;
-                          return (
-                            <div
-                              key={className}
-                              className={`px-3 py-1 rounded-full text-sm transition-all
-    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
-    ${selectedClasses[className] ? "font-semibold" : "font-normal"}
-    ${editMode ? "pointer-events-none" : ""}
-  `}
-                              onClick={(e) => {
-                                if (!editMode) {
-                                  e.stopPropagation();
-                                  toggleClassSelection(className);
-                                }
-                              }}
-                              tabIndex={!editMode ? "0" : "-1"}
-                              onKeyDown={(e) => {
-                                if (!editMode && (e.key === "Enter" || e.key === " ")) {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  toggleClassSelection(className);
-                                }
-                              }}
-                            >
-                              {className}
-                            </div>
-                          );
-                        })}
+              {CLASS_GROUPS.slice(0, 2).map((group) => {
+                const isDisabled =
+                  formData.testType === "remedial" && !isGroupEnabledForRemedial(group);
+                return (
+                  <div
+                    key={group.id}
+                    className={`border rounded-lg transition-all ${
+                      isDisabled
+                        ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                        : !editMode
+                        ? "cursor-pointer"
+                        : ""
+                    } ${
+                      activeClassGroupId === group.id && !isDisabled
+                        ? "border-[#2F4F4F] shadow-sm bg-white"
+                        : "border-[#E0E5E5] bg-white hover:border-[#597272]"
+                    } ${editMode ? "opacity-75" : ""}`}
+                    style={{
+                      height: activeClassGroupId === group.id ? "111px" : "63px",
+                      boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
+                    }}
+                    onClick={() => !editMode && !isDisabled && handleGroupCardSelect(group.id)}
+                    tabIndex={!editMode && !isDisabled ? "0" : "-1"}
+                    onKeyDown={(e) => {
+                      if (!editMode && !isDisabled && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        handleGroupCardSelect(group.id);
+                      }
+                    }}
+                  >
+                    <div className="p-6">
+                      <div
+                        className="text-base mb-3"
+                        style={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: "18px",
+                          color: isDisabled ? "#9CA3AF" : "#2F4F4F",
+                        }}
+                      >
+                        {group.name}
                       </div>
-                    )}
+                      {activeClassGroupId === group.id && !isDisabled && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {group.classes.map((classItem) => {
+                            const className =
+                              typeof classItem === "number" ? `Class ${classItem}` : classItem;
+                            return (
+                              <div
+                                key={className}
+                                className={`px-3 py-1 rounded-full text-sm transition-all
+      bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+      ${selectedClasses[className] ? "font-semibold" : "font-normal"}
+      ${editMode ? "pointer-events-none" : ""}
+    `}
+                                onClick={(e) => {
+                                  if (!editMode) {
+                                    e.stopPropagation();
+                                    toggleClassSelection(className);
+                                  }
+                                }}
+                                tabIndex={!editMode ? "0" : "-1"}
+                                onKeyDown={(e) => {
+                                  if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleClassSelection(className);
+                                  }
+                                }}
+                              >
+                                {className}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Row 2: Next 2 cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {CLASS_GROUPS.slice(2, 4).map((group) => (
-                <div
-                  key={group.id}
-                  className={`border rounded-lg ${
-                    !editMode ? "cursor-pointer" : ""
-                  } transition-all ${
-                    activeClassGroupId === group.id
-                      ? "border-[#2F4F4F] shadow-sm bg-white"
-                      : "border-[#E0E5E5] bg-white hover:border-[#597272]"
-                  } ${editMode ? "opacity-75" : ""}`}
-                  style={{
-                    height: activeClassGroupId === group.id ? "111px" : "63px",
-                    boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
-                  }}
-                  onClick={() => !editMode && handleGroupCardSelect(group.id)}
-                  tabIndex={!editMode ? "0" : "-1"}
-                  onKeyDown={(e) => {
-                    if (!editMode && (e.key === "Enter" || e.key === " ")) {
-                      e.preventDefault();
-                      handleGroupCardSelect(group.id);
-                    }
-                  }}
-                >
-                  <div className="p-6">
-                    <div
-                      className="text-base mb-3"
-                      style={{
-                        fontFamily: "'Work Sans', sans-serif",
-                        fontWeight: 400,
-                        fontSize: "18px",
-                        color: "#2F4F4F",
-                      }}
-                    >
-                      {group.name}
-                    </div>
-                    {activeClassGroupId === group.id && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {group.classes.map((classItem) => {
-                          const className =
-                            typeof classItem === "number" ? `Class ${classItem}` : classItem;
-                          return (
-                            <div
-                              key={className}
-                              className={`px-3 py-1 rounded-full text-sm transition-all
-    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
-    ${selectedClasses[className] ? "font-semibold" : "font-normal"}
-    ${editMode ? "pointer-events-none" : ""}
-  `}
-                              onClick={(e) => {
-                                if (!editMode) {
-                                  e.stopPropagation();
-                                  toggleClassSelection(className);
-                                }
-                              }}
-                              tabIndex={!editMode ? "0" : "-1"}
-                              onKeyDown={(e) => {
-                                if (!editMode && (e.key === "Enter" || e.key === " ")) {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  toggleClassSelection(className);
-                                }
-                              }}
-                            >
-                              {className}
-                            </div>
-                          );
-                        })}
+              {CLASS_GROUPS.slice(2, 4).map((group) => {
+                const isDisabled =
+                  formData.testType === "remedial" && !isGroupEnabledForRemedial(group);
+                return (
+                  <div
+                    key={group.id}
+                    className={`border rounded-lg transition-all ${
+                      isDisabled
+                        ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                        : !editMode
+                        ? "cursor-pointer"
+                        : ""
+                    } ${
+                      activeClassGroupId === group.id && !isDisabled
+                        ? "border-[#2F4F4F] shadow-sm bg-white"
+                        : "border-[#E0E5E5] bg-white hover:border-[#597272]"
+                    } ${editMode ? "opacity-75" : ""}`}
+                    style={{
+                      height: activeClassGroupId === group.id ? "111px" : "63px",
+                      boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
+                    }}
+                    onClick={() => !editMode && !isDisabled && handleGroupCardSelect(group.id)}
+                    tabIndex={!editMode && !isDisabled ? "0" : "-1"}
+                    onKeyDown={(e) => {
+                      if (!editMode && !isDisabled && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        handleGroupCardSelect(group.id);
+                      }
+                    }}
+                  >
+                    <div className="p-6">
+                      <div
+                        className="text-base mb-3"
+                        style={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: "18px",
+                          color: isDisabled ? "#9CA3AF" : "#2F4F4F",
+                        }}
+                      >
+                        {group.name}
                       </div>
-                    )}
+                      {activeClassGroupId === group.id && !isDisabled && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {group.classes.map((classItem) => {
+                            const className =
+                              typeof classItem === "number" ? `Class ${classItem}` : classItem;
+                            return (
+                              <div
+                                key={className}
+                                className={`px-3 py-1 rounded-full text-sm transition-all
+      bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+      ${selectedClasses[className] ? "font-semibold" : "font-normal"}
+      ${editMode ? "pointer-events-none" : ""}
+    `}
+                                onClick={(e) => {
+                                  if (!editMode) {
+                                    e.stopPropagation();
+                                    toggleClassSelection(className);
+                                  }
+                                }}
+                                tabIndex={!editMode ? "0" : "-1"}
+                                onKeyDown={(e) => {
+                                  if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleClassSelection(className);
+                                  }
+                                }}
+                              >
+                                {className}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Row 3: Last card (centered) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {CLASS_GROUPS.slice(4, 5).map((group) => (
-                <div
-                  key={group.id}
-                  className={`border rounded-lg ${
-                    !editMode ? "cursor-pointer" : ""
-                  } transition-all ${
-                    activeClassGroupId === group.id
-                      ? "border-[#2F4F4F] shadow-sm bg-white"
-                      : "border-[#E0E5E5] bg-white hover:border-[#597272]"
-                  } ${editMode ? "opacity-75" : ""}`}
-                  style={{
-                    height: activeClassGroupId === group.id ? "111px" : "63px",
-                    boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
-                  }}
-                  onClick={() => !editMode && handleGroupCardSelect(group.id)}
-                  tabIndex={!editMode ? "0" : "-1"}
-                  onKeyDown={(e) => {
-                    if (!editMode && (e.key === "Enter" || e.key === " ")) {
-                      e.preventDefault();
-                      handleGroupCardSelect(group.id);
-                    }
-                  }}
-                >
-                  <div className="p-6">
-                    <div
-                      className="text-base mb-3"
-                      style={{
-                        fontFamily: "'Work Sans', sans-serif",
-                        fontWeight: 400,
-                        fontSize: "18px",
-                        color: "#2F4F4F",
-                      }}
-                    >
-                      {group.name}
-                    </div>
-                    {activeClassGroupId === group.id && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {group.classes.map((classItem) => {
-                          const className =
-                            typeof classItem === "number" ? `Class ${classItem}` : classItem;
-                          return (
-                            <div
-                              key={className}
-                              className={`px-3 py-1 rounded-full text-sm transition-all
-    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
-    ${selectedClasses[className] ? "font-semibold" : "font-normal"}
-    ${editMode ? "pointer-events-none" : ""}
-  `}
-                              onClick={(e) => {
-                                if (!editMode) {
-                                  e.stopPropagation();
-                                  toggleClassSelection(className);
-                                }
-                              }}
-                              tabIndex={!editMode ? "0" : "-1"}
-                              onKeyDown={(e) => {
-                                if (!editMode && (e.key === "Enter" || e.key === " ")) {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  toggleClassSelection(className);
-                                }
-                              }}
-                            >
-                              {className}
-                            </div>
-                          );
-                        })}
+              {CLASS_GROUPS.slice(4, 5).map((group) => {
+                const isDisabled =
+                  formData.testType === "remedial" && !isGroupEnabledForRemedial(group);
+                return (
+                  <div
+                    key={group.id}
+                    className={`border rounded-lg transition-all ${
+                      isDisabled
+                        ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                        : !editMode
+                        ? "cursor-pointer"
+                        : ""
+                    } ${
+                      activeClassGroupId === group.id && !isDisabled
+                        ? "border-[#2F4F4F] shadow-sm bg-white"
+                        : "border-[#E0E5E5] bg-white hover:border-[#597272]"
+                    } ${editMode ? "opacity-75" : ""}`}
+                    style={{
+                      height: activeClassGroupId === group.id ? "111px" : "63px",
+                      boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
+                    }}
+                    onClick={() => !editMode && !isDisabled && handleGroupCardSelect(group.id)}
+                    tabIndex={!editMode && !isDisabled ? "0" : "-1"}
+                    onKeyDown={(e) => {
+                      if (!editMode && !isDisabled && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        handleGroupCardSelect(group.id);
+                      }
+                    }}
+                  >
+                    <div className="p-6">
+                      <div
+                        className="text-base mb-3"
+                        style={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: "18px",
+                          color: isDisabled ? "#9CA3AF" : "#2F4F4F",
+                        }}
+                      >
+                        {group.name}
                       </div>
-                    )}
+                      {activeClassGroupId === group.id && !isDisabled && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {group.classes.map((classItem) => {
+                            const className =
+                              typeof classItem === "number" ? `Class ${classItem}` : classItem;
+                            return (
+                              <div
+                                key={className}
+                                className={`px-3 py-1 rounded-full text-sm transition-all
+      bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+      ${selectedClasses[className] ? "font-semibold" : "font-normal"}
+      ${editMode ? "pointer-events-none" : ""}
+    `}
+                                onClick={(e) => {
+                                  if (!editMode) {
+                                    e.stopPropagation();
+                                    toggleClassSelection(className);
+                                  }
+                                }}
+                                tabIndex={!editMode ? "0" : "-1"}
+                                onKeyDown={(e) => {
+                                  if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleClassSelection(className);
+                                  }
+                                }}
+                              >
+                                {className}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {/* Add empty div to ensure proper spacing in a 2-column grid */}
               <div className="hidden md:block"></div>
             </div>
@@ -1178,8 +1254,14 @@ const TestCreationForm = () => {
                             ? parseInt(className.replace("Class ", ""))
                             : parseInt(className);
 
-                          // Get all subjects for this class from SUBJECTS_BY_GRADE
-                          const subjectsForClass = SUBJECTS_BY_GRADE[classNum] || [];
+                          // Get subjects based on test type
+                          let subjectsForClass;
+                          if (formData.testType === "remedial") {
+                            subjectsForClass = getRemedialSubjects(classNum);
+                          } else {
+                            // Get all subjects for this class from SUBJECTS_BY_GRADE
+                            subjectsForClass = SUBJECTS_BY_GRADE[classNum] || [];
+                          }
 
                           // Get already selected subjects in this class (EXCLUDING the current row)
                           const selectedSubjects = subjectRows[className]
@@ -1253,20 +1335,6 @@ const TestCreationForm = () => {
                 ))}
               </div>
 
-              {/* Add Subject Button - HIDE IN EDIT MODE */}
-              {/* {!editMode && (
-                <div className="mt-6">
-                  <button
-                    type="button"
-                    onClick={() => addSubjectRow(className)}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-[#2F4F4F] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2F4F4F]"
-                  >
-                    Add Subject
-                  </button>
-                </div>
-              )} */}
-              {/* Add Subject Button - HIDE IN EDIT MODE */}
-              {/* Add Subject Button - HIDE IN EDIT MODE */}
               {/* Add Subject Button - ONLY SHOW IF SUBJECTS ARE AVAILABLE */}
               {!editMode &&
                 (() => {
@@ -1275,8 +1343,14 @@ const TestCreationForm = () => {
                     ? parseInt(className.replace("Class ", ""))
                     : parseInt(className);
 
-                  // Get all subjects for this class
-                  const subjectsForClass = SUBJECTS_BY_GRADE[classNum] || [];
+                  // Get subjects based on test type
+                  let subjectsForClass;
+                  if (formData.testType === "remedial") {
+                    subjectsForClass = getRemedialSubjects(classNum);
+                  } else {
+                    // Get all subjects for this class from SUBJECTS_BY_GRADE
+                    subjectsForClass = SUBJECTS_BY_GRADE[classNum] || [];
+                  }
 
                   // Get already selected subjects in this class
                   const selectedSubjects = subjectRows[className]
