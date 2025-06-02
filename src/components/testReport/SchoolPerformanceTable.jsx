@@ -688,7 +688,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   variant="outlined"
                   size="small"
                   sx={{
-                    borderRadius: "8px",
+                    borderRadius: "100px",
                     bgcolor: "#E9F3E9",
                     fontWeight: 600,
                     color: "#2e7d32",
@@ -701,7 +701,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   variant="outlined"
                   size="small"
                   sx={{
-                    borderRadius: "8px",
+                    borderRadius: "100px",
                     bgcolor: "#FFFBE6",
                     border: "1.5px solid #FFD700",
                     fontWeight: 600,
