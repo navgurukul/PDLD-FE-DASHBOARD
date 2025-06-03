@@ -54,31 +54,33 @@ const SchoolReportPage = () => {
   // Calculate grade distribution for remedial tests - DYNAMIC
   const calculateGradeDistribution = (resultData) => {
     // First, get all unique grades from the API data (excluding null/absent students)
-    const uniqueGrades = [...new Set(
-      resultData
-        .filter(student => !student.isAbsent && student.grade)
-        .map(student => student.grade)
-    )].sort();
+    const uniqueGrades = [
+      ...new Set(
+        resultData
+          .filter((student) => !student.isAbsent && student.grade)
+          .map((student) => student.grade)
+      ),
+    ].sort();
 
     // Initialize count object dynamically
     const gradeCount = {};
-    uniqueGrades.forEach(grade => {
+    uniqueGrades.forEach((grade) => {
       gradeCount[grade] = 0;
     });
 
     // Count students for each grade
     resultData.forEach((student) => {
       if (student.isAbsent || !student.grade) return;
-      
+
       if (gradeCount.hasOwnProperty(student.grade)) {
         gradeCount[student.grade]++;
       }
     });
 
     // Convert to the format expected by BarChart
-    return uniqueGrades.map(grade => ({
+    return uniqueGrades.map((grade) => ({
       label: grade.charAt(0).toUpperCase() + grade.slice(1).toLowerCase(), // Capitalize first letter
-      value: gradeCount[grade]
+      value: gradeCount[grade],
     }));
   };
 
@@ -312,9 +314,11 @@ const SchoolReportPage = () => {
           </div>
           <div
             className="mt-2 text-center font-semibold text-[#2F4F4F]"
-            style={{ fontFamily: "'Work Sans', sans-serif", fontSize: 14 }}
+            style={{ fontFamily: "Work Sans", fontSize: 14, fontWeight: 400 }}
           >
-            {passedStudents} out of {totalStudents} Students Passed
+            {isSyllabusTest()
+              ? `${passedStudents} out of ${totalStudents} Students Passed`
+              : `${passedStudents} out of ${totalStudents} Students Achieved Division Grade`}
           </div>
         </div>
 
@@ -325,9 +329,9 @@ const SchoolReportPage = () => {
           </h3>
           <div className="h-64 flex items-center justify-center">
             {/* Using the BarChart with the same theme color */}
-            <BarChart 
-              data={isRemedialTest() ? schoolData.gradeDistribution : schoolData.scoreDistribution} 
-              primaryColor={THEME_COLOR} 
+            <BarChart
+              data={isRemedialTest() ? schoolData.gradeDistribution : schoolData.scoreDistribution}
+              primaryColor={THEME_COLOR}
             />
           </div>
         </div>

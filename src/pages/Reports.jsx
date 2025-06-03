@@ -247,7 +247,7 @@ const Reports = () => {
             }
             .custom-table th, .custom-table td {
               padding: 18px 16px; /* Increased row height */
-              text-align: left;
+              text-align: center;
               border-bottom: none;
               font-size: 13px; /* Reduced font size */
             }
@@ -257,7 +257,7 @@ const Reports = () => {
               color: #2F4F4F;
               font-weight: 600 !important;
               font-size: 14px;
-              border-bottom: none;
+              border-bottom: none!important;
             }
             .custom-table th.sub-header {
               font-family: 'Work Sans', sans-serif !important;
@@ -273,14 +273,34 @@ const Reports = () => {
             .custom-table td.low-score {
               color: #FF0000;
             }
-              .custom-table th.school-header {
+            .custom-table th.school-header {
                 font-family: 'Work Sans', sans-serif !important;
                 font-weight: 600 !important;
                 font-size: 14px !important;
                 color: #2F4F4F;
                 text-align: center;
                 border-bottom: 1px solid #e0e0e0;
-      }
+            }
+            .custom-table thead tr:nth-child(2) th:nth-child(2n+1):not(:last-child) {
+              position: relative;
+            }
+            .custom-table thead tr:nth-child(2) th:nth-child(2n+1):not(:last-child)::after {
+              content: "";
+              position: absolute;
+              right: -12px;
+              top: 50%;
+              transform: translateY(-50%);
+              height: 24px;
+              width: 1px;
+              background: #6D6D6D;
+              display: block;
+              border-radius: 1px;
+              font-weight: 400 !important;
+            }
+            .custom-table th.school-header,
+            .custom-table td:first-child {
+              text-align: left;
+            }
           `}
         </style>
         <table className="custom-table">
@@ -290,7 +310,7 @@ const Reports = () => {
                 rowSpan="2"
                 className="school-header" // <-- Add this
               >
-                School Name
+                 School Name
               </th>
               <th colSpan="2" className="group-header">
                 Primary (1-5)
@@ -1116,7 +1136,7 @@ const Reports = () => {
                   },
                 }}
               >
-                <MenuItem value="">All Clusters</MenuItem>
+                <MenuItem value=""> All Clusters</MenuItem>
                 {availableClusters.map((cluster) => (
                   <MenuItem key={cluster} value={cluster}>
                     {cluster}

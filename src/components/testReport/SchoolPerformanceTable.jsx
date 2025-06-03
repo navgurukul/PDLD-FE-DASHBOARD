@@ -415,6 +415,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     </span>
   );
 
+  const isRemedialTest = testNameVal?.toLowerCase().includes("remedial"); 
+
   // MUI DataTable columns configuration
   const columns = [
     {
@@ -480,28 +482,32 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         sortThirdClickReset: true,
       },
     },
-    {
-      name: "averageScore",
-      label: "Average Score",
-      options: {
-        filter: false,
-        sort: true,
-        sortThirdClickReset: true,
-      },
-    },
-    {
-      name: "passRate",
-      label: "Pass Percentage",
-      options: {
-        filter: false,
-        sort: true,
-        sortThirdClickReset: true,
-        customBodyRenderLite: (dataIndex) => {
-          const passRate = tableData[dataIndex].passRate;
-          return passRate !== "-" ? `${passRate}` : "-";
+    ...(!isRemedialTest
+    ? [
+        {
+          name: "averageScore",
+          label: "Average Score",
+          options: {
+            filter: false,
+            sort: true,
+            sortThirdClickReset: true,
+          },
         },
-      },
-    },
+        {
+          name: "passRate",
+          label: "Pass Percentage",
+          options: {
+            filter: false,
+            sort: true,
+            sortThirdClickReset: true,
+            customBodyRenderLite: (dataIndex) => {
+              const passRate = tableData[dataIndex].passRate;
+              return passRate !== "-" ? `${passRate}` : "-";
+            },
+          },
+        },
+      ]
+    : []),
     {
       name: "submitted",
       label: "Actions",
@@ -523,7 +529,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         customBodyRenderLite: (dataIndex) => {
           const rowData = tableData[dataIndex];
           const schoolId = rowData.id;
-          const isPending = rowData.status === "Pending";
+           const isPending = rowData.status === "Pending";
           return (
             <div
               style={{
@@ -688,7 +694,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   variant="outlined"
                   size="small"
                   sx={{
-                    borderRadius: "8px",
+                    borderRadius: "100px",
                     bgcolor: "#E9F3E9",
                     fontWeight: 600,
                     color: "#2e7d32",
@@ -701,7 +707,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   variant="outlined"
                   size="small"
                   sx={{
-                    borderRadius: "8px",
+                    borderRadius: "100px",
                     bgcolor: "#FFFBE6",
                     border: "1.5px solid #FFD700",
                     fontWeight: 600,

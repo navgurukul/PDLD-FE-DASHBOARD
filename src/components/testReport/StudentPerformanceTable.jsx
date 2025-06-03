@@ -235,7 +235,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
   // Download logic
   const handleDownloadCSV = (data) => {
     const csvRows = [
-      ["Student Name", "Score", "Result", "VS Class Avg"],
+      ["Student Name", "Score", "Result", "Change from Class Avg.(80)"],
       ...data.map((student) => [student.name, student.score, student.result, student.vsClassAvg]),
     ];
     const csvContent = csvRows.map((row) => row.join(",")).join("\n");
@@ -307,7 +307,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
             <th style="text-align:left;">Student Name</th>
             <th>Score</th>
             <th>Result</th>
-            <th>VS Class Avg</th>
+            <th>Change from Class Avg.(80)</th>
           </tr>
         </thead>
         <tbody>
@@ -409,8 +409,8 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
       },
     },
     {
-      name: "vsClassAvg",
-      label: "VS Class Avg",
+      name: "vsClassAvg", 
+      label: "Change from Class Avg.(80)",
       options: {
         filter: false,
         sort: true,

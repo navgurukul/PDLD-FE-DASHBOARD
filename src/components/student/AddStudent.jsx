@@ -753,17 +753,43 @@ export default function AddStudent({ isEditMode = false }) {
               {/* Gender */}
               <Grid item xs={12} md={6}>
                 <FormControl component="fieldset" required>
-                  <FormLabel component="legend">Gender</FormLabel>
+                  <FormLabel component="legend" sx={{ color: "#2F4F4F !important" }}>
+                    Gender
+                  </FormLabel>
                   <RadioGroup
                     row
                     name="gender"
                     value={formData.gender}
                     onChange={handleInputChange}
                   >
-                    <FormControlLabel value="M" control={<Radio color="primary" />} label="Male" />
+                    <FormControlLabel
+                      value="M"
+                      control={
+                        <Radio
+                          sx={{
+                            color: "#2F4F4F",
+                            "&.Mui-checked": {
+                              color: "#2F4F4F",
+                              backgroundColor: "#fff", // optional: white bg
+                            },
+                          }}
+                        />
+                      }
+                      label="Male"
+                    />
                     <FormControlLabel
                       value="F"
-                      control={<Radio color="primary" />}
+                      control={
+                        <Radio
+                          sx={{
+                            color: "#2F4F4F",
+                            "&.Mui-checked": {
+                              color: "#2F4F4F",
+                              backgroundColor: "#fff", // optional
+                            },
+                          }}
+                        />
+                      }
                       label="Female"
                     />
                   </RadioGroup>
@@ -872,8 +898,6 @@ export default function AddStudent({ isEditMode = false }) {
                   </FormControl>
                 </Grid>
               )}
-
-             
 
               {/* Optional padding Grid item if no Stream is shown */}
               {!isHigherClass && <Grid item xs={12} md={6}></Grid>}
