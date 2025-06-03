@@ -86,11 +86,11 @@ const theme = createTheme({
   },
 });
 
-const StudentAcademics = ({ 
-  studentId, 
-  schoolId, 
-  academicData, 
-  onTabChange // Add this prop to communicate with parent
+const StudentAcademics = ({
+  studentId,
+  schoolId,
+  academicData,
+  onTabChange, // Add this prop to communicate with parent
 }) => {
   // State for filter selections
   const [syllabusMonth, setSyllabusMonth] = useState("All");
@@ -313,7 +313,7 @@ const StudentAcademics = ({
       const tableType = syllabusView === "aggregate" ? "aggregate" : "subjectwise";
       onTabChange(tableType, {
         count: getCurrentPageCount(),
-        data: syllabusView === "aggregate" ? filteredSyllabusData : syllabusData
+        data: syllabusView === "aggregate" ? filteredSyllabusData : syllabusData,
       });
     }
   }, [syllabusView, filteredSyllabusData, syllabusData, onTabChange]);
@@ -543,15 +543,16 @@ const StudentAcademics = ({
   const handleToggleChange = (event, newView) => {
     if (newView !== null) {
       setSyllabusView(newView);
-      
+
       // Immediately notify parent of the change
       if (onTabChange) {
         const tableType = newView === "aggregate" ? "aggregate" : "subjectwise";
         onTabChange(tableType, {
-          count: newView === "aggregate" ? 
-            Math.min(10, filteredSyllabusData.length) : 
-            Math.min(10, syllabusData.length),
-          data: newView === "aggregate" ? filteredSyllabusData : syllabusData
+          count:
+            newView === "aggregate"
+              ? Math.min(10, filteredSyllabusData.length)
+              : Math.min(10, syllabusData.length),
+          data: newView === "aggregate" ? filteredSyllabusData : syllabusData,
         });
       }
     }
@@ -566,6 +567,9 @@ const StudentAcademics = ({
       text-align: left !important;
       justify-content: flex-start !important;
     }
+      .MuiTable-root .MuiTableBody-root .MuiTableRow-root .MuiTableCell-root {
+    border-bottom: none !important;
+  }
   `;
 
   return (
