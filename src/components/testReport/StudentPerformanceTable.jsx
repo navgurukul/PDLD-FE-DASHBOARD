@@ -104,7 +104,15 @@ const theme = createTheme({
   },
 });
 
-const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, testType }) => {
+const StudentPerformanceTable = ({ 
+  students, 
+  classAvg, 
+  onViewProfile, 
+  onExport, 
+  testType,
+  maxScore,
+  passThreshold 
+}) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -116,26 +124,65 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, 
   });
   const navigate = useNavigate();
 
+  // Check if this is a remedial test
+  const isRemedialTest = testType && testType.toLowerCase().includes("remedial");
+
+  // Define grade hierarchy for remedial tests (from lowest to highest proficiency)
+  const gradeHierarchy = {
+    'FUNDAMENTALS': 1,
+    'BASIC_OPERATIONS': 2, 
+    'FRACTIONS_DECIMALS': 3,
+    'WORD_PROBLEMS': 4,
+    'ADVANCED_CONCEPTS': 5
+  };
+
+  // Helper function to determine if a grade is considered "pass" for remedial tests
+  const isGradePass = (grade) => {
+    if (!grade) return false;
+    const gradeLevel = gradeHierarchy[grade.toUpperCase()];
+    // Consider grades 3 and above as "pass" (FRACTIONS_DECIMALS and higher)
+    return gradeLevel >= 3;
+  };
+
+  // Helper function to format grade display names
+  const formatGradeName = (grade) => {
+    if (!grade) return "";
+    return grade
+      .toLowerCase()
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   // Filter students
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
       const studentName = student.studentName || student.name;
       const nameMatch = studentName.toLowerCase().includes(searchQuery.toLowerCase());
       const isAbsent = student.isAbsent === true;
-      const score = isAbsent ? 0 : student.score;
 
       if (!filterStatus) {
         return nameMatch;
       } else if (filterStatus === "pass") {
-        return nameMatch && !isAbsent && score >= 35;
+        if (isRemedialTest) {
+          return nameMatch && !isAbsent && isGradePass(student.grade);
+        } else {
+          const score = isAbsent ? 0 : student.score;
+          return nameMatch && !isAbsent && score >= (passThreshold || 35);
+        }
       } else if (filterStatus === "fail") {
-        return nameMatch && !isAbsent && score < 35;
+        if (isRemedialTest) {
+          return nameMatch && !isAbsent && !isGradePass(student.grade);
+        } else {
+          const score = isAbsent ? 0 : student.score;
+          return nameMatch && !isAbsent && score < (passThreshold || 35);
+        }
       } else if (filterStatus === "absent") {
         return nameMatch && isAbsent;
       }
       return nameMatch;
     });
-  }, [students, searchQuery, filterStatus]);
+  }, [students, searchQuery, filterStatus, isRemedialTest, passThreshold]);
 
   // Sorting
   const sortedStudents = useMemo(() => {
@@ -143,6 +190,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, 
     return [...filteredStudents].sort((a, b) => {
       const aIsAbsent = a.isAbsent === true;
       const bIsAbsent = b.isAbsent === true;
+      
       if (sortConfig.key === "name") {
         const aName = a.studentName || a.name;
         const bName = b.studentName || b.name;
@@ -150,16 +198,26 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, 
           ? aName.localeCompare(bName)
           : bName.localeCompare(aName);
       }
+      
       if (sortConfig.key === "score") {
-        const aScore = aIsAbsent ? -1 : a.score;
-        const bScore = bIsAbsent ? -1 : b.score;
-        return sortConfig.direction === "asc" ? aScore - bScore : bScore - aScore;
+        if (isRemedialTest) {
+          // Sort by grade level for remedial tests
+          const aGradeLevel = aIsAbsent ? -1 : (gradeHierarchy[a.grade?.toUpperCase()] || 0);
+          const bGradeLevel = bIsAbsent ? -1 : (gradeHierarchy[b.grade?.toUpperCase()] || 0);
+          return sortConfig.direction === "asc" ? aGradeLevel - bGradeLevel : bGradeLevel - aGradeLevel;
+        } else {
+          const aScore = aIsAbsent ? -1 : a.score;
+          const bScore = bIsAbsent ? -1 : b.score;
+          return sortConfig.direction === "asc" ? aScore - bScore : bScore - aScore;
+        }
       }
-      if (sortConfig.key === "vsClassAvg") {
+      
+      if (sortConfig.key === "vsClassAvg" && !isRemedialTest) {
         const aVsAvg = aIsAbsent ? -999 : a.score - classAvg;
         const bVsAvg = bIsAbsent ? -999 : b.score - classAvg;
         return sortConfig.direction === "asc" ? aVsAvg - bVsAvg : bVsAvg - aVsAvg;
       }
+      
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
       if (typeof aValue === "string" && typeof bValue === "string") {
@@ -169,38 +227,54 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, 
       }
       return sortConfig.direction === "asc" ? aValue - bValue : bValue - aValue;
     });
-  }, [filteredStudents, sortConfig, classAvg]);
+  }, [filteredStudents, sortConfig, classAvg, isRemedialTest]);
 
   // Table data
   const tableData = sortedStudents.map((student) => {
     const isAbsent = student.isAbsent === true;
-    const scoreDisplay = isAbsent ? "Absent" : `${student.score}/100`;
-    let resultStatus;
-    if (isAbsent) {
-      resultStatus = "Absent";
-    } else {
-      resultStatus = student.score >= 35 ? "Pass" : "Fail";
-    }
-    let vsClassAvgDisplay;
-    if (isAbsent) {
-      vsClassAvgDisplay = "N/A";
-    } else {
-      const diff = student.score - classAvg;
-      if (isNaN(diff) || classAvg === 0) {
-        vsClassAvgDisplay = "0.0";
+    
+    let scoreDisplay, resultStatus, vsClassAvgDisplay;
+    
+    if (isRemedialTest) {
+      // For remedial tests, show grade instead of numerical score
+      scoreDisplay = isAbsent ? "Absent" : formatGradeName(student.grade);
+      if (isAbsent) {
+        resultStatus = "Absent";
       } else {
-        vsClassAvgDisplay = `${student.score > classAvg ? "+" : ""}${diff.toFixed(1)}`;
+        resultStatus = isGradePass(student.grade) ? "Pass" : "Fail";
+      }
+      vsClassAvgDisplay = "N/A"; // Not applicable for remedial tests
+    } else {
+      // For regular tests, show numerical scores
+      scoreDisplay = isAbsent ? "Absent" : `${student.score}/${maxScore || 100}`;
+      if (isAbsent) {
+        resultStatus = "Absent";
+      } else {
+        resultStatus = student.score >= (passThreshold || 35) ? "Pass" : "Fail";
+      }
+      
+      if (isAbsent) {
+        vsClassAvgDisplay = "N/A";
+      } else {
+        const diff = student.score - classAvg;
+        if (isNaN(diff) || classAvg === 0) {
+          vsClassAvgDisplay = "0.0";
+        } else {
+          vsClassAvgDisplay = `${student.score > classAvg ? "+" : ""}${diff.toFixed(1)}`;
+        }
       }
     }
+
     return {
       id: student.studentId || student.id,
       name: student.studentName || student.name,
-      marks: isAbsent ? null : student.score,
+      marks: isAbsent ? null : (isRemedialTest ? student.grade : student.score),
       result: resultStatus,
       vsClassAvg: vsClassAvgDisplay,
-      isPass: !isAbsent && student.score >= 35,
+      isPass: isAbsent ? false : (isRemedialTest ? isGradePass(student.grade) : student.score >= (passThreshold || 35)),
       isAbsent: isAbsent,
-      originalScore: isAbsent ? null : student.score,
+      originalScore: isAbsent ? null : (isRemedialTest ? student.grade : student.score),
+      grade: student.grade,
     };
   });
 
@@ -234,9 +308,17 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, 
 
   // Download logic
   const handleDownloadCSV = (data) => {
+    const headers = isRemedialTest 
+      ? ["Student Name", "Grade Level", "Status"] 
+      : ["Student Name", "Score", "Result", "Change from Class Avg.(80)"];
+    
     const csvRows = [
-      ["Student Name", "Score", "Result", "Change from Class Avg.(80)"],
-      ...data.map((student) => [student.name, student.score, student.result, student.vsClassAvg]),
+      headers,
+      ...data.map((student) => 
+        isRemedialTest 
+          ? [student.name, student.grade || student.originalScore, student.result]
+          : [student.name, student.score, student.result, student.vsClassAvg]
+      ),
     ];
     const csvContent = csvRows.map((row) => row.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -258,23 +340,50 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, 
 
     // Generate HTML table rows
     const tableRows = data
-      .map(
-        (student) => `
-    <tr>
-      <td style="padding:6px;border:1px solid #ddd;text-align:left;">${student.name}</td>
-      <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.score}</td>
-      <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.result}</td>
-      <td style="padding:6px;border:1px solid #ddd;text-align:center;color:${
-        student.vsClassAvg === "0.0"
-          ? "#c62828"
-          : student.vsClassAvg.startsWith("+")
-          ? "#2e7d32"
-          : "#c62828"
-      };">${student.vsClassAvg}</td>
-    </tr>
-  `
-      )
+      .map((student) => {
+        if (isRemedialTest) {
+          return `
+            <tr>
+              <td style="padding:6px;border:1px solid #ddd;text-align:left;">${student.name}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.grade || student.originalScore}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.result}</td>
+            </tr>
+          `;
+        } else {
+          return `
+            <tr>
+              <td style="padding:6px;border:1px solid #ddd;text-align:left;">${student.name}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.score}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.result}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;color:${
+                student.vsClassAvg === "0.0"
+                  ? "#c62828"
+                  : student.vsClassAvg.startsWith("+")
+                  ? "#2e7d32"
+                  : "#c62828"
+              };">${student.vsClassAvg}</td>
+            </tr>
+          `;
+        }
+      })
       .join("");
+
+    const headerRow = isRemedialTest 
+      ? `
+        <tr>
+          <th style="text-align:left;">Student Name</th>
+          <th>Grade Level</th>
+          <th>Status</th>
+        </tr>
+      `
+      : `
+        <tr>
+          <th style="text-align:left;">Student Name</th>
+          <th>Score</th>
+          <th>Result</th>
+          <th>Change from Class Avg.(80)</th>
+        </tr>
+      `;
 
     const htmlContent = `
     <!DOCTYPE html>
@@ -303,12 +412,7 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, 
       </div>
       <table>
         <thead>
-          <tr>
-            <th style="text-align:left;">Student Name</th>
-            <th>Score</th>
-            <th>Result</th>
-            <th>Change from Class Avg.(80)</th>
-          </tr>
+          ${headerRow}
         </thead>
         <tbody>
           ${tableRows}
@@ -333,32 +437,36 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, 
       rows === "all"
         ? sortedStudents.map((student) => {
             const isAbsent = student.isAbsent === true;
-            const marks = isAbsent ? null : student.score;
             let resultStatus;
+            
             if (isAbsent) {
               resultStatus = "Absent";
+            } else if (isRemedialTest) {
+              resultStatus = isGradePass(student.grade) ? "Pass" : "Fail";
             } else {
-              resultStatus = student.score >= 35 ? "Pass" : "Fail";
+              resultStatus = student.score >= (passThreshold || 35) ? "Pass" : "Fail";
             }
-            let vsClassAvgDisplay;
-            if (isAbsent) {
-              vsClassAvgDisplay = "N/A";
-            } else {
+
+            let vsClassAvgDisplay = "N/A";
+            if (!isRemedialTest && !isAbsent) {
               const diff = student.score - classAvg;
-              if (isNaN(diff) || classAvg === 0) {
-                vsClassAvgDisplay = "0.0";
-              } else {
+              if (!isNaN(diff) && classAvg !== 0) {
                 vsClassAvgDisplay = `${student.score > classAvg ? "+" : ""}${diff.toFixed(1)}`;
+              } else {
+                vsClassAvgDisplay = "0.0";
               }
             }
+
             return {
               name: student.studentName || student.name,
-              score: scoreDisplay,
+              score: isRemedialTest ? (isAbsent ? "Absent" : formatGradeName(student.grade)) : (isAbsent ? "Absent" : `${student.score}/${maxScore || 100}`),
               result: resultStatus,
               vsClassAvg: vsClassAvgDisplay,
+              grade: student.grade,
             };
           })
         : paginatedTableData;
+    
     if (format === "csv") {
       handleDownloadCSV(dataToDownload);
     } else if (format === "pdf") {
@@ -383,9 +491,44 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, 
         sortThirdClickReset: true,
       },
     },
-    ...(testType && testType.toLowerCase() === "remedial"
-      ? []
+    ...(isRemedialTest
+      ? [
+          // For remedial tests, show Grade Level instead of Marks
+          {
+            name: "marks",
+            label: "Grade Level",
+            options: {
+              filter: false,
+              sort: true,
+              sortThirdClickReset: true,
+              setCellHeaderProps: () => ({
+                style: { textAlign: "center" },
+              }),
+              customBodyRenderLite: (dataIndex) => {
+                const student = paginatedTableData[dataIndex];
+                return (
+                  <div style={{ textAlign: "center" }}>
+                    {student.isAbsent ? (
+                      <span style={{ color: "#949494" }}> - </span>
+                    ) : (
+                      <span style={{ 
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        backgroundColor: "#f5f5f5",
+                        fontSize: "12px",
+                        fontWeight: 500
+                      }}>
+                        {formatGradeName(student.originalScore)}
+                      </span>
+                    )}
+                  </div>
+                );
+              },
+            },
+          }
+        ]
       : [
+          // For regular tests, show Marks and Change from Class Avg
           {
             name: "marks",
             label: "Marks",
@@ -619,7 +762,10 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, 
             color: "#2F4F4F",
           }}
         >
-          Maximum Marks: 100 (Pass Percentage &ge; 33%)
+          {isRemedialTest 
+            ? "Grade Levels: Fundamentals → Basic Operations → Fractions/Decimals → Word Problems → Advanced Concepts"
+            : `Maximum Marks: ${maxScore || 100} (Pass Percentage ≥ ${Math.round(((passThreshold || 35) / (maxScore || 100)) * 100)}%)`
+          }
         </div>
         {/* Data Table */}
         <div
@@ -659,13 +805,16 @@ StudentPerformanceTable.propTypes = {
       name: PropTypes.string,
       studentName: PropTypes.string,
       score: PropTypes.number,
+      grade: PropTypes.string,
       isAbsent: PropTypes.bool,
     })
   ).isRequired,
   classAvg: PropTypes.number.isRequired,
+  maxScore: PropTypes.number,
+  passThreshold: PropTypes.number,
   onViewProfile: PropTypes.func,
   onExport: PropTypes.func,
-  schoolId: PropTypes.string,
+  testType: PropTypes.string,
 };
 
 StudentPerformanceTable.defaultProps = {

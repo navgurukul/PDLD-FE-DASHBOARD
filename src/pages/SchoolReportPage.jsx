@@ -22,6 +22,15 @@ const SECONDARY_COLOR = "#FFEBEB";
 // Define pass threshold percentage (35% of max score)
 const PASS_PERCENTAGE = 35;
 
+// Define colors for remedial test grade levels
+const REMEDIAL_GRADE_COLORS = [
+  "#F45050", // Beginner - Red
+  "#FF8A80", // Single Digit - Light Red
+  "#FFCDD2", // Double Digit - Very Light Red
+  "#A5D6A7", // Multiplication - Light Green
+  "#228B22", // Division - Green
+];
+
 const SchoolReportPage = () => {
   const location = useLocation();
   const { schoolName, testName } = location.state || {};
@@ -77,7 +86,7 @@ const SchoolReportPage = () => {
       }
     });
 
-    // Convert to the format expected by BarChart
+    // Convert to the format expected by BarChart and PieChart
     return uniqueGrades.map((grade) => ({
       label: grade.charAt(0).toUpperCase() + grade.slice(1).toLowerCase(), // Capitalize first letter
       value: gradeCount[grade],
@@ -110,6 +119,36 @@ const SchoolReportPage = () => {
     });
 
     return ranges;
+  };
+
+  // Get the highest achieved grade for remedial tests
+  const getHighestAchievedGrade = (gradeDistribution) => {
+    if (!gradeDistribution || gradeDistribution.length === 0) return { count: 0, total: 0 };
+    
+    // Define grade hierarchy (from lowest to highest)
+    const gradeHierarchy = ['beginner', 'single digit', 'double digit', 'multiplication', 'division'];
+    
+    let highestGradeIndex = -1;
+    let highestGradeCount = 0;
+    let totalStudents = 0;
+
+    gradeDistribution.forEach((grade) => {
+      totalStudents += grade.value;
+      const gradeIndex = gradeHierarchy.findIndex(g => 
+        grade.label.toLowerCase().includes(g.toLowerCase())
+      );
+      
+      if (gradeIndex > highestGradeIndex && grade.value > 0) {
+        highestGradeIndex = gradeIndex;
+        highestGradeCount = grade.value;
+      }
+    });
+
+    return { 
+      count: highestGradeCount, 
+      total: totalStudents,
+      gradeName: highestGradeIndex >= 0 ? gradeHierarchy[highestGradeIndex] : 'division'
+    };
   };
 
   // Fetch school-specific performance data
@@ -249,66 +288,118 @@ const SchoolReportPage = () => {
   const passedStudents = schoolData.students?.filter((s) => s.passed).length || 0;
   const failedStudents = totalStudents - passedStudents;
 
+  // Get highest achieved grade info for remedial tests
+  const highestGradeInfo = isRemedialTest() ? getHighestAchievedGrade(schoolData.gradeDistribution) : null;
+
   // Component for the Visualizations Tab
   const VisualizationsTab = () => (
     <>
       {/* Visualizations */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Pass/Fail ratio chart */}
+        {/* Pass/Fail ratio chart or Grade Distribution chart */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="text-lg font-bold mb-4 text-[#2F4F4F] text-center">Class Performance</h3>
+          <h3 className="text-lg font-bold mb-4 text-[#2F4F4F] text-center">
+            {isRemedialTest() ? "Overall Proficiency" : "Class Performance"}
+          </h3>
           <div className="h-64 flex items-center justify-center">
             <div className="text-center">
-              {/* Using the PieChart with single color theme */}
-              <PieChart
-                percentage={schoolData.passRate}
-                primaryColor={THEME_COLOR}
-                secondaryColor={SECONDARY_COLOR}
-              />
-              <div className="mt-4 flex items-center justify-center gap-4">
-                {/* Passed */}
-                <span
-                  className="inline-block mr-1"
-                  style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    background: "#228B22",
-                    display: "inline-block",
-                  }}
-                ></span>
-                <span
-                  style={{
-                    fontFamily: "'Work Sans', sans-serif",
-                    fontWeight: 400,
-                    fontSize: 14,
-                    color: "#2F4F4F",
-                    marginRight: 18,
-                  }}
-                >
-                  Passed ({schoolData.passRate}%)
-                </span>
-                {/* Failed */}
-                <span
-                  className="inline-block mr-1"
-                  style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    background: "#F45050",
-                    display: "inline-block",
-                  }}
-                ></span>
-                <span
-                  style={{
-                    fontFamily: "'Work Sans', sans-serif",
-                    fontWeight: 400,
-                    fontSize: 14,
-                    color: "#2F4F4F",
-                  }}
-                >
-                  Failed ({100 - schoolData.passRate}%)
-                </span>
+              {isRemedialTest() ? (
+                // Multi-segment pie chart for remedial tests
+                <PieChart
+                  isMultiSegment={true}
+                  segmentData={schoolData.gradeDistribution}
+                  colors={REMEDIAL_GRADE_COLORS}
+                  primaryColor={THEME_COLOR}
+                  secondaryColor={SECONDARY_COLOR}
+                  size={160}
+                />
+              ) : (
+                // Regular pie chart for other tests
+                <PieChart
+                  percentage={schoolData.passRate}
+                  primaryColor={THEME_COLOR}
+                  secondaryColor={SECONDARY_COLOR}
+                />
+              )}
+              
+              {/* Legend */}
+              <div className="mt-4 flex items-center justify-center gap-4 flex-wrap">
+                {isRemedialTest() ? (
+                  // Legend for remedial test grades
+                  schoolData.gradeDistribution.map((grade, index) => (
+                    <div key={grade.label} className="flex items-center gap-1">
+                      <span
+                        className="inline-block"
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          background: REMEDIAL_GRADE_COLORS[index] || "#cccccc",
+                          display: "inline-block",
+                        }}
+                      ></span>
+                      <span
+                        style={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: 12,
+                          color: "#2F4F4F",
+                        }}
+                      >
+                        {grade.label} ({Math.round((grade.value / totalStudents) * 100)}%)
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  // Legend for pass/fail
+                  <>
+                    <div className="flex items-center gap-1">
+                      <span
+                        className="inline-block"
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          background: "#228B22",
+                          display: "inline-block",
+                        }}
+                      ></span>
+                      <span
+                        style={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: 14,
+                          color: "#2F4F4F",
+                          marginRight: 18,
+                        }}
+                      >
+                        Passed ({schoolData.passRate}%)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span
+                        className="inline-block"
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          background: "#F45050",
+                          display: "inline-block",
+                        }}
+                      ></span>
+                      <span
+                        style={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: 14,
+                          color: "#2F4F4F",
+                        }}
+                      >
+                        Failed ({100 - schoolData.passRate}%)
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -316,9 +407,12 @@ const SchoolReportPage = () => {
             className="mt-2 text-center font-semibold text-[#2F4F4F]"
             style={{ fontFamily: "Work Sans", fontSize: 14, fontWeight: 400 }}
           >
-            {isSyllabusTest()
-              ? `${passedStudents} out of ${totalStudents} Students Passed`
-              : `${passedStudents} out of ${totalStudents} Students Achieved Division Grade`}
+            {isRemedialTest()
+              ? `${highestGradeInfo?.count || 0} out of ${totalStudents} Students Achieved ${
+                  highestGradeInfo?.gradeName?.charAt(0).toUpperCase() + 
+                  highestGradeInfo?.gradeName?.slice(1) || 'Division'
+                } Grade`
+              : `${passedStudents} out of ${totalStudents} Students Passed`}
           </div>
         </div>
 
@@ -414,7 +508,14 @@ const SchoolReportPage = () => {
             />
             <Chip
               icon={<DoneIcon style={{ fontSize: "16px" }} />}
-              label={`Success Rate: ${schoolData.passRate}%`}
+              label={
+                isRemedialTest()
+                  ? `${highestGradeInfo?.gradeName?.charAt(0).toUpperCase() + 
+                      highestGradeInfo?.gradeName?.slice(1) || 'Division'} Grade: ${
+                      Math.round((highestGradeInfo?.count || 0) / totalStudents * 100)
+                    }%`
+                  : `Success Rate: ${schoolData.passRate}%`
+              }
               variant="outlined"
               size="small"
               sx={{
