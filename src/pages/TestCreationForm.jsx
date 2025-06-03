@@ -202,15 +202,41 @@ const TestCreationForm = () => {
     });
   };
 
-  // Remove a subject row
+  // Remove a subject row - if it's the last subject, remove the entire class
   const removeSubjectRow = (className, rowId) => {
-    setSubjectRows((prev) => {
-      const filteredRows = prev[className].filter((row) => row.id !== rowId);
-      return {
-        ...prev,
-        [className]: filteredRows,
-      };
-    });
+    const currentRows = subjectRows[className] || [];
+    
+    // If this is the only subject row, remove the entire class
+    if (currentRows.length === 1) {
+      // Remove the class from all related states
+      setSelectedClasses((prevSelected) => {
+        const newSelected = { ...prevSelected };
+        delete newSelected[className];
+        return newSelected;
+      });
+      
+      setMaxScores((prevScores) => {
+        const newScores = { ...prevScores };
+        delete newScores[className];
+        return newScores;
+      });
+      
+      setSubjectRows((prev) => {
+        const newSubjectRows = { ...prev };
+        delete newSubjectRows[className];
+        return newSubjectRows;
+      });
+    } else {
+      // Otherwise, just remove the specific row
+      setSubjectRows((prev) => {
+        const currentRows = prev[className] || [];
+        const filteredRows = currentRows.filter((row) => row.id !== rowId);
+        return {
+          ...prev,
+          [className]: filteredRows,
+        };
+      });
+    }
   };
 
   // 1. UPDATED SUBJECT ROW CHANGE HANDLER
@@ -315,7 +341,8 @@ const TestCreationForm = () => {
       }
 
       // Validate each subject row
-      for (const row of subjectRows[className]) {
+      const classSubjectRows = subjectRows[className] || [];
+      for (const row of classSubjectRows) {
         // Validate subject is selected
         if (!row.subject) {
           toast.error(`Please select a subject for ${className}`);
@@ -414,7 +441,8 @@ const TestCreationForm = () => {
       selectedSubjects[grade] = [];
 
       // Process each subject row
-      subjectRows[className]?.forEach((row) => {
+      const classSubjectRows = subjectRows[className] || [];
+      classSubjectRows.forEach((row) => {
         if (row.subject) {
           // Format subject for display (capitalize first letter of each word)
           const displaySubject = row.subject
@@ -1230,7 +1258,7 @@ const TestCreationForm = () => {
                   <div className="col-span-1">Actions</div>
                 </div>
 
-                {subjectRows[className]?.map((row) => (
+                {(subjectRows[className] || []).map((row) => (
                   <div
                     key={row.id}
                     className="grid grid-cols-10 gap-4 items-center py-3 border-b border-gray-100"
@@ -1264,7 +1292,8 @@ const TestCreationForm = () => {
                           }
 
                           // Get already selected subjects in this class (EXCLUDING the current row)
-                          const selectedSubjects = subjectRows[className]
+                          const classSubjectRows = subjectRows[className] || [];
+                          const selectedSubjects = classSubjectRows
                             .filter((otherRow) => otherRow.id !== row.id && otherRow.subject)
                             .map((otherRow) => otherRow.subject);
 
@@ -1353,12 +1382,13 @@ const TestCreationForm = () => {
                   }
 
                   // Get already selected subjects in this class
-                  const selectedSubjects = subjectRows[className]
+                  const classSubjectRows = subjectRows[className] || [];
+                  const selectedSubjects = classSubjectRows
                     .filter((row) => row.subject)
                     .map((row) => row.subject);
 
                   // Check if any row exists without a subject selected
-                  const hasEmptySubjectRow = subjectRows[className].some((row) => !row.subject);
+                  const hasEmptySubjectRow = classSubjectRows.some((row) => !row.subject);
 
                   // Filter out already selected subjects
                   const availableSubjects = subjectsForClass.filter(
