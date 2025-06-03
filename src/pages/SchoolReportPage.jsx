@@ -373,6 +373,7 @@ const SchoolReportPage = () => {
       passThreshold={schoolData.passThreshold}
       onViewProfile={handleViewProfile}
       onExport={handleExportStudentData}
+      testType={testData?.testType}
     />
   );
 
