@@ -11,13 +11,17 @@ const PieChart = ({
   size,
   showAnimation,
   className,
+  // New props for multi-segment support
+  isMultiSegment = false,
+  segmentData = [],
+  colors = []
 }) => {
   const [hovered, setHovered] = useState(false);
   const [displayPercentage, setDisplayPercentage] = useState(0);
 
-  // Animated counter effect
+  // Animated counter effect for simple pie chart
   useEffect(() => {
-    if (!showAnimation) {
+    if (isMultiSegment || !showAnimation) {
       setDisplayPercentage(percentage);
       return;
     }
@@ -37,7 +41,7 @@ const PieChart = ({
     }, 16);
 
     return () => clearInterval(timer);
-  }, [percentage, showAnimation]);
+  }, [percentage, showAnimation, isMultiSegment]);
 
   // Convert angle to (x, y) point in percentage for clip-path
   const getCoordinates = (angle) => {
@@ -70,12 +74,93 @@ const PieChart = ({
     return `polygon(${path})`;
   };
 
+  // Multi-segment pie chart render
+  if (isMultiSegment && segmentData.length > 0) {
+    const total = segmentData.reduce((sum, segment) => sum + segment.value, 0);
+    let currentAngle = 0;
+    
+    const segments = segmentData.map((segment, index) => {
+      const segmentPercentage = total > 0 ? (segment.value / total) * 100 : 0;
+      const segmentAngle = (segmentPercentage / 100) * 360;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + segmentAngle;
+      
+      currentAngle += segmentAngle;
+      
+      const clipPath = generateClipPath(startAngle, endAngle);
+      const color = colors[index] || `hsl(${(index * 360) / segmentData.length}, 70%, 60%)`;
+      
+      return {
+        ...segment,
+        clipPath,
+        color,
+        percentage: segmentPercentage
+      };
+    });
+
+    return (
+      <div
+        className={`relative mx-auto transition-all duration-500 ${className}`}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          transform: animation && hovered ? "scale(1.05)" : "scale(1)",
+          filter: hovered ? `drop-shadow(0 4px 10px rgba(0, 0, 0, 0.2))` : "none",
+        }}
+        onMouseEnter={() => animation && setHovered(true)}
+        onMouseLeave={() => animation && setHovered(false)}
+        data-testid="multi-segment-pie-chart"
+      >
+        {/* Background */}
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            backgroundColor: "#f5f5f5",
+            boxShadow: `inset 0 2px 8px rgba(0, 0, 0, 0.1)`,
+          }}
+        ></div>
+
+        {/* Render each segment */}
+        {segments.map((segment, index) => (
+          <div
+            key={index}
+            className="absolute inset-0 rounded-full overflow-hidden transition-all duration-700"
+            style={{ clipPath: segment.clipPath }}
+          >
+            <div 
+              className="absolute inset-0 rounded-full" 
+              style={{ backgroundColor: segment.color }}
+            ></div>
+          </div>
+        ))}
+
+        {/* Inner white circle */}
+        <div
+          className="absolute rounded-full bg-white transition-all duration-500"
+          style={{
+            inset: `${size * 0.25}px`,
+            boxShadow: `inset 0 2px 8px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05)`,
+            filter: hovered ? `brightness(1.03)` : "none",
+          }}
+        ></div>
+
+        {/* Glowing effect */}
+        {hovered && (
+          <div
+            className="absolute inset-0 rounded-full pointer-events-none transition-opacity duration-500"
+            style={{
+              background: `radial-gradient(circle, ${primaryColor}22 0%, transparent 70%)`,
+              opacity: 0.6,
+            }}
+          ></div>
+        )}
+      </div>
+    );
+  }
+
+  // Original simple pie chart logic
   const angle = (percentage / 100) * 360;
-
-  // For percentages <= 50%, we need one segment from 0° to the calculated angle
-  // For percentages > 50%, we need one segment from 0° to 180° and another from 180° to the calculated angle
   const clipPath1 = angle <= 180 ? generateClipPath(0, angle) : generateClipPath(0, 180);
-
   const clipPath2 = angle > 180 ? generateClipPath(180, angle) : "";
 
   return (
@@ -95,7 +180,7 @@ const PieChart = ({
       <div
         className="absolute inset-0 rounded-full"
         style={{
-          backgroundColor: " #F45050",
+          backgroundColor: "#F45050",
           boxShadow: `inset 0 2px 8px rgba(0, 0, 0, 0.1)`,
         }}
       ></div>
@@ -146,13 +231,19 @@ const PieChart = ({
 };
 
 PieChart.propTypes = {
-  percentage: PropTypes.number.isRequired,
+  percentage: PropTypes.number,
   primaryColor: PropTypes.string,
   secondaryColor: PropTypes.string,
   animation: PropTypes.bool,
   size: PropTypes.number,
   showAnimation: PropTypes.bool,
   className: PropTypes.string,
+  isMultiSegment: PropTypes.bool,
+  segmentData: PropTypes.arrayOf(PropTypes.shape({
+    label: PropTypes.string.isRequired,
+    value: PropTypes.number.isRequired
+  })),
+  colors: PropTypes.arrayOf(PropTypes.string)
 };
 
 PieChart.defaultProps = {
@@ -163,6 +254,9 @@ PieChart.defaultProps = {
   size: 160,
   showAnimation: true,
   className: "",
+  isMultiSegment: false,
+  segmentData: [],
+  colors: []
 };
 
 export default PieChart;
