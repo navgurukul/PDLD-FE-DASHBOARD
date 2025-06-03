@@ -90,7 +90,7 @@ const StudentAcademics = ({
   studentId,
   schoolId,
   academicData,
-  onTabChange, // Add this prop to communicate with parent
+   onTabChange, // Add this prop to communicate with parent
 }) => {
   // State for filter selections
   const [syllabusMonth, setSyllabusMonth] = useState("All");
