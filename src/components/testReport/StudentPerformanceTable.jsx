@@ -104,7 +104,7 @@ const theme = createTheme({
   },
 });
 
-const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }) => {
+const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport, testType }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -383,56 +383,57 @@ const StudentPerformanceTable = ({ students, classAvg, onViewProfile, onExport }
         sortThirdClickReset: true,
       },
     },
-    {
-      name: "marks",
-      label: "Marks",
-      options: {
-        filter: false,
-        sort: true,
-        sortThirdClickReset: true,
-        setCellHeaderProps: () => ({
-          style: { textAlign: "center" },
-        }),
-        customBodyRenderLite: (dataIndex) => {
-          const student = paginatedTableData[dataIndex];
-          // Only show marks, not "Absent" or "/100"
-          return (
-            <div>
-              {student.isAbsent ? (
-                <span style={{ color: "#949494" }}> - </span>
-              ) : (
-                student.originalScore
-              )}
-            </div>
-          );
-        },
-      },
-    },
-    {
-      name: "vsClassAvg", 
-      label: "Change from Class Avg.(80)",
-      options: {
-        filter: false,
-        sort: true,
-        sortThirdClickReset: true,
-        customBodyRenderLite: (dataIndex) => {
-          const student = paginatedTableData[dataIndex];
-          if (student.isAbsent) {
-            return <span style={{ color: "#949494" }}>-</span>;
-          }
-          let value = student.vsClassAvg;
-          // Remove + sign if present
-          if (typeof value === "string" && value.startsWith("+")) value = value.slice(1);
-          // Convert to number if possible
-          const num = Number(value);
-          let display = value;
-          if (!isNaN(num) && Number.isFinite(num)) {
-            display = Number.isInteger(num) ? num : num;
-          }
-          return <span style={{ color: "#2F4F4F" }}>{display}</span>;
-        },
-      },
-    },
+    ...(testType && testType.toLowerCase() === "remedial"
+      ? []
+      : [
+          {
+            name: "marks",
+            label: "Marks",
+            options: {
+              filter: false,
+              sort: true,
+              sortThirdClickReset: true,
+              setCellHeaderProps: () => ({
+                style: { textAlign: "center" },
+              }),
+              customBodyRenderLite: (dataIndex) => {
+                const student = paginatedTableData[dataIndex];
+                return (
+                  <div>
+                    {student.isAbsent ? (
+                      <span style={{ color: "#949494" }}> - </span>
+                    ) : (
+                      student.originalScore
+                    )}
+                  </div>
+                );
+              },
+            },
+          },
+          {
+            name: "vsClassAvg",
+            label: "Change from Class Avg.(80)",
+            options: {
+              filter: false,
+              sort: true,
+              sortThirdClickReset: true,
+              customBodyRenderLite: (dataIndex) => {
+                const student = paginatedTableData[dataIndex];
+                if (student.isAbsent) {
+                  return <span style={{ color: "#949494" }}>-</span>;
+                }
+                let value = student.vsClassAvg;
+                if (typeof value === "string" && value.startsWith("+")) value = value.slice(1);
+                const num = Number(value);
+                let display = value;
+                if (!isNaN(num) && Number.isFinite(num)) {
+                  display = Number.isInteger(num) ? num : num;
+                }
+                return <span style={{ color: "#2F4F4F" }}>{display}</span>;
+              },
+            },
+          },
+        ]),
 
     {
       name: "result",
