@@ -1337,7 +1337,7 @@ const Reports = () => {
                   className="text-[24px] font-bold"
                   style={{ fontFamily: "'Philosopher', sans-serif" }}
                 >
-                  {selectedClassData.udiseCode} - {selectedClassData.school}
+                    {selectedClassData.udiseCode} - {selectedClassData.school}
                 </div>
                 <IconButton onClick={() => setClassModalOpen(false)} size="small" edge="end">
                   <CloseIcon />
