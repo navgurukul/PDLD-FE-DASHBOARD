@@ -310,7 +310,7 @@ const Reports = () => {
                 rowSpan="2"
                 className="school-header" // <-- Add this
               >
-                 School Name
+                School Name
               </th>
               <th colSpan="2" className="group-header">
                 Primary (1-5)
@@ -1013,7 +1013,7 @@ const Reports = () => {
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
             <Typography variant="subtitle1">Generate Report for</Typography>
-            <div style={{ width: "120px", marginLeft: "16px", borderRadius: "8px" }}>
+            <div style={{ width: "auto", marginLeft: "16px", borderRadius: "8px" }}>
               <FormControl fullWidth size="small">
                 <Select
                   value={selectedSubject}
@@ -1078,68 +1078,84 @@ const Reports = () => {
             />
           </div>
 
-          <div style={{ width: "110px" }}>
-            <FormControl fullWidth size="small">
+          <div style={{ width: "auto" }}>
+            <FormControl size="small" sx={{ minWidth: 0 }}>
               <Select
                 value={selectedBlock}
                 onChange={(e) => setSelectedBlock(e.target.value)}
                 displayEmpty
                 renderValue={(selected) => {
-                  return selected === "" ? "Block" : selected;
+                  if (!selected) return "Block";
+                  return selected
+                    .toLowerCase()
+                    .split(" ")
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ");
                 }}
                 sx={{
                   height: "48px",
                   borderRadius: "8px",
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderRadius: "8px",
-                  },
+                  minWidth: 0,
+                  width: "auto",
                   "& .MuiSelect-select": {
+                    minWidth: 0,
+                    width: "auto",
+                    display: "inline-block",
                     padding: "12px 16px",
                     paddingRight: "32px",
-                    height: "24px",
-                    display: "flex",
-                    alignItems: "center",
                   },
                 }}
               >
                 <MenuItem value="">All Blocks</MenuItem>
                 {availableBlocks.map((block) => (
                   <MenuItem key={block} value={block}>
-                    {block}
+                    {block
+                      .toLowerCase()
+                      .split(" ")
+                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(" ")}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
           </div>
 
-          <div style={{ width: "110px" }}>
-            <FormControl fullWidth size="small">
+          <div style={{ width: "auto" }}>
+            <FormControl size="small" sx={{ minWidth: 0 }}>
               <Select
                 value={selectedCluster}
                 onChange={(e) => setSelectedCluster(e.target.value)}
                 displayEmpty
                 renderValue={(selected) => {
-                  return selected === "" ? "Cluster" : selected;
+                  if (!selected) return "Cluster";
+                  return selected
+                    .toLowerCase()
+                    .split(" ")
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ");
                 }}
                 sx={{
                   height: "48px",
                   borderRadius: "8px",
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderRadius: "8px",
-                  },
+                  minWidth: 0,
+                  width: "auto",
                   "& .MuiSelect-select": {
+                    minWidth: 0,
+                    width: "auto",
+                    display: "inline-block",
                     padding: "12px 16px",
                     paddingRight: "32px",
-                    height: "24px",
-                    display: "flex",
-                    alignItems: "center",
                   },
                 }}
               >
-                <MenuItem value=""> All Clusters</MenuItem>
+                <MenuItem value="">All Clusters</MenuItem>
                 {availableClusters.map((cluster) => (
                   <MenuItem key={cluster} value={cluster}>
-                    {cluster}
+                    {cluster
+                      .toLowerCase()
+                      .split(" ")
+                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(" ")}
                   </MenuItem>
                 ))}
               </Select>
@@ -1155,9 +1171,10 @@ const Reports = () => {
                   onClick={resetFilters}
                   variant="text"
                   sx={{
+                    fontFamily: "Work Sans",
                     color: "#2F4F4F",
                     fontWeight: 600,
-                    fontSize: 16,
+                    fontSize: 14,
                     textTransform: "none",
                     height: "48px",
                     padding: "0 12px",
