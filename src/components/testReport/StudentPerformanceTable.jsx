@@ -104,14 +104,15 @@ const theme = createTheme({
   },
 });
 
-const StudentPerformanceTable = ({ 
-  students, 
-  classAvg, 
-  onViewProfile, 
-  onExport, 
+const StudentPerformanceTable = ({
+  students,
+  classAvg,
+  onViewProfile,
+  onExport,
   testType,
   maxScore,
-  passThreshold 
+  passThreshold,
+  subject,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -126,15 +127,53 @@ const StudentPerformanceTable = ({
 
   // Check if this is a remedial test
   const isRemedialTest = testType && testType.toLowerCase().includes("remedial");
+  const gradeLabelsBySubject = {
+    english: ["BEGINNERS", "INTERMEDIATE", "ADVANCED"],
+    hindi: ["SENTENCES", "LETTER", "BEGINNERS"],
+    mathematics: ["FUNDAMENTALS", "BASIC_OPERATIONS", "WORD_PROBLEMS"],
+  };
+  const normalizedSubject = subject?.trim().toLowerCase() || "";
 
   // Define grade hierarchy for remedial tests (from lowest to highest proficiency)
-  const gradeHierarchy = {
-    'FUNDAMENTALS': 1,
-    'BASIC_OPERATIONS': 2, 
-    'FRACTIONS_DECIMALS': 3,
-    'WORD_PROBLEMS': 4,
-    'ADVANCED_CONCEPTS': 5
+
+  const formatGradeName = (grade) => {
+    if (!grade) return "";
+    return grade
+      .toLowerCase()
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
+
+  const remedialOptions = useMemo(() => {
+    if (!isRemedialTest) return [];
+
+    const normalizedSubject = subject?.trim().toLowerCase() || "";
+
+    return [
+      { label: "All Grades", value: "" },
+      ...(gradeLabelsBySubject[normalizedSubject] || []).map((grade) => ({
+        label: formatGradeName(grade),
+        value: grade,
+      })),
+      { label: "Absent", value: "absent" },
+    ];
+  }, [isRemedialTest, subject]);
+
+  const syllabusOptions = [
+    { label: "All Results", value: "" },
+    { label: "Pass", value: "pass" },
+    { label: "Fail", value: "fail" },
+    { label: "Absent", value: "absent" },
+  ];
+
+  const gradeHierarchy = [
+    "FUNDAMENTALS",
+    "BASIC_OPERATIONS",
+    "FRACTIONS_DECIMALS",
+    "WORD_PROBLEMS",
+    "ADVANCED_CONCEPTS",
+  ];
 
   // Helper function to determine if a grade is considered "pass" for remedial tests
   const isGradePass = (grade) => {
@@ -142,16 +181,6 @@ const StudentPerformanceTable = ({
     const gradeLevel = gradeHierarchy[grade.toUpperCase()];
     // Consider grades 3 and above as "pass" (FRACTIONS_DECIMALS and higher)
     return gradeLevel >= 3;
-  };
-
-  // Helper function to format grade display names
-  const formatGradeName = (grade) => {
-    if (!grade) return "";
-    return grade
-      .toLowerCase()
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
   };
 
   // Filter students
@@ -163,23 +192,33 @@ const StudentPerformanceTable = ({
 
       if (!filterStatus) {
         return nameMatch;
-      } else if (filterStatus === "pass") {
-        if (isRemedialTest) {
-          return nameMatch && !isAbsent && isGradePass(student.grade);
-        } else {
-          const score = isAbsent ? 0 : student.score;
-          return nameMatch && !isAbsent && score >= (passThreshold || 35);
+      }
+
+      // 🟩 Remedial test filtering
+      if (isRemedialTest) {
+        if (filterStatus === "absent") {
+          return nameMatch && isAbsent;
+        } else if (filterStatus) {
+          return (
+            nameMatch &&
+            !isAbsent &&
+            student.grade &&
+            student.grade.toUpperCase() === filterStatus.toUpperCase()
+          );
         }
+      }
+
+      // 🟦 Syllabus test filtering
+      if (filterStatus === "pass") {
+        const score = isAbsent ? 0 : student.score;
+        return nameMatch && !isAbsent && score >= (passThreshold || 35);
       } else if (filterStatus === "fail") {
-        if (isRemedialTest) {
-          return nameMatch && !isAbsent && !isGradePass(student.grade);
-        } else {
-          const score = isAbsent ? 0 : student.score;
-          return nameMatch && !isAbsent && score < (passThreshold || 35);
-        }
+        const score = isAbsent ? 0 : student.score;
+        return nameMatch && !isAbsent && score < (passThreshold || 35);
       } else if (filterStatus === "absent") {
         return nameMatch && isAbsent;
       }
+
       return nameMatch;
     });
   }, [students, searchQuery, filterStatus, isRemedialTest, passThreshold]);
@@ -190,7 +229,7 @@ const StudentPerformanceTable = ({
     return [...filteredStudents].sort((a, b) => {
       const aIsAbsent = a.isAbsent === true;
       const bIsAbsent = b.isAbsent === true;
-      
+
       if (sortConfig.key === "name") {
         const aName = a.studentName || a.name;
         const bName = b.studentName || b.name;
@@ -198,26 +237,28 @@ const StudentPerformanceTable = ({
           ? aName.localeCompare(bName)
           : bName.localeCompare(aName);
       }
-      
+
       if (sortConfig.key === "score") {
         if (isRemedialTest) {
           // Sort by grade level for remedial tests
-          const aGradeLevel = aIsAbsent ? -1 : (gradeHierarchy[a.grade?.toUpperCase()] || 0);
-          const bGradeLevel = bIsAbsent ? -1 : (gradeHierarchy[b.grade?.toUpperCase()] || 0);
-          return sortConfig.direction === "asc" ? aGradeLevel - bGradeLevel : bGradeLevel - aGradeLevel;
+          const aGradeLevel = aIsAbsent ? -1 : gradeHierarchy[a.grade?.toUpperCase()] || 0;
+          const bGradeLevel = bIsAbsent ? -1 : gradeHierarchy[b.grade?.toUpperCase()] || 0;
+          return sortConfig.direction === "asc"
+            ? aGradeLevel - bGradeLevel
+            : bGradeLevel - aGradeLevel;
         } else {
           const aScore = aIsAbsent ? -1 : a.score;
           const bScore = bIsAbsent ? -1 : b.score;
           return sortConfig.direction === "asc" ? aScore - bScore : bScore - aScore;
         }
       }
-      
+
       if (sortConfig.key === "vsClassAvg" && !isRemedialTest) {
         const aVsAvg = aIsAbsent ? -999 : a.score - classAvg;
         const bVsAvg = bIsAbsent ? -999 : b.score - classAvg;
         return sortConfig.direction === "asc" ? aVsAvg - bVsAvg : bVsAvg - aVsAvg;
       }
-      
+
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
       if (typeof aValue === "string" && typeof bValue === "string") {
@@ -232,9 +273,9 @@ const StudentPerformanceTable = ({
   // Table data
   const tableData = sortedStudents.map((student) => {
     const isAbsent = student.isAbsent === true;
-    
+
     let scoreDisplay, resultStatus, vsClassAvgDisplay;
-    
+
     if (isRemedialTest) {
       // For remedial tests, show grade instead of numerical score
       scoreDisplay = isAbsent ? "Absent" : formatGradeName(student.grade);
@@ -252,7 +293,7 @@ const StudentPerformanceTable = ({
       } else {
         resultStatus = student.score >= (passThreshold || 35) ? "Pass" : "Fail";
       }
-      
+
       if (isAbsent) {
         vsClassAvgDisplay = "N/A";
       } else {
@@ -268,12 +309,16 @@ const StudentPerformanceTable = ({
     return {
       id: student.studentId || student.id,
       name: student.studentName || student.name,
-      marks: isAbsent ? null : (isRemedialTest ? student.grade : student.score),
+      marks: isAbsent ? null : isRemedialTest ? student.grade : student.score,
       result: resultStatus,
       vsClassAvg: vsClassAvgDisplay,
-      isPass: isAbsent ? false : (isRemedialTest ? isGradePass(student.grade) : student.score >= (passThreshold || 35)),
+      isPass: isAbsent
+        ? false
+        : isRemedialTest
+        ? isGradePass(student.grade)
+        : student.score >= (passThreshold || 35),
       isAbsent: isAbsent,
-      originalScore: isAbsent ? null : (isRemedialTest ? student.grade : student.score),
+      originalScore: isAbsent ? null : isRemedialTest ? student.grade : student.score,
       grade: student.grade,
     };
   });
@@ -308,14 +353,14 @@ const StudentPerformanceTable = ({
 
   // Download logic
   const handleDownloadCSV = (data) => {
-    const headers = isRemedialTest 
-      ? ["Student Name", "Grade Level", "Status"] 
+    const headers = isRemedialTest
+      ? ["Student Name", "Grade Level", "Status"]
       : ["Student Name", "Score", "Result", "Change from Class Avg.(80)"];
-    
+
     const csvRows = [
       headers,
-      ...data.map((student) => 
-        isRemedialTest 
+      ...data.map((student) =>
+        isRemedialTest
           ? [student.name, student.grade || student.originalScore, student.result]
           : [student.name, student.score, student.result, student.vsClassAvg]
       ),
@@ -345,8 +390,12 @@ const StudentPerformanceTable = ({
           return `
             <tr>
               <td style="padding:6px;border:1px solid #ddd;text-align:left;">${student.name}</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.grade || student.originalScore}</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.result}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${
+                student.grade || student.originalScore
+              }</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${
+                student.result
+              }</td>
             </tr>
           `;
         } else {
@@ -354,7 +403,9 @@ const StudentPerformanceTable = ({
             <tr>
               <td style="padding:6px;border:1px solid #ddd;text-align:left;">${student.name}</td>
               <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.score}</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.result}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${
+                student.result
+              }</td>
               <td style="padding:6px;border:1px solid #ddd;text-align:center;color:${
                 student.vsClassAvg === "0.0"
                   ? "#c62828"
@@ -368,7 +419,7 @@ const StudentPerformanceTable = ({
       })
       .join("");
 
-    const headerRow = isRemedialTest 
+    const headerRow = isRemedialTest
       ? `
         <tr>
           <th style="text-align:left;">Student Name</th>
@@ -438,7 +489,7 @@ const StudentPerformanceTable = ({
         ? sortedStudents.map((student) => {
             const isAbsent = student.isAbsent === true;
             let resultStatus;
-            
+
             if (isAbsent) {
               resultStatus = "Absent";
             } else if (isRemedialTest) {
@@ -459,14 +510,20 @@ const StudentPerformanceTable = ({
 
             return {
               name: student.studentName || student.name,
-              score: isRemedialTest ? (isAbsent ? "Absent" : formatGradeName(student.grade)) : (isAbsent ? "Absent" : `${student.score}/${maxScore || 100}`),
+              score: isRemedialTest
+                ? isAbsent
+                  ? "Absent"
+                  : formatGradeName(student.grade)
+                : isAbsent
+                ? "Absent"
+                : `${student.score}/${maxScore || 100}`,
               result: resultStatus,
               vsClassAvg: vsClassAvgDisplay,
               grade: student.grade,
             };
           })
         : paginatedTableData;
-    
+
     if (format === "csv") {
       handleDownloadCSV(dataToDownload);
     } else if (format === "pdf") {
@@ -493,42 +550,52 @@ const StudentPerformanceTable = ({
     },
     ...(isRemedialTest
       ? [
-          // For remedial tests, show Grade Level instead of Marks
           {
-            name: "marks",
-            label: "Grade Level",
+            name: "grade",
+            label: "Grade",
             options: {
-              filter: false,
-              sort: true,
-              sortThirdClickReset: true,
+              filter: true,
+              sort: false,
               setCellHeaderProps: () => ({
                 style: { textAlign: "center" },
               }),
               customBodyRenderLite: (dataIndex) => {
                 const student = paginatedTableData[dataIndex];
+                if (student.isAbsent) {
+                  return (
+                    <div>
+                      <div
+                        className="inline-block px-2 py-1 rounded-full text-xs"
+                        style={{
+                          backgroundColor: "#e0e0e0",
+                          color: "#757575",
+                        }}
+                      >
+                        Absent
+                      </div>
+                    </div>
+                  );
+                }
                 return (
-                  <div style={{ textAlign: "center" }}>
-                    {student.isAbsent ? (
-                      <span style={{ color: "#949494" }}> - </span>
-                    ) : (
-                      <span style={{ 
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        backgroundColor: "#f5f5f5",
-                        fontSize: "12px",
-                        fontWeight: 500
-                      }}>
-                        {formatGradeName(student.originalScore)}
-                      </span>
-                    )}
+                  <div>
+                    <div
+                      className="inline-block px-2 py-1 rounded-full text-xs"
+                      style={{
+                        backgroundColor: "#e8f5e9",
+                        color: "#2e7d32",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {formatGradeName(student.grade)}
+                    </div>
                   </div>
                 );
               },
             },
-          }
+          },
         ]
       : [
-          // For regular tests, show Marks and Change from Class Avg
+          // Syllabus: Marks, Change from Class Avg, Status
           {
             name: "marks",
             label: "Marks",
@@ -576,53 +643,51 @@ const StudentPerformanceTable = ({
               },
             },
           },
+          {
+            name: "result",
+            label: "Status",
+            options: {
+              filter: true,
+              sort: false,
+              setCellHeaderProps: () => ({
+                style: { textAlign: "center" },
+              }),
+              customBodyRenderLite: (dataIndex) => {
+                const student = paginatedTableData[dataIndex];
+                if (student.isAbsent) {
+                  return (
+                    <div>
+                      <div
+                        className="inline-block px-2 py-1 rounded-full text-xs"
+                        style={{
+                          backgroundColor: "#e0e0e0",
+                          color: "#757575",
+                        }}
+                      >
+                        Absent
+                      </div>
+                    </div>
+                  );
+                }
+                const isPass = student.isPass;
+                return (
+                  <div>
+                    <div
+                      className="inline-block px-2 py-1 rounded-full text-xs"
+                      style={{
+                        backgroundColor: isPass ? "#e8f5e9" : "#ffebee",
+                        color: isPass ? "#2e7d32" : "#c62828",
+                      }}
+                    >
+                      {student.result}
+                    </div>
+                  </div>
+                );
+              },
+            },
+          },
         ]),
-
-    {
-      name: "result",
-      label: "Status",
-      options: {
-        filter: true,
-        sort: false,
-        setCellHeaderProps: () => ({
-          style: { textAlign: "center" },
-        }),
-        customBodyRenderLite: (dataIndex) => {
-          const student = paginatedTableData[dataIndex];
-          if (student.isAbsent) {
-            return (
-              <div>
-                <div
-                  className="inline-block px-2 py-1 rounded-full text-xs"
-                  style={{
-                    backgroundColor: "#e0e0e0",
-                    color: "#757575",
-                  }}
-                >
-                  Absent
-                </div>
-              </div>
-            );
-          }
-          const isPass = student.isPass;
-          return (
-            <div>
-              <div
-                className="inline-block px-2 py-1 rounded-full text-xs"
-                style={{
-                  backgroundColor: isPass ? "#e8f5e9" : "#ffebee",
-                  color: isPass ? "#2e7d32" : "#c62828",
-                }}
-              >
-                {student.result}
-              </div>
-            </div>
-          );
-        },
-      },
-    },
   ];
-
   columns.forEach((column) => {
     if (!column.options) column.options = {};
     column.options.customHeadLabelRender = defaultCustomHeadLabelRender;
@@ -687,14 +752,17 @@ const StudentPerformanceTable = ({
                         },
                       }}
                     >
-                      Status
+                      {isRemedialTest ? "Grade" : "Status"}
                     </InputLabel>
                     <Select
                       labelId="result-select-label"
                       id="result-select"
                       value={filterStatus}
-                      label="Result"
-                      onChange={(e) => setFilterStatus(e.target.value)}
+                      label={isRemedialTest ? "Grade" : "Status"}
+                      onChange={(e) => {
+                        setCurrentPage(1);
+                        setFilterStatus(e.target.value);
+                      }}
                       sx={{
                         height: "100%",
                         borderRadius: "8px",
@@ -709,10 +777,11 @@ const StudentPerformanceTable = ({
                         },
                       }}
                     >
-                      <MenuItem value="">All Results</MenuItem>
-                      <MenuItem value="pass">Pass</MenuItem>
-                      <MenuItem value="fail">Fail</MenuItem>
-                      <MenuItem value="absent">Absent</MenuItem>
+                      {(isRemedialTest ? remedialOptions : syllabusOptions).map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                   {/*  Clear Filters */}
@@ -762,10 +831,11 @@ const StudentPerformanceTable = ({
             color: "#2F4F4F",
           }}
         >
-          {isRemedialTest 
-            ? "Grade Levels: Fundamentals → Basic Operations → Fractions/Decimals → Word Problems → Advanced Concepts"
-            : `Maximum Marks: ${maxScore || 100} (Pass Percentage ≥ ${Math.round(((passThreshold || 35) / (maxScore || 100)) * 100)}%)`
-          }
+          {isRemedialTest
+            ? ""
+            : `Maximum Marks: ${maxScore || 100} (Pass Percentage ≥ ${Math.round(
+                ((passThreshold || 35) / (maxScore || 100)) * 100
+              )}%)`}
         </div>
         {/* Data Table */}
         <div
