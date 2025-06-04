@@ -267,6 +267,7 @@ export default function SchoolDetailView() {
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 600,
                           fontSize: "18px",
+                          color: "#2F4F4F",
                         }}
                       >
                         {capitalizeFirstLetter(school.schoolName)}
@@ -294,6 +295,7 @@ export default function SchoolDetailView() {
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 400,
                           fontSize: "18px",
+                          
                         }}
                       >
                         Created On
@@ -307,6 +309,7 @@ export default function SchoolDetailView() {
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 600,
                           fontSize: "18px",
+                          color: "#2F4F4F",
                         }}
                       >
                         {school.udiseCode}
@@ -319,6 +322,7 @@ export default function SchoolDetailView() {
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 600,
                           fontSize: "18px",
+                          color: "#2F4F4F",
                         }}
                       >
                         {new Date(school.createdAt).toLocaleDateString()}
@@ -382,6 +386,7 @@ export default function SchoolDetailView() {
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 600,
                           fontSize: "18px",
+                          color: "#2F4F4F",
                         }}
                       >
                         {capitalizeFirstLetter(school.clusterName)}
@@ -394,6 +399,7 @@ export default function SchoolDetailView() {
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 600,
                           fontSize: "18px",
+                          color: "#2F4F4F",
                         }}
                       >
                         {capitalizeFirstLetter(school.blockName)}
@@ -457,6 +463,7 @@ export default function SchoolDetailView() {
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 600,
                           fontSize: "18px",
+                          color: "#2F4F4F",
                         }}
                       >
                         {getCACName()}
@@ -469,6 +476,7 @@ export default function SchoolDetailView() {
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 600,
                           fontSize: "18px",
+                          color: "#2F4F4F",
                         }}
                       >
                         {getCPName()}
