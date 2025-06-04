@@ -1174,13 +1174,14 @@ const Reports = () => {
                     fontFamily: "Work Sans",
                     color: "#2F4F4F",
                     fontWeight: 600,
-                    fontSize: 14,
+                    fontSize: "14px",
                     textTransform: "none",
                     height: "48px",
                     padding: "0 12px",
                     background: "transparent",
                     "&:hover": {
                       background: "#f5f5f5",
+                      borderRadius: 0,
                     },
                   }}
                 >

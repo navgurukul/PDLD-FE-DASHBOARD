@@ -138,7 +138,7 @@ export default function TestListTable() {
   const [currentPage, setCurrentPage] = useState(1);
   // Changed from fixed pageSize to state
   const [pageSize, setPageSize] = useState(15);
-  
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -536,8 +536,7 @@ export default function TestListTable() {
           {/* Filters Group */}
           <div className="flex flex-wrap gap-2 items-center">
             {/* Search bar */}
-           <div className="w-full lg:w-[360px]">
-
+            <div className="w-full lg:w-[360px]">
               <TextField
                 variant="outlined"
                 placeholder="Search by Test Name"
@@ -915,8 +914,9 @@ export default function TestListTable() {
                     variant="text"
                     sx={{
                       color: "#2F4F4F",
+                      fontFamily: "Work Sans",
                       fontWeight: 600,
-                      fontSize: 16,
+                      fontSize: "14px",
                       textTransform: "none",
                       height: "48px",
                       padding: "0 12px",
