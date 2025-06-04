@@ -793,8 +793,9 @@ const StudentPerformanceTable = ({
                           variant="text"
                           sx={{
                             color: "#2F4F4F",
+                            fontFamily: "Work Sans",
                             fontWeight: 600,
-                            fontSize: 16,
+                            fontSize: "14px",
                             textTransform: "none",
                             height: "48px",
                             padding: "0 12px",

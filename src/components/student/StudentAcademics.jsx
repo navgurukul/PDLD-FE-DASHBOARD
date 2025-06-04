@@ -56,6 +56,7 @@ const theme = createTheme({
           fontSize: "14px",
           fontWeight: 500,
           textAlign: "left",
+          textTransform: "none",
         },
       },
     },

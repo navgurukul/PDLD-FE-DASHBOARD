@@ -157,7 +157,7 @@ export default function SchoolList() {
   // Load schools on component mount and when page changes
   useEffect(() => {
     fetchSchools();
-  }, [currentPage,pageSize]);
+  }, [currentPage, pageSize]);
 
   // Add this in your SchoolList component, in the useEffect section
   useEffect(() => {
@@ -593,7 +593,7 @@ export default function SchoolList() {
                       sx={{
                         height: "48px",
                         display: "flex",
-                        width: { xs: "calc(50% - 4px)", md: "150px" },
+                        width: "auto",
                         minWidth: "100px",
                         marginBottom: { xs: "8px", md: "0" },
                       }}
@@ -601,7 +601,7 @@ export default function SchoolList() {
                       <InputLabel
                         id="cluster-select-label"
                         sx={{
-                           color: "#2F4F4F",
+                          color: "#2F4F4F",
                           transform: "translate(14px, 14px) scale(1)",
                           "&.Mui-focused, &.MuiFormLabel-filled": {
                             transform: "translate(14px, -9px) scale(0.75)",
@@ -665,7 +665,7 @@ export default function SchoolList() {
                       sx={{
                         height: "48px",
                         display: "flex",
-                        width: { xs: "calc(50% - 4px)", md: "150px" },
+                        width: "auto",
                         minWidth: "100px",
                         marginBottom: { xs: "8px", md: "0" },
                       }}
@@ -673,7 +673,7 @@ export default function SchoolList() {
                       <InputLabel
                         id="block-select-label"
                         sx={{
-                           color: "#2F4F4F",
+                          color: "#2F4F4F",
                           transform: "translate(14px, 14px) scale(1)",
                           "&.Mui-focused, &.MuiFormLabel-filled": {
                             transform: "translate(14px, -9px) scale(0.75)",
@@ -742,8 +742,9 @@ export default function SchoolList() {
                             variant="text"
                             sx={{
                               color: "#2F4F4F",
+                              fontFamily: "Work Sans",
                               fontWeight: 600,
-                              fontSize: 16,
+                              fontSize: "14px",
                               textTransform: "none",
                               height: "48px",
                               padding: "0 12px",

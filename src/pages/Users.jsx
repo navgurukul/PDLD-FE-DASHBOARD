@@ -113,7 +113,7 @@ export default function Users() {
   const [selectedBlock, setSelectedBlock] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Changed from fixed pageSize to state
   const [pageSize, setPageSize] = useState(15);
 
@@ -602,7 +602,7 @@ export default function Users() {
               sx={{
                 height: "48px",
                 display: "flex",
-                width: "150px", // Reduced width for more compact layout
+                width: "auto", // Reduced width for more compact layout
                 minWidth: "120px",
               }}
             >
@@ -673,7 +673,7 @@ export default function Users() {
               sx={{
                 height: "48px",
                 display: "flex",
-                width: "150px",
+                width: "auto",
                 minWidth: "120px",
               }}
             >
@@ -748,8 +748,9 @@ export default function Users() {
                   variant="text"
                   sx={{
                     color: "#2F4F4F",
+                    fontFamily: "Work Sans",
                     fontWeight: 600,
-                    fontSize: 16,
+                    fontSize: "14px",
                     textTransform: "none",
                     height: "48px",
                     padding: "0 12px",
