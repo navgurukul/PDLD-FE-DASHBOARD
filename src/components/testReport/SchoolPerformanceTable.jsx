@@ -806,7 +806,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                         padding: "0 12px",
                         background: "transparent",
                         "&:hover": {
-                          background: "#f5f5f5",
+                           background: "#f5f5f5",
                         },
                       }}
                     >
