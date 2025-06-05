@@ -5,7 +5,7 @@ import { Button, TextField, MenuItem, CircularProgress, Typography, Select } fro
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { Pagination } from "@mui/material";
+import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import "./TestListTable.css";
 import { ToastContainer, toast } from "react-toastify";
@@ -104,7 +104,7 @@ const theme = createTheme({
     MuiPaginationItem: {
       styleOverrides: {
         root: {
-          color: "black", // Change default text color
+          color:"#2F4F4F",// Change default text color
           backgroundColor: "white", // Change the background color of all buttons
           "&.Mui-selected": {
             backgroundColor: "#2F4F4F", // Change color when selected
@@ -972,6 +972,21 @@ export default function TestListTable() {
               onChange={handlePageChange}
               showFirstButton
               showLastButton
+              renderItem={(item) => {
+                const isNextPage = item.page === currentPage + 1 && item.type === "page";
+
+                return (
+                  <PaginationItem
+                    {...item}
+                    sx={{
+                      ...(isNextPage && {
+                        border: "1px solid #2F4F4F",
+                        color: "#2F4F4F",
+                      }),
+                    }}
+                  />
+                );
+              }}
             />
           </div>
 

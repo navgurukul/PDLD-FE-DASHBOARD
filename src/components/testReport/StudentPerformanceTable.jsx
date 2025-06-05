@@ -9,6 +9,7 @@ import {
   MenuItem,
   Tooltip,
   Pagination,
+  PaginationItem,
 } from "@mui/material";
 import MUIDataTable from "mui-datatables";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -89,7 +90,7 @@ const theme = createTheme({
     MuiPaginationItem: {
       styleOverrides: {
         root: {
-          color: "black",
+          color: "#2F4F4F",
           backgroundColor: "white",
           "&.Mui-selected": {
             backgroundColor: "#2F4F4F",
@@ -852,7 +853,25 @@ const StudentPerformanceTable = ({
             onChange={(e, page) => setCurrentPage(page)}
             showFirstButton
             showLastButton
-          />
+            renderItem={(item) => {
+    const isNextPage = item.page === currentPage + 1 && item.type === 'page';
+    const isCurrentPage = item.page === currentPage && item.type === 'page';
+
+    return (
+      <PaginationItem
+        {...item}
+        sx={{
+          ...(isNextPage && {
+            border: "1px solid #2F4F4F",
+            borderRadius: "9999px", // fully rounded
+            color: "#2F4F4F",
+          }),
+        }}
+      />
+    );
+  }}
+/>
+          
         </div>
         {/* Download Modal */}
         <DownloadModal

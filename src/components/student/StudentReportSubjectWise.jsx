@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { Pagination } from "@mui/material";
+import { Pagination, PaginationItem } from "@mui/material";
 
 const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, status, subject }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -124,7 +124,7 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
             backgroundColor: "none",
             fontFamily: "Karla !important",
             textAlign: "left",
-              borderBottom: "none",
+            borderBottom: "none",
             "&.custom-cell": {
               width: "0px",
             },
@@ -141,7 +141,7 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
           root: {
             "&:hover": {
               backgroundColor: "inherit !important",
-        cursor: "default !important",
+              cursor: "default !important",
             },
           },
         },
@@ -163,7 +163,7 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
       MuiPaginationItem: {
         styleOverrides: {
           root: {
-            color: "black",
+            color: "#2F4F4F",
             backgroundColor: "white",
             "&.Mui-selected": {
               backgroundColor: "#2F4F4F",
@@ -187,7 +187,7 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
         fontWeight: 600,
         fontSize: "14px",
         fontStyle: "normal",
-        testtranform: "none",
+        textTransform: "none", 
       }}
     >
       {columnMeta.label}
@@ -300,6 +300,22 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
             onChange={(e, page) => setCurrentPage(page)}
             showFirstButton
             showLastButton
+            renderItem={(item) => {
+              const isNextPage = item.page === currentPage + 1 && item.type === "page";
+
+              return (
+                <PaginationItem
+                  {...item}
+                  sx={{
+                    ...(isNextPage && {
+                      border: "1px solid #2F4F4F",
+                      borderRadius: "100px", // fully rounded
+                      color: "#2F4F4F",
+                    }),
+                  }}
+                />
+              );
+            }}
           />
         </div>
       )}
