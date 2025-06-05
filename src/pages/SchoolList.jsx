@@ -48,7 +48,7 @@ const theme = createTheme({
         root: {
           color: "#949494", // Default label color
           "&.Mui-focused": {
-            color: "#2F4F4F", // Focused label color
+             color: "#2F4F4F", // Focused label color
           },
         },
       },
