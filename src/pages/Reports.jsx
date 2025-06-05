@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, InputLabel } from "@mui/material";
-import { Pagination } from "@mui/material";
+import { Pagination, PaginationItem } from "@mui/material";
 import { Search, X as CloseIcon, RefreshCw } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -105,7 +105,7 @@ const theme = createTheme({
     MuiPaginationItem: {
       styleOverrides: {
         root: {
-          color: "black",
+          color: "#2F4F4F",
           backgroundColor: "white",
           "&.Mui-selected": {
             backgroundColor: "#2F4F4F",
@@ -1226,6 +1226,7 @@ const Reports = () => {
               <div style={{ width: "180px" }}></div>
 
               {/* Centered pagination */}
+
               <div style={{ display: "flex", justifyContent: "center" }}>
                 <Pagination
                   count={totalPages || 1}
@@ -1234,17 +1235,31 @@ const Reports = () => {
                   showFirstButton
                   showLastButton
                   size="medium"
-                  sx={{
-                    "& .MuiPaginationItem-root": {
-                      margin: "0 2px",
-                    },
-                    "& .MuiPaginationItem-page.Mui-selected": {
-                      backgroundColor: "#2F4F4F",
-                      color: "white",
-                    },
-                    "& .MuiPaginationItem-page:hover": {
-                      backgroundColor: "#A3BFBF",
-                    },
+                  renderItem={(item) => {
+                    const isNextPage = item.type === "page" && item.page === currentPage + 1;
+                    const isCurrentPage = item.type === "page" && item.page === currentPage;
+
+                    return (
+                      <PaginationItem
+                        {...item}
+                        sx={{
+                          margin: "0 2px",
+                          ...(isNextPage && {
+                            border: "2px solid #2F4F4F !important",
+                            borderRadius: "9999px !important",
+                            color: "#2F4F4F !important",
+                            backgroundColor: "white !important",
+                          }),
+                          ...(isCurrentPage && {
+                            backgroundColor: "#2F4F4F !important",
+                            color: "white !important",
+                          }),
+                          "&:hover": {
+                            backgroundColor: "#A3BFBF !important",
+                          },
+                        }}
+                      />
+                    );
                   }}
                 />
               </div>

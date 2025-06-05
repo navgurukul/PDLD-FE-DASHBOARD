@@ -13,7 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { Pagination } from "@mui/material";
+import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import apiInstance from "../../api";
@@ -69,6 +69,7 @@ const theme = createTheme({
     MuiPaginationItem: {
       styleOverrides: {
         root: {
+          color: "#2F4F4F",
           backgroundColor: "white",
           "&.Mui-selected": {
             backgroundColor: "#2F4F4F",
@@ -795,6 +796,21 @@ export default function Users() {
               showFirstButton
               showLastButton
               className="[&_.Mui-selected]:bg-[#2F4F4F] [&_.Mui-selected]:text-white"
+              renderItem={(item) => {
+              const isNextNumberPage = item.page === currentPage + 1 && item.type === "page";
+
+                return (
+                  <PaginationItem
+                    {...item}
+                    sx={{
+                      ...(isNextNumberPage && {
+                        border: "1px solid #2F4F4F",
+                        borderRadius: "100%",
+                      }),
+                    }}
+                  />
+                );
+              }}
             />
           </div>
 

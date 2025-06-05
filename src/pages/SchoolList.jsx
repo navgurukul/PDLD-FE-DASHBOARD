@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import MUIDataTable from "mui-datatables";
 import { Button, TextField, CircularProgress } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { Pagination } from "@mui/material";
+import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -48,7 +48,7 @@ const theme = createTheme({
         root: {
           color: "#949494", // Default label color
           "&.Mui-focused": {
-            color: "#2F4F4F", // Focused label color
+             color: "#2F4F4F", // Focused label color
           },
         },
       },
@@ -70,7 +70,7 @@ const theme = createTheme({
     MuiPaginationItem: {
       styleOverrides: {
         root: {
-          color: "black",
+          color: "#2F4F4F",
           backgroundColor: "white",
           "&.Mui-selected": {
             backgroundColor: "#2F4F4F",
@@ -816,18 +816,31 @@ export default function SchoolList() {
           >
             {/* Empty div for left spacing to help with centering */}
             <div style={{ width: "180px" }}></div>
-
-            {/* Centered pagination */}
             <div style={{ display: "flex", justifyContent: "center" }}>
-              <Pagination
-                count={pagination.totalPages}
-                page={currentPage}
-                onChange={handlePageChange}
-                showFirstButton
-                showLastButton
-              />
+            {/* Centered pagination */}
+            <Pagination
+              count={pagination.totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              showFirstButton
+              showLastButton
+              renderItem={(item) => {
+              const isNextNumberPage = item.page === currentPage + 1 && item.type === "page";
+              
+                return (
+                  <PaginationItem
+                    {...item}
+                    sx={{
+                      ...(isNextNumberPage && {
+                        border: "1px solid #2F4F4F",
+                        borderRadius: "100%",
+                      }),
+                    }}
+                  />
+                );
+              }}
+            />
             </div>
-
             {/* Right-aligned compact rows selector */}
             <div
               style={{
