@@ -65,6 +65,9 @@ const theme = createTheme({
           backgroundColor: "none",
           fontFamily: "Karla !important",
           borderBottom: "none",
+          fontWeight: 400,
+          color: "#2F4F4F",
+          fontSize: "14px",
           textAlign: (props) => (props.name === "actions" ? "center" : "left"),
           "&.custom-cell": {
             width: "0px",

@@ -76,8 +76,16 @@ const Sidebar = () => {
       <button className="p-2 m-2" onClick={() => setIsOpen(!isOpen)}>
         {isOpen ? (
           <div className="flex items-center pl-1">
-            <img src={HideSidebar} alt="Hide" className="w-4 h-4 mr-4" />
-            <span>Hide</span>
+            <img src={HideSidebar} alt="Hide" className="w-5 h-5 mr-4" />
+            <span
+              style={{
+                fontFamily: "Karla, sans-serif",
+                fontSize: "18px",
+                fontWeight: 600,
+              }}
+            >
+              Hide
+            </span>
           </div>
         ) : (
           <div className="flex items-center pl-1">
@@ -109,7 +117,14 @@ const Sidebar = () => {
                   className="mr-2"
                 />
                 {isOpen && (
-                  <span className={`font-medium ${isActive ? "font-semibold" : ""}`}>
+                  <span
+                    className={`sidebar-label`}
+                    style={{
+                      fontFamily: "'Work Sans', sans-serif",
+                      fontSize: "18px",
+                      fontWeight: isActive ? 600 : 400,
+                    }}
+                  >
                     {item.label}
                   </span>
                 )}

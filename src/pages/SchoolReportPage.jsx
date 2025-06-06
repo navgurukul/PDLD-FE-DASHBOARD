@@ -443,7 +443,7 @@ const SchoolReportPage = () => {
 
       {/* Line Chart - Only show for syllabus tests */}
       {isSyllabusTest() && (
-        <div className="bg-white p-4 rounded shadow mb-20">
+        <div className="bg-white p-4 rounded shadow mb-20" >
           <h3
             style={{
               fontFamily: "'Work Sans', sans-serif",
@@ -451,12 +451,12 @@ const SchoolReportPage = () => {
               fontSize: "18px",
               color: "#2F4F4F",
               textAlign: "center",
-              marginBottom: "4px",
+              marginBottom: "8px",
             }}
           >
             Student Marks Analysis
           </h3>
-          <div className="h-90 flex items-center justify-center">
+          <div className="h-100 flex items-center justify-center">
             <LineChart
               data={schoolData.students}
               averageScore={schoolData.avgScore}
@@ -510,9 +510,12 @@ const SchoolReportPage = () => {
               variant="outlined"
               size="small"
               sx={{
-                borderRadius: "8px",
+                borderRadius: "100px",
+                height: "32px",
                 bgcolor: "#f5f5f5",
-                fontWeight: 600,
+                fontWeight: 400,
+                fontSize: "14px",
+                fontFamily: "Work Sans",
                 color: "#2F4F4F",
                 "& .MuiChip-icon": { color: "#2F4F4F" },
               }}
@@ -530,9 +533,12 @@ const SchoolReportPage = () => {
               variant="outlined"
               size="small"
               sx={{
-                borderRadius: "8px",
+                borderRadius: "100px",
+                height: "32px",
                 bgcolor: "#e8f5e9",
-                fontWeight: 600,
+                fontWeight: 400,
+                fontSize: "14px",
+                fontFamily: "Work Sans",
                 color: "#2e7d32",
                 "& .MuiChip-icon": { color: "#2e7d32" },
               }}
