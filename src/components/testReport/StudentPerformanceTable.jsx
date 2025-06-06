@@ -56,8 +56,11 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: "none",
-          fontFamily: "Karla !important",
+          fontFamily: "Work Sans !important",
           textAlign: "left",
+          fontWeight: 400,
+          color: "#2F4F4F",
+          fontSize: "14px",
           borderBottom: "none",
           "&.custom-cell": {
             width: "0px",
@@ -540,17 +543,24 @@ const StudentPerformanceTable = ({
       label: "ID",
       options: { display: false },
     },
-    {
-      name: "name",
-      label: "Student Name",
-      options: {
-        filter: false,
-        sort: true,
-        sortThirdClickReset: true,
-      },
-    },
+
     ...(isRemedialTest
       ? [
+          {
+            name: "name",
+            label: "Student Name",
+            options: {
+              filter: false,
+              sort: true,
+              sortThirdClickReset: true,
+              setCellHeaderProps: () => ({
+                style: { textAlign: "left", width: "100%" },
+              }),
+              setCellProps: () => ({
+                style: { textAlign: "left", width: "100%" },
+              }),
+            },
+          },
           {
             name: "grade",
             label: "Grade",
@@ -558,45 +568,61 @@ const StudentPerformanceTable = ({
               filter: true,
               sort: false,
               setCellHeaderProps: () => ({
-                style: { textAlign: "center" },
+                style: { textAlign: "right", minWidth: 250, width: 250 },
+              }),
+              setCellProps: () => ({
+                style: { textAlign: "right", minWidth: 250, width: 250 },
               }),
               customBodyRenderLite: (dataIndex) => {
                 const student = paginatedTableData[dataIndex];
                 if (student.isAbsent) {
                   return (
-                    <div>
-                      <div
-                        className="inline-block px-2 py-1 rounded-full text-xs"
-                        style={{
-                          backgroundColor: "#e0e0e0",
-                          color: "#757575",
-                        }}
-                      >
-                        Absent
-                      </div>
-                    </div>
+                    <span
+                      className="inline-block px-2 py-1 rounded-full text-xs"
+                      style={{
+                        backgroundColor: "#e0e0e0",
+                        color: "#757575",
+                      }}
+                    >
+                      Absent
+                    </span>
                   );
                 }
                 return (
-                  <div>
-                    <div
-                      className="inline-block px-2 py-1 rounded-full text-xs"
-                      style={{
-                        backgroundColor: "#e8f5e9",
-                        color: "#2e7d32",
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {formatGradeName(student.grade)}
-                    </div>
-                  </div>
+                  <span
+                    className="inline-block px-2 py-1 rounded-full text-xs"
+                    style={{
+                      backgroundColor: "#e8f5e9",
+                      color: "#2e7d32",
+                      textTransform: "capitalize",
+                      fontFamily: "Work Sans",
+                      fontWeight: 400,
+                      fontSize: "12px",
+                    }}
+                  >
+                    {formatGradeName(student.grade)}
+                  </span>
                 );
               },
             },
           },
         ]
       : [
-          // Syllabus: Marks, Change from Class Avg, Status
+          {
+            name: "name",
+            label: "Student Name",
+            options: {
+              filter: false,
+              sort: true,
+              sortThirdClickReset: true,
+              setCellHeaderProps: () => ({
+                style: { textAlign: "left", minWidth: 220, width: 260, maxWidth: 320 },
+              }),
+              setCellProps: () => ({
+                style: { textAlign: "left", minWidth: 220, width: 260, maxWidth: 320 },
+              }),
+            },
+          },
           {
             name: "marks",
             label: "Marks",
@@ -605,18 +631,17 @@ const StudentPerformanceTable = ({
               sort: true,
               sortThirdClickReset: true,
               setCellHeaderProps: () => ({
-                style: { textAlign: "center" },
+                style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
+              }),
+              setCellProps: () => ({
+                style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
               }),
               customBodyRenderLite: (dataIndex) => {
                 const student = paginatedTableData[dataIndex];
-                return (
-                  <div>
-                    {student.isAbsent ? (
-                      <span style={{ color: "#949494" }}> - </span>
-                    ) : (
-                      student.originalScore
-                    )}
-                  </div>
+                return student.isAbsent ? (
+                  <span style={{ color: "#949494" }}> - </span>
+                ) : (
+                  student.originalScore
                 );
               },
             },
@@ -628,18 +653,27 @@ const StudentPerformanceTable = ({
               filter: false,
               sort: true,
               sortThirdClickReset: true,
+              setCellHeaderProps: () => ({
+                style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
+              }),
+              setCellProps: () => ({
+                style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
+              }),
               customBodyRenderLite: (dataIndex) => {
                 const student = paginatedTableData[dataIndex];
                 if (student.isAbsent) {
                   return <span style={{ color: "#949494" }}>-</span>;
                 }
+
                 let value = student.vsClassAvg;
-                if (typeof value === "string" && value.startsWith("+")) value = value.slice(1);
-                const num = Number(value);
-                let display = value;
-                if (!isNaN(num) && Number.isFinite(num)) {
-                  display = Number.isInteger(num) ? num : num;
+                if (typeof value === "string" && value.startsWith("+")) {
+                  value = value.slice(1);
                 }
+
+                const num = Number(value);
+                const display =
+                  !isNaN(num) && Number.isFinite(num) ? (Number.isInteger(num) ? num : num) : value;
+
                 return <span style={{ color: "#2F4F4F" }}>{display}</span>;
               },
             },
@@ -651,44 +685,47 @@ const StudentPerformanceTable = ({
               filter: true,
               sort: false,
               setCellHeaderProps: () => ({
-                style: { textAlign: "center" },
+                style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
+              }),
+              setCellProps: () => ({
+                style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
               }),
               customBodyRenderLite: (dataIndex) => {
                 const student = paginatedTableData[dataIndex];
                 if (student.isAbsent) {
                   return (
-                    <div>
-                      <div
-                        className="inline-block px-2 py-1 rounded-full text-xs"
-                        style={{
-                          backgroundColor: "#e0e0e0",
-                          color: "#757575",
-                        }}
-                      >
-                        Absent
-                      </div>
-                    </div>
-                  );
-                }
-                const isPass = student.isPass;
-                return (
-                  <div>
-                    <div
+                    <span
                       className="inline-block px-2 py-1 rounded-full text-xs"
                       style={{
-                        backgroundColor: isPass ? "#e8f5e9" : "#ffebee",
-                        color: isPass ? "#2e7d32" : "#c62828",
+                        backgroundColor: "#e0e0e0",
+                        color: "#757575",
                       }}
                     >
-                      {student.result}
-                    </div>
-                  </div>
+                      Absent
+                    </span>
+                  );
+                }
+
+                return (
+                  <span
+                    className="inline-block px-2 py-1 rounded-full text-xs"
+                    style={{
+                      backgroundColor: student.isPass ? "#e8f5e9" : "#ffebee",
+                      color: student.isPass ? "#2e7d32" : "#c62828",
+                      fontFamily: "Work Sans",
+                      fontWeight: 400,
+                      fontSize: "12px",
+                    }}
+                  >
+                    {student.result}
+                  </span>
                 );
               },
             },
           },
         ]),
   ];
+
   columns.forEach((column) => {
     if (!column.options) column.options = {};
     column.options.customHeadLabelRender = defaultCustomHeadLabelRender;
@@ -815,7 +852,7 @@ const StudentPerformanceTable = ({
                 {/* Download Reports Button */}
                 <div>
                   <ButtonCustom
-                    text={"Download Reports"}
+                    text={"Download Report"}
                     onClick={() => setShowDownloadModal(true)}
                   />
                 </div>
@@ -844,7 +881,16 @@ const StudentPerformanceTable = ({
           style={{ borderRadius: "8px" }}
           className="rounded-lg overflow-hidden border mt-4 border-gray-200 overflow-x-auto"
         >
-          <MUIDataTable data={paginatedTableData} columns={columns} options={options} />
+          <MUIDataTable
+            data={paginatedTableData}
+            columns={columns}
+            options={{
+              ...options,
+              setTableProps: () => ({
+                style: { tableLayout: "fixed", width: "100%" },
+              }),
+            }}
+          />
         </div>
         <div style={{ width: "max-content", margin: "25px auto" }}>
           <Pagination
@@ -854,24 +900,23 @@ const StudentPerformanceTable = ({
             showFirstButton
             showLastButton
             renderItem={(item) => {
-    const isNextPage = item.page === currentPage + 1 && item.type === 'page';
-    const isCurrentPage = item.page === currentPage && item.type === 'page';
+              const isNextPage = item.page === currentPage + 1 && item.type === "page";
+              const isCurrentPage = item.page === currentPage && item.type === "page";
 
-    return (
-      <PaginationItem
-        {...item}
-        sx={{
-          ...(isNextPage && {
-            border: "1px solid #2F4F4F",
-            borderRadius: "9999px", // fully rounded
-            color: "#2F4F4F",
-          }),
-        }}
-      />
-    );
-  }}
-/>
-          
+              return (
+                <PaginationItem
+                  {...item}
+                  sx={{
+                    ...(isNextPage && {
+                      border: "1px solid #2F4F4F",
+                      borderRadius: "9999px", // fully rounded
+                      color: "#2F4F4F",
+                    }),
+                  }}
+                />
+              );
+            }}
+          />
         </div>
         {/* Download Modal */}
         <DownloadModal
