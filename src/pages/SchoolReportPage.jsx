@@ -124,30 +124,36 @@ const SchoolReportPage = () => {
   // Get the highest achieved grade for remedial tests
   const getHighestAchievedGrade = (gradeDistribution) => {
     if (!gradeDistribution || gradeDistribution.length === 0) return { count: 0, total: 0 };
-    
+
     // Define grade hierarchy (from lowest to highest)
-    const gradeHierarchy = ['beginner', 'single digit', 'double digit', 'multiplication', 'division'];
-    
+    const gradeHierarchy = [
+      "beginner",
+      "single digit",
+      "double digit",
+      "multiplication",
+      "division",
+    ];
+
     let highestGradeIndex = -1;
     let highestGradeCount = 0;
     let totalStudents = 0;
 
     gradeDistribution.forEach((grade) => {
       totalStudents += grade.value;
-      const gradeIndex = gradeHierarchy.findIndex(g => 
+      const gradeIndex = gradeHierarchy.findIndex((g) =>
         grade.label.toLowerCase().includes(g.toLowerCase())
       );
-      
+
       if (gradeIndex > highestGradeIndex && grade.value > 0) {
         highestGradeIndex = gradeIndex;
         highestGradeCount = grade.value;
       }
     });
 
-    return { 
-      count: highestGradeCount, 
+    return {
+      count: highestGradeCount,
       total: totalStudents,
-      gradeName: highestGradeIndex >= 0 ? gradeHierarchy[highestGradeIndex] : 'division'
+      gradeName: highestGradeIndex >= 0 ? gradeHierarchy[highestGradeIndex] : "division",
     };
   };
 
@@ -198,6 +204,7 @@ const SchoolReportPage = () => {
             passed: !student.isAbsent && student.score >= threshold,
             // Calculate performance relative to max score
             percentage: student.isAbsent ? 0 : Math.round((student.score / apiData.maxScore) * 100),
+            grade: student.grade,
           }));
 
           const processedData = {
@@ -218,6 +225,7 @@ const SchoolReportPage = () => {
             testName: apiData.subject,
             testType: apiData.testType,
             createdAt: apiData.createdAt,
+            subject: apiData.subject,
           });
 
           setSchoolData(processedData);
@@ -289,7 +297,9 @@ const SchoolReportPage = () => {
   const failedStudents = totalStudents - passedStudents;
 
   // Get highest achieved grade info for remedial tests
-  const highestGradeInfo = isRemedialTest() ? getHighestAchievedGrade(schoolData.gradeDistribution) : null;
+  const highestGradeInfo = isRemedialTest()
+    ? getHighestAchievedGrade(schoolData.gradeDistribution)
+    : null;
 
   // Component for the Visualizations Tab
   const VisualizationsTab = () => (
@@ -321,7 +331,7 @@ const SchoolReportPage = () => {
                   secondaryColor={SECONDARY_COLOR}
                 />
               )}
-              
+
               {/* Legend */}
               <div className="mt-4 flex items-center justify-center gap-4 flex-wrap">
                 {isRemedialTest() ? (
@@ -409,8 +419,8 @@ const SchoolReportPage = () => {
           >
             {isRemedialTest()
               ? `${highestGradeInfo?.count || 0} out of ${totalStudents} Students Achieved ${
-                  highestGradeInfo?.gradeName?.charAt(0).toUpperCase() + 
-                  highestGradeInfo?.gradeName?.slice(1) || 'Division'
+                  highestGradeInfo?.gradeName?.charAt(0).toUpperCase() +
+                    highestGradeInfo?.gradeName?.slice(1) || "Division"
                 } Grade`
               : `${passedStudents} out of ${totalStudents} Students Passed`}
           </div>
@@ -468,6 +478,7 @@ const SchoolReportPage = () => {
       onViewProfile={handleViewProfile}
       onExport={handleExportStudentData}
       testType={testData?.testType}
+      subject={testData?.subject}
     />
   );
 
@@ -510,10 +521,10 @@ const SchoolReportPage = () => {
               icon={<DoneIcon style={{ fontSize: "16px" }} />}
               label={
                 isRemedialTest()
-                  ? `${highestGradeInfo?.gradeName?.charAt(0).toUpperCase() + 
-                      highestGradeInfo?.gradeName?.slice(1) || 'Division'} Grade: ${
-                      Math.round((highestGradeInfo?.count || 0) / totalStudents * 100)
-                    }%`
+                  ? `${
+                      highestGradeInfo?.gradeName?.charAt(0).toUpperCase() +
+                        highestGradeInfo?.gradeName?.slice(1) || "Division"
+                    } Grade: ${Math.round(((highestGradeInfo?.count || 0) / totalStudents) * 100)}%`
                   : `Success Rate: ${schoolData.passRate}%`
               }
               variant="outlined"

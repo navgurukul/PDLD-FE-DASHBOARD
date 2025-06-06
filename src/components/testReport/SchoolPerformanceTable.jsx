@@ -415,7 +415,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     </span>
   );
 
-  const isRemedialTest = testNameVal?.toLowerCase().includes("remedial"); 
+  const isRemedialTest = testNameVal?.toLowerCase().includes("remedial");
 
   // MUI DataTable columns configuration
   const columns = [
@@ -483,31 +483,31 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       },
     },
     ...(!isRemedialTest
-    ? [
-        {
-          name: "averageScore",
-          label: "Average Score",
-          options: {
-            filter: false,
-            sort: true,
-            sortThirdClickReset: true,
-          },
-        },
-        {
-          name: "passRate",
-          label: "Pass Percentage",
-          options: {
-            filter: false,
-            sort: true,
-            sortThirdClickReset: true,
-            customBodyRenderLite: (dataIndex) => {
-              const passRate = tableData[dataIndex].passRate;
-              return passRate !== "-" ? `${passRate}` : "-";
+      ? [
+          {
+            name: "averageScore",
+            label: "Average Score",
+            options: {
+              filter: false,
+              sort: true,
+              sortThirdClickReset: true,
             },
           },
-        },
-      ]
-    : []),
+          {
+            name: "passRate",
+            label: "Pass Percentage",
+            options: {
+              filter: false,
+              sort: true,
+              sortThirdClickReset: true,
+              customBodyRenderLite: (dataIndex) => {
+                const passRate = tableData[dataIndex].passRate;
+                return passRate !== "-" ? `${passRate}` : "-";
+              },
+            },
+          },
+        ]
+      : []),
     {
       name: "submitted",
       label: "Actions",
@@ -529,7 +529,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         customBodyRenderLite: (dataIndex) => {
           const rowData = tableData[dataIndex];
           const schoolId = rowData.id;
-           const isPending = rowData.status === "Pending";
+          const isPending = rowData.status === "Pending";
           return (
             <div
               style={{
@@ -798,14 +798,15 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                       variant="text"
                       sx={{
                         color: "#2F4F4F",
+                        fontFamily: "Work Sans",
                         fontWeight: 600,
-                        fontSize: 16,
+                        fontSize: "14px",
                         textTransform: "none",
                         height: "48px",
                         padding: "0 12px",
                         background: "transparent",
                         "&:hover": {
-                          background: "#f5f5f5",
+                           background: "#f5f5f5",
                         },
                       }}
                     >
@@ -827,6 +828,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                     fontSize: "18px",
                     ml: 2,
                     height: "48px",
+                    "&:hover": {
+                      background: "#CCAC00 ",
+                    },
                   }}
                 >
                   Download Report

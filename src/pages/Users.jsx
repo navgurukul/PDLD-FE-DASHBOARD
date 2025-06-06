@@ -13,7 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { Pagination } from "@mui/material";
+import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import apiInstance from "../../api";
@@ -69,6 +69,7 @@ const theme = createTheme({
     MuiPaginationItem: {
       styleOverrides: {
         root: {
+          color: "#2F4F4F",
           backgroundColor: "white",
           "&.Mui-selected": {
             backgroundColor: "#2F4F4F",
@@ -113,7 +114,7 @@ export default function Users() {
   const [selectedBlock, setSelectedBlock] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Changed from fixed pageSize to state
   const [pageSize, setPageSize] = useState(15);
 
@@ -602,7 +603,7 @@ export default function Users() {
               sx={{
                 height: "48px",
                 display: "flex",
-                width: "150px", // Reduced width for more compact layout
+                width: "auto", // Reduced width for more compact layout
                 minWidth: "120px",
               }}
             >
@@ -673,7 +674,7 @@ export default function Users() {
               sx={{
                 height: "48px",
                 display: "flex",
-                width: "150px",
+                width: "auto",
                 minWidth: "120px",
               }}
             >
@@ -748,8 +749,9 @@ export default function Users() {
                   variant="text"
                   sx={{
                     color: "#2F4F4F",
+                    fontFamily: "Work Sans",
                     fontWeight: 600,
-                    fontSize: 16,
+                    fontSize: "14px",
                     textTransform: "none",
                     height: "48px",
                     padding: "0 12px",
@@ -794,6 +796,21 @@ export default function Users() {
               showFirstButton
               showLastButton
               className="[&_.Mui-selected]:bg-[#2F4F4F] [&_.Mui-selected]:text-white"
+              renderItem={(item) => {
+              const isNextNumberPage = item.page === currentPage + 1 && item.type === "page";
+
+                return (
+                  <PaginationItem
+                    {...item}
+                    sx={{
+                      ...(isNextNumberPage && {
+                        border: "1px solid #2F4F4F",
+                        borderRadius: "100%",
+                      }),
+                    }}
+                  />
+                );
+              }}
             />
           </div>
 

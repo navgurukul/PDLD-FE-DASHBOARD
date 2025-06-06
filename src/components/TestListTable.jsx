@@ -5,7 +5,7 @@ import { Button, TextField, MenuItem, CircularProgress, Typography, Select } fro
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { Pagination } from "@mui/material";
+import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import "./TestListTable.css";
 import { ToastContainer, toast } from "react-toastify";
@@ -104,7 +104,7 @@ const theme = createTheme({
     MuiPaginationItem: {
       styleOverrides: {
         root: {
-          color: "black", // Change default text color
+          color:"#2F4F4F",// Change default text color
           backgroundColor: "white", // Change the background color of all buttons
           "&.Mui-selected": {
             backgroundColor: "#2F4F4F", // Change color when selected
@@ -138,7 +138,7 @@ export default function TestListTable() {
   const [currentPage, setCurrentPage] = useState(1);
   // Changed from fixed pageSize to state
   const [pageSize, setPageSize] = useState(15);
-  
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -536,8 +536,7 @@ export default function TestListTable() {
           {/* Filters Group */}
           <div className="flex flex-wrap gap-2 items-center">
             {/* Search bar */}
-           <div className="w-full lg:w-[360px]">
-
+            <div className="w-full lg:w-[360px]">
               <TextField
                 variant="outlined"
                 placeholder="Search by Test Name"
@@ -915,8 +914,9 @@ export default function TestListTable() {
                     variant="text"
                     sx={{
                       color: "#2F4F4F",
+                      fontFamily: "Work Sans",
                       fontWeight: 600,
-                      fontSize: 16,
+                      fontSize: "14px",
                       textTransform: "none",
                       height: "48px",
                       padding: "0 12px",
@@ -972,6 +972,21 @@ export default function TestListTable() {
               onChange={handlePageChange}
               showFirstButton
               showLastButton
+              renderItem={(item) => {
+                const isNextPage = item.page === currentPage + 1 && item.type === "page";
+
+                return (
+                  <PaginationItem
+                    {...item}
+                    sx={{
+                      ...(isNextPage && {
+                        border: "1px solid #2F4F4F",
+                        color: "#2F4F4F",
+                      }),
+                    }}
+                  />
+                );
+              }}
             />
           </div>
 

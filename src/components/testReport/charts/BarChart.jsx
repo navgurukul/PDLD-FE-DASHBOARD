@@ -62,12 +62,20 @@ const BarChart = ({
               {/* Tooltip */}
               {showValues && hoveredIndex === index && (
                 <div
-                  className="absolute z-10 px-2 py-1 text-xs font-medium text-white bg-gray-800 rounded shadow"
+                  className="absolute z-10 px-3 py-2 text-xs font-medium rounded shadow"
                   style={{
                     bottom: `calc(${barHeight}% + 8px)`,
+                    background: "#fff",
+                    color: "#222",
+                    minWidth: 80,
+                    textAlign: "center",
+                    border: "1px solid #e0e0e0",
                   }}
                 >
-                  {item.value} students
+                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{item.label}</div>
+                  <div style={{ fontSize: 12 }}>
+                    Number of students: <b>{item.value}</b>
+                  </div>
                 </div>
               )}
 
