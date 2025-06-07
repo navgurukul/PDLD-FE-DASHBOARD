@@ -22,7 +22,7 @@ import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-
+import { Search } from "lucide-react";
 const theme = createTheme({
   typography: {
     fontFamily: "'Karla', sans-serif",
@@ -592,6 +592,11 @@ export default function Users() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               InputProps={{
+                startAdornment: (
+                  <div className="pr-2">
+                    <Search size={18} className="text-gray-500" />
+                  </div>
+                ),
                 style: {
                   backgroundColor: "#fff",
                   borderRadius: "8px",
@@ -801,7 +806,7 @@ export default function Users() {
               showLastButton
               className="[&_.Mui-selected]:bg-[#2F4F4F] [&_.Mui-selected]:text-white"
               renderItem={(item) => {
-              const isNextNumberPage = item.page === currentPage + 1 && item.type === "page";
+                const isNextNumberPage = item.page === currentPage + 1 && item.type === "page";
 
                 return (
                   <PaginationItem
