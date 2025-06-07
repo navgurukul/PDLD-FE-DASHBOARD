@@ -17,7 +17,7 @@ const ButtonCustom = ({ text, onClick, imageName, disabled, btnWidth }) => {
       >
         {imageName && <img src={imageName} alt="" />}
         <span
-          className={`text-[#2f4f4f] text-lg font-bold font-['Karla'] leading-[30.60px] ${
+          className={`text-[#2F4F4F] text-[18px] font-semibold font-['Work_Sans'] leading-[30.6px]] ${
             disabled ? "opacity-50" : ""
           }`}
         >

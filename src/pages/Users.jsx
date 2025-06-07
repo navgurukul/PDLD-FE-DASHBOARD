@@ -95,6 +95,10 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderBottom: "none",
+          fontFamily: "'Work Sans', sans-serif",
+          fontWeight: 400,
+          fontSize: "14px",
+          color: "#2F4F4F",
         },
       },
     },

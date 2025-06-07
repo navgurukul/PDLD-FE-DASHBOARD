@@ -246,22 +246,25 @@ const Reports = () => {
               font-family: 'Karla', sans-serif;
             }
             .custom-table th, .custom-table td {
-              padding: 18px 16px; /* Increased row height */
+              padding: 10px 18px; /* Increased row height */
               text-align: center;
               border-bottom: none;
-              font-size: 13px; /* Reduced font size */
+              font-family:  'Work Sans', sans-serif !important;
+              font-weight: 400 !important;
+              font-size: 14px !important;
+              color: #2F4F4F;
             }
             .custom-table th.group-header {
               font-family: 'Work Sans', sans-serif !important;
               text-align: center;
               color: #2F4F4F;
               font-weight: 600 !important;
-              font-size: 14px;
+              font-size: 14px !important;
               border-bottom: none!important;
             }
             .custom-table th.sub-header {
-              font-family: 'Work Sans', sans-serif !important;
-              color: #2F4F4F;
+              font-family: 'Noto Sans', sans-serif !important;
+              color: #2F4F4F !important;
               font-weight: 600 !important;
               font-size: 14px;
               text-align: center;
@@ -271,7 +274,9 @@ const Reports = () => {
               cursor: default !important;
             }
             .custom-table td.low-score {
-              color: #FF0000;
+              color: #F45050;
+              font-weight: 600 !important;
+              font-family: "Work Sans" !important;
             }
             .custom-table th.school-header {
                 font-family: 'Work Sans', sans-serif !important;
@@ -1022,6 +1027,8 @@ const Reports = () => {
                   sx={{
                     height: "48px",
                     borderRadius: "8px",
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontSize: "14px",
                     "& .MuiOutlinedInput-notchedOutline": {
                       borderRadius: "8px",
                     },
@@ -1031,6 +1038,7 @@ const Reports = () => {
                       height: "24px",
                       display: "flex",
                       alignItems: "center",
+                      fontWeight: 600,
                     },
                   }}
                 >
@@ -1097,6 +1105,8 @@ const Reports = () => {
                   borderRadius: "8px",
                   minWidth: 0,
                   width: "auto",
+                  fontFamily: "Work Sans",
+                  fontSize: "14px",
                   "& .MuiSelect-select": {
                     minWidth: 0,
                     width: "auto",
@@ -1139,6 +1149,8 @@ const Reports = () => {
                   borderRadius: "8px",
                   minWidth: 0,
                   width: "auto",
+                  fontFamily: "Work Sans",
+                  fontSize: "14px",
                   "& .MuiSelect-select": {
                     minWidth: 0,
                     width: "auto",
@@ -1245,7 +1257,7 @@ const Reports = () => {
                         sx={{
                           margin: "0 2px",
                           ...(isNextPage && {
-                            border: "2px solid #2F4F4F !important",
+                            border: "1px solid #2F4F4F !important",
                             borderRadius: "9999px !important",
                             color: "#2F4F4F !important",
                             backgroundColor: "white !important",
@@ -1361,14 +1373,25 @@ const Reports = () => {
               </div>
 
               {/* Class group and subject in one row, subject not at extreme right */}
-              <div
-                className="bg-gray-100 p-4 rounded-md mb-6 flex items-center"
-                style={{ fontFamily: "'Karla', sans-serif" }}
-              >
-                <div className="text-[#2F4F4F] font-medium mr-8">
+              <div className="bg-[#EAEDED] p-4 rounded-md mb-6 flex items-center">
+                <div
+                  className="text-[#2F4F4F] mr-8"
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: 600,
+                    fontSize: "18px",
+                  }}
+                >
                   Class Group: {selectedClassData.groupTitle}
                 </div>
-                <div className="text-[#2F4F4F] font-medium">
+                <div
+                  className="text-[#2F4F4F]"
+                  style={{
+                    fontFamily: "'Work Sans', sans-serif",
+                    fontWeight: 600,
+                    fontSize: "18px",
+                  }}
+                >
                   Subject: {selectedClassData.subject}
                 </div>
               </div>
@@ -1376,14 +1399,21 @@ const Reports = () => {
               {/* Classes in 2 columns, Avg Marks & Pass Rate in one line */}
               <div className="grid grid-cols-2 gap-y-4 gap-x-12">
                 {selectedClassData.data[0]?.classes?.map((classData, index) => (
-                  <div
-                    key={`class-${classData.class}-${index}`}
-                    style={{ fontFamily: "'Karla', sans-serif" }}
-                  >
-                    <div className="font-medium text-[#2F4F4F] mb-2 text-base">
+                  <div key={`class-${classData.class}-${index}`}>
+                    <div
+                      className=" text-[#2F4F4F] mb-2 text-base"
+                      style={{ fontWeight: 600, fontFamily: "Work Sans" }}
+                    >
                       Class {classData.class}
                     </div>
-                    <div className="flex items-center gap-6 text-sm text-gray-700">
+                    <div
+                      className="flex items-center gap-6  text-[#597272]"
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        fontSize: "14px",
+                      }}
+                    >
                       <span>
                         Avg Marks{" "}
                         <span
@@ -1392,6 +1422,11 @@ const Reports = () => {
                               ? "text-red-600 font-medium"
                               : "font-medium"
                           }
+                          style={{
+                            fontFamily: "'Work Sans', sans-serif",
+                            fontWeight: 400,
+                            fontSize: "14px",
+                          }}
                         >
                           {classData.avgMarks}
                         </span>
@@ -1402,10 +1437,15 @@ const Reports = () => {
                           className={
                             parseFloat(classData.successRate) < 30
                               ? "text-red-600 font-medium"
-                              : "font-medium"
+                              : "font-medium text-[#2F4F4F]"
                           }
+                          style={{
+                            fontFamily: "'Work Sans', sans-serif",
+                            fontWeight: 400,
+                            fontSize: "14px",
+                          }}
                         >
-                          {classData.successRate}%
+                          {classData.successRate}
                         </span>
                       </span>
                     </div>

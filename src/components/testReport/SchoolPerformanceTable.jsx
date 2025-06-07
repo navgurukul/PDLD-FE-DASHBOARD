@@ -79,7 +79,11 @@ const theme = createTheme({
     MuiTableCell: {
       styleOverrides: {
         root: {
+          fontFamily: "Karla !important",
           borderBottom: "none",
+          fontWeight: 400,
+          color: "#2F4F4F",
+          fontSize: "14px",
         },
       },
     },
@@ -406,7 +410,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         color: "#2F4F4F",
         fontFamily: "'Work Sans'",
         fontWeight: 600,
-        fontSize: "12px",
+        fontSize: "14px",
         fontStyle: "normal",
         textTransform: "none",
       }}
@@ -447,6 +451,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               style={{
                 backgroundColor: status === "Submitted" ? "#e8f5e9" : "#fff8e1",
                 color: status === "Submitted" ? "#2e7d32" : "#f57c00",
+                fontWeight: 400,
+        fontFamily: "Work Sans",
+        fontSize: "12px",
               }}
             >
               {status}
@@ -566,8 +573,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               >
                 <DocScannerIcon
                   style={{
-                    width: "16px",
-                    height: "16px",
+                    width: "20px",
+                    height: "22px",
                     marginRight: "4px",
                     color: isPending ? "#B0B0B0" : "#2F4F4F",
                   }}
@@ -681,9 +688,12 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   size="small"
                   sx={{
                     borderRadius: "100px",
+                    height: "32px",
+                    fontFamily: "Work Sans",
+                    fontSize: "14px",
                     bgcolor: "#EAEDED",
                     border: "1.5px solid #2F4F4F",
-                    fontWeight: 600,
+                    fontWeight: 400,
                     color: "#2F4F4F",
                     "& .MuiChip-icon": { color: "#2F4F4F" },
                   }}
@@ -695,8 +705,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   size="small"
                   sx={{
                     borderRadius: "100px",
+                    height: "32px",
+                    fontFamily: "Work Sans",
+                    fontSize: "14px",
                     bgcolor: "#E9F3E9",
-                    fontWeight: 600,
+                    fontWeight: 400,
                     color: "#2e7d32",
                     "& .MuiChip-icon": { color: "#2e7d32" },
                   }}
@@ -708,12 +721,15 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   size="small"
                   sx={{
                     borderRadius: "100px",
+                    height: "32px",
                     bgcolor: "#FFFBE6",
+                    fontFamily: "Work Sans",
+                    fontSize: "14px",
                     border: "1.5px solid #FFD700",
-                    fontWeight: 600,
+                    fontWeight: 400,
                     color: "#2F4F4F",
                     "& .MuiChip-icon": {
-                      color: "#FFD700",
+                      color: "#2F4F4F",
                     },
                   }}
                 />
@@ -724,7 +740,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
         {/* Filters section */}
         {schools.length > 0 && (
-          <div className="pb-4 border-b border-gray-100 ">
+          <div className="pb-4">
             <div className="flex flex-wrap items-center gap-3 justify-between">
               {/* LEFT: Search, Status, Clear */}
               <div className="flex flex-wrap items-center gap-3">
@@ -806,7 +822,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                         padding: "0 12px",
                         background: "transparent",
                         "&:hover": {
-                           background: "#f5f5f5",
+                          background: "#f5f5f5",
                         },
                       }}
                     >
@@ -826,6 +842,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                     textTransform: "none",
                     fontWeight: 600,
                     fontSize: "18px",
+                    fontFamily: "Work Sans",
                     ml: 2,
                     height: "48px",
                     "&:hover": {
@@ -844,7 +861,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           <div
             style={{
               borderRadius: "8px",
-              padding: "12px 20px",
+              padding: "12px 0px",
               margin: "16px 0 0 0",
               fontWeight: 600,
               color: "#2F4F4F",
@@ -876,7 +893,15 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                 alt="No Data"
                 style={{ width: 80, height: 80, marginBottom: 16, opacity: 0.7 }}
               />
-              <p className="text-gray-500 mb-4">
+              <p
+                style={{
+                  fontFamily: "'Work Sans', sans-serif",
+                  fontWeight: 400,
+                  fontSize: "18px",
+                  color: "#2F4F4F",
+                  marginBottom: "16px",
+                }}
+              >
                 No school submissions have been recorded for this test yet.
               </p>
               <Button

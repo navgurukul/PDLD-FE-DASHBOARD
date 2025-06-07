@@ -58,7 +58,8 @@ const Breadcrumb = () => {
       to="/"
       sx={{
         textDecoration: "none",
-        fontFamily: "'Karla', sans-serif",
+        fontFamily: "Work Sans",
+        fontSize: "18px",
       }}
     >
       Home
@@ -84,7 +85,8 @@ const Breadcrumb = () => {
           to="/allTest"
           sx={{
             textDecoration: "none",
-            fontFamily: "'Karla', sans-serif",
+            fontFamily: "Work Sans",
+            fontSize: "18px",
           }}
         >
           Tests
@@ -97,7 +99,9 @@ const Breadcrumb = () => {
           color="text.disabled"
           sx={{
             textDecoration: "none",
-            fontFamily: "'Karla', sans-serif",
+            fontFamily: "Work Sans",
+            fontSize: "18px",
+            fontWeight: 400,
           }}
         >
           Create Test
@@ -114,7 +118,9 @@ const Breadcrumb = () => {
           color="text.disabled"
           sx={{
             textDecoration: "none",
-            fontFamily: "'Karla', sans-serif",
+            fontFamily: "Work Sans",
+            fontSize: "18px",
+            fontWeight: 400,
           }}
         >
           {(schoolName ? `${schoolName} ` : "") + "Test Details"}
@@ -134,7 +140,8 @@ const Breadcrumb = () => {
           to="/allTest"
           sx={{
             textDecoration: "none",
-            fontFamily: "'Karla', sans-serif",
+            fontFamily: "Work Sans",
+            fontSize: "18px",
           }}
         >
           Tests
@@ -147,7 +154,9 @@ const Breadcrumb = () => {
           color="text.disabled"
           sx={{
             textDecoration: "none",
-            fontFamily: "'Karla', sans-serif",
+            fontFamily: "Work Sans",
+            fontSize: "18px",
+            fontWeight: 400,
           }}
         >
           Edit Test
@@ -180,7 +189,9 @@ const Breadcrumb = () => {
             color="text.disabled"
             sx={{
               textDecoration: "none",
-              fontFamily: "'Karla', sans-serif",
+              fontFamily: "Work Sans",
+              fontSize: "18px",
+              fontWeight: 400,
             }}
           >
             {location.state.studentName}
@@ -213,7 +224,9 @@ const Breadcrumb = () => {
           color="text.disabled"
           sx={{
             textDecoration: "none",
-            fontFamily: "'Karla', sans-serif",
+            fontFamily: "Work Sans",
+            fontSize: "18px",
+            fontWeight: 400,
           }}
         >
           {displayName}
@@ -239,7 +252,8 @@ const Breadcrumb = () => {
           to={linkTo}
           sx={{
             textDecoration: "none",
-            fontFamily: "'Karla', sans-serif",
+            fontFamily: "Work Sans",
+            fontSize: "18px",
           }}
         >
           {displayName}
@@ -250,14 +264,14 @@ const Breadcrumb = () => {
 
   return (
     <Breadcrumbs
-      separator={<NavigateNextIcon fontSize="small" />}
+      separator={<NavigateNextIcon sx={{ width: "24px", height: "24px" }} />}
       aria-label="breadcrumb"
       sx={{
         mb: 1,
         pl: 10,
         mt: 5,
-        fontFamily: "'Karla', sans-serif",
-        fontSize: "14px",
+        fontFamily: "'Work Sans', sans-serif", // changed
+        fontSize: "18px",
         "& .MuiBreadcrumbs-separator": {
           mx: "4px", // This reduces margin between items and separator
         },
