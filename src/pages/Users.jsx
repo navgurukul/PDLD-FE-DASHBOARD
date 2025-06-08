@@ -620,6 +620,9 @@ export default function Users() {
                 id="role-select-label"
                 sx={{
                   color: "#2F4F4F",
+                  fontFamily: "'Work Sans'",
+                  fontWeight: 400,
+                  fontSize: "14px",
                   transform: "translate(14px, 14px) scale(1)",
                   "&.Mui-focused, &.MuiFormLabel-filled": {
                     transform: "translate(14px, -9px) scale(0.75)",
@@ -691,6 +694,9 @@ export default function Users() {
                 id="block-select-label"
                 sx={{
                   color: "#2F4F4F",
+                  fontFamily: "'Work Sans'",
+                  fontWeight: 400,
+                  fontSize: "14px",
                   transform: "translate(14px, 14px) scale(1)",
                   "&.Mui-focused, &.MuiFormLabel-filled": {
                     transform: "translate(14px, -9px) scale(0.75)",
