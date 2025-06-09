@@ -16,6 +16,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ButtonCustom from "../ButtonCustom";
 import { useNavigate } from "react-router-dom";
 import DownloadModal from "../modal/DownloadModal";
+import { Search } from "lucide-react";
 
 const theme = createTheme({
   typography: {
@@ -588,12 +589,13 @@ const StudentPerformanceTable = ({
                     </span>
                   );
                 }
+                const isBeginner = (student.grade || "").toString().toLowerCase() === "beginners";
                 return (
                   <span
                     className="inline-block px-2 py-1 rounded-full text-xs"
                     style={{
-                      backgroundColor: "#e8f5e9",
-                      color: "#2e7d32",
+                      backgroundColor: isBeginner ? "#FDDCDC" : "#EAEDED",
+                      color: isBeginner ? "#F45050" : "#2F4F4F",
                       textTransform: "capitalize",
                       fontFamily: "Work Sans",
                       fontWeight: 400,
@@ -762,6 +764,11 @@ const StudentPerformanceTable = ({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     InputProps={{
+                      startAdornment: (
+                        <div className="pr-2">
+                          <Search size={18} className="text-gray-500" />
+                        </div>
+                      ),
                       style: {
                         backgroundColor: "#fff",
                         borderRadius: "8px",
@@ -783,7 +790,7 @@ const StudentPerformanceTable = ({
                     <InputLabel
                       id="result-select-label"
                       sx={{
-                        color: "#2F4F4F",
+                        color: "#2F4F4F", fontFamily: "Work Sans",fontWeight: 400, fontSize: "14px",
                         transform: "translate(14px, 14px) scale(1)",
                         "&.Mui-focused, &.MuiFormLabel-filled": {
                           transform: "translate(14px, -9px) scale(0.75)",
