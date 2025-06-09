@@ -309,6 +309,9 @@ const Reports = () => {
             .custom-table td:first-child {
               text-align: left;
             }
+               .custom-table td {
+              height: 60px;
+            }
           `}
         </style>
         <table className="custom-table">
@@ -595,7 +598,7 @@ const Reports = () => {
           
           body {
             font-family: 'Arial', sans-serif;
-            line-height: 1.4;
+            line-height: 1.9;
             color: #333;
             background: white;
             font-size: 11px;
@@ -765,6 +768,19 @@ const Reports = () => {
               page-break-inside: avoid;
               page-break-after: auto;
             }
+thead tr.group-row {
+  height: 72px;
+}
+
+thead tr.sub-row,
+tbody tr {
+  height: 60px;
+}
+
+th, td {
+  vertical-align: middle;
+}
+
           }
         </style>
       </head>
