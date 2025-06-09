@@ -268,6 +268,14 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
       options: {
         filter: true,
         sort: true,
+        setCellProps: () => ({
+      style: {
+        textAlign: "center",
+        minWidth: 120,   
+        maxWidth: 160,  
+        width: "auto",
+      },
+    }),
         customBodyRender: (value) => {
           let statusClass = "";
 
@@ -282,7 +290,7 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
           return (
             <span
           className={`px-2 py-1 text-xs font-medium rounded-full ${statusClass}`}
-          style={{ display: "block", textAlign: "left", width: "50%" }}
+          style={{ display: "block", textAlign: "center", width: "50%" }}
         >
           {value}
         </span>

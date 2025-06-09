@@ -6,8 +6,6 @@ const ConfirmationModal = ({
   onConfirm,
   title,
   changeType,
-  fromValue,
-  toValue,
   message,
 }) => {
   if (!isOpen) return null;
@@ -41,8 +39,7 @@ const ConfirmationModal = ({
         {/* Modal body */}
         <div className="mb-6">
           <p className="text-[#2F4F4F] mb-3" style={{ fontSize: "18px", fontFamily: "Work Sans" }}>
-            You are changing {changeType.toLowerCase()} from <strong>{fromValue}</strong> to{" "}
-            <strong>{toValue}</strong>. {displayMessage}
+            {displayMessage}
           </p>
         </div>
 
@@ -58,7 +55,7 @@ const ConfirmationModal = ({
               fontSize: "18px",
             }}
           >
-             {changeType === "Page" ? "Discard" : `Change ${changeType}`}
+            {changeType === "Page" ? "Discard" : `Change ${changeType}`}
           </button>
 
           {/* Keep editing button - yellow button */}

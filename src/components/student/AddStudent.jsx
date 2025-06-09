@@ -1015,9 +1015,7 @@ export default function AddStudent({ isEditMode = false }) {
           onConfirm={handleModalConfirm}
           title="Unsaved Changes"
           changeType="Page"
-          fromValue="Current page with unsaved changes"
-          toValue={pendingRoute || "New page"}
-          message="You have unsaved changes that will be lost if you leave this page."
+          message="You're about to exit without saving your changes. All edits will be lost."
         />
       )}
 
@@ -1025,3 +1023,6 @@ export default function AddStudent({ isEditMode = false }) {
     </ThemeProvider>
   );
 }
+
+
+
