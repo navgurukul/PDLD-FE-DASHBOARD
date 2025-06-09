@@ -20,10 +20,10 @@ const CustomTooltip = ({ active, payload, label }) => {
     <Paper
       sx={{
         p: 2,
-        border: "1px dashed #c9d6ff",
         borderRadius: "4px",
         boxShadow: "0px 1px 4px rgba(0,0,0,0.1)",
         maxWidth: "300px",
+        width: "276px",
         bgcolor: "#fff",
       }}
     >
@@ -35,7 +35,7 @@ const CustomTooltip = ({ active, payload, label }) => {
           mb: 1.5,
         }}
       >
-        {label.toUpperCase()}
+        {currentData.fullMonthLabel ? currentData.fullMonthLabel.toUpperCase() : ""}
       </Typography>
 
       <Box sx={{ mb: 1 }}>
@@ -64,40 +64,116 @@ const CustomTooltip = ({ active, payload, label }) => {
 
       <Box
         sx={{
-          borderTop: "1px dashed #E0E0E0",
           pt: 1,
           mt: 1,
         }}
       >
         {Object.entries(currentData)
-          .filter(([key]) => key !== "month" && key !== "totalScore" && key !== "overall")
-          .map(([subject, score]) => (
-            <Box
-              key={subject}
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                py: 0.5,
-                borderBottom: subject === "mathematics" ? "1px dashed #E0E0E0" : "none",
-              }}
-            >
-              <Typography
-                variant="body2"
+          .filter(
+            ([key]) =>
+              key !== "month" &&
+              key !== "totalScore" &&
+              key !== "overall" &&
+              key !== "fullMonthLabel" &&
+              !key.endsWith("_raw")
+          )
+          .map(([subject, score]) => {
+            const raw = currentData[`${subject}_raw`];
+            return (
+              <Box
+                key={subject}
                 sx={{
-                  color: subject === "mathematics" ? "#1976d2" : "text.primary",
-                  fontWeight: subject === "mathematics" ? 500 : 400,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  py: 0.5,
+                  borderBottom: subject === "mathematics" ? "1px dashed #E0E0E0" : "none",
                 }}
               >
-                {subject.charAt(0).toUpperCase() +
-                  subject
-                    .slice(1)
-                    .replace(/([A-Z])/g, " $1")
-                    .trim()}
-              </Typography>
-              <Typography variant="body2">{score}</Typography>
-            </Box>
-          ))}
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: subject === "mathematics" ? "#1976d2" : "text.primary",
+                    fontWeight: subject === "mathematics" ? 500 : 400,
+                  }}
+                >
+                  {subject.charAt(0).toUpperCase() +
+                    subject
+                      .slice(1)
+                      .replace(/([A-Z])/g, " $1")
+                      .trim()}
+                </Typography>
+                <Typography variant="body2">
+                  {raw ? `${raw.score}/${raw.maxScore}` : score}
+                </Typography>
+              </Box>
+            );
+          })}
       </Box>
+    </Paper>
+  );
+};
+
+const SubjectTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+  const currentData = payload[0].payload;
+  const subject = payload[0].dataKey;
+  const raw = currentData[`${subject}_raw`];
+
+  // Aggregate percentage calculation
+  let aggregate = "-";
+  if (raw && raw.maxScore > 0) {
+    aggregate = Math.round((raw.score / raw.maxScore) * 100);
+  }
+
+  return (
+    <Paper
+      sx={{
+        p: 2,
+        borderRadius: "4px",
+        boxShadow: "0px 1px 4px rgba(0,0,0,0.1)",
+        width: "266px",
+        bgcolor: "#fff",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "'Work Sans', sans-serif",
+          fontWeight: 600,
+          fontSize: "14px",
+          color: "#CCAC00",
+          marginBottom: 8,
+        }}
+      >
+        {currentData.fullMonthLabel ? currentData.fullMonthLabel.toUpperCase() : ""}
+      </div>
+      {/* Aggregate Percentage Row */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontFamily: "'Work Sans', sans-serif",
+          fontWeight: 600,
+          fontSize: "14px",
+          color: "#2F4F4F",
+          marginBottom: 8,
+        }}
+      >
+        <span>Aggregate Percentage</span>
+        <span>{aggregate !== "-" ? `${aggregate}%` : "-"}</span>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontFamily: "'Work Sans', sans-serif",
+          fontWeight: 400,
+          fontSize: "14px",
+          color: "#2F4F4F",
+        }}
+      >
+        <span>Score</span>
+        <span>{raw ? `${raw.score}/${raw.maxScore}` : payload[0].value + "%"}</span>
+      </div>
     </Paper>
   );
 };
@@ -109,11 +185,21 @@ const transformStudentDataForGraph = (studentData) => {
 
   return studentData.academic.months.map((monthData) => {
     // Initialize with month
-    const monthObj = { month: monthData.month };
-
+    let year = "";
+    let fullYear = "";
+    const firstTestWithDate = monthData.tests.find((t) => t.testDate);
+    if (firstTestWithDate) {
+      const dateObj = new Date(firstTestWithDate.testDate); // 👈 yeh line add karo
+      year = dateObj.getFullYear().toString().slice(-2); // 2 digit for X-axis
+      fullYear = dateObj.getFullYear().toString(); // full year for tooltip
+    }
+    const monthLabel = year ? `${monthData.month} ${year}` : monthData.month;
+    const fullMonthLabel = fullYear ? `${monthData.month} ${fullYear}` : monthData.month;
+    const monthObj = { month: monthLabel, fullMonthLabel };
     // Track scores for each subject
     const subjectScores = {};
     const subjectCounts = {};
+    const subjectRawScores = {};
 
     // Process each test in the month
     monthData.tests.forEach((test) => {
@@ -125,6 +211,7 @@ const transformStudentDataForGraph = (studentData) => {
         if (!subjectScores[subject]) {
           subjectScores[subject] = 0;
           subjectCounts[subject] = 0;
+          subjectRawScores[subject] = { score: 0, maxScore: 0 };
         }
 
         // Calculate percentage score
@@ -133,12 +220,20 @@ const transformStudentDataForGraph = (studentData) => {
         // Add to totals
         subjectScores[subject] += normalizedScore;
         subjectCounts[subject]++;
+
+        subjectRawScores[subject].score += test.score;
+        subjectRawScores[subject].maxScore += test.maxScore;
       }
     });
 
     // Calculate average for each subject
     Object.keys(subjectScores).forEach((subject) => {
       monthObj[subject] = Math.round(subjectScores[subject] / subjectCounts[subject]);
+      // Add raw score/maxScore for tooltip
+      monthObj[`${subject}_raw`] = {
+        score: subjectRawScores[subject].score,
+        maxScore: subjectRawScores[subject].maxScore,
+      };
     });
 
     // Calculate overall average
@@ -221,7 +316,12 @@ const AcademicOverviewGraph = ({ studentData }) => {
       }}
     >
       <Box>
-        <h5 className="mb-4 text-lg font-bold text-[#2F4F4F]">Academic Overview</h5>
+        <h5
+          className="mb-4 text-[#2F4F4F]"
+          style={{ fontFamily: "Philosopher", fontWeight: "700", fontSize: "24px" }}
+        >
+          Academic Overview
+        </h5>
 
         <RadioGroup row value={selectedSubject} onChange={handleSubjectChange} sx={{ mb: 4 }}>
           {/* Dynamic radio buttons based on available subjects */}
@@ -245,16 +345,18 @@ const AcademicOverviewGraph = ({ studentData }) => {
                 tickLine={false}
                 tick={{ fontSize: 12, fill: "#666" }}
               />
+              tickFormatter={(value) => `${value}%`}
               <YAxis
                 domain={[0, 100]}
-                tickCount={11} // This aims for 11 ticks (0,10,20...100)
-                interval={0} // Force display of all ticks
+                tickCount={11}
+                interval={0}
                 allowDataOverflow={false}
                 allowDecimals={false}
                 axisLine={{ stroke: "#E0E0E0" }}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: "#666" }}
-                ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]} // Explicitly define all tick values
+                ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
+                tickFormatter={(value) => `${value}%`} // ✅ Yahan likho
                 label={{
                   value: "Scores in Percentage",
                   angle: -90,
@@ -263,20 +365,8 @@ const AcademicOverviewGraph = ({ studentData }) => {
                 }}
               />
               <Tooltip
-                content={selectedSubject === "overall" ? <CustomTooltip /> : null}
-                formatter={(value) =>
-                  selectedSubject !== "overall" ? [`${value}%`, "Score"] : value
-                }
-                contentStyle={
-                  selectedSubject !== "overall"
-                    ? {
-                        backgroundColor: "white",
-                        border: "1px solid #E0E0E0",
-                        borderRadius: "4px",
-                        boxShadow: "0px 2px 4px rgba(0,0,0,0.1)",
-                      }
-                    : null
-                }
+                content={selectedSubject === "overall" ? <CustomTooltip /> : <SubjectTooltip />}
+                contentStyle={null}
               />
               <Line
                 type="monotone"
