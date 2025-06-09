@@ -205,7 +205,7 @@ const TestCreationForm = () => {
   // Remove a subject row - if it's the last subject, remove the entire class
   const removeSubjectRow = (className, rowId) => {
     const currentRows = subjectRows[className] || [];
-    
+
     // If this is the only subject row, remove the entire class
     if (currentRows.length === 1) {
       // Remove the class from all related states
@@ -214,13 +214,13 @@ const TestCreationForm = () => {
         delete newSelected[className];
         return newSelected;
       });
-      
+
       setMaxScores((prevScores) => {
         const newScores = { ...prevScores };
         delete newScores[className];
         return newScores;
       });
-      
+
       setSubjectRows((prev) => {
         const newSubjectRows = { ...prev };
         delete newSubjectRows[className];
@@ -423,16 +423,14 @@ const TestCreationForm = () => {
 
   // Prepare data for summary modal
   const prepareSummaryData = () => {
-    // Convert data for ModalSummary
     const selectedGrades = [];
     const selectedSubjects = {};
     const testDates = {};
     const testDeadlines = {};
     const testScores = {};
+    const testNames = {};
 
-    // Process each selected class
     Object.keys(selectedClasses).forEach((className) => {
-      // Extract class number if in format "Class X"
       const grade = className.includes("Class ")
         ? parseInt(className.replace("Class ", ""))
         : className;
@@ -440,11 +438,10 @@ const TestCreationForm = () => {
       selectedGrades.push(grade);
       selectedSubjects[grade] = [];
 
-      // Process each subject row
       const classSubjectRows = subjectRows[className] || [];
       classSubjectRows.forEach((row) => {
         if (row.subject) {
-          // Format subject for display (capitalize first letter of each word)
+          // Subject display name
           const displaySubject = row.subject
             .split("_")
             .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -460,11 +457,32 @@ const TestCreationForm = () => {
           if (formData.testType === "syllabus") {
             testScores[key] = maxScores[className];
           }
+
+          // If it is "Monthly", then set testSeriesMonth, otherwise leave it blank
+          let month = "";
+          if (formData.testTag === "Monthly" && testSeriesMonth) {
+            month = testSeriesMonth;
+          }
+
+          // TestTag display (Syllabus, Remedial, etc.)
+          const testTagDisplay =
+            formData.testTag === "Half_Yearly"
+              ? "Half Yearly"
+              : formData.testTag === "Pre_Board"
+              ? "Pre Boards"
+              : formData.testTag
+              ? formData.testTag
+              : "";
+
+          // Test Name format
+          let testName = `${displaySubject}_${testTagDisplay}_Class ${grade}`;
+          if (month) testName += `_${month}`;
+
+          testNames[key] = testName;
         }
       });
     });
 
-    // Base data to return
     const summaryData = {
       selectedGrades,
       selectedSubjects,
@@ -472,9 +490,9 @@ const TestCreationForm = () => {
       testDeadlines,
       testType: formData.testType === "syllabus" ? "regular" : "remedial",
       testTag: formData.testTag,
+      testNames,
     };
 
-    // Only include testScores for syllabus tests
     if (formData.testType === "syllabus") {
       summaryData.testScores = testScores;
     }
@@ -658,6 +676,12 @@ const TestCreationForm = () => {
     }));
   };
 
+  // Check if any class in this group is selected
+  const isAnyClassSelectedInGroup = (group) =>
+    group.classes.some((classItem) => {
+      const className = typeof classItem === "number" ? `Class ${classItem}` : classItem;
+      return selectedClasses[className];
+    });
   // Handle form field changes
   // const handleFormChange = (e) => {
   //   const { name, value } = e.target;
@@ -988,7 +1012,7 @@ const TestCreationForm = () => {
                         className="text-base mb-3"
                         style={{
                           fontFamily: "'Work Sans', sans-serif",
-                          fontWeight: 400,
+                          fontWeight: isAnyClassSelectedInGroup(group) ? 600 : 400,
                           fontSize: "18px",
                           color: isDisabled ? "#9CA3AF" : "#2F4F4F",
                         }}
@@ -1004,10 +1028,14 @@ const TestCreationForm = () => {
                               <div
                                 key={className}
                                 className={`px-3 py-1 rounded-full text-sm transition-all
-      bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
-      ${selectedClasses[className] ? "font-semibold" : "font-normal"}
-      ${editMode ? "pointer-events-none" : ""}
-    `}
+                                  bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+                              ${
+                                selectedClasses[className]
+                                  ? "font-semibold border-2 border-[#2F4F4F]"
+                                  : "font-normal border border-transparent"
+                              }
+                              ${editMode ? "pointer-events-none" : ""}
+                              `}
                                 onClick={(e) => {
                                   if (!editMode) {
                                     e.stopPropagation();
@@ -1072,7 +1100,7 @@ const TestCreationForm = () => {
                         className="text-base mb-3"
                         style={{
                           fontFamily: "'Work Sans', sans-serif",
-                          fontWeight: 400,
+                          fontWeight: isAnyClassSelectedInGroup(group) ? 600 : 400,
                           fontSize: "18px",
                           color: isDisabled ? "#9CA3AF" : "#2F4F4F",
                         }}
@@ -1088,10 +1116,14 @@ const TestCreationForm = () => {
                               <div
                                 key={className}
                                 className={`px-3 py-1 rounded-full text-sm transition-all
-      bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
-      ${selectedClasses[className] ? "font-semibold" : "font-normal"}
-      ${editMode ? "pointer-events-none" : ""}
-    `}
+    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+    ${
+      selectedClasses[className]
+        ? "font-semibold border-2 border-[#2F4F4F]"
+        : "font-normal border border-transparent"
+    }
+    ${editMode ? "pointer-events-none" : ""}
+  `}
                                 onClick={(e) => {
                                   if (!editMode) {
                                     e.stopPropagation();
@@ -1156,7 +1188,7 @@ const TestCreationForm = () => {
                         className="text-base mb-3"
                         style={{
                           fontFamily: "'Work Sans', sans-serif",
-                          fontWeight: 400,
+                          fontWeight: isAnyClassSelectedInGroup(group) ? 600 : 400,
                           fontSize: "18px",
                           color: isDisabled ? "#9CA3AF" : "#2F4F4F",
                         }}
@@ -1172,10 +1204,14 @@ const TestCreationForm = () => {
                               <div
                                 key={className}
                                 className={`px-3 py-1 rounded-full text-sm transition-all
-      bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
-      ${selectedClasses[className] ? "font-semibold" : "font-normal"}
-      ${editMode ? "pointer-events-none" : ""}
-    `}
+    bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
+    ${
+      selectedClasses[className]
+        ? "font-semibold border-2 border-[#2F4F4F]"
+        : "font-normal border border-transparent"
+    }
+    ${editMode ? "pointer-events-none" : ""}
+  `}
                                 onClick={(e) => {
                                   if (!editMode) {
                                     e.stopPropagation();
@@ -1243,7 +1279,7 @@ const TestCreationForm = () => {
                     required
                   />
                   <div className="mt-1">
-                    <span className="text-sm text-purple-700">Max Score upper limit is 100</span>
+                    <span className="text-sm text-[#483D8B]-700">Max Score upper limit is 100</span>
                   </div>
                 </div>
               )}
@@ -1425,7 +1461,14 @@ const TestCreationForm = () => {
                         Add Subject
                       </button>
                     </div>
-                  ) : null;
+                  ) : (
+                    <div
+                      className="mt-6 text-[#2F4F4F]"
+                      style={{ fontFamily: "'Work Sans', sans-serif", fontSize: "14px" }}
+                    >
+                      All subjects have been added for this class
+                    </div>
+                  );
                 })()}
             </div>
           ))}
