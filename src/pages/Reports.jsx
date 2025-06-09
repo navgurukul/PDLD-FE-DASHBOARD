@@ -65,7 +65,10 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: "none",
-          fontFamily: "Karla !important",
+          fontFamily: "'Work Sans', sans-serif !important",
+          fontWeight: 400,
+          fontSize: "14px",
+          color: "#2F4F4F",
           textAlign: "left",
           "&.custom-cell": {
             width: "0px",
@@ -448,6 +451,7 @@ const Reports = () => {
       if (levelData && levelData.classes && levelData.classes.length > 0) {
         setSelectedClassData({
           school: school.schoolName,
+          udiseCode: school.udiseCode,
           id: school.id,
           subject: selectedSubject,
           data: [levelData], // Only include the selected level data

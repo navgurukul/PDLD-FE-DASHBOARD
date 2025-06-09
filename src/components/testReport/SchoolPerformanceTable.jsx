@@ -11,6 +11,9 @@ import {
   Box,
   Chip,
   CircularProgress,
+  Pagination,
+  PaginationItem,
+  Typography,
 } from "@mui/material";
 import MUIDataTable from "mui-datatables";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -28,6 +31,7 @@ import FolderEmptyImg from "../../assets/Folder Empty 1.svg";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DownloadModal from "../../components/modal/DownloadModal";
+import { Search } from "lucide-react";
 
 // Create MUI theme to match TestListTable
 const theme = createTheme({
@@ -84,6 +88,7 @@ const theme = createTheme({
           fontWeight: 400,
           color: "#2F4F4F",
           fontSize: "14px",
+          textAlign: "left !important",
         },
       },
     },
@@ -129,6 +134,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     key: null,
     direction: "asc",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
 
   // Get test ID from URL
   const { testId } = useParams();
@@ -397,6 +404,12 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     submitted: school.submitted,
   }));
 
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return tableData.slice(start, end);
+  }, [tableData, currentPage, pageSize]);
+
   const resetFilters = () => {
     setSearchQuery("");
     setStatusFilter("");
@@ -452,8 +465,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                 backgroundColor: status === "Submitted" ? "#e8f5e9" : "#fff8e1",
                 color: status === "Submitted" ? "#2e7d32" : "#f57c00",
                 fontWeight: 400,
-        fontFamily: "Work Sans",
-        fontSize: "12px",
+                fontFamily: "Work Sans",
+                fontSize: "12px",
               }}
             >
               {status}
@@ -469,6 +482,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         filter: false,
         sort: true,
         sortThirdClickReset: true,
+        setCellProps: () => ({
+          className: "center-align-cell",
+        }),
       },
     },
     {
@@ -478,6 +494,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         filter: false,
         sort: true,
         sortThirdClickReset: true,
+        setCellProps: () => ({
+          className: "center-align-cell",
+        }),
       },
     },
     {
@@ -487,6 +506,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         filter: false,
         sort: true,
         sortThirdClickReset: true,
+        setCellProps: () => ({
+          className: "center-align-cell",
+        }),
       },
     },
     ...(!isRemedialTest
@@ -498,6 +520,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               filter: false,
               sort: true,
               sortThirdClickReset: true,
+              setCellProps: () => ({
+                className: "center-align-cell",
+              }),
             },
           },
           {
@@ -507,6 +532,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               filter: false,
               sort: true,
               sortThirdClickReset: true,
+              setCellProps: () => ({
+                className: "center-align-cell",
+              }),
               customBodyRenderLite: (dataIndex) => {
                 const passRate = tableData[dataIndex].passRate;
                 return passRate !== "-" ? `${passRate}` : "-";
@@ -523,14 +551,19 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         sort: false,
         setCellProps: () => ({
           style: {
-            textAlign: "center",
+            textAlign: "right",
             padding: "0px 16px",
+            minWidth: "170px",
+            maxWidth: "170px",
+            width: "200px",
           },
         }),
         setCellHeaderProps: () => ({
           style: {
             textAlign: "center",
-            borderBottom: "1px solid rgba(224, 224, 224, 1)",
+            minWidth: "170px",
+            maxWidth: "170px",
+            width: "250px",
           },
         }),
         customBodyRenderLite: (dataIndex) => {
@@ -602,8 +635,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     viewColumns: false,
     selectableRows: "none",
     responsive: "standard",
-    rowsPerPage: 10,
-    rowsPerPageOptions: [10, 20, 30],
+    rowsPerPage: 15,
+    rowsPerPageOptions: [10, 15, 20, 50, 100],
     pagination: false,
     elevation: 0,
     tableBodyMaxHeight: "calc(100vh - 300px)",
@@ -660,14 +693,24 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     );
   }
 
+  const handlePageChange = (event, page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (event) => {
+    setPageSize(event.target.value);
+    setCurrentPage(1);
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <style>
         {`
-      .right-align-cell {
-        text-align: right !important;
-      }
-    `}
+    .center-align-cell {
+      text-align: center !important;
+     
+    }
+  `}
       </style>
       <div className="bg-white ">
         <div className="bg-white border-b-0 border-gray-100 mb-0">
@@ -751,6 +794,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   InputProps={{
+                    startAdornment: (
+                      <div className="pr-2">
+                        <Search size={18} className="text-gray-500" />
+                      </div>
+                    ),
                     style: {
                       backgroundColor: "#fff",
                       borderRadius: "8px",
@@ -772,7 +820,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   <InputLabel
                     id="status-select-label"
                     sx={{
-                      color: "#2F4F4F",
+                      color: "#2F4F4F", fontFamily:"Work Sans", fontSize: "14px", fontWeight: 400,
                       transform: "translate(14px, 14px) scale(1)",
                       "&.Mui-focused, &.MuiFormLabel-filled": {
                         transform: "translate(14px, -9px) scale(0.75)",
@@ -873,58 +921,142 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           </div>
         )}
 
-        {/* Data Table */}
-        <div style={{ borderRadius: "8px" }} className="rounded-lg overflow-hidden overflow-x-auto">
-          {schools.length > 0 ? (
-            <MUIDataTable
-              data={tableData}
-              columns={columns}
-              options={{
-                ...options,
-                elevation: 0,
-                tableBodyMaxHeight: "calc(100vh - 300px)",
-                fixedHeader: true,
-              }}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <img
-                src={FolderEmptyImg}
-                alt="No Data"
-                style={{ width: 80, height: 80, marginBottom: 16, opacity: 0.7 }}
+        {/* Data Table, Border, Pagination: Only when submissions exist */}
+        {schools.length > 0 ? (
+          <>
+            <div className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto">
+              <MUIDataTable
+                data={paginatedData}
+                columns={columns}
+                options={{
+                  ...options,
+                }}
               />
-              <p
-                style={{
-                  fontFamily: "'Work Sans', sans-serif",
-                  fontWeight: 400,
-                  fontSize: "18px",
-                  color: "#2F4F4F",
-                  marginBottom: "16px",
-                }}
-              >
-                No school submissions have been recorded for this test yet.
-              </p>
-              <Button
-                variant="outlined"
-                sx={{
-                  borderRadius: "8px",
-                  borderColor: "#2F4F4F",
-                  color: "#2F4F4F",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: "18px",
-                  "&:hover": {
-                    borderColor: "#2F4F4F",
-                    backgroundColor: "rgba(47, 79, 79, 0.08)",
-                  },
-                }}
-                onClick={() => navigate("/allTest")}
-              >
-                Return to Tests List
-              </Button>
             </div>
-          )}
-        </div>
+
+            {/* Pagination and Rows per Page */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+                margin: "20px 0",
+                padding: "0 24px",
+              }}
+            >
+              <div style={{ width: "180px" }}></div>
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <Pagination
+                  count={Math.ceil(tableData.length / pageSize)}
+                  page={currentPage}
+                  onChange={handlePageChange}
+                  showFirstButton
+                  showLastButton
+                  renderItem={(item) => (
+                    <PaginationItem
+                      {...item}
+                      sx={{
+                        ...(item.page === currentPage + 1 && item.type === "page"
+                          ? { border: "1px solid #2F4F4F", color: "#2F4F4F" }
+                          : {}),
+                      }}
+                    />
+                  )}
+                />
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  width: "180px",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#2F4F4F",
+                    mr: 1,
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                  }}
+                >
+                  Rows per page:
+                </Typography>
+                <Select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  variant="standard"
+                  disableUnderline
+                  sx={{
+                    height: "32px",
+                    minWidth: "60px",
+                    "& .MuiSelect-select": {
+                      color: "#2F4F4F",
+                      fontWeight: "600",
+                      py: 0,
+                      pl: 1,
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      elevation: 2,
+                      sx: {
+                        borderRadius: "8px",
+                        mt: 0.5,
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={15}>15</MenuItem>
+                  <MenuItem value={20}>20</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
+                  <MenuItem value={100}>100</MenuItem>
+                </Select>
+              </div>
+            </div>
+          </>
+        ) : (
+          // No Data Message (no border, no pagination)
+          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+            <img
+              src={FolderEmptyImg}
+              alt="No Data"
+              style={{ width: 80, height: 80, marginBottom: 16, opacity: 0.7 }}
+            />
+            <p
+              style={{
+                fontFamily: "'Work Sans', sans-serif",
+                fontWeight: 400,
+                fontSize: "18px",
+                color: "#2F4F4F",
+                marginBottom: "16px",
+              }}
+            >
+              No school submissions have been recorded for this test yet.
+            </p>
+            <Button
+              variant="outlined"
+              sx={{
+                borderRadius: "8px",
+                borderColor: "#2F4F4F",
+                color: "#2F4F4F",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "18px",
+                "&:hover": {
+                  borderColor: "#2F4F4F",
+                  backgroundColor: "rgba(47, 79, 79, 0.08)",
+                },
+              }}
+              onClick={() => navigate("/allTest")}
+            >
+              Return to Tests List
+            </Button>
+          </div>
+        )}
       </div>
       <DownloadModal
         isOpen={downloadModalOpen}
