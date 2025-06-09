@@ -629,7 +629,7 @@ export default function TestListTable() {
                     onFocus={() => setClassFocused(true)}
                     onBlur={() => setClassFocused(false)}
                   >
-                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16 }}>Class</span>
+                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: "14px", fontFamily:"Work Sans" }}>Class</span>
                     {selectedClass.length > 0 && (
                       <span className="class-count-badge">{selectedClass.length}</span>
                     )}
@@ -773,7 +773,7 @@ export default function TestListTable() {
                     onFocus={() => setSubjectFocused(true)}
                     onBlur={() => setSubjectFocused(false)}
                   >
-                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16 }}>Subject</span>
+                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: "14px", fontFamily:"Work Sans"  }}>Subject</span>
                     {selectedSubject.length > 0 && (
                       <span className="subject-count-badge">{selectedSubject.length}</span>
                     )}
