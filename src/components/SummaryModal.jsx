@@ -13,6 +13,7 @@ const ModalSummary = ({
   testDeadlines,
   modalTitle,
   isSubmitting, // Add isSubmitting prop
+  testNames,
 }) => {
   if (!isOpen) return null;
 
@@ -162,9 +163,24 @@ const ModalSummary = ({
               {/* List of tests for this class */}
               <div className="mt-3 space-y-2">
                 {tests.map((test, idx) => {
+                  const key = `${grade}-${test.subject}`;
                   return (
                     <div key={`${grade}-${test.subject}-${idx}`} className="pb-2">
-                      {/* Test name */}
+                      {/* Test Name  */}
+                      {testNames && testNames[key] && (
+                        <div
+                          style={{
+                            fontFamily: "'Work Sans', sans-serif",
+                            fontWeight: 600,
+                            fontSize: "15px",
+                            color: "#2F4F4F",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          {testNames[key]}
+                        </div>
+                      )}
+                      {/*  Test Date, Subject, Deadline */}
                       <div
                         className="flex gap-8"
                         style={{
