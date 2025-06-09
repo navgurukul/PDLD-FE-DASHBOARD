@@ -58,7 +58,7 @@ const ConfirmationModal = ({
               fontSize: "18px",
             }}
           >
-            {`Change ${changeType}`}
+             {changeType === "Page" ? "Discard" : `Change ${changeType}`}
           </button>
 
           {/* Keep editing button - yellow button */}
