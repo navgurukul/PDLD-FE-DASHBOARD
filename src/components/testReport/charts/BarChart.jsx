@@ -93,7 +93,7 @@ const BarChart = ({
               ></div>
 
               {/* Always visible value on top of the bar */}
-              {item.value > 0 && (
+              {/* {item.value > 0 && (
                 <div
                   className="absolute text-xs font-medium transition-all duration-300"
                   style={{
@@ -103,7 +103,7 @@ const BarChart = ({
                 >
                   {item.value}
                 </div>
-              )}
+              )} */}
             </div>
           );
         })}

@@ -22,6 +22,7 @@ import Checkbox from "@mui/material/Checkbox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import Paper from "@mui/material/Paper";
+import { Search } from "lucide-react";
 
 const theme = createTheme({
   typography: {
@@ -107,7 +108,7 @@ const theme = createTheme({
     MuiPaginationItem: {
       styleOverrides: {
         root: {
-          color:"#2F4F4F",// Change default text color
+          color: "#2F4F4F", // Change default text color
           backgroundColor: "white", // Change the background color of all buttons
           "&.Mui-selected": {
             backgroundColor: "#2F4F4F", // Change color when selected
@@ -548,6 +549,11 @@ export default function TestListTable() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 InputProps={{
+                  startAdornment: (
+                    <div className="pr-2">
+                      <Search size={18} className="text-gray-500" />
+                    </div>
+                  ),
                   style: {
                     backgroundColor: "#fff",
                     borderRadius: "8px",
@@ -623,7 +629,7 @@ export default function TestListTable() {
                     onFocus={() => setClassFocused(true)}
                     onBlur={() => setClassFocused(false)}
                   >
-                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16 }}>Class</span>
+                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: "14px", fontFamily:"Work Sans" }}>Class</span>
                     {selectedClass.length > 0 && (
                       <span className="class-count-badge">{selectedClass.length}</span>
                     )}
@@ -767,7 +773,7 @@ export default function TestListTable() {
                     onFocus={() => setSubjectFocused(true)}
                     onBlur={() => setSubjectFocused(false)}
                   >
-                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: 16 }}>Subject</span>
+                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: "14px", fontFamily:"Work Sans"  }}>Subject</span>
                     {selectedSubject.length > 0 && (
                       <span className="subject-count-badge">{selectedSubject.length}</span>
                     )}
