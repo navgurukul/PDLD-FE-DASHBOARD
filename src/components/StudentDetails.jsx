@@ -64,9 +64,12 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: "none",
-          fontFamily: "Karla !important",
+          fontFamily: "'Work Sans', sans-serif",
           textAlign: "left",
-            borderBottom: "none",
+          fontSize: "14px",
+          fontWeight: 400,
+          color: "#2F4F4F",
+          borderBottom: "none",
           "&.custom-cell": {
             width: "0px",
           },
@@ -160,14 +163,14 @@ const StudentDetails = ({ schoolId, schoolName }) => {
         // Extract all students from all classes
         let students = [];
         let classSet = new Set();
-        
+
         if (schoolData.classes && Array.isArray(schoolData.classes)) {
           schoolData.classes.forEach((classData) => {
             if (classData.students && Array.isArray(classData.students)) {
               // Add class information to each student
-              const studentsWithClass = classData.students.map(student => ({
+              const studentsWithClass = classData.students.map((student) => ({
                 ...student,
-                class: classData.class
+                class: classData.class,
               }));
               students = [...students, ...studentsWithClass];
               classSet.add(classData.class);
@@ -177,11 +180,10 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
         // Set all students
         setAllStudents(students);
-        
+
         // Set available classes sorted numerically
         const sortedClasses = Array.from(classSet).sort((a, b) => Number(a) - Number(b));
         setAvailableClasses(sortedClasses);
-
       } else {
         console.error("API response format unexpected:", result);
         setAllStudents([]);
@@ -243,7 +245,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
     setIsDeleting(true);
 
-     
     try {
       // Try multiple possible ID property names
       const studentId = studentToDelete.id || studentToDelete._id || studentToDelete.studentId;
@@ -278,12 +279,13 @@ const StudentDetails = ({ schoolId, schoolName }) => {
   // Filter students based on search query and selected class
   const filteredStudents = allStudents.filter((student) => {
     // First filter by search query
-    const matchesSearch = student?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      student?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (student?.aparId && student.aparId.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+
     // Then filter by class if a class is selected
     const matchesClass = selectedClass === "" || student.class?.toString() === selectedClass;
-    
+
     return matchesSearch && matchesClass;
   });
 
@@ -463,8 +465,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
         setCellHeaderProps: () => ({
           style: {
-            display: "flex",
-            justifyContent: "center",
+           textAlign: "center",
           },
         }),
         customBodyRenderLite: (dataIndex) => {
@@ -608,7 +609,28 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                 value={selectedClass}
                 onChange={handleClassChange}
                 displayEmpty
-                renderValue={(value) => value === "" ? "All Classes" : `Class ${value}`}
+                renderValue={(value) =>
+                  value === "" ? (
+                    <span
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        fontSize: "14px",
+                        color: "#2F4F4F",
+                      }}
+                    >
+                      All Classes
+                    </span>
+                  ) : (
+                    `Class ${value}`
+                  )
+                }
+                sx={{
+                  fontFamily: "'Work Sans', sans-serif",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  color: "#2F4F4F",
+                }}
               >
                 <MenuItem value="">
                   <em>All Classes</em>
@@ -681,10 +703,9 @@ const StudentDetails = ({ schoolId, schoolName }) => {
             }}
           >
             <Typography variant="body1" sx={{ mb: 2, color: "text.secondary" }}>
-              {selectedClass ? 
-                `No students found in Class ${selectedClass}.` : 
-                "No students found."
-              }
+              {selectedClass
+                ? `No students found in Class ${selectedClass}.`
+                : "No students found."}
             </Typography>
             <Typography variant="body1">Click "Add Student" to register a new student.</Typography>
           </Box>
