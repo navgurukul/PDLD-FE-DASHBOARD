@@ -9,19 +9,10 @@ import { useTheme } from "@mui/material/styles";
 import StudentAcademics from "./StudentAcademics";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import ButtonCustom from "../../components/ButtonCustom";
-import DownloadModal from "../../components/modal/DownloadModal"; // Import the download modal
+import DownloadModal from "../../components/modal/DownloadModal";
 import apiInstance from "../../../api";
-import {
-  EditPencilIcon,
-  bloodImage,
-  heightImageStudent,
-  weightScale,
-  person,
-  house,
-  fingerprint,
-  calendar_today,
-} from "../../utils/imagePath";
 import AcademicOverviewGraph from "../graph/AcademicOverviewGraph";
+import { Tooltip } from "@mui/material";
 
 // Tab panel component
 function TabPanel(props) {
@@ -1032,16 +1023,6 @@ const StudentProfileView = () => {
                   </Typography>
                 </Box>
 
-                {/* Apar Id */}
-                <Box sx={{ width: "25%", pr: 2 }}>
-                  <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-                    Apar Id
-                  </Typography>
-                  <Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
-                    {student.aparId || "N/A"}
-                  </Typography>
-                </Box>
-
                 {/* Class */}
                 <Box sx={{ width: "25%", pr: 2 }}>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
@@ -1064,25 +1045,65 @@ const StudentProfileView = () => {
                 )}
                 {/* Optional Subjects for class 9-12 */}
                 {["9", "10", "11", "12"].includes(student.class) && (
-                  <Box sx={{ width: "25%" }}>
+                  <Box sx={{ width: "50%", pr: 2 }}>
+                    {" "}
+                    {/* Increased width to 50% */}
                     <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                       Optional Subjects
                     </Typography>
-                    <Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
-                      {student.extraSubjects && student.extraSubjects.length > 0
-                        ? student.extraSubjects.join(", ")
-                        : "N/A"}
-                    </Typography>
+                    <Tooltip
+                      title={
+                        student.extraSubjects && student.extraSubjects.length > 0
+                          ? student.extraSubjects.join(", ")
+                          : "No optional subjects"
+                      }
+                      arrow
+                      placement="top"
+                    >
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          fontWeight: "500",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2, // Allow 2 lines
+                          WebkitBoxOrient: "vertical",
+                          lineHeight: 1.4,
+                          maxHeight: "2.8em", // 2 lines * 1.4 line-height
+                          cursor: "pointer",
+                        }}
+                      >
+                        {student.extraSubjects && student.extraSubjects.length > 0
+                          ? student.extraSubjects.join(", ")
+                          : "N/A"}
+                      </Typography>
+                    </Tooltip>
                   </Box>
                 )}
                 {/* School Name */}
-                <Box sx={{ width: "25%" }}>
+                <Box sx={{ width: "50%" }}> 
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                     School Name
                   </Typography>
-                  <Typography variant="subtitle1" sx={{ fontWeight: "500" }}>
-                    {schoolName || "N/A"}
-                  </Typography>
+                  <Tooltip title={schoolName || "N/A"} arrow placement="top">
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        fontWeight: "500",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2, // Allow 2 lines
+                        WebkitBoxOrient: "vertical",
+                        lineHeight: 1.4,
+                        maxHeight: "2.8em", // 2 lines * 1.4 line-height
+                        cursor: "pointer",
+                      }}
+                    >
+                      {schoolName || "N/A"}
+                    </Typography>
+                  </Tooltip>
                 </Box>
               </Box>
             </Paper>
