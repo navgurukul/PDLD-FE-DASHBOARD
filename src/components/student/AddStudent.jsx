@@ -848,15 +848,15 @@ export default function AddStudent({ isEditMode = false }) {
                 />
               </Grid>
 
-              {/* Unique ID (Optional) */}
+              {/* Hostel (Optional) */}
               <Grid item xs={12} md={6}>
                 <TextField
-                  label="APAR ID (Optional)"
-                  name="uniqueId"
-                  value={formData.uniqueId}
+                  label="Hostel (Optional)"
+                  name="hostel"
+                  value={formData.hostel}
                   onChange={handleInputChange}
                   fullWidth
-                  placeholder="Enter student's APAR ID if available"
+                  placeholder="Enter hostel information"
                   variant="outlined"
                   sx={{
                     "& .MuiOutlinedInput-root": {
@@ -969,24 +969,6 @@ export default function AddStudent({ isEditMode = false }) {
                   </FormControl>
                 </Grid>
               )}
-
-              {/* Hostel (Optional) */}
-              <Grid item xs={12}>
-                <TextField
-                  label="Hostel (Optional)"
-                  name="hostel"
-                  value={formData.hostel}
-                  onChange={handleInputChange}
-                  fullWidth
-                  placeholder="Enter hostel information if applicable"
-                  variant="outlined"
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      height: "48px",
-                    },
-                  }}
-                />
-              </Grid>
             </Grid>
 
             <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>

@@ -427,20 +427,20 @@ const StudentDetails = ({ schoolId, schoolName }) => {
         sort: true,
       },
     },
-    {
-      name: "APAR ID",
-      options: {
-        filter: false,
-        sort: true,
-        setCellProps: () => ({
-          style: {
-            display: "flex",
-            justifyContent: "flex-start",
-            paddingBottom: "22px",
-          },
-        }),
-      },
-    },
+    // {
+    //   name: "APAR ID",
+    //   options: {
+    //     filter: false,
+    //     sort: true,
+    //     setCellProps: () => ({
+    //       style: {
+    //         display: "flex",
+    //         justifyContent: "flex-start",
+    //         paddingBottom: "22px",
+    //       },
+    //     }),
+    //   },
+    // },
 
     {
       name: "ID",
