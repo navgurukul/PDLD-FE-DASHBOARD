@@ -435,13 +435,14 @@ export default function TestListTable() {
         }),
         customBodyRender: (value, tableMeta) => {
           const testId = tableMeta.rowData[0];
+          const testDateObj = tableMeta.rowData[5];
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const isPast = testDateObj && new Date(testDateObj) < today;
+
           return (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-              }}
-            >
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
               {userRole === "DISTRICT_OFFICER" && (
                 <Button
                   variant="outlined"
@@ -450,8 +451,12 @@ export default function TestListTable() {
                   sx={{
                     borderColor: "transparent",
                     "&:hover": { borderColor: "transparent" },
+                    opacity: isPast ? 0.5 : 1,
+                    pointerEvents: isPast ? "none" : "auto",
                   }}
-                  onClick={(event) => handleEditClick(event, testId)}
+                  disabled={isPast}
+                  onClick={(event) => !isPast && handleEditClick(event, testId)}
+                  title={isPast ? "You can't edit past tests" : "Edit Test"}
                 >
                   <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
                   &nbsp;
@@ -629,7 +634,16 @@ export default function TestListTable() {
                     onFocus={() => setClassFocused(true)}
                     onBlur={() => setClassFocused(false)}
                   >
-                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: "14px", fontFamily:"Work Sans" }}>Class</span>
+                    <span
+                      style={{
+                        color: "#2F4F4F",
+                        fontWeight: 400,
+                        fontSize: "14px",
+                        fontFamily: "Work Sans",
+                      }}
+                    >
+                      Class
+                    </span>
                     {selectedClass.length > 0 && (
                       <span className="class-count-badge">{selectedClass.length}</span>
                     )}
@@ -773,7 +787,16 @@ export default function TestListTable() {
                     onFocus={() => setSubjectFocused(true)}
                     onBlur={() => setSubjectFocused(false)}
                   >
-                    <span style={{ color: "#2F4F4F", fontWeight: 400, fontSize: "14px", fontFamily:"Work Sans"  }}>Subject</span>
+                    <span
+                      style={{
+                        color: "#2F4F4F",
+                        fontWeight: 400,
+                        fontSize: "14px",
+                        fontFamily: "Work Sans",
+                      }}
+                    >
+                      Subject
+                    </span>
                     {selectedSubject.length > 0 && (
                       <span className="subject-count-badge">{selectedSubject.length}</span>
                     )}

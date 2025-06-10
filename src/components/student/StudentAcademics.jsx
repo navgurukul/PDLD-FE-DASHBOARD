@@ -356,63 +356,56 @@ const StudentAcademics = ({
   );
 
   // Dynamically generate columns for syllabus table based on available subjects
-  const getSubjectColumns = () => {
-    return Array.from(subjectOptions).map((subject) => ({
-      name: subject,
-      label: subject,
-      options: {
-        filter: false,
-        sort: true,
-        setCellProps: () => ({ style: { textAlign: "left" } }),
-        customBodyRender: (value) => {
-          const style = {
-            fontFamily: "'Work Sans', sans-serif",
-            fontWeight: 400,
-            fontSize: "14px",
-            color: "#2F4F4F",
-          };
-
-          if (value === "Absent") {
-            return <span className="text-red-500 font-medium">Absent</span>;
-          } else if (value !== null && value < 10) {
-            return <span className="text-red-500 font-medium">0{value}</span>;
-          } else if (value !== null && value < 40) {
-            return <span className="text-red-500 font-medium">{value}</span>;
-          }
-          return value !== null ? value : "-";
-        },
-        customHeadLabelRender: defaultCustomHeadLabelRender,
-      },
-    }));
-  };
+const getSubjectColumns = () => {
+  return Array.from(subjectOptions).map((subject) => ({
+    name: subject,
+    label: subject,
+    options: {
+      filter: false,
+      sort: true,
+      setCellProps: () => ({
+        style: { textAlign: "center" },
+      }),
+      customBodyRender: (value) => (
+        <span style={{ display: "block", textAlign: "right", width: "30%" }}>
+          {value === undefined || value === null || value === "" || (typeof value === "number" && isNaN(value))
+            ? "-"
+            : value}
+        </span>
+      ),
+      customHeadLabelRender: defaultCustomHeadLabelRender,
+    },
+  }));
+};
 
   // Basic columns for the syllabus table
   const baseColumns = [
     {
-  name: "testType",
-  label: "Test Type",
-  options: {
-    filter: false,
-    sort: true,
-    customHeadLabelRender: defaultCustomHeadLabelRender,
-    setCellProps: () => ({ style: { textAlign: "left" } }),
-    customBodyRender: (value) => (
-      <span style={{ display: "block", textAlign: "left", width: "100%" }}>
-        {value}
-      </span>
-    ),
-  },
-},
-    {
-      name: "maxMarks",
-      label: "Max Marks",
+      name: "testType",
+      label: "Test Type",
       options: {
         filter: false,
         sort: true,
         customHeadLabelRender: defaultCustomHeadLabelRender,
-        setCellProps: () => ({ style: { textAlign: "center" } }),
+        setCellProps: () => ({ style: { textAlign: "left" } }),
+        customBodyRender: (value) => (
+          <span style={{ display: "block", textAlign: "left", width: "100%" }}>{value}</span>
+        ),
       },
     },
+   {
+  name: "maxMarks",
+  label: "Max Marks",
+  options: {
+    filter: false,
+    sort: true,
+    customHeadLabelRender: defaultCustomHeadLabelRender,
+    setCellProps: () => ({ style: { textAlign: "right" } }),
+    customBodyRender: (value) => (
+      <span style={{ display: "block", textAlign: "center", width: "50%" }}>{value}</span>
+    ),
+  },
+}
   ];
 
   // Append subject columns dynamically
@@ -431,7 +424,7 @@ const StudentAcademics = ({
         setCellProps: () => ({
           style: {
             textAlign: "left",
-            paddingLeft: "16px",
+            paddingLeft: "26px",
           },
         }),
         customBodyRender: (value) => {
@@ -440,7 +433,7 @@ const StudentAcademics = ({
           const style = {
             display: "block",
             textAlign: "center",
-            width: "100%",
+            width: "50%",
           };
 
           if (percentage < 40) {
@@ -488,63 +481,61 @@ const StudentAcademics = ({
   // Column definitions for Remedial MUIDataTable
   const remedialColumns = [
     {
-    name: "testName",
-    label: "Name of Test",
-    options: {
-      filter: false,
-      sort: true,
-      setCellProps: () => ({ style: { textAlign: "left" } }),
-      customBodyRender: (value) => (
-        <span style={{ display: "block", textAlign: "left", width: "100%" }}>
-          {value}
-        </span>
-      ),
-      customHeadLabelRender: defaultCustomHeadLabelRender,
+      name: "testName",
+      label: "Name of Test",
+      options: {
+        filter: false,
+        sort: true,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
+        customBodyRender: (value) => (
+          <span style={{ display: "block", textAlign: "left", width: "100%" }}>{value}</span>
+        ),
+        customHeadLabelRender: defaultCustomHeadLabelRender,
+      },
     },
-  },
     {
-    name: "examDate",
-    label: "Date Of Exam",
-    options: {
-      filter: false,
-      sort: true,
-      setCellProps: () => ({ style: { textAlign: "left" } }),
-      customBodyRender: (value) => (
-        <span style={{ display: "block", textAlign: "left", width: "100%" }}>
-          {value}
-        </span>
-      ),
-      customHeadLabelRender: defaultCustomHeadLabelRender,
+      name: "examDate",
+      label: "Date Of Exam",
+      options: {
+        filter: false,
+        sort: true,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
+        customBodyRender: (value) => (
+          <span style={{ display: "block", textAlign: "left", width: "100%" }}>{value}</span>
+        ),
+        customHeadLabelRender: defaultCustomHeadLabelRender,
+      },
     },
-  },
-{
-  name: "grade",
-  label: "Grade",
-  options: {
-    filter: false,
-    sort: true,
-    setCellProps: () => ({ style: { textAlign: "left" } }),
-    customBodyRender: (value) => {
-      // Format the grade to match Figma UI
-      const formattedGrade = value ? value.replace(/_/g, " ") : "-";
-      const capitalizedGrade = formattedGrade.replace(/\b\w/g, (l) => l.toUpperCase());
+    {
+      name: "grade",
+      label: "Grade",
+      options: {
+        filter: false,
+        sort: true,
+        setCellProps: () => ({ style: { textAlign: "left" } }),
+        customBodyRender: (value) => {
+          // Format the grade to match Figma UI
+          const formattedGrade = value ? value.replace(/_/g, " ") : "-";
+          const capitalizedGrade = formattedGrade.replace(/\b\w/g, (l) => l.toUpperCase());
 
-      return (
-        <span
-          className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800"
-          style={{
-            display: "block",         // full width of cell
-            textAlign: "left",        // left align content
-            width: "30%",            // full width of cell
-          }}
-        >
-          {capitalizedGrade}
-        </span>
-      );
+          return (
+            <span
+              className="px-3 py-1 text-xs font-medium  bg-green-100 text-green-800"
+              style={{
+                display: "block", // full width of cell
+                textAlign: "center", // left align content
+                minWidth: 80, // optional: minimum width
+                maxWidth: 120, // optional: maximum width
+                width: "auto", // full width of cel
+              }}
+            >
+              {capitalizedGrade}
+            </span>
+          );
+        },
+        customHeadLabelRender: defaultCustomHeadLabelRender,
+      },
     },
-    customHeadLabelRender: defaultCustomHeadLabelRender,
-  },
-},
   ];
 
   // Options for MUIDataTable
@@ -562,7 +553,8 @@ const StudentAcademics = ({
     tableBodyMaxHeight: "100%",
     setTableProps: () => ({
       style: {
-        tableLayout: "fixed",
+        tableLayout: "auto",
+        marginRight: "16px", // Add right margin to align with Figma design
       },
     }),
     customTableBodyCellStyle: () => ({

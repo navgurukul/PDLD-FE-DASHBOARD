@@ -310,7 +310,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     }
   };
 
-  // Fix the order in tableData mapping - swap aparId and aadharId
   const tableData = filteredStudents.map((student) => [
     student.fullName || "N/A",
     student.gender || "N/A",
@@ -318,10 +317,9 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     formatDate(student.dob),
     student.fatherName || "N/A",
     student.motherName || "N/A",
-    student.aadharId || "N/A", // Aadhar ID first (index 6)
-    student.aparId || "N/A", // APAR ID second (index 7)
+    student.studentPen || "N/A", // Changed from aadharId to studentPen
     student.id,
-    student, // Full student object now at index 9
+    student, // Full student object
   ]);
 
   const defaultCustomHeadLabelRender = (columnMeta) => (
@@ -347,9 +345,9 @@ const StudentDetails = ({ schoolId, schoolName }) => {
         filter: false,
         sort: true,
         customBodyRenderLite: (dataIndex) => {
-          const studentName = tableData[dataIndex][0]; // Name is at index 0
-          const studentId = tableData[dataIndex][8]; // Update index (was 7)
-          const student = tableData[dataIndex][9];
+          const studentName = tableData[dataIndex][0];
+          const studentId = tableData[dataIndex][7]; // Updated index
+          const student = tableData[dataIndex][8]; // Updated index
 
           return (
             <div
@@ -421,27 +419,12 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       },
     },
     {
-      name: "Aadhar ID",
+      name: "Student PEN", // Changed from "Aadhar ID" to "Student PEN"
       options: {
         filter: false,
         sort: true,
       },
     },
-    {
-      name: "APAR ID",
-      options: {
-        filter: false,
-        sort: true,
-        setCellProps: () => ({
-          style: {
-            display: "flex",
-            justifyContent: "flex-start",
-            paddingBottom: "22px",
-          },
-        }),
-      },
-    },
-
     {
       name: "ID",
       options: {
@@ -469,8 +452,8 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           },
         }),
         customBodyRenderLite: (dataIndex) => {
-          const student = tableData[dataIndex][9]; // Rename to student for consistency
-          const studentId = tableData[dataIndex][8];
+          const student = tableData[dataIndex][8]; // Updated index
+          const studentId = tableData[dataIndex][7]; // Updated index
 
           return (
             <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
@@ -498,7 +481,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                   padding: "2px",
                   minWidth: "unset",
                 }}
-                onClick={() => openDeleteModal(student)} // Now student is defined
+                onClick={() => openDeleteModal(student)}
                 title="Delete Student"
               >
                 <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
