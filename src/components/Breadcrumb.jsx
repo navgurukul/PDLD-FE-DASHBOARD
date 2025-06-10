@@ -129,6 +129,31 @@ const Breadcrumb = () => {
       continue;
     }
 
+    if (
+  value === "schoolDetail" &&
+  i + 2 < pathnames.length &&
+  pathnames[i + 1] &&
+  pathnames[i + 2] === "student-profile"
+) {
+  const schoolDetailLink = `/schools/schoolDetail/${pathnames[i + 1]}`;
+  breadcrumbItems.push(
+    <Typography
+      key={currentPath}
+      variant="subtitle2"
+      color="text.primary"
+      component={Link}
+      to={schoolDetailLink}
+      sx={{
+        textDecoration: "none",
+        fontFamily: "Work Sans",
+        fontSize: "18px",
+      }}
+    >
+      Students
+    </Typography>
+  );
+  continue; // skip default schoolDetail
+}
     // Handle Edit Test breadcrumb
     if (value === "editTest") {
       breadcrumbItems.push(

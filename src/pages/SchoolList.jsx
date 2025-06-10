@@ -23,7 +23,7 @@ import { FormControl } from "@mui/material";
 import { Select } from "@mui/material";
 import { InputLabel } from "@mui/material";
 import { Typography } from "@mui/material";
-
+import { Search } from "lucide-react";
 const theme = createTheme({
   typography: {
     fontFamily: "'Karla', sans-serif",
@@ -48,7 +48,7 @@ const theme = createTheme({
         root: {
           color: "#949494", // Default label color
           "&.Mui-focused": {
-             color: "#2F4F4F", // Focused label color
+            color: "#2F4F4F", // Focused label color
           },
         },
       },
@@ -96,6 +96,10 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderBottom: "none",
+          fontSize: "14px",
+          fontFamily: "'Work Sans', sans-serif",
+          fontWeight: 400,
+          color: "#2F4F4F",
         },
       },
     },
@@ -574,6 +578,11 @@ export default function SchoolList() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       InputProps={{
+                        startAdornment: (
+                          <div className="pr-2">
+                            <Search size={18} className="text-gray-500" />
+                          </div>
+                        ),
                         style: {
                           backgroundColor: "#fff",
                           borderRadius: "8px",
@@ -602,6 +611,9 @@ export default function SchoolList() {
                         id="cluster-select-label"
                         sx={{
                           color: "#2F4F4F",
+                          fontFamily: "'Work Sans'",
+                          fontWeight: 400,
+                          fontSize: "14px",
                           transform: "translate(14px, 14px) scale(1)",
                           "&.Mui-focused, &.MuiFormLabel-filled": {
                             transform: "translate(14px, -9px) scale(0.75)",
@@ -674,6 +686,9 @@ export default function SchoolList() {
                         id="block-select-label"
                         sx={{
                           color: "#2F4F4F",
+                          fontFamily: "'Work Sans'",
+                          fontWeight: 400,
+                          fontSize: "14px",
                           transform: "translate(14px, 14px) scale(1)",
                           "&.Mui-focused, &.MuiFormLabel-filled": {
                             transform: "translate(14px, -9px) scale(0.75)",
@@ -817,29 +832,29 @@ export default function SchoolList() {
             {/* Empty div for left spacing to help with centering */}
             <div style={{ width: "180px" }}></div>
             <div style={{ display: "flex", justifyContent: "center" }}>
-            {/* Centered pagination */}
-            <Pagination
-              count={pagination.totalPages}
-              page={currentPage}
-              onChange={handlePageChange}
-              showFirstButton
-              showLastButton
-              renderItem={(item) => {
-              const isNextNumberPage = item.page === currentPage + 1 && item.type === "page";
-              
-                return (
-                  <PaginationItem
-                    {...item}
-                    sx={{
-                      ...(isNextNumberPage && {
-                        border: "1px solid #2F4F4F",
-                        borderRadius: "100%",
-                      }),
-                    }}
-                  />
-                );
-              }}
-            />
+              {/* Centered pagination */}
+              <Pagination
+                count={pagination.totalPages}
+                page={currentPage}
+                onChange={handlePageChange}
+                showFirstButton
+                showLastButton
+                renderItem={(item) => {
+                  const isNextNumberPage = item.page === currentPage + 1 && item.type === "page";
+
+                  return (
+                    <PaginationItem
+                      {...item}
+                      sx={{
+                        ...(isNextNumberPage && {
+                          border: "1px solid #2F4F4F",
+                          borderRadius: "100%",
+                        }),
+                      }}
+                    />
+                  );
+                }}
+              />
             </div>
             {/* Right-aligned compact rows selector */}
             <div

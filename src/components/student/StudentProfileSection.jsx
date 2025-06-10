@@ -910,8 +910,8 @@ const StudentProfileView = () => {
           </Box>
         </Box>
 
-        {/* Show academic year text and download button in academic tab */}
-        {tabValue === 1 && student.academic ? (
+        {/* Show Academic Year and Download Report button based on tab */}
+        {student.academic && (
           <div className="flex">
             <Typography
               variant="subtitle1"
@@ -923,15 +923,16 @@ const StudentProfileView = () => {
                 height: "48px",
                 display: "flex",
                 alignItems: "center",
-                marginRight: "16px",
+                marginRight: tabValue === 1 ? "16px" : 0,
               }}
             >
               Academic Year {student.academic.year || "2024-25"}
             </Typography>
-
-            <ButtonCustom text={"Download Report"} onClick={handleDownloadClick} btnWidth={200} />
+            {tabValue === 1 && (
+              <ButtonCustom text={"Download Report"} onClick={handleDownloadClick} btnWidth={200} />
+            )}
           </div>
-        ) : null}
+        )}
       </Box>
 
       {/* Tabs for navigation */}
@@ -966,13 +967,14 @@ const StudentProfileView = () => {
                   mb: 4, // 32px bottom margin
                 }}
               >
-                <h5 className="text-lg font-bold text-[#2F4F4F]">Personal Details</h5>
+                <h5
+                  className="text-[#2F4F4F]"
+                  style={{ fontSize: "24px", fontWeight: "700", fontFamily: "Philosopher" }}
+                >
+                  Personal Details
+                </h5>
 
-                <ButtonCustom
-                  text={"Edit Profile"}
-                  imageName={EditPencilIcon}
-                  onClick={handleEditStudent}
-                />
+                <ButtonCustom text={"Edit Profile"} onClick={handleEditStudent} />
               </Box>
 
               {/* First Row */}

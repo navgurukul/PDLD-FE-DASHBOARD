@@ -122,7 +122,10 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
         styleOverrides: {
           root: {
             backgroundColor: "none",
-            fontFamily: "Karla !important",
+            fontFamily: "'Work Sans', sans-serif",
+        fontWeight: 400,
+        fontSize: "14px",
+        color: "#2F4F4F",
             textAlign: "left",
             borderBottom: "none",
             "&.custom-cell": {
@@ -197,32 +200,50 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
   // Define the columns for the table
   const columns = [
     {
-      name: "name",
-      label: "Name of Test",
-      options: {
-        filter: true,
-        sort: true,
-        customHeadLabelRender: defaultCustomHeadLabelRender,
-      },
-    },
-    {
-      name: "type",
-      label: "Test Type",
-      options: {
-        filter: true,
-        sort: true,
-        customHeadLabelRender: defaultCustomHeadLabelRender,
-      },
-    },
-    {
-      name: "date",
-      label: "Date of Test",
-      options: {
-        filter: true,
-        sort: true,
-        customHeadLabelRender: defaultCustomHeadLabelRender,
-      },
-    },
+  name: "name",
+  label: "Name of Test",
+  options: {
+    filter: true,
+    sort: true,
+    customHeadLabelRender: defaultCustomHeadLabelRender,
+    setCellProps: () => ({ style: { textAlign: "left" } }),
+    customBodyRender: (value) => (
+      <span style={{ display: "block", textAlign: "left", width: "100%" }}>
+        {value}
+      </span>
+    ),
+  },
+},
+   {
+  name: "type",
+  label: "Test Type",
+  options: {
+    filter: true,
+    sort: true,
+    customHeadLabelRender: defaultCustomHeadLabelRender,
+    setCellProps: () => ({ style: { textAlign: "left" } }),
+    customBodyRender: (value) => (
+      <span style={{ display: "block", textAlign: "left", width: "100%" }}>
+        {value}
+      </span>
+    ),
+  },
+},
+   {
+  name: "date",
+  label: "Date of Test",
+  options: {
+    filter: true,
+    sort: true,
+    customHeadLabelRender: defaultCustomHeadLabelRender,
+    setCellProps: () => ({ style: { textAlign: "left" } }),
+    customBodyRender: (value) => (
+      <span style={{ display: "block", textAlign: "left", width: "100%" }}>
+        {value}
+      </span>
+    ),
+  },
+},
     {
       name: "maxMarks",
       label: "Max Marks",
@@ -247,21 +268,32 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
       options: {
         filter: true,
         sort: true,
+        setCellProps: () => ({
+      style: {
+        textAlign: "center",
+        minWidth: 120,   
+        maxWidth: 160,  
+        width: "auto",
+      },
+    }),
         customBodyRender: (value) => {
           let statusClass = "";
 
           if (value === "Pass") {
-            statusClass = "bg-green-100 text-green-800";
+            statusClass = "bg-[#E9F3E9] text-[#228B22]";
           } else if (value === "Fail") {
-            statusClass = "bg-red-100 text-red-800";
+            statusClass = "bg-[#FDDCDC] text-[#F45050]";
           } else if (value === "Absent") {
-            statusClass = "bg-blue-100 text-blue-800";
+            statusClass = "bg-[#E0E0E0] text-[#2F4F4F]";
           }
 
           return (
-            <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusClass}`}>
-              {value}
-            </span>
+            <span
+          className={`px-2 py-1 text-xs font-medium rounded-full ${statusClass}`}
+          style={{ display: "block", textAlign: "center", width: "50%" }}
+        >
+          {value}
+        </span>
           );
         },
         customHeadLabelRender: defaultCustomHeadLabelRender,

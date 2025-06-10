@@ -65,7 +65,10 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: "none",
-          fontFamily: "Karla !important",
+          fontFamily: "'Work Sans', sans-serif !important",
+          fontWeight: 400,
+          fontSize: "14px",
+          color: "#2F4F4F",
           textAlign: "left",
           "&.custom-cell": {
             width: "0px",
@@ -306,6 +309,9 @@ const Reports = () => {
             .custom-table td:first-child {
               text-align: left;
             }
+               .custom-table td {
+              height: 60px;
+            }
           `}
         </style>
         <table className="custom-table">
@@ -448,6 +454,7 @@ const Reports = () => {
       if (levelData && levelData.classes && levelData.classes.length > 0) {
         setSelectedClassData({
           school: school.schoolName,
+          udiseCode: school.udiseCode,
           id: school.id,
           subject: selectedSubject,
           data: [levelData], // Only include the selected level data
@@ -591,7 +598,7 @@ const Reports = () => {
           
           body {
             font-family: 'Arial', sans-serif;
-            line-height: 1.4;
+            line-height: 1.9;
             color: #333;
             background: white;
             font-size: 11px;
@@ -761,6 +768,19 @@ const Reports = () => {
               page-break-inside: avoid;
               page-break-after: auto;
             }
+thead tr.group-row {
+  height: 72px;
+}
+
+thead tr.sub-row,
+tbody tr {
+  height: 60px;
+}
+
+th, td {
+  vertical-align: middle;
+}
+
           }
         </style>
       </head>

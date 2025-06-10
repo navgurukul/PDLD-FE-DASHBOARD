@@ -46,8 +46,10 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: "none",
-          fontFamily: "Karla !important",
-          textAlign: "left",
+          fontFamily: "'Work Sans', sans-serif",
+          fontWeight: 400,
+          fontSize: "14px",
+          color: "#2F4F4F",
           "&.custom-cell": {
             width: "0px",
           },
@@ -91,7 +93,7 @@ const StudentAcademics = ({
   studentId,
   schoolId,
   academicData,
-   onTabChange, // Add this prop to communicate with parent
+  onTabChange, // Add this prop to communicate with parent
 }) => {
   // State for filter selections
   const [syllabusMonth, setSyllabusMonth] = useState("All");
@@ -363,6 +365,13 @@ const StudentAcademics = ({
         sort: true,
         setCellProps: () => ({ style: { textAlign: "left" } }),
         customBodyRender: (value) => {
+          const style = {
+            fontFamily: "'Work Sans', sans-serif",
+            fontWeight: 400,
+            fontSize: "14px",
+            color: "#2F4F4F",
+          };
+
           if (value === "Absent") {
             return <span className="text-red-500 font-medium">Absent</span>;
           } else if (value !== null && value < 10) {
@@ -380,15 +389,20 @@ const StudentAcademics = ({
   // Basic columns for the syllabus table
   const baseColumns = [
     {
-      name: "testType",
-      label: "Test Type",
-      options: {
-        filter: false,
-        sort: true,
-        customHeadLabelRender: defaultCustomHeadLabelRender,
-        setCellProps: () => ({ style: { textAlign: "left" } }),
-      },
-    },
+  name: "testType",
+  label: "Test Type",
+  options: {
+    filter: false,
+    sort: true,
+    customHeadLabelRender: defaultCustomHeadLabelRender,
+    setCellProps: () => ({ style: { textAlign: "left" } }),
+    customBodyRender: (value) => (
+      <span style={{ display: "block", textAlign: "left", width: "100%" }}>
+        {value}
+      </span>
+    ),
+  },
+},
     {
       name: "maxMarks",
       label: "Max Marks",
@@ -396,7 +410,7 @@ const StudentAcademics = ({
         filter: false,
         sort: true,
         customHeadLabelRender: defaultCustomHeadLabelRender,
-        setCellProps: () => ({ style: { textAlign: "left" } }),
+        setCellProps: () => ({ style: { textAlign: "center" } }),
       },
     },
   ];
@@ -425,7 +439,7 @@ const StudentAcademics = ({
           const percentage = parseInt(value);
           const style = {
             display: "block",
-            textAlign: "left",
+            textAlign: "center",
             width: "100%",
           };
 
@@ -474,47 +488,63 @@ const StudentAcademics = ({
   // Column definitions for Remedial MUIDataTable
   const remedialColumns = [
     {
-      name: "testName",
-      label: "Name of Test",
-      options: {
-        filter: false,
-        sort: true,
-        setCellProps: () => ({ style: { textAlign: "left" } }),
-        customHeadLabelRender: defaultCustomHeadLabelRender,
-      },
+    name: "testName",
+    label: "Name of Test",
+    options: {
+      filter: false,
+      sort: true,
+      setCellProps: () => ({ style: { textAlign: "left" } }),
+      customBodyRender: (value) => (
+        <span style={{ display: "block", textAlign: "left", width: "100%" }}>
+          {value}
+        </span>
+      ),
+      customHeadLabelRender: defaultCustomHeadLabelRender,
     },
+  },
     {
-      name: "examDate",
-      label: "Date Of Exam",
-      options: {
-        filter: false,
-        sort: true,
-        setCellProps: () => ({ style: { textAlign: "left" } }),
-        customHeadLabelRender: defaultCustomHeadLabelRender,
-      },
+    name: "examDate",
+    label: "Date Of Exam",
+    options: {
+      filter: false,
+      sort: true,
+      setCellProps: () => ({ style: { textAlign: "left" } }),
+      customBodyRender: (value) => (
+        <span style={{ display: "block", textAlign: "left", width: "100%" }}>
+          {value}
+        </span>
+      ),
+      customHeadLabelRender: defaultCustomHeadLabelRender,
     },
-    {
-      name: "grade",
-      label: "Grade",
-      options: {
-        filter: false,
-        sort: true,
-        setCellProps: () => ({ style: { textAlign: "left" } }),
-        customBodyRender: (value) => {
-          // Format the grade to match Figma UI
-          const formattedGrade = value ? value.replace(/_/g, " ") : "-";
-          // Capitalize first letter of each word
-          const capitalizedGrade = formattedGrade.replace(/\b\w/g, (l) => l.toUpperCase());
+  },
+{
+  name: "grade",
+  label: "Grade",
+  options: {
+    filter: false,
+    sort: true,
+    setCellProps: () => ({ style: { textAlign: "left" } }),
+    customBodyRender: (value) => {
+      // Format the grade to match Figma UI
+      const formattedGrade = value ? value.replace(/_/g, " ") : "-";
+      const capitalizedGrade = formattedGrade.replace(/\b\w/g, (l) => l.toUpperCase());
 
-          return (
-            <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-              {capitalizedGrade}
-            </span>
-          );
-        },
-        customHeadLabelRender: defaultCustomHeadLabelRender,
-      },
+      return (
+        <span
+          className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800"
+          style={{
+            display: "block",         // full width of cell
+            textAlign: "left",        // left align content
+            width: "30%",            // full width of cell
+          }}
+        >
+          {capitalizedGrade}
+        </span>
+      );
     },
+    customHeadLabelRender: defaultCustomHeadLabelRender,
+  },
+},
   ];
 
   // Options for MUIDataTable
@@ -565,7 +595,7 @@ const StudentAcademics = ({
       text-align: left !important;
     }
     .MuiTableCell-body > div {
-      text-align: left !important;
+      text-align: center !important;
       justify-content: flex-start !important;
     }
       .MuiTable-root .MuiTableBody-root .MuiTableRow-root .MuiTableCell-root {
@@ -765,89 +795,109 @@ const StudentAcademics = ({
         <div>
           <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">Remedial Test</h5>
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-4 mb-4">
-            {/* Month Dropdown */}
-            <FormControl sx={{ minWidth: 120 }} size="small">
-              <InputLabel id="remedial-month-select-label">Month</InputLabel>
-              <Select
-                labelId="remedial-month-select-label"
-                id="remedial-month-select"
-                value={remedialMonth}
-                label="Month"
-                onChange={(e) => setRemedialMonth(e.target.value)}
-                sx={{
-                  borderRadius: "8px",
-                  backgroundColor: "#fff",
-                  height: "40px",
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderRadius: "8px",
-                  },
-                }}
-              >
-                <MenuItem value="All">All Months</MenuItem>
-                {monthOptions.map((month) => (
-                  <MenuItem key={month} value={month}>
-                    {month}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          {filteredRemedialData.length === 0 ? (
+            <div
+              className="text-[#2F4F4F]"
+              style={{
+                fontFamily: "Work Sans",
+                fontWeight: 400,
+                fontSize: "18px",
+                textAlign: "left",
+              }}
+            >
+              No remedial assessments have been conducted for this student yet
+            </div>
+          ) : (
+            <>
+              {/* Filters */}
+              <div className="flex flex-wrap gap-4 mb-4">
+                {/* Month Dropdown */}
+                <FormControl sx={{ minWidth: 120 }} size="small">
+                  <InputLabel id="remedial-month-select-label">Month</InputLabel>
+                  <Select
+                    labelId="remedial-month-select-label"
+                    id="remedial-month-select"
+                    value={remedialMonth}
+                    label="Month"
+                    onChange={(e) => setRemedialMonth(e.target.value)}
+                    sx={{
+                      borderRadius: "8px",
+                      backgroundColor: "#fff",
+                      height: "40px",
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderRadius: "8px",
+                      },
+                    }}
+                  >
+                    <MenuItem value="All">All Months</MenuItem>
+                    {monthOptions.map((month) => (
+                      <MenuItem key={month} value={month}>
+                        {month}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-            {/* Subject Dropdown */}
-            <FormControl sx={{ minWidth: 120 }} size="small">
-              <InputLabel id="subject-select-label">Subject</InputLabel>
-              <Select
-                labelId="subject-select-label"
-                id="subject-select"
-                value={subject}
-                label="Subject"
-                onChange={(e) => setSubject(e.target.value)}
-                sx={{
-                  borderRadius: "8px",
-                  backgroundColor: "#fff",
-                  height: "40px",
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderRadius: "8px",
-                  },
-                }}
-              >
-                <MenuItem value="All">All Subjects</MenuItem>
-                {subjectOptions.map((subjectOption) => (
-                  <MenuItem key={subjectOption} value={subjectOption}>
-                    {subjectOption}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                {/* Subject Dropdown */}
+                <FormControl sx={{ minWidth: 120 }} size="small">
+                  <InputLabel id="subject-select-label">Subject</InputLabel>
+                  <Select
+                    labelId="subject-select-label"
+                    id="subject-select"
+                    value={subject}
+                    label="Subject"
+                    onChange={(e) => setSubject(e.target.value)}
+                    sx={{
+                      borderRadius: "8px",
+                      backgroundColor: "#fff",
+                      height: "40px",
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderRadius: "8px",
+                      },
+                    }}
+                  >
+                    <MenuItem value="All">All Subjects</MenuItem>
+                    {subjectOptions.map((subjectOption) => (
+                      <MenuItem key={subjectOption} value={subjectOption}>
+                        {subjectOption}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-            {/*  Clear Filters for the Remedial*/}
-            {isAnyRemedialFilterActive && (
-              <Button
-                variant="text"
-                onClick={resetRemedialFilters}
-                sx={{
-                  color: "#2F4F4F",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  textTransform: "none",
-                  height: "40px",
-                  padding: "0 12px",
-                  background: "transparent",
-                  "&:hover": {
-                    background: "#f5f5f5",
-                  },
-                }}
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
+                {/* Clear Filters */}
+                {isAnyRemedialFilterActive && (
+                  <Button
+                    variant="text"
+                    onClick={resetRemedialFilters}
+                    sx={{
+                      color: "#2F4F4F",
+                      fontWeight: 600,
+                      fontSize: 16,
+                      textTransform: "none",
+                      height: "40px",
+                      padding: "0 12px",
+                      background: "transparent",
+                      "&:hover": {
+                        background: "#f5f5f5",
+                      },
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
 
-          {/* Remedial Test MUIDataTable */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <MUIDataTable data={filteredRemedialData} columns={remedialColumns} options={options} />
-          </div>
+              {/* Remedial Test MUIDataTable */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <MUIDataTable
+                  data={filteredRemedialData}
+                  columns={remedialColumns}
+                  options={options}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </ThemeProvider>

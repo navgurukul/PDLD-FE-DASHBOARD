@@ -24,6 +24,7 @@ import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import StudentDetails from "./StudentDetails";
 import SchoolReport from "../components/school/SchoolReport";
 import ButtonCustom from "./ButtonCustom";
+import { useTheme } from "@mui/material/styles";
 
 const theme = createTheme({
   typography: {
@@ -84,6 +85,8 @@ export default function SchoolDetailView() {
   const [isLoading, setIsLoading] = useState(true);
   const { state } = useLocation();
   const [tabValue, setTabValue] = useState(state?.selectedTab || 0);
+
+  const theme = useTheme();
 
   useEffect(() => {
     let schoolData = null;
@@ -184,11 +187,27 @@ export default function SchoolDetailView() {
   return (
     <ThemeProvider theme={theme}>
       <div className="main-page-wrapper sm:px-4">
-        <div className="header-container flex items-center justify-between mb-1">
-          <div className="flex items-center">
+        <div className="header-container flex justify-between items-center mb-1">
+          <div className="flex items-center mt-5">
             <h5 className="text-lg font-bold text-[#2F4F4F]">
-              {capitalizeFirstLetter(school.schoolName)}
+              {school.udiseCode} - {capitalizeFirstLetter(school.schoolName)}
             </h5>
+          </div>
+          <div>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                bgcolor: theme.palette.secondary.light,
+                color: theme.palette.primary.main,
+                padding: "4px 16px",
+                borderRadius: "8px",
+                height: "48px",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              Academic Year {school.academicYear || "2024-25"}
+            </Typography>
           </div>
         </div>
 
@@ -295,7 +314,6 @@ export default function SchoolDetailView() {
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 400,
                           fontSize: "18px",
-                          
                         }}
                       >
                         Created On
