@@ -302,7 +302,7 @@ export default function AddStudent({ isEditMode = false }) {
         fatherName: student.fatherName || "",
         motherName: student.motherName || "",
         dateOfBirth: dob,
-        uniqueId: student.aparId || "",
+        uniqueId: student.studentPen || student.aparId || "",
         hostel: student.hostel || "",
         class: student.class?.toString() || "1",
         gender: student.gender || "M",
@@ -314,6 +314,7 @@ export default function AddStudent({ isEditMode = false }) {
   }, [isEditMode, location]);
 
   // Save initial data ONLY ONCE when form is first populated
+// Save initial data ONLY ONCE when form is first populated
   useEffect(() => {
     if (
       (location.state?.isEditMode || isEditMode) &&
@@ -326,7 +327,7 @@ export default function AddStudent({ isEditMode = false }) {
         fatherName: formData.fatherName,
         motherName: formData.motherName,
         dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.toISOString() : null,
-        uniqueId: formData.uniqueId,
+        uniqueId: formData.uniqueId, // This now contains studentPen
         hostel: formData.hostel,
         class: formData.class,
         gender: formData.gender,
@@ -574,8 +575,8 @@ export default function AddStudent({ isEditMode = false }) {
         // schoolUdiseCode: formData.udiseCode,
       };
 
-      if (formData.uniqueId) {
-        studentDataPayload.aparId = formData.uniqueId;
+      if (formData.uniqueId) { 
+        studentDataPayload.studentPen = formData.uniqueId;
       }
       if (formattedDate) {
         studentDataPayload.dob = formattedDate;
@@ -823,6 +824,24 @@ export default function AddStudent({ isEditMode = false }) {
                 />
               </Grid>
 
+              {/* Student PEN */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Student PEN (Optional)"
+                  name="uniqueId"
+                  value={formData.uniqueId}
+                  onChange={handleInputChange}
+                  fullWidth
+                  placeholder="Enter student's PEN if available"
+                  variant="outlined"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      height: "48px",
+                    },
+                  }}
+                />
+              </Grid>
+
               {/* Aadhar ID (Optional) */}
               <Grid item xs={12} md={6}>
                 <TextField
@@ -849,14 +868,14 @@ export default function AddStudent({ isEditMode = false }) {
               </Grid>
 
               {/* Hostel (Optional) */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <TextField
                   label="Hostel (Optional)"
                   name="hostel"
                   value={formData.hostel}
                   onChange={handleInputChange}
                   fullWidth
-                  placeholder="Enter hostel information"
+                  placeholder="Enter hostel information if applicable"
                   variant="outlined"
                   sx={{
                     "& .MuiOutlinedInput-root": {
@@ -1005,6 +1024,3 @@ export default function AddStudent({ isEditMode = false }) {
     </ThemeProvider>
   );
 }
-
-
-
