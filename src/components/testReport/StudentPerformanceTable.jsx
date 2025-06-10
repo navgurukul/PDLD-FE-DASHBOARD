@@ -133,9 +133,9 @@ const StudentPerformanceTable = ({
   // Check if this is a remedial test
   const isRemedialTest = testType && testType.toLowerCase().includes("remedial");
   const gradeLabelsBySubject = {
-    english: ["BEGINNERS", "INTERMEDIATE", "ADVANCED"],
-    hindi: ["SENTENCES", "LETTER", "BEGINNERS"],
-    mathematics: ["FUNDAMENTALS", "BASIC_OPERATIONS", "WORD_PROBLEMS"],
+    english: ["BEGINNER", "LETTERS", "WORDS", "SENTENCES", "STORIES"],
+    hindi: ["BEGINNER", "LETTERS", "WORDS", "SENTENCES", "STORIES"],
+    mathematics: ["BEGINNER", "SINGLE_DIGIT", "DOUBLE_DIGIT", "MULTIPLICATION", "DIVISION"],
   };
   const normalizedSubject = subject?.trim().toLowerCase() || "";
 
@@ -581,21 +581,32 @@ const StudentPerformanceTable = ({
                     <span
                       className="inline-block px-2 py-1 rounded-full text-xs"
                       style={{
-                        backgroundColor: "#e0e0e0",
-                        color: "#757575",
+                        backgroundColor: "#EAEDED",
+                        color: "#2F4F4F",
                       }}
                     >
                       Absent
                     </span>
                   );
                 }
-                const isBeginner = (student.grade || "").toString().toLowerCase() === "beginners";
+                const grade = (student.grade || "").toString().toLowerCase();
+                let bg = "#EAEDED";
+                let color = "#2F4F4F";
+
+                if (grade === "beginner") {
+                  bg = "#FDDCDC";
+                  color = "#F45050";
+                } else if (grade === "stories" || grade === "division") {
+                  bg = "#E9F3E9";
+                  color = "#228B22";
+                }
+
                 return (
                   <span
                     className="inline-block px-2 py-1 rounded-full text-xs"
                     style={{
-                      backgroundColor: isBeginner ? "#FDDCDC" : "#EAEDED",
-                      color: isBeginner ? "#F45050" : "#2F4F4F",
+                      backgroundColor: bg,
+                      color: color,
                       textTransform: "capitalize",
                       fontFamily: "Work Sans",
                       fontWeight: 400,
@@ -790,7 +801,10 @@ const StudentPerformanceTable = ({
                     <InputLabel
                       id="result-select-label"
                       sx={{
-                        color: "#2F4F4F", fontFamily: "Work Sans",fontWeight: 400, fontSize: "14px",
+                        color: "#2F4F4F",
+                        fontFamily: "Work Sans",
+                        fontWeight: 400,
+                        fontSize: "14px",
                         transform: "translate(14px, 14px) scale(1)",
                         "&.Mui-focused, &.MuiFormLabel-filled": {
                           transform: "translate(14px, -9px) scale(0.75)",
