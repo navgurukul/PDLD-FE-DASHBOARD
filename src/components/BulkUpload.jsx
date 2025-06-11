@@ -641,7 +641,7 @@ export default function BulkUploadSchools() {
       <Box sx={{ p: 2, px: 2, maxWidth: "90%", margin: "0 auto" }}>
         <div className="flex justify-between">
           <h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
-          <Button
+          {/* <Button
             variant="outlined"
             startIcon={<GetAppIcon />}
             onClick={openSampleCSVModal}
@@ -657,7 +657,7 @@ export default function BulkUploadSchools() {
             }}
           >
             Sample CSV
-          </Button>
+          </Button> */}
         </div>
 
         <Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
@@ -676,121 +676,146 @@ export default function BulkUploadSchools() {
         </Box>
 
         {activeStep === 0 && (
-          <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
-            <Box
-              sx={{
-                width: "70%",
-                border: "2px dashed #ccc",
-                borderRadius: 2,
-                p: 2,
-                textAlign: "center",
-                mb: 0,
-                position: "relative", // For proper drag event handling
-                cursor: "pointer", // Show pointer cursor on the entire box
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  borderColor: "#0d6efd",
-                  backgroundColor: "rgba(13, 110, 253, 0.04)",
-                },
-              }}
-              onClick={() => fileInputRef.current && fileInputRef.current.click()} // Make entire box clickable
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#0d6efd";
-                e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
-              }}
-              onDragEnter={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#0d6efd";
-                e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#ccc";
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#ccc";
-                e.currentTarget.style.backgroundColor = "transparent";
-
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  const droppedFile = e.dataTransfer.files[0];
-                  // Check if the file is a CSV
-                  if (droppedFile.name.endsWith(".csv")) {
-                    // We'll create a synthetic event object that mimics the structure
-                    // expected by the handleFileChange function
-                    const syntheticEvent = {
-                      target: {
-                        files: [droppedFile],
-                      },
-                    };
-                    handleFileChange(syntheticEvent);
-                  } else {
-                    toast.error("Please upload a CSV file");
-                  }
-                }
-              }}
-            >
-              <input
-                accept=".csv"
-                style={{ display: "none" }}
-                id="upload-file-button"
-                type="file"
-                onChange={handleFileChange}
-                ref={fileInputRef}
-              />
-
-              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-                <Box
-                  sx={{
-                    backgroundColor: "#e6f2ff",
-                    borderRadius: "50%",
-                    width: 80,
-                    height: 80,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.3s ease",
-                  }}
-                >
-                  <CloudUploadIcon sx={{ fontSize: 40, color: "#2F4F4F" }} />
-                </Box>
-              </Box>
-
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                Click anywhere in this box or drag a CSV file here
-              </Typography>
-
+          <>
+            <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
               <Box
                 sx={{
-                  backgroundColor: "#f0f7ff",
-                  border: "1px solid #d1e7ff",
+                  width: "70%",
+                  border: "2px dashed #ccc",
                   borderRadius: 2,
                   p: 2,
-                  mb: 3,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "100%",
+                  textAlign: "center",
+                  mb: 0,
+                  position: "relative", // For proper drag event handling
+                  cursor: "pointer", // Show pointer cursor on the entire box
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    borderColor: "#0d6efd",
+                    backgroundColor: "rgba(13, 110, 253, 0.04)",
+                  },
+                }}
+                onClick={() => fileInputRef.current && fileInputRef.current.click()} // Make entire box clickable
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#0d6efd";
+                  e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#0d6efd";
+                  e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#ccc";
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#ccc";
+                  e.currentTarget.style.backgroundColor = "transparent";
+
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const droppedFile = e.dataTransfer.files[0];
+                    // Check if the file is a CSV
+                    if (droppedFile.name.endsWith(".csv")) {
+                      // We'll create a synthetic event object that mimics the structure
+                      // expected by the handleFileChange function
+                      const syntheticEvent = {
+                        target: {
+                          files: [droppedFile],
+                        },
+                      };
+                      handleFileChange(syntheticEvent);
+                    } else {
+                      toast.error("Please upload a CSV file");
+                    }
+                  }
                 }}
               >
-                <Box textAlign="center">
-                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
-                    CSV Format
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "#555" }}>
-                    Upload a CSV file with school data. The file should contain School Name, UDISE
-                    Code, Cluster Name, and Block Name. Download Sample CSV for reference.
-                  </Typography>
+                <input
+                  accept=".csv"
+                  style={{ display: "none" }}
+                  id="upload-file-button"
+                  type="file"
+                  onChange={handleFileChange}
+                  ref={fileInputRef}
+                />
+
+                <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    <CloudUploadIcon sx={{ fontSize: 40, color: "#2F4F4F" }} />
+                  </Box>
                 </Box>
+
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                  Select or drag and drop a CSV here
+                </Typography>
+                <Typography
+                  sx={{
+                    fontFamily: "Work Sans",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    color: "#2F4F4F",
+                    textAlign: "center",
+                    mb: 2,
+                    display: "block",
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>CSV Column Fields:</span>
+                  <span style={{ fontWeight: 400, color: "#666", marginLeft: 4 }}>
+                    The file should contain School Name, UDISE Code, Cluster Name, and Block Name.
+                  </span>
+                </Typography>
               </Box>
             </Box>
-          </Box>
+
+            {/* New Box: Download text + button */}
+            <Box sx={{ width: "70%", mx: "auto", textAlign: "center", mt: 3 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#2F4F4F",
+                  mb: 2,
+                  fontFamily: "Work Sans",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                }}
+              >
+                Download sample CSV for reference
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={<GetAppIcon />}
+                onClick={openSampleCSVModal}
+                sx={{
+                  color: "#2F4F4F",
+                  borderRadius: "8px",
+                  border: "1px solid #2F4F4F",
+                  height: "44px",
+                  "&:hover": {
+                    backgroundColor: "#2F4F4F",
+                    color: "white",
+                  },
+                }}
+              >
+                Sample CSV
+              </Button>
+            </Box>
+          </>
         )}
 
         {activeStep === 1 && file && (
