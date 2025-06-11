@@ -746,7 +746,7 @@ export default function BulkUploadSchools() {
                   ref={fileInputRef}
                 />
 
-                <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+                <Box sx={{ display: "flex", justifyContent: "center", mb: 2 , mt: 7}}>
                   <Box
                     sx={{
                       width: 80,
@@ -761,7 +761,7 @@ export default function BulkUploadSchools() {
                   </Box>
                 </Box>
 
-                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: 4 }}>
                   Select or drag and drop a CSV here
                 </Typography>
                 <Typography
@@ -771,7 +771,7 @@ export default function BulkUploadSchools() {
                     fontSize: "14px",
                     color: "#2F4F4F",
                     textAlign: "center",
-                    mb: 2,
+                    mb: 10,
                     display: "block",
                   }}
                 >
