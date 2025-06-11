@@ -90,6 +90,24 @@ const theme = createTheme({
   },
 });
 
+function formatDateTime(dateString) {
+  const date = new Date(dateString);
+  const pad = (n) => n.toString().padStart(2, "0");
+  return (
+    date.getFullYear() +
+    "-" +
+    pad(date.getMonth() + 1) +
+    "-" +
+    pad(date.getDate()) +
+    " " +
+    pad(date.getHours()) +
+    ":" +
+    pad(date.getMinutes()) +
+    ":" +
+    pad(date.getSeconds())
+  );
+}
+
 export default function BulkUploadStudents() {
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -106,6 +124,7 @@ export default function BulkUploadStudents() {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const { schoolId } = useParams();
+  const [uploadDateTime, setUploadDateTime] = useState(null);
 
   const openSampleCSVModal = () => {
     setSampleModalOpen(true);
@@ -282,6 +301,7 @@ export default function BulkUploadStudents() {
       setUploadResult(errorResponse);
     } finally {
       setIsUploading(false);
+      setUploadDateTime(new Date().toISOString());
     }
   };
 
@@ -785,7 +805,8 @@ export default function BulkUploadStudents() {
                       }}
                     >
                       <Typography variant="caption" color="text.secondary">
-                        Uploaded by {loginDetails.name} at {loginDetails.currentDateTime}
+                        Uploaded by {loginDetails.name} at{" "}
+                        {uploadDateTime ? formatDateTime(uploadDateTime) : "-"}
                       </Typography>
 
                       <Box sx={{ display: "flex", gap: 2 }}>
