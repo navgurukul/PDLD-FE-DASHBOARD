@@ -51,8 +51,7 @@ import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector
 import CheckIcon from "@mui/icons-material/Check";
 import FileDownloadSvg from "../assets/file_download.svg";
 
-
-//  Function to get login details from localStorage with fallback
+// Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
   // Default values as specified
   let defaultDetails = {
@@ -1006,28 +1005,27 @@ export default function BulkUploadSchools() {
               setCsvData={setCsvData}
             />
 
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}>
-  <OutlinedButton
-    text={<span>{`< Back to Upload`}</span>}
-    onClick={handleBackStep}
-  />
-  <OutlinedButton
-    variant="contained"
-    text={<span>{`Proceed >`}</span>}
-    onClick={handleConfirmMapping}
-    disabled={isConfirmMappingDisabled}
-    sx={{
-      backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0d6efd",
-      "&:hover": { backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0b5ed7" },
-      "&.Mui-disabled": {
-        backgroundColor: "#cccccc",
-        color: "#666666",
-        cursor: "pointer",
-        pointerEvents: "auto",
-      },
-    }}
-  />
-</Box>
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}
+            >
+              <OutlinedButton text={<span>{`< Back to Upload`}</span>} onClick={handleBackStep} />
+              <OutlinedButton
+                variant="contained"
+                text={<span>{`Proceed >`}</span>}
+                onClick={handleConfirmMapping}
+                disabled={isConfirmMappingDisabled}
+                sx={{
+                  backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0d6efd",
+                  "&:hover": { backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0b5ed7" },
+                  "&.Mui-disabled": {
+                    backgroundColor: "#cccccc",
+                    color: "#666666",
+                    cursor: "pointer",
+                    pointerEvents: "auto",
+                  },
+                }}
+              />
+            </Box>
           </Box>
         )}
 
@@ -1252,27 +1250,29 @@ export default function BulkUploadSchools() {
               // Pre-upload view
               <Box
                 sx={{
-                  border: "1px solid #d1e7ff",
                   borderRadius: 2,
                   p: 3,
                   mb: 3,
-                  backgroundColor: "#f0f7ff",
                 }}
               >
-                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                  Ready to Upload
-                </Typography>
+                <Box sx={{ backgroundColor: "#EAEDED", borderRadius: 2, p: 2, mb: 3 }}>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                    Confirm and Upload
+                  </Typography>
 
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1" fontWeight="bold">
-                    File: {file.name}
-                  </Typography>
-                  <Typography variant="body2">
-                    {totalUploadCount} schools will be uploaded
-                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body1" fontWeight="bold">
+                      File: {file.name}
+                    </Typography>
+                    <Typography variant="body2">
+                      Summary: <b>{totalUploadCount}</b> school record
+                      {totalUploadCount !== 1 ? "s" : ""} will be processed based on the mappings
+                      below.
+                    </Typography>
+                  </Box>
                 </Box>
 
-                <Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>
+                <Typography variant="body1" fontWeight="bold" sx={{ mb: 3}}>
                   Column Mapping:
                 </Typography>
 
@@ -1280,13 +1280,21 @@ export default function BulkUploadSchools() {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>CSV Column</TableCell>
-                        <TableCell>System Field</TableCell>
+                        <TableCell>Your CSV Column</TableCell>
+                        <TableCell> Mapped to System Field</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {Object.entries(mappingConfig).map(([csvColumn, systemField]) => (
-                        <TableRow key={`mapping-${csvColumn}`}>
+                        <TableRow
+                          key={`mapping-${csvColumn}`}
+                          sx={{
+                            height: 48,
+                            "& td, & th": {
+                              borderBottom: "none",
+                            },
+                          }}
+                        >
                           <TableCell>{csvColumn}</TableCell>
                           <TableCell>{systemField}</TableCell>
                         </TableRow>
@@ -1296,10 +1304,10 @@ export default function BulkUploadSchools() {
                 </TableContainer>
 
                 <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <OutlinedButton text={"Back to Mapping"} onClick={handleBackStep} />
+                  <OutlinedButton text={"< Back to Mapping"} onClick={handleBackStep} />
 
                   <ButtonCustom
-                    text={isUploading ? "Uploading..." : "Upload Schools"}
+                    text={isUploading ? "Uploading..." : "Upload Schools "}
                     btnWidth="200"
                     onClick={handleUpload}
                     disabled={isUploading}
