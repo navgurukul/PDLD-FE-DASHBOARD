@@ -51,7 +51,8 @@ import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector
 import CheckIcon from "@mui/icons-material/Check";
 import FileDownloadSvg from "../assets/file_download.svg";
 
-// Function to get login details from localStorage with fallback
+
+//  Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
   // Default values as specified
   let defaultDetails = {
@@ -1005,25 +1006,28 @@ export default function BulkUploadSchools() {
               setCsvData={setCsvData}
             />
 
-            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-              <OutlinedButton text="Back" onClick={handleBackStep} />
-              <OutlinedButton
-                variant="contained"
-                text="Confirm Mapping"
-                onClick={handleConfirmMapping}
-                disabled={isConfirmMappingDisabled}
-                sx={{
-                  backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0d6efd",
-                  "&:hover": { backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0b5ed7" },
-                  "&.Mui-disabled": {
-                    backgroundColor: "#cccccc",
-                    color: "#666666",
-                    cursor: "pointer",
-                    pointerEvents: "auto",
-                  },
-                }}
-              />
-            </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}>
+  <OutlinedButton
+    text={<span>{`< Back to Upload`}</span>}
+    onClick={handleBackStep}
+  />
+  <OutlinedButton
+    variant="contained"
+    text={<span>{`Proceed >`}</span>}
+    onClick={handleConfirmMapping}
+    disabled={isConfirmMappingDisabled}
+    sx={{
+      backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0d6efd",
+      "&:hover": { backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0b5ed7" },
+      "&.Mui-disabled": {
+        backgroundColor: "#cccccc",
+        color: "#666666",
+        cursor: "pointer",
+        pointerEvents: "auto",
+      },
+    }}
+  />
+</Box>
           </Box>
         )}
 
