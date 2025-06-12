@@ -46,6 +46,10 @@ import Modal from "@mui/material/Modal";
 import CSVMapper from "./CSVMapper";
 import SampleCSVModal from "./SampleCSVModal";
 import OutlinedButton from "./button/OutlinedButton";
+import { styled } from "@mui/material/styles";
+import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector";
+import CheckIcon from "@mui/icons-material/Check";
+import FileDownloadSvg from "../assets/file_download.svg";
 
 // Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
@@ -426,6 +430,91 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
   );
 };
 
+// Custom Step Icon for 01, 02, 03
+function CustomStepIcon(props) {
+  const { active, completed, icon } = props;
+  const label = icon < 10 ? `0${icon}` : icon;
+  if (completed) {
+    return (
+      <Box
+        sx={{
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          backgroundColor: "#2F4F4F",
+          border: "2px solid #2F4F4F",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CheckIcon sx={{ color: "#fff", fontSize: 20 }} />
+      </Box>
+    );
+  }
+  // Active step: only border, no bg, dark text
+  if (active) {
+    return (
+      <Box
+        sx={{
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          backgroundColor: "transparent",
+          border: "2px solid #2F4F4F",
+          color: "#2F4F4F",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontWeight: 600,
+          fontSize: "16px",
+          fontFamily: "Work Sans",
+        }}
+      >
+        {label}
+      </Box>
+    );
+  }
+
+  // Inactive steps: only border, no bg, grey border/text
+  return (
+    <Box
+      sx={{
+        width: 40,
+        height: 40,
+        borderRadius: "50%",
+        backgroundColor: "transparent",
+        border: "2px solid #829595",
+        color: "#829595",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 600,
+        fontSize: "16px",
+        fontFamily: "Work Sans",
+      }}
+    >
+      {label}
+    </Box>
+  );
+}
+
+// Custom Connector (thicker line)
+const CustomConnector = styled(StepConnector)(({ theme }) => ({
+  [`& .${stepConnectorClasses.line}`]: {
+    borderColor: "#829595",
+    borderTopWidth: 8,
+    borderRadius: 1,
+    transition: "border-color 0.3s",
+  },
+  [`&.${stepConnectorClasses.completed} .${stepConnectorClasses.line}`]: {
+    borderColor: "#2F4F4F",
+  },
+  [`&.${stepConnectorClasses.active} .${stepConnectorClasses.line}`]: {
+    borderColor: "#2F4F4F",
+  },
+}));
+
 export default function BulkUploadSchools() {
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -442,6 +531,7 @@ export default function BulkUploadSchools() {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const [uploadDateTime, setUploadDateTime] = useState(null);
+
   // Define steps for the upload process
   const steps = ["Upload CSV", "Map Columns", "Upload Data"];
 
@@ -638,7 +728,7 @@ export default function BulkUploadSchools() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ p: 2, px: 2, maxWidth: "90%", margin: "0 auto" }}>
+      <Box sx={{ p: 2, px: 2, maxWidth: "70%", margin: "0 auto" }}>
         <div className="flex justify-between">
           <h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
           {/* <Button
@@ -660,16 +750,53 @@ export default function BulkUploadSchools() {
           </Button> */}
         </div>
 
-        <Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
-          Upload a CSV file with multiple schools to add them at once
-        </Typography>
-
         {/* Add stepper to show current stage of the process */}
         <Box sx={{ display: "flex", justifyContent: "center" }}>
-          <Stepper activeStep={activeStep} sx={{ width: "70%", mb: 2 }}>
-            {steps.map((label) => (
+          <Stepper
+            activeStep={activeStep}
+            alternativeLabel
+            connector={<CustomConnector />}
+            sx={{ width: "100%", mb: 2 }}
+          >
+            {steps.map((label, index) => (
               <Step key={label}>
-                <StepLabel>{label}</StepLabel>
+                <StepLabel
+                  StepIconComponent={CustomStepIcon}
+                  sx={{
+                    ".MuiStepLabel-label": {
+                      mt: 1.5,
+                      fontWeight: 600,
+                      fontFamily: "Work Sans",
+                      fontSize: "16px",
+                      textAlign: "center",
+                      width: "max-content",
+                      mx: "auto",
+                      color:
+                        activeStep === index
+                          ? "#2F4F4F"
+                          : activeStep > index
+                          ? "#2F4F4F"
+                          : "#829595",
+                    },
+                  }}
+                >
+                  {/* Step name */}
+                  <span
+                    style={{
+                      color:
+                        activeStep === index
+                          ? "#2F4F4F"
+                          : activeStep > index
+                          ? "#2F4F4F"
+                          : "#829595",
+                      fontWeight: 600,
+                      fontFamily: "Work Sans",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {label}
+                  </span>
+                </StepLabel>
               </Step>
             ))}
           </Stepper>
@@ -680,7 +807,7 @@ export default function BulkUploadSchools() {
             <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
               <Box
                 sx={{
-                  width: "70%",
+                  width: "100%",
                   border: "2px dashed #ccc",
                   borderRadius: 2,
                   p: 2,
@@ -746,7 +873,7 @@ export default function BulkUploadSchools() {
                   ref={fileInputRef}
                 />
 
-                <Box sx={{ display: "flex", justifyContent: "center", mb: 2 , mt: 7}}>
+                <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt: 7 }}>
                   <Box
                     sx={{
                       width: 80,
@@ -784,7 +911,7 @@ export default function BulkUploadSchools() {
             </Box>
 
             {/* New Box: Download text + button */}
-            <Box sx={{ width: "70%", mx: "auto", textAlign: "center", mt: 3 }}>
+            <Box sx={{ width: "100%", mx: "auto", textAlign: "center", mt: 3 }}>
               <Typography
                 variant="body2"
                 sx={{
@@ -799,12 +926,15 @@ export default function BulkUploadSchools() {
               </Typography>
               <Button
                 variant="outlined"
-                startIcon={<GetAppIcon />}
+                startIcon={
+                  <img src={FileDownloadSvg} alt="Download" style={{ width: 22, height: 22 }} />
+                }
                 onClick={openSampleCSVModal}
                 sx={{
                   color: "#2F4F4F",
                   borderRadius: "8px",
                   border: "1px solid #2F4F4F",
+                  textTransform: "none",
                   height: "44px",
                   "&:hover": {
                     backgroundColor: "#2F4F4F",
