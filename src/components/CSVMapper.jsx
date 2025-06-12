@@ -148,7 +148,7 @@ export default function CSVMapper({
       const content = e.target.result;
       const rows = content.split("\n");
 
-      // Parse headers (first row)
+      //  Parse headers (first row)
       const headerRow = rows[0].split(",").map((h) => h.trim());
       setHeaders(headerRow);
 
@@ -573,40 +573,6 @@ export default function CSVMapper({
             <Box
               sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}
             >
-              <Box>
-                <Typography variant="subtitle1" fontWeight="bold">
-                  Schools Data Preview and Editing
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Showing {headers.length} columns
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", justifyContent: "end", gap: 2 }}>
-                <ButtonCustom
-                  text={"Add Row"}
-                  onClick={startAddRow}
-                  disabled={addingNewRow}
-                  size="small"
-                  imageName={addSymbolBtn}
-                />
-                {/* <OutlinedButton
-                  variant="contained"
-                  text={"Confirm Mapping"}
-                  onClick={isButtonDisabled ? handleDisabledButtonClick : completeMapping}
-                  disabled={isButtonDisabled}
-                  fullWidth
-                  sx={{
-                    backgroundColor: isButtonDisabled ? "#cccccc" : "#0d6efd",
-                    "&:hover": { backgroundColor: isButtonDisabled ? "#cccccc" : "#0b5ed7" },
-                    "&.Mui-disabled": {
-                      backgroundColor: "#cccccc",
-                      color: "#666666",
-                      cursor: "pointer",
-                      pointerEvents: "auto",
-                    },
-                  }}
-                /> */}
-              </Box>
             </Box>
 
             <TableContainer sx={{ maxHeight: 600 }}>
