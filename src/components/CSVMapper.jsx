@@ -41,7 +41,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import theme from "../theme/theme";
 import OutlinedButton from "./button/OutlinedButton";
 
-// Function to get login details from localStorage with fallback
+//  Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
   // Default values as specified
   let defaultDetails = {
@@ -439,116 +439,73 @@ export default function CSVMapper({
     <ThemeProvider theme={theme}>
       <Box sx={{ mt: 3, mb: 3 }}>
         {/* Mapping Configuration at the top */}
-        <Card variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
-          <CardContent>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                flexWrap: { xs: "wrap", md: "nowrap" }, // Wrap content on smaller screens and keep it inline on larger screens
-                gap: 2, // Add spacing between items
-              }}
-            >
-              {/* Left Side: Required Fields Status */}
-              <Box
-                sx={{
-                  flex: 1,
-                  minWidth: 300,
-                  mb: { xs: 2, md: 0 },
-                  backgroundColor: "#EAEDED",
-                  borderRadius: 2,
-                  height: 56,
-                  display: "flex",
-                  alignItems: "center",
-                  px: 2,
-                }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  fontWeight="bold"
-                  sx={{
-                    mb: 0,
-                    fontSize: "16px",
-                    color: "#2F4F4F",
-                    width: "100%",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {(() => {
-                    const requiredFields = systemFields.filter((f) => f.required);
-                    const mappedFieldIds = Object.values(mapping).filter(Boolean);
-                    const mappedRequired = requiredFields.filter((f) =>
-                      mappedFieldIds.includes(f.id)
-                    );
-                    const missingFields = requiredFields.filter(
-                      (f) => !mappedFieldIds.includes(f.id)
-                    );
-                    return (
-                      <>
-                        Required Fields Mapped: {mappedRequired.length} of {requiredFields.length}
-                        {missingFields.length > 0 && (
-                          <>. Missing: {missingFields.map((f) => f.label).join(", ")}</>
-                        )}
-                      </>
-                    );
-                  })()}
-                </Typography>
-              </Box>
 
-              {/* Middle: Current Mapping */}
-              {/* <Box
-								sx={{
-									flex: 2,
-									minWidth: 300,
-								}}
-							>
-								<Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-									Current Mapping
-								</Typography>
-
-								<Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-									{Object.entries(mapping).length > 0 ? (
-										Object.entries(mapping).map(([csvColumn, systemFieldId]) => {
-											const field = systemFields.find((f) => f.id === systemFieldId);
-											return field ? (
-												<Chip
-													key={`mapping-${csvColumn}-${systemFieldId}`}
-													label={
-														<Box
-															component="span"
-															sx={{ display: "flex", alignItems: "center" }}
-														>
-															<Typography variant="caption" sx={{ mr: 0.5 }}>
-																{csvColumn}
-															</Typography>
-															<ArrowForwardIcon sx={{ fontSize: 10, mx: 0.5 }} />
-															<Typography
-																variant="caption"
-																fontWeight={field.required ? "bold" : "normal"}
-															>
-																{field.label} {field.required ? "*" : ""}
-															</Typography>
-														</Box>
-													}
-													variant="outlined"
-													color="primary"
-													size="small"
-												/>
-											) : null;
-										})
-									) : (
-										<Typography variant="body2" color="text.secondary">
-											No columns mapped yet
-										</Typography>
-									)}
-								</Box>
-							</Box> */}
-            </Box>
-          </CardContent>
-        </Card>
+        {/* Left Side: Required Fields Status */}
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 300,
+            mb: { xs: 2, md: 0 },
+            backgroundColor: "#EAEDED",
+            borderRadius: 2,
+            height: 56,
+            display: "flex",
+            alignItems: "center",
+            px: 2,
+          }}
+        >
+          <Typography
+            variant="subtitle2"
+            sx={{
+              mb: 0,
+              fontSize: "16px",
+              color: "#2F4F4F",
+              width: "100%",
+              fontFamily: "Work Sans",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {(() => {
+              const requiredFields = systemFields.filter((f) => f.required);
+              const mappedFieldIds = Object.values(mapping).filter(Boolean);
+              const mappedRequired = requiredFields.filter((f) => mappedFieldIds.includes(f.id));
+              const missingFields = requiredFields.filter((f) => !mappedFieldIds.includes(f.id));
+              return (
+                <>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontSize: "16px",
+                      color: "#2F4F4F",
+                      width: "100%",
+                      fontFamily: "Work Sans",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>Required Fields Mapped:</span>
+                    <span style={{ fontWeight: 400, margin: "0 4px" }}>
+                      {mappedRequired.length} of {requiredFields.length}
+                    </span>
+                    {missingFields.length > 0 && (
+                      <span style={{ fontWeight: 600 }}>
+                        . Missing:
+                        <span style={{ fontWeight: 400, marginLeft: 4 }}>
+                          {missingFields.map((f) => f.label).join(", ")}
+                        </span>
+                      </span>
+                    )}
+                  </Typography>
+                </>
+              );
+            })()}
+          </Typography>
+        </Box>
 
         <Typography
           variant="body2"
@@ -561,6 +518,7 @@ export default function CSVMapper({
             borderRadius: 1,
             px: 2,
             py: 1,
+            mt: 3,
           }}
         >
           Match your CSV columns to our System Fields. All fields marked with a <b>*</b> must be
@@ -572,8 +530,7 @@ export default function CSVMapper({
           <CardContent>
             <Box
               sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}
-            >
-            </Box>
+            ></Box>
 
             <TableContainer sx={{ maxHeight: 600 }}>
               <Table stickyHeader size="small">
@@ -592,10 +549,23 @@ export default function CSVMapper({
                 </TableHead>
                 <TableBody>
                   {headers.map((header) => (
-                    <TableRow key={`preview-header-${header}`}>
+                    <TableRow
+                      key={`preview-header-${header}`}
+                      sx={{
+                        borderBottom: "none",
+                        "& > *": { borderBottom: "none" },
+                        height: 56, // gap between rows
+                      }}
+                    >
                       {/* 1. CSV Column Header */}
                       <TableCell align="center">
-                        <Typography variant="body2" fontWeight="bold">
+                        <Typography
+                          variant="body2"
+                          fontWeight={400}
+                          fontFamily="Work Sans"
+                          fontSize="14px"
+                          color="#2F4F4F"
+                        >
                           {header}
                         </Typography>
                       </TableCell>
@@ -608,7 +578,7 @@ export default function CSVMapper({
                             displayEmpty
                             size="small"
                             sx={{
-                              minWidth: 120,
+                              minWidth: 150,
                               fontSize: "0.85rem",
                               "& .MuiSelect-select": {
                                 padding: "6px 32px 6px 12px",
@@ -642,7 +612,17 @@ export default function CSVMapper({
                         </FormControl>
                       </TableCell>
                       {/* 3. Data Preview (first row only) */}
-                      <TableCell align="center">{csvData[0]?.[header] || ""}</TableCell>
+                      <TableCell align="center">
+                        <Typography
+                          fontFamily="Work Sans"
+                          fontWeight={400}
+                          fontStyle="italic"
+                          fontSize="14px"
+                          color="#597272"
+                        >
+                          {csvData[0]?.[header] || ""}
+                        </Typography>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
