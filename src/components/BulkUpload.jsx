@@ -49,7 +49,7 @@ import OutlinedButton from "./button/OutlinedButton";
 import { styled } from "@mui/material/styles";
 import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector";
 import CheckIcon from "@mui/icons-material/Check";
-import FileDownloadSvg from "../assets/file_download.svg";
+import { ReactComponent as FileDownloadSvg } from "../assets/file_download.svg";
 
 // Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
@@ -743,9 +743,9 @@ export default function BulkUploadSchools() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ p: 2, px: 2, maxWidth: "70%", margin: "0 auto" }}>
+      <Box sx={{ p: 2, px: 2, maxWidth: "60%", margin: "0 auto" }}>
         <div className="flex justify-between">
-          <h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
+          <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Bulk Upload Schools</h5>
           {/* <Button
             variant="outlined"
             startIcon={<GetAppIcon />}
@@ -942,7 +942,16 @@ export default function BulkUploadSchools() {
               <Button
                 variant="outlined"
                 startIcon={
-                  <img src={FileDownloadSvg} alt="Download" style={{ width: 22, height: 22 }} />
+                  <FileDownloadSvg
+                    style={{
+                      width: 22,
+                      height: 22,
+                      fill: "currentColor",
+                      color: "#2F4F4F",
+                      transition: "color 0.2s",
+                    }}
+                    className="download-svg-icon"
+                  />
                 }
                 onClick={openSampleCSVModal}
                 sx={{
@@ -951,9 +960,15 @@ export default function BulkUploadSchools() {
                   border: "1px solid #2F4F4F",
                   textTransform: "none",
                   height: "44px",
+                  fontWeight: 600,
+                  fontFamily: "Work Sans",
+                  fontSize: "18px",
                   "&:hover": {
                     backgroundColor: "#2F4F4F",
                     color: "white",
+                    "& .download-svg-icon": {
+                      color: "white",
+                    },
                   },
                 }}
               >
@@ -976,8 +991,28 @@ export default function BulkUploadSchools() {
                 backgroundColor: "#E0E0E0",
               }}
             >
-              <Typography>
-                File Uploaded: {file.name} {totalUploadCount > 0 && `(${totalUploadCount} rows)`}
+              <Typography component="span">
+                <span
+                  style={{
+                    fontWeight: 600,
+                    fontFamily: "Work Sans",
+                    fontSize: "14px",
+                    color: "#2F4F4F",
+                  }}
+                >
+                  File Uploaded:
+                </span>
+                <span
+                  style={{
+                    fontWeight: 400,
+                    fontFamily: "Work Sans",
+                    fontSize: "14px",
+                    color: "#2F4F4F",
+                    marginLeft: 6,
+                  }}
+                >
+                  {file.name} {totalUploadCount > 0 && `(${totalUploadCount} rows)`}
+                </span>
               </Typography>
               <IconButton
                 onClick={confirmFileRemoval}
@@ -1272,7 +1307,7 @@ export default function BulkUploadSchools() {
                   </Box>
                 </Box>
 
-                <Typography variant="body1" fontWeight="bold" sx={{ mb: 3}}>
+                <Typography variant="body1" fontWeight="bold" sx={{ mb: 3 }}>
                   Column Mapping:
                 </Typography>
 
