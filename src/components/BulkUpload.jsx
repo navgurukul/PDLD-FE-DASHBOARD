@@ -531,6 +531,21 @@ export default function BulkUploadSchools() {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const [uploadDateTime, setUploadDateTime] = useState(null);
+  const [mapping, setMapping] = useState({});
+  const [csvData, setCsvData] = useState([]);
+
+  const requiredFields = ["schoolName", "udiseCode", "clusterName", "blockName"];
+  const isConfirmMappingDisabled = !requiredFields.every((field) =>
+    Object.values(mapping).includes(field)
+  );
+
+  const handleConfirmMapping = () => {
+    if (isConfirmMappingDisabled) {
+      toast.error("Please map all required fields before proceeding.");
+      return;
+    }
+    handleMappingComplete(mapping, csvData);
+  };
 
   // Define steps for the upload process
   const steps = ["Upload CSV", "Map Columns", "Upload Data"];
@@ -957,30 +972,57 @@ export default function BulkUploadSchools() {
                 alignItems: "center",
                 p: 1.2,
                 mb: 2,
-                border: "1px solid #e0e0e0",
                 borderRadius: 1,
-                backgroundColor: "#f5f5f5",
+                backgroundColor: "#E0E0E0",
               }}
             >
               <Typography>
-                {file.name} {totalUploadCount > 0 && `(${totalUploadCount} rows)`}
+                File Uploaded: {file.name} {totalUploadCount > 0 && `(${totalUploadCount} rows)`}
               </Typography>
-              <Button
-                variant="text"
-                color="error"
-                startIcon={<CloseIcon />}
+              <IconButton
                 onClick={confirmFileRemoval}
                 size="small"
+                sx={{
+                  color: "#2F4F4F",
+                  "&:hover": {
+                    backgroundColor: "#f0f0f0",
+                    color: "#d32f2f",
+                  },
+                }}
               >
-                Remove
-              </Button>
+                <CloseIcon />
+              </IconButton>
             </Box>
 
             {/* CSV Mapper Component */}
-            <CSVMapper file={file} onMappingComplete={handleMappingComplete} entityType="school" />
+            <CSVMapper
+              file={file}
+              onMappingComplete={handleMappingComplete}
+              entityType="school"
+              mapping={mapping}
+              setMapping={setMapping}
+              csvData={csvData}
+              setCsvData={setCsvData}
+            />
 
-            <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2 }}>
-              <OutlinedButton text={"Back"} onClick={handleBackStep} />
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
+              <OutlinedButton text="Back" onClick={handleBackStep} />
+              <OutlinedButton
+                variant="contained"
+                text="Confirm Mapping"
+                onClick={handleConfirmMapping}
+                disabled={isConfirmMappingDisabled}
+                sx={{
+                  backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0d6efd",
+                  "&:hover": { backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0b5ed7" },
+                  "&.Mui-disabled": {
+                    backgroundColor: "#cccccc",
+                    color: "#666666",
+                    cursor: "pointer",
+                    pointerEvents: "auto",
+                  },
+                }}
+              />
             </Box>
           </Box>
         )}
