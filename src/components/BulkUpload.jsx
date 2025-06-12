@@ -49,7 +49,7 @@ import OutlinedButton from "./button/OutlinedButton";
 import { styled } from "@mui/material/styles";
 import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector";
 import CheckIcon from "@mui/icons-material/Check";
-import { ReactComponent as FileDownloadSvg } from "../assets/file_download.svg";
+import FileDownloadSvg from "../assets/file_download.svg";
 
 // Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
@@ -942,13 +942,13 @@ export default function BulkUploadSchools() {
               <Button
                 variant="outlined"
                 startIcon={
-                  <FileDownloadSvg
+                  <img
+                    src={FileDownloadSvg}
+                    alt="Download"
                     style={{
                       width: 22,
                       height: 22,
-                      fill: "currentColor",
-                      color: "#2F4F4F",
-                      transition: "color 0.2s",
+                      transition: "filter 0.2s",
                     }}
                     className="download-svg-icon"
                   />
@@ -966,8 +966,9 @@ export default function BulkUploadSchools() {
                   "&:hover": {
                     backgroundColor: "#2F4F4F",
                     color: "white",
+                    // Optionally, can invert the icon color on hover:
                     "& .download-svg-icon": {
-                      color: "white",
+                      filter: "invert(1)",
                     },
                   },
                 }}
@@ -1043,7 +1044,7 @@ export default function BulkUploadSchools() {
             <Box
               sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}
             >
-              <OutlinedButton text={<span>{`< Back to Upload`}</span>} onClick={handleBackStep} />
+              <OutlinedButton text={<span> {`< Back to Upload`}</span>} onClick={handleBackStep} />
               <OutlinedButton
                 variant="contained"
                 text={<span>{`Proceed >`}</span>}
@@ -1051,7 +1052,7 @@ export default function BulkUploadSchools() {
                 disabled={isConfirmMappingDisabled}
                 sx={{
                   backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0d6efd",
-                  "&:hover": { backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0b5ed7" },
+                  "&:hover": { backgroundColor: isConfirmMappingDisabled ? "#FFC300" : "#0b5ed7" },
                   "&.Mui-disabled": {
                     backgroundColor: "#cccccc",
                     color: "#666666",
@@ -1296,18 +1297,41 @@ export default function BulkUploadSchools() {
                   </Typography>
 
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body1" fontWeight="bold">
-                      File: {file.name}
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontWeight: "bold",
+                        fontSize: "16px",
+                        fontFamily: "Work Sans",
+                        color: "#2F4F4F",
+                      }}
+                    >
+                      File: <span style={{ fontWeight: 400 }}>{file.name}</span>
                     </Typography>
-                    <Typography variant="body2">
-                      Summary: <b>{totalUploadCount}</b> school record
-                      {totalUploadCount !== 1 ? "s" : ""} will be processed based on the mappings
-                      below.
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: "bold",
+                        fontSize: "14px",
+                        color: "#2F4F4F",
+                        fontFamily: "Work Sans",
+                      }}
+                    >
+                      Summary:{" "}
+                      <span style={{ fontWeight: 400 }}>
+                        <b>{totalUploadCount}</b> school record
+                        {totalUploadCount !== 1 ? "s" : ""} will be processed based on the mappings
+                        below.
+                      </span>
                     </Typography>
                   </Box>
                 </Box>
 
-                <Typography variant="body1" fontWeight="bold" sx={{ mb: 3 }}>
+                <Typography
+                  variant="body1"
+                  fontWeight="bold"
+                  sx={{ mb: 3, fontFamily: "Work Sans", color: "#2F4F4F", fontSize: "18px" }}
+                >
                   Column Mapping:
                 </Typography>
 
@@ -1315,8 +1339,30 @@ export default function BulkUploadSchools() {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>Your CSV Column</TableCell>
-                        <TableCell> Mapped to System Field</TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              fontWeight: 600,
+                              fontFamily: "Work Sans",
+                              color: "#2F4F4F",
+                              fontSize: "16px",
+                            }}
+                          >
+                            Your CSV Column
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              fontWeight: 600,
+                              fontFamily: "Work Sans",
+                              color: "#2F4F4F",
+                              fontSize: "16px",
+                            }}
+                          >
+                            Mapped to System Field
+                          </Typography>
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -1330,8 +1376,30 @@ export default function BulkUploadSchools() {
                             },
                           }}
                         >
-                          <TableCell>{csvColumn}</TableCell>
-                          <TableCell>{systemField}</TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                fontFamily: "Work Sans",
+                                fontWeight: 400, // normal
+                                color: "#2F4F4F",
+                                fontSize: "15px",
+                              }}
+                            >
+                              {csvColumn}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                fontFamily: "Work Sans",
+                                fontWeight: 400, // normal
+                                color: "#2F4F4F",
+                                fontSize: "15px",
+                              }}
+                            >
+                              {systemField}
+                            </Typography>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
