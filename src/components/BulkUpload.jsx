@@ -746,23 +746,6 @@ export default function BulkUploadSchools() {
       <Box sx={{ p: 2, px: 2, maxWidth: "60%", margin: "0 auto" }}>
         <div className="flex justify-between">
           <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Bulk Upload Schools</h5>
-          {/* <Button
-            variant="outlined"
-            startIcon={<GetAppIcon />}
-            onClick={openSampleCSVModal}
-            sx={{
-              color: "#2F4F4F",
-              borderRadius: "8px",
-              border: "1px solid #2F4F4F",
-              height: "44px",
-              "&:hover": {
-                backgroundColor: "#2F4F4F",
-                color: "white",
-              },
-            }}
-          >
-            Sample CSV
-          </Button> */}
         </div>
 
         {/* Add stepper to show current stage of the process */}
@@ -1045,21 +1028,11 @@ export default function BulkUploadSchools() {
               sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}
             >
               <OutlinedButton text={<span> {`< Back to Upload`}</span>} onClick={handleBackStep} />
-              <OutlinedButton
-                variant="contained"
-                text={<span>{`Proceed >`}</span>}
+              <ButtonCustom
+                text="Proceed >"
+                btnWidth="200"
                 onClick={handleConfirmMapping}
                 disabled={isConfirmMappingDisabled}
-                sx={{
-                  backgroundColor: isConfirmMappingDisabled ? "#cccccc" : "#0d6efd",
-                  "&:hover": { backgroundColor: isConfirmMappingDisabled ? "#FFC300" : "#0b5ed7" },
-                  "&.Mui-disabled": {
-                    backgroundColor: "#cccccc",
-                    color: "#666666",
-                    cursor: "pointer",
-                    pointerEvents: "auto",
-                  },
-                }}
               />
             </Box>
           </Box>
