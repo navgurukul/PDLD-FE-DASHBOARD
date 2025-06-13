@@ -37,7 +37,9 @@ import StudentDeleteConfirmationModal from "../../../components/DeleteConfirmati
 import StudentErrorDetailsDialog from "./ErrorDetailsDialog";
 import { useParams } from "react-router-dom";
 import OutlinedButton from "../../button/OutlinedButton";
-
+import FileDownloadSvg from "../../../assets/file_download.svg";
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
 // Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
   // Default values as specified
@@ -125,6 +127,22 @@ export default function BulkUploadStudents() {
   const navigate = useNavigate();
   const { schoolId } = useParams();
   const [uploadDateTime, setUploadDateTime] = useState(null);
+  const [mapping, setMapping] = useState({});
+  const [csvData, setCsvData] = useState([]);
+
+  const requiredFields = ["fullName", "fatherName", "motherName", "class", "gender"];
+  const isConfirmMappingDisabled = !requiredFields.every((field) =>
+    Object.values(mapping).includes(field)
+  );
+
+  const handleConfirmMapping = () => {
+    if (isConfirmMappingDisabled) {
+      toast.error("Please map all required fields before proceeding.");
+      return;
+    }
+    // Step forward with mapping and csvData
+    handleMappingComplete(mapping, csvData);
+  };
 
   const openSampleCSVModal = () => {
     setSampleModalOpen(true);
@@ -223,35 +241,23 @@ export default function BulkUploadStudents() {
     formData.append("schoolId", schoolId);
 
     try {
-      // Replace apiInstance with standard fetch
-      const apiUrl = `https://dev-api.pdld.samyarth.org/admin/bulk/students/${schoolId}`;
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        body: formData,
+      // Use apiInstance for API call (no need for apiUrl or fetch)
+      const response = await apiInstance.post(`/admin/bulk/students/${schoolId}`, formData, {
         headers: {
-          // Add any authorization headers if needed
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`, // Add token if required
+          "Content-Type": "multipart/form-data",
+          // Authorization header automatic lag jayega interceptor se
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      // Parse the JSON response
-      const responseData = await response.json();
-
-      // Set the upload result
+      const responseData = response.data;
       setUploadResult(responseData);
 
-      // Process error data from the actual API response (matching the specific format)
+      // Error data process karo (same as before)
       if (responseData?.data?.errors?.length > 0) {
         setErrorData(transformErrorData(responseData.data.errors));
       } else if (responseData?.errors?.length > 0) {
         setErrorData(transformErrorData(responseData.errors));
       } else {
-        // Clear error data if there are no errors
         setErrorData([]);
       }
 
@@ -268,25 +274,12 @@ export default function BulkUploadStudents() {
         toast.warning(`Upload completed with no new students added`);
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
-
-      // Handle error with fetch differently than axios
+      // Axios error handling
       let errorMessage = "Error uploading file";
-      let errorResponse = { error: "Upload failed" };
-
-      if (error.response) {
-        try {
-          errorResponse = await error.response.json();
-          errorMessage = errorResponse?.message || "Error uploading file";
-        } catch (e) {
-          // If response is not valid JSON
-          errorMessage = error.message || "Error uploading file";
-        }
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
       }
-
       toast.error(errorMessage);
-
-      // Set basic error data if detailed format not available
       setErrorData([
         {
           studentName: "Error",
@@ -296,9 +289,7 @@ export default function BulkUploadStudents() {
           reason: errorMessage || "Failed to process upload",
         },
       ]);
-
-      // Set error result
-      setUploadResult(errorResponse);
+      setUploadResult(error.response?.data || { error: "Upload failed" });
     } finally {
       setIsUploading(false);
       setUploadDateTime(new Date().toISOString());
@@ -426,151 +417,174 @@ export default function BulkUploadStudents() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ p: 2, px: 2, maxWidth: "90%", margin: "0 auto" }}>
+      <Box sx={{ p: 2, px: 2, maxWidth: "60%", margin: "0 auto" }}>
         <div className="flex justify-between">
-          <h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Students</h5>
-          <Button
-            variant="outlined"
-            startIcon={<GetAppIcon />}
-            onClick={openSampleCSVModal}
-            sx={{
-              color: "#2F4F4F",
-              borderRadius: "8px",
-              border: "1px solid #2F4F4F",
-              height: "44px",
-              "&:hover": {
-                backgroundColor: "#2F4F4F",
-                color: "white",
-              },
-            }}
-          >
-            Sample CSV
-          </Button>
+          <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Bulk Upload Students</h5>
         </div>
-
-        <Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
-          Upload a CSV file with multiple students to add them at once
-        </Typography>
 
         {/* Add stepper to show current stage of the process */}
         <StudentUploadStepper activeStep={activeStep} />
 
         {activeStep === 0 && (
-          <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
-            <Box
-              sx={{
-                width: "70%",
-                border: "2px dashed #ccc",
-                borderRadius: 2,
-                p: 2,
-                textAlign: "center",
-                mb: 0,
-                position: "relative", // For proper drag event handling
-                cursor: "pointer", // Show pointer cursor on the entire box
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  borderColor: "#0d6efd",
-                  backgroundColor: "rgba(13, 110, 253, 0.04)",
-                },
-              }}
-              onClick={() => fileInputRef.current && fileInputRef.current.click()} // Make entire box clickable
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#0d6efd";
-                e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
-              }}
-              onDragEnter={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#0d6efd";
-                e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#ccc";
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#ccc";
-                e.currentTarget.style.backgroundColor = "transparent";
-
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  const droppedFile = e.dataTransfer.files[0];
-                  // Check if the file is a CSV
-                  if (droppedFile.name.endsWith(".csv")) {
-                    // We'll create a synthetic event object that mimics the structure
-                    // expected by the handleFileChange function
-                    const syntheticEvent = {
-                      target: {
-                        files: [droppedFile],
-                      },
-                    };
-                    handleFileChange(syntheticEvent);
-                  } else {
-                    toast.error("Please upload a CSV file");
-                  }
-                }
-              }}
-            >
-              <input
-                accept=".csv"
-                style={{ display: "none" }}
-                id="upload-file-button"
-                type="file"
-                onChange={handleFileChange}
-                ref={fileInputRef}
-              />
-
-              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-                <Box
-                  sx={{
-                    backgroundColor: "#e6f2ff",
-                    borderRadius: "50%",
-                    width: 80,
-                    height: 80,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.3s ease",
-                  }}
-                >
-                  <CloudUploadIcon sx={{ fontSize: 40, color: "#2F4F4F" }} />
-                </Box>
-              </Box>
-
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                Click anywhere in this box or drag a CSV file here
-              </Typography>
-
+          <>
+            <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
               <Box
                 sx={{
-                  backgroundColor: "#f0f7ff",
-                  border: "1px solid #d1e7ff",
+                  width: "100%",
+                  border: "2px dashed #ccc",
                   borderRadius: 2,
                   p: 2,
-                  mb: 3,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "100%",
+                  textAlign: "center",
+                  mb: 0,
+                  position: "relative", // For proper drag event handling
+                  cursor: "pointer", // Show pointer cursor on the entire box
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    borderColor: "#0d6efd",
+                    backgroundColor: "rgba(13, 110, 253, 0.04)",
+                  },
+                }}
+                onClick={() => fileInputRef.current && fileInputRef.current.click()} // Make entire box clickable
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#0d6efd";
+                  e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#0d6efd";
+                  e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#ccc";
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#ccc";
+                  e.currentTarget.style.backgroundColor = "transparent";
+
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const droppedFile = e.dataTransfer.files[0];
+                    // Check if the file is a CSV
+                    if (droppedFile.name.endsWith(".csv")) {
+                      // We'll create a synthetic event object that mimics the structure
+                      // expected by the handleFileChange function
+                      const syntheticEvent = {
+                        target: {
+                          files: [droppedFile],
+                        },
+                      };
+                      handleFileChange(syntheticEvent);
+                    } else {
+                      toast.error("Please upload a CSV file");
+                    }
+                  }
                 }}
               >
-                <Box textAlign="center">
-                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
-                    CSV Format
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "#555" }}>
-                    Upload a CSV file with student data. The file should contain Student Name,
-                    Enrollment ID, Grade, and School ID. Download Sample CSV for reference.
-                  </Typography>
+                <input
+                  accept=".csv"
+                  style={{ display: "none" }}
+                  id="upload-file-button"
+                  type="file"
+                  onChange={handleFileChange}
+                  ref={fileInputRef}
+                />
+
+                <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt: 7 }}>
+                  <Box
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    <CloudUploadIcon sx={{ fontSize: 40, color: "#2F4F4F" }} />
+                  </Box>
                 </Box>
+
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: 4 }}>
+                  Select or drag and drop a CSV here
+                </Typography>
+                <Typography
+                  sx={{
+                    fontFamily: "Work Sans",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    color: "#2F4F4F",
+                    textAlign: "center",
+                    mb: 10,
+                    display: "block",
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>CSV Column Fields:</span>
+                  <span style={{ fontWeight: 400, color: "#666", marginLeft: 4 }}>
+                    The file should contain School Name, UDISE Code, Cluster Name, and Block Name.
+                  </span>
+                </Typography>
               </Box>
             </Box>
-          </Box>
+
+            {/* New Box: Download text + button */}
+            <Box sx={{ width: "100%", mx: "auto", textAlign: "center", mt: 3 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#2F4F4F",
+                  mb: 2,
+                  fontFamily: "Work Sans",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                }}
+              >
+                Download sample CSV for reference
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={
+                  <img
+                    src={FileDownloadSvg}
+                    alt="Download"
+                    style={{
+                      width: 22,
+                      height: 22,
+                      transition: "filter 0.2s",
+                    }}
+                    className="download-svg-icon"
+                  />
+                }
+                onClick={openSampleCSVModal}
+                sx={{
+                  color: "#2F4F4F",
+                  borderRadius: "8px",
+                  border: "1px solid #2F4F4F",
+                  textTransform: "none",
+                  height: "44px",
+                  fontWeight: 600,
+                  fontFamily: "Work Sans",
+                  fontSize: "18px",
+                  "&:hover": {
+                    backgroundColor: "#2F4F4F",
+                    color: "white",
+                    // Optionally, can invert the icon color on hover:
+                    "& .download-svg-icon": {
+                      filter: "invert(1)",
+                    },
+                  },
+                }}
+              >
+                Sample CSV
+              </Button>
+            </Box>
+          </>
         )}
 
         {activeStep === 1 && file && (
@@ -582,34 +596,67 @@ export default function BulkUploadStudents() {
                 alignItems: "center",
                 p: 1.2,
                 mb: 2,
-                border: "1px solid #e0e0e0",
                 borderRadius: 1,
-                backgroundColor: "#f5f5f5",
+                backgroundColor: "#E0E0E0",
               }}
             >
-              <Typography>
-                {file.name} {totalUploadCount > 0 && `(${totalUploadCount} rows)`}
+              <Typography component="span">
+                <span
+                  style={{
+                    fontWeight: 600,
+                    fontFamily: "Work Sans",
+                    fontSize: "14px",
+                    color: "#2F4F4F",
+                  }}
+                >
+                  File Uploaded:
+                </span>
+                <span
+                  style={{
+                    fontWeight: 400,
+                    fontFamily: "Work Sans",
+                    fontSize: "14px",
+                    color: "#2F4F4F",
+                    marginLeft: 6,
+                  }}
+                >
+                  {file.name} {totalUploadCount > 0 && `(${totalUploadCount} rows)`}
+                </span>
               </Typography>
-              <Button
-                variant="text"
-                color="error"
-                startIcon={<ErrorOutlineIcon />}
+              <IconButton
                 onClick={confirmFileRemoval}
                 size="small"
+                sx={{
+                  color: "#2F4F4F",
+                  "&:hover": {
+                    backgroundColor: "#f0f0f0",
+                    color: "#d32f2f",
+                  },
+                }}
               >
-                Remove
-              </Button>
+                <CloseIcon />
+              </IconButton>
             </Box>
 
-            {/* Student CSV Mapper Component */}
-            <StudentCSVMapper file={file} onMappingComplete={handleMappingComplete} />
+            <StudentCSVMapper
+              file={file}
+              mapping={mapping}
+              setMapping={setMapping}
+              csvData={csvData}
+              setCsvData={setCsvData}
+            />
 
-            <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2 }}>
-              <OutlinedButton text={"Back"} onClick={handleBackStep} />
+            <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
+              <OutlinedButton text={"< Back"} onClick={handleBackStep} />
+              <ButtonCustom
+                text="Proceed >"
+                btnWidth="200"
+                onClick={handleConfirmMapping}
+                disabled={isConfirmMappingDisabled}
+              />
             </Box>
           </Box>
         )}
-
         {activeStep === 2 && file && mappingConfig && (
           <Box sx={{ p: 2 }}>
             {uploadResult ? (
@@ -832,27 +879,52 @@ export default function BulkUploadStudents() {
               // Pre-upload view
               <Box
                 sx={{
-                  border: "1px solid #d1e7ff",
                   borderRadius: 2,
                   p: 3,
                   mb: 3,
-                  backgroundColor: "#f0f7ff",
                 }}
               >
-                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                  Ready to Upload
-                </Typography>
+                <Box sx={{ backgroundColor: "#EAEDED", borderRadius: 2, p: 2, mb: 3 }}>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                    Confirm and Upload
+                  </Typography>
 
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1" fontWeight="bold">
-                    File: {file.name}
-                  </Typography>
-                  <Typography variant="body2">
-                    {totalUploadCount} students will be uploaded
-                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontWeight: "bold",
+                        fontSize: "16px",
+                        fontFamily: "Work Sans",
+                        color: "#2F4F4F",
+                      }}
+                    >
+                      File: <span style={{ fontWeight: 400 }}>{file.name}</span>
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: "bold",
+                        fontSize: "14px",
+                        color: "#2F4F4F",
+                        fontFamily: "Work Sans",
+                      }}
+                    >
+                      Summary:{" "}
+                      <span style={{ fontWeight: 400 }}>
+                        <b>{totalUploadCount}</b> school record
+                        {totalUploadCount !== 1 ? "s" : ""} will be processed based on the mappings
+                        below.
+                      </span>
+                    </Typography>
+                  </Box>
                 </Box>
 
-                <Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>
+                <Typography
+                  variant="body1"
+                  fontWeight="bold"
+                  sx={{ mb: 3, fontFamily: "Work Sans", color: "#2F4F4F", fontSize: "18px" }}
+                >
                   Column Mapping:
                 </Typography>
 
@@ -860,15 +932,67 @@ export default function BulkUploadStudents() {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>CSV Column</TableCell>
-                        <TableCell>System Field</TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              fontWeight: 600,
+                              fontFamily: "Work Sans",
+                              color: "#2F4F4F",
+                              fontSize: "16px",
+                            }}
+                          >
+                            Your CSV Column
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              fontWeight: 600,
+                              fontFamily: "Work Sans",
+                              color: "#2F4F4F",
+                              fontSize: "16px",
+                            }}
+                          >
+                            Mapped to System Field
+                          </Typography>
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {Object.entries(mappingConfig).map(([csvColumn, systemField]) => (
-                        <TableRow key={`mapping-${csvColumn}`}>
-                          <TableCell>{csvColumn}</TableCell>
-                          <TableCell>{systemField}</TableCell>
+                        <TableRow
+                          key={`mapping-${csvColumn}`}
+                          sx={{
+                            height: 48,
+                            "& td, & th": {
+                              borderBottom: "none",
+                            },
+                          }}
+                        >
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                fontFamily: "Work Sans",
+                                fontWeight: 400, // normal
+                                color: "#2F4F4F",
+                                fontSize: "15px",
+                              }}
+                            >
+                              {csvColumn}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                fontFamily: "Work Sans",
+                                fontWeight: 400, // normal
+                                color: "#2F4F4F",
+                                fontSize: "15px",
+                              }}
+                            >
+                              {systemField}
+                            </Typography>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -876,7 +1000,7 @@ export default function BulkUploadStudents() {
                 </TableContainer>
 
                 <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <OutlinedButton text={"Back to Mapping"} onClick={handleBackStep} />
+                  <OutlinedButton text={"< Back to Mapping"} onClick={handleBackStep} />
 
                   <ButtonCustom
                     text={isUploading ? "Uploading..." : "Upload Students"}

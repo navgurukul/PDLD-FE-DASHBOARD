@@ -46,6 +46,10 @@ import Modal from "@mui/material/Modal";
 import CSVMapper from "./CSVMapper";
 import SampleCSVModal from "./SampleCSVModal";
 import OutlinedButton from "./button/OutlinedButton";
+import { styled } from "@mui/material/styles";
+import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector";
+import CheckIcon from "@mui/icons-material/Check";
+import FileDownloadSvg from "../assets/file_download.svg";
 
 // Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
@@ -426,6 +430,91 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
   );
 };
 
+// Custom Step Icon for 01, 02, 03
+function CustomStepIcon(props) {
+  const { active, completed, icon } = props;
+  const label = icon < 10 ? `0${icon}` : icon;
+  if (completed) {
+    return (
+      <Box
+        sx={{
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          backgroundColor: "#2F4F4F",
+          border: "2px solid #2F4F4F",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CheckIcon sx={{ color: "#fff", fontSize: 20 }} />
+      </Box>
+    );
+  }
+  // Active step: only border, no bg, dark text
+  if (active) {
+    return (
+      <Box
+        sx={{
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          backgroundColor: "transparent",
+          border: "2px solid #2F4F4F",
+          color: "#2F4F4F",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontWeight: 600,
+          fontSize: "16px",
+          fontFamily: "Work Sans",
+        }}
+      >
+        {label}
+      </Box>
+    );
+  }
+
+  // Inactive steps: only border, no bg, grey border/text
+  return (
+    <Box
+      sx={{
+        width: 40,
+        height: 40,
+        borderRadius: "50%",
+        backgroundColor: "transparent",
+        border: "2px solid #829595",
+        color: "#829595",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 600,
+        fontSize: "16px",
+        fontFamily: "Work Sans",
+      }}
+    >
+      {label}
+    </Box>
+  );
+}
+
+// Custom Connector (thicker line)
+const CustomConnector = styled(StepConnector)(({ theme }) => ({
+  [`& .${stepConnectorClasses.line}`]: {
+    borderColor: "#829595",
+    borderTopWidth: 8,
+    borderRadius: 1,
+    transition: "border-color 0.3s",
+  },
+  [`&.${stepConnectorClasses.completed} .${stepConnectorClasses.line}`]: {
+    borderColor: "#2F4F4F",
+  },
+  [`&.${stepConnectorClasses.active} .${stepConnectorClasses.line}`]: {
+    borderColor: "#2F4F4F",
+  },
+}));
+
 export default function BulkUploadSchools() {
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -442,6 +531,22 @@ export default function BulkUploadSchools() {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const [uploadDateTime, setUploadDateTime] = useState(null);
+  const [mapping, setMapping] = useState({});
+  const [csvData, setCsvData] = useState([]);
+
+  const requiredFields = ["schoolName", "udiseCode", "clusterName", "blockName"];
+  const isConfirmMappingDisabled = !requiredFields.every((field) =>
+    Object.values(mapping).includes(field)
+  );
+
+  const handleConfirmMapping = () => {
+    if (isConfirmMappingDisabled) {
+      toast.error("Please map all required fields before proceeding.");
+      return;
+    }
+    handleMappingComplete(mapping, csvData);
+  };
+
   // Define steps for the upload process
   const steps = ["Upload CSV", "Map Columns", "Upload Data"];
 
@@ -638,159 +743,223 @@ export default function BulkUploadSchools() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ p: 2, px: 2, maxWidth: "90%", margin: "0 auto" }}>
+      <Box sx={{ p: 2, px: 2, maxWidth: "60%", margin: "0 auto" }}>
         <div className="flex justify-between">
-          <h5 className="text-lg font-bold text-[#2F4F4F]">Bulk Upload Schools</h5>
-          <Button
-            variant="outlined"
-            startIcon={<GetAppIcon />}
-            onClick={openSampleCSVModal}
-            sx={{
-              color: "#2F4F4F",
-              borderRadius: "8px",
-              border: "1px solid #2F4F4F",
-              height: "44px",
-              "&:hover": {
-                backgroundColor: "#2F4F4F",
-                color: "white",
-              },
-            }}
-          >
-            Sample CSV
-          </Button>
+          <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Bulk Upload Schools</h5>
         </div>
-
-        <Typography variant="body1" sx={{ color: "#666", mb: 3 }}>
-          Upload a CSV file with multiple schools to add them at once
-        </Typography>
 
         {/* Add stepper to show current stage of the process */}
         <Box sx={{ display: "flex", justifyContent: "center" }}>
-          <Stepper activeStep={activeStep} sx={{ width: "70%", mb: 2 }}>
-            {steps.map((label) => (
+          <Stepper
+            activeStep={activeStep}
+            alternativeLabel
+            connector={<CustomConnector />}
+            sx={{ width: "100%", mb: 2 }}
+          >
+            {steps.map((label, index) => (
               <Step key={label}>
-                <StepLabel>{label}</StepLabel>
+                <StepLabel
+                  StepIconComponent={CustomStepIcon}
+                  sx={{
+                    ".MuiStepLabel-label": {
+                      mt: 1.5,
+                      fontWeight: 600,
+                      fontFamily: "Work Sans",
+                      fontSize: "16px",
+                      textAlign: "center",
+                      width: "max-content",
+                      mx: "auto",
+                      color:
+                        activeStep === index
+                          ? "#2F4F4F"
+                          : activeStep > index
+                          ? "#2F4F4F"
+                          : "#829595",
+                    },
+                  }}
+                >
+                  {/* Step name */}
+                  <span
+                    style={{
+                      color:
+                        activeStep === index
+                          ? "#2F4F4F"
+                          : activeStep > index
+                          ? "#2F4F4F"
+                          : "#829595",
+                      fontWeight: 600,
+                      fontFamily: "Work Sans",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {label}
+                  </span>
+                </StepLabel>
               </Step>
             ))}
           </Stepper>
         </Box>
 
         {activeStep === 0 && (
-          <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
-            <Box
-              sx={{
-                width: "70%",
-                border: "2px dashed #ccc",
-                borderRadius: 2,
-                p: 2,
-                textAlign: "center",
-                mb: 0,
-                position: "relative", // For proper drag event handling
-                cursor: "pointer", // Show pointer cursor on the entire box
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  borderColor: "#0d6efd",
-                  backgroundColor: "rgba(13, 110, 253, 0.04)",
-                },
-              }}
-              onClick={() => fileInputRef.current && fileInputRef.current.click()} // Make entire box clickable
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#0d6efd";
-                e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
-              }}
-              onDragEnter={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#0d6efd";
-                e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#ccc";
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#ccc";
-                e.currentTarget.style.backgroundColor = "transparent";
-
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  const droppedFile = e.dataTransfer.files[0];
-                  // Check if the file is a CSV
-                  if (droppedFile.name.endsWith(".csv")) {
-                    // We'll create a synthetic event object that mimics the structure
-                    // expected by the handleFileChange function
-                    const syntheticEvent = {
-                      target: {
-                        files: [droppedFile],
-                      },
-                    };
-                    handleFileChange(syntheticEvent);
-                  } else {
-                    toast.error("Please upload a CSV file");
-                  }
-                }
-              }}
-            >
-              <input
-                accept=".csv"
-                style={{ display: "none" }}
-                id="upload-file-button"
-                type="file"
-                onChange={handleFileChange}
-                ref={fileInputRef}
-              />
-
-              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-                <Box
-                  sx={{
-                    backgroundColor: "#e6f2ff",
-                    borderRadius: "50%",
-                    width: 80,
-                    height: 80,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.3s ease",
-                  }}
-                >
-                  <CloudUploadIcon sx={{ fontSize: 40, color: "#2F4F4F" }} />
-                </Box>
-              </Box>
-
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                Click anywhere in this box or drag a CSV file here
-              </Typography>
-
+          <>
+            <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
               <Box
                 sx={{
-                  backgroundColor: "#f0f7ff",
-                  border: "1px solid #d1e7ff",
+                  width: "100%",
+                  border: "2px dashed #ccc",
                   borderRadius: 2,
                   p: 2,
-                  mb: 3,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "100%",
+                  textAlign: "center",
+                  mb: 0,
+                  position: "relative", // For proper drag event handling
+                  cursor: "pointer", // Show pointer cursor on the entire box
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    borderColor: "#0d6efd",
+                    backgroundColor: "rgba(13, 110, 253, 0.04)",
+                  },
+                }}
+                onClick={() => fileInputRef.current && fileInputRef.current.click()} // Make entire box clickable
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#0d6efd";
+                  e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#0d6efd";
+                  e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#ccc";
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#ccc";
+                  e.currentTarget.style.backgroundColor = "transparent";
+
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const droppedFile = e.dataTransfer.files[0];
+                    // Check if the file is a CSV
+                    if (droppedFile.name.endsWith(".csv")) {
+                      // We'll create a synthetic event object that mimics the structure
+                      // expected by the handleFileChange function
+                      const syntheticEvent = {
+                        target: {
+                          files: [droppedFile],
+                        },
+                      };
+                      handleFileChange(syntheticEvent);
+                    } else {
+                      toast.error("Please upload a CSV file");
+                    }
+                  }
                 }}
               >
-                <Box textAlign="center">
-                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
-                    CSV Format
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "#555" }}>
-                    Upload a CSV file with school data. The file should contain School Name, UDISE
-                    Code, Cluster Name, and Block Name. Download Sample CSV for reference.
-                  </Typography>
+                <input
+                  accept=".csv"
+                  style={{ display: "none" }}
+                  id="upload-file-button"
+                  type="file"
+                  onChange={handleFileChange}
+                  ref={fileInputRef}
+                />
+
+                <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt: 7 }}>
+                  <Box
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    <CloudUploadIcon sx={{ fontSize: 40, color: "#2F4F4F" }} />
+                  </Box>
                 </Box>
+
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: 4 }}>
+                  Select or drag and drop a CSV here
+                </Typography>
+                <Typography
+                  sx={{
+                    fontFamily: "Work Sans",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    color: "#2F4F4F",
+                    textAlign: "center",
+                    mb: 10,
+                    display: "block",
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>CSV Column Fields:</span>
+                  <span style={{ fontWeight: 400, color: "#666", marginLeft: 4 }}>
+                    The file should contain School Name, UDISE Code, Cluster Name, and Block Name.
+                  </span>
+                </Typography>
               </Box>
             </Box>
-          </Box>
+
+            {/* New Box: Download text + button */}
+            <Box sx={{ width: "100%", mx: "auto", textAlign: "center", mt: 3 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#2F4F4F",
+                  mb: 2,
+                  fontFamily: "Work Sans",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                }}
+              >
+                Download sample CSV for reference
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={
+                  <img
+                    src={FileDownloadSvg}
+                    alt="Download"
+                    style={{
+                      width: 22,
+                      height: 22,
+                      transition: "filter 0.2s",
+                    }}
+                    className="download-svg-icon"
+                  />
+                }
+                onClick={openSampleCSVModal}
+                sx={{
+                  color: "#2F4F4F",
+                  borderRadius: "8px",
+                  border: "1px solid #2F4F4F",
+                  textTransform: "none",
+                  height: "44px",
+                  fontWeight: 600,
+                  fontFamily: "Work Sans",
+                  fontSize: "18px",
+                  "&:hover": {
+                    backgroundColor: "#2F4F4F",
+                    color: "white",
+                    // Optionally, can invert the icon color on hover:
+                    "& .download-svg-icon": {
+                      filter: "invert(1)",
+                    },
+                  },
+                }}
+              >
+                Sample CSV
+              </Button>
+            </Box>
+          </>
         )}
 
         {activeStep === 1 && file && (
@@ -802,30 +971,69 @@ export default function BulkUploadSchools() {
                 alignItems: "center",
                 p: 1.2,
                 mb: 2,
-                border: "1px solid #e0e0e0",
                 borderRadius: 1,
-                backgroundColor: "#f5f5f5",
+                backgroundColor: "#E0E0E0",
               }}
             >
-              <Typography>
-                {file.name} {totalUploadCount > 0 && `(${totalUploadCount} rows)`}
+              <Typography component="span">
+                <span
+                  style={{
+                    fontWeight: 600,
+                    fontFamily: "Work Sans",
+                    fontSize: "14px",
+                    color: "#2F4F4F",
+                  }}
+                >
+                  File Uploaded:
+                </span>
+                <span
+                  style={{
+                    fontWeight: 400,
+                    fontFamily: "Work Sans",
+                    fontSize: "14px",
+                    color: "#2F4F4F",
+                    marginLeft: 6,
+                  }}
+                >
+                  {file.name} {totalUploadCount > 0 && `(${totalUploadCount} rows)`}
+                </span>
               </Typography>
-              <Button
-                variant="text"
-                color="error"
-                startIcon={<CloseIcon />}
+              <IconButton
                 onClick={confirmFileRemoval}
                 size="small"
+                sx={{
+                  color: "#2F4F4F",
+                  "&:hover": {
+                    backgroundColor: "#f0f0f0",
+                    color: "#d32f2f",
+                  },
+                }}
               >
-                Remove
-              </Button>
+                <CloseIcon />
+              </IconButton>
             </Box>
 
             {/* CSV Mapper Component */}
-            <CSVMapper file={file} onMappingComplete={handleMappingComplete} entityType="school" />
+            <CSVMapper
+              file={file}
+              onMappingComplete={handleMappingComplete}
+              entityType="school"
+              mapping={mapping}
+              setMapping={setMapping}
+              csvData={csvData}
+              setCsvData={setCsvData}
+            />
 
-            <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2 }}>
-              <OutlinedButton text={"Back"} onClick={handleBackStep} />
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}
+            >
+              <OutlinedButton text={<span> {`< Back to Upload`}</span>} onClick={handleBackStep} />
+              <ButtonCustom
+                text="Proceed >"
+                btnWidth="200"
+                onClick={handleConfirmMapping}
+                disabled={isConfirmMappingDisabled}
+              />
             </Box>
           </Box>
         )}
@@ -1051,27 +1259,52 @@ export default function BulkUploadSchools() {
               // Pre-upload view
               <Box
                 sx={{
-                  border: "1px solid #d1e7ff",
                   borderRadius: 2,
                   p: 3,
                   mb: 3,
-                  backgroundColor: "#f0f7ff",
                 }}
               >
-                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                  Ready to Upload
-                </Typography>
+                <Box sx={{ backgroundColor: "#EAEDED", borderRadius: 2, p: 2, mb: 3 }}>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                    Confirm and Upload
+                  </Typography>
 
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1" fontWeight="bold">
-                    File: {file.name}
-                  </Typography>
-                  <Typography variant="body2">
-                    {totalUploadCount} schools will be uploaded
-                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontWeight: "bold",
+                        fontSize: "16px",
+                        fontFamily: "Work Sans",
+                        color: "#2F4F4F",
+                      }}
+                    >
+                      File: <span style={{ fontWeight: 400 }}>{file.name}</span>
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: "bold",
+                        fontSize: "14px",
+                        color: "#2F4F4F",
+                        fontFamily: "Work Sans",
+                      }}
+                    >
+                      Summary:{" "}
+                      <span style={{ fontWeight: 400 }}>
+                        <b>{totalUploadCount}</b> school record
+                        {totalUploadCount !== 1 ? "s" : ""} will be processed based on the mappings
+                        below.
+                      </span>
+                    </Typography>
+                  </Box>
                 </Box>
 
-                <Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>
+                <Typography
+                  variant="body1"
+                  fontWeight="bold"
+                  sx={{ mb: 3, fontFamily: "Work Sans", color: "#2F4F4F", fontSize: "18px" }}
+                >
                   Column Mapping:
                 </Typography>
 
@@ -1079,15 +1312,67 @@ export default function BulkUploadSchools() {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>CSV Column</TableCell>
-                        <TableCell>System Field</TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              fontWeight: 600,
+                              fontFamily: "Work Sans",
+                              color: "#2F4F4F",
+                              fontSize: "16px",
+                            }}
+                          >
+                            Your CSV Column
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              fontWeight: 600,
+                              fontFamily: "Work Sans",
+                              color: "#2F4F4F",
+                              fontSize: "16px",
+                            }}
+                          >
+                            Mapped to System Field
+                          </Typography>
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {Object.entries(mappingConfig).map(([csvColumn, systemField]) => (
-                        <TableRow key={`mapping-${csvColumn}`}>
-                          <TableCell>{csvColumn}</TableCell>
-                          <TableCell>{systemField}</TableCell>
+                        <TableRow
+                          key={`mapping-${csvColumn}`}
+                          sx={{
+                            height: 48,
+                            "& td, & th": {
+                              borderBottom: "none",
+                            },
+                          }}
+                        >
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                fontFamily: "Work Sans",
+                                fontWeight: 400, // normal
+                                color: "#2F4F4F",
+                                fontSize: "15px",
+                              }}
+                            >
+                              {csvColumn}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                fontFamily: "Work Sans",
+                                fontWeight: 400, // normal
+                                color: "#2F4F4F",
+                                fontSize: "15px",
+                              }}
+                            >
+                              {systemField}
+                            </Typography>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1095,10 +1380,10 @@ export default function BulkUploadSchools() {
                 </TableContainer>
 
                 <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <OutlinedButton text={"Back to Mapping"} onClick={handleBackStep} />
+                  <OutlinedButton text={"< Back to Mapping"} onClick={handleBackStep} />
 
                   <ButtonCustom
-                    text={isUploading ? "Uploading..." : "Upload Schools"}
+                    text={isUploading ? "Uploading..." : "Upload Schools "}
                     btnWidth="200"
                     onClick={handleUpload}
                     disabled={isUploading}
