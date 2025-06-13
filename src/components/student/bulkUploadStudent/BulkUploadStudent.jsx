@@ -37,7 +37,7 @@ import StudentDeleteConfirmationModal from "../../../components/DeleteConfirmati
 import StudentErrorDetailsDialog from "./ErrorDetailsDialog";
 import { useParams } from "react-router-dom";
 import OutlinedButton from "../../button/OutlinedButton";
-
+import FileDownloadSvg from "../../../assets/file_download.svg";
 // Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
   // Default values as specified
@@ -223,35 +223,23 @@ export default function BulkUploadStudents() {
     formData.append("schoolId", schoolId);
 
     try {
-      // Replace apiInstance with standard fetch
-      const apiUrl = `https://dev-api.pdld.samyarth.org/admin/bulk/students/${schoolId}`;
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        body: formData,
+      // Use apiInstance for API call (no need for apiUrl or fetch)
+      const response = await apiInstance.post(`/admin/bulk/students/${schoolId}`, formData, {
         headers: {
-          // Add any authorization headers if needed
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`, // Add token if required
+          "Content-Type": "multipart/form-data",
+          // Authorization header automatic lag jayega interceptor se
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      // Parse the JSON response
-      const responseData = await response.json();
-
-      // Set the upload result
+      const responseData = response.data;
       setUploadResult(responseData);
 
-      // Process error data from the actual API response (matching the specific format)
+      // Error data process karo (same as before)
       if (responseData?.data?.errors?.length > 0) {
         setErrorData(transformErrorData(responseData.data.errors));
       } else if (responseData?.errors?.length > 0) {
         setErrorData(transformErrorData(responseData.errors));
       } else {
-        // Clear error data if there are no errors
         setErrorData([]);
       }
 
@@ -268,25 +256,12 @@ export default function BulkUploadStudents() {
         toast.warning(`Upload completed with no new students added`);
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
-
-      // Handle error with fetch differently than axios
+      // Axios error handling
       let errorMessage = "Error uploading file";
-      let errorResponse = { error: "Upload failed" };
-
-      if (error.response) {
-        try {
-          errorResponse = await error.response.json();
-          errorMessage = errorResponse?.message || "Error uploading file";
-        } catch (e) {
-          // If response is not valid JSON
-          errorMessage = error.message || "Error uploading file";
-        }
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
       }
-
       toast.error(errorMessage);
-
-      // Set basic error data if detailed format not available
       setErrorData([
         {
           studentName: "Error",
@@ -296,9 +271,7 @@ export default function BulkUploadStudents() {
           reason: errorMessage || "Failed to process upload",
         },
       ]);
-
-      // Set error result
-      setUploadResult(errorResponse);
+      setUploadResult(error.response?.data || { error: "Upload failed" });
     } finally {
       setIsUploading(false);
       setUploadDateTime(new Date().toISOString());
@@ -456,121 +429,165 @@ export default function BulkUploadStudents() {
         <StudentUploadStepper activeStep={activeStep} />
 
         {activeStep === 0 && (
-          <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
-            <Box
-              sx={{
-                width: "70%",
-                border: "2px dashed #ccc",
-                borderRadius: 2,
-                p: 2,
-                textAlign: "center",
-                mb: 0,
-                position: "relative", // For proper drag event handling
-                cursor: "pointer", // Show pointer cursor on the entire box
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  borderColor: "#0d6efd",
-                  backgroundColor: "rgba(13, 110, 253, 0.04)",
-                },
-              }}
-              onClick={() => fileInputRef.current && fileInputRef.current.click()} // Make entire box clickable
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#0d6efd";
-                e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
-              }}
-              onDragEnter={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#0d6efd";
-                e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#ccc";
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.currentTarget.style.borderColor = "#ccc";
-                e.currentTarget.style.backgroundColor = "transparent";
-
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  const droppedFile = e.dataTransfer.files[0];
-                  // Check if the file is a CSV
-                  if (droppedFile.name.endsWith(".csv")) {
-                    // We'll create a synthetic event object that mimics the structure
-                    // expected by the handleFileChange function
-                    const syntheticEvent = {
-                      target: {
-                        files: [droppedFile],
-                      },
-                    };
-                    handleFileChange(syntheticEvent);
-                  } else {
-                    toast.error("Please upload a CSV file");
-                  }
-                }
-              }}
-            >
-              <input
-                accept=".csv"
-                style={{ display: "none" }}
-                id="upload-file-button"
-                type="file"
-                onChange={handleFileChange}
-                ref={fileInputRef}
-              />
-
-              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-                <Box
-                  sx={{
-                    backgroundColor: "#e6f2ff",
-                    borderRadius: "50%",
-                    width: 80,
-                    height: 80,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.3s ease",
-                  }}
-                >
-                  <CloudUploadIcon sx={{ fontSize: 40, color: "#2F4F4F" }} />
-                </Box>
-              </Box>
-
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                Click anywhere in this box or drag a CSV file here
-              </Typography>
-
+          <>
+            <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
               <Box
                 sx={{
-                  backgroundColor: "#f0f7ff",
-                  border: "1px solid #d1e7ff",
+                  width: "70%",
+                  border: "2px dashed #ccc",
                   borderRadius: 2,
                   p: 2,
-                  mb: 3,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "100%",
+                  textAlign: "center",
+                  mb: 0,
+                  position: "relative", // For proper drag event handling
+                  cursor: "pointer", // Show pointer cursor on the entire box
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    borderColor: "#0d6efd",
+                    backgroundColor: "rgba(13, 110, 253, 0.04)",
+                  },
+                }}
+                onClick={() => fileInputRef.current && fileInputRef.current.click()} // Make entire box clickable
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#0d6efd";
+                  e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#0d6efd";
+                  e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#ccc";
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.style.borderColor = "#ccc";
+                  e.currentTarget.style.backgroundColor = "transparent";
+
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const droppedFile = e.dataTransfer.files[0];
+                    // Check if the file is a CSV
+                    if (droppedFile.name.endsWith(".csv")) {
+                      // We'll create a synthetic event object that mimics the structure
+                      // expected by the handleFileChange function
+                      const syntheticEvent = {
+                        target: {
+                          files: [droppedFile],
+                        },
+                      };
+                      handleFileChange(syntheticEvent);
+                    } else {
+                      toast.error("Please upload a CSV file");
+                    }
+                  }
                 }}
               >
-                <Box textAlign="center">
-                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
-                    CSV Format
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "#555" }}>
-                    Upload a CSV file with student data. The file should contain Student Name,
-                    Enrollment ID, Grade, and School ID. Download Sample CSV for reference.
-                  </Typography>
+                <input
+                  accept=".csv"
+                  style={{ display: "none" }}
+                  id="upload-file-button"
+                  type="file"
+                  onChange={handleFileChange}
+                  ref={fileInputRef}
+                />
+
+                <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt: 7 }}>
+                  <Box
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    <CloudUploadIcon sx={{ fontSize: 40, color: "#2F4F4F" }} />
+                  </Box>
                 </Box>
+
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: 4 }}>
+                  Select or drag and drop a CSV here
+                </Typography>
+                <Typography
+                  sx={{
+                    fontFamily: "Work Sans",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    color: "#2F4F4F",
+                    textAlign: "center",
+                    mb: 10,
+                    display: "block",
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>CSV Column Fields:</span>
+                  <span style={{ fontWeight: 400, color: "#666", marginLeft: 4 }}>
+                    The file should contain School Name, UDISE Code, Cluster Name, and Block Name.
+                  </span>
+                </Typography>
               </Box>
             </Box>
-          </Box>
+
+            {/* New Box: Download text + button */}
+            <Box sx={{ width: "100%", mx: "auto", textAlign: "center", mt: 3 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#2F4F4F",
+                  mb: 2,
+                  fontFamily: "Work Sans",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                }}
+              >
+                Download sample CSV for reference
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={
+                  <img
+                    src={FileDownloadSvg}
+                    alt="Download"
+                    style={{
+                      width: 22,
+                      height: 22,
+                      transition: "filter 0.2s",
+                    }}
+                    className="download-svg-icon"
+                  />
+                }
+                onClick={openSampleCSVModal}
+                sx={{
+                  color: "#2F4F4F",
+                  borderRadius: "8px",
+                  border: "1px solid #2F4F4F",
+                  textTransform: "none",
+                  height: "44px",
+                  fontWeight: 600,
+                  fontFamily: "Work Sans",
+                  fontSize: "18px",
+                  "&:hover": {
+                    backgroundColor: "#2F4F4F",
+                    color: "white",
+                    // Optionally, can invert the icon color on hover:
+                    "& .download-svg-icon": {
+                      filter: "invert(1)",
+                    },
+                  },
+                }}
+              >
+                Sample CSV
+              </Button>
+            </Box>
+          </>
         )}
 
         {activeStep === 1 && file && (
