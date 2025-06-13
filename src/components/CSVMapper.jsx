@@ -12,34 +12,14 @@ import {
   FormControl,
   Select,
   MenuItem,
-  Button,
-  CircularProgress,
-  TextField,
-  IconButton,
-  Tooltip,
   Card,
   CardContent,
-  Chip,
   Snackbar,
   Slide,
 } from "@mui/material";
 import MuiAlert from "@mui/material/Alert";
-import { alpha } from "@mui/material/styles";
-import { toast } from "react-toastify";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import SaveIcon from "@mui/icons-material/Save";
-import CancelIcon from "@mui/icons-material/Cancel";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import WarningIcon from "@mui/icons-material/Warning";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ErrorIcon from "@mui/icons-material/Error";
-import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
-import ButtonCustom from "./ButtonCustom";
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "../theme/theme";
-import OutlinedButton from "./button/OutlinedButton";
 
 //  Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
@@ -83,20 +63,7 @@ export default function CSVMapper({
   const [systemFields, setSystemFields] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [showError, setShowError] = useState(false);
-  const [editingRowIndex, setEditingRowIndex] = useState(null);
-  const [editingValues, setEditingValues] = useState({});
-  const [editingErrors, setEditingErrors] = useState({});
-  const [addingNewRow, setAddingNewRow] = useState(false);
-  const [newRowValues, setNewRowValues] = useState({});
-  const [newRowErrors, setNewRowErrors] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-
-  // New states for improved deletion
-  const [deletingRowIndex, setDeletingRowIndex] = useState(null);
-  const [showUndoSnackbar, setShowUndoSnackbar] = useState(false);
-  const [deletedRow, setDeletedRow] = useState(null);
-  const [deletedRowIndex, setDeletedRowIndex] = useState(null);
-
   // At the top of your component, add these states:
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -265,182 +232,10 @@ export default function CSVMapper({
     return { errors, isValid: !hasError };
   };
 
-  // Start editing a row
-  const startEditRow = (index) => {
-    setEditingRowIndex(index);
-    setEditingValues({ ...csvData[index] });
-    setEditingErrors({});
-  };
-
-  // Cancel editing
-  const cancelEdit = () => {
-    setEditingRowIndex(null);
-    setEditingValues({});
-    setEditingErrors({});
-  };
-
-  // Save edited row
-  const saveEditedRow = () => {
-    // Validate data before saving
-    const { errors, isValid } = validateRow(editingValues);
-
-    if (!isValid) {
-      setEditingErrors(errors);
-      showNotification("Please fill all required fields", "error");
-      return;
-    }
-
-    const newData = [...csvData];
-    newData[editingRowIndex] = { ...editingValues };
-    setCsvData(newData);
-    setEditingRowIndex(null);
-    setEditingValues({});
-    setEditingErrors({});
-    // toast.success("Row updated successfully");
-    showNotification("Row updated successfully", "success");
-  };
-
-  // Handle changes in editing values
-  const handleEditChange = (header, value) => {
-    setEditingValues((prev) => ({
-      ...prev,
-      [header]: value,
-    }));
-
-    // Clear error for this field if it exists
-    if (editingErrors[header]) {
-      setEditingErrors((prev) => {
-        const updated = { ...prev };
-        delete updated[header];
-        return updated;
-      });
-    }
-  };
-
-  // Add new row
-  const startAddRow = () => {
-    const emptyRow = {};
-    headers.forEach((header) => {
-      emptyRow[header] = "";
-    });
-    setNewRowValues(emptyRow);
-    setNewRowErrors({});
-    setAddingNewRow(true);
-  };
-
-  // Cancel adding new row
-  const cancelAddRow = () => {
-    setAddingNewRow(false);
-    setNewRowValues({});
-    setNewRowErrors({});
-  };
-
-  // Save new row
-  // Save new row
-  const saveNewRow = () => {
-    // Validate data before saving
-    const { errors, isValid } = validateRow(newRowValues);
-
-    if (!isValid) {
-      setNewRowErrors(errors);
-      showNotification("Please fill all required fields", "error");
-      return;
-    }
-
-    const newData = [...csvData, { ...newRowValues }];
-    setCsvData(newData);
-    setAddingNewRow(false);
-    setNewRowValues({});
-    setNewRowErrors({});
-    showNotification("New row added successfully", "success");
-  };
-
-  // Handle changes in new row values
-  const handleNewRowChange = (header, value) => {
-    setNewRowValues((prev) => ({
-      ...prev,
-      [header]: value,
-    }));
-
-    // Clear error for this field if it exists
-    if (newRowErrors[header]) {
-      setNewRowErrors((prev) => {
-        const updated = { ...prev };
-        delete updated[header];
-        return updated;
-      });
-    }
-  };
-
-  // Improved delete row with animation
-  const deleteRow = (index) => {
-    // Set the row as being deleted to trigger animation
-    setDeletingRowIndex(index);
-
-    // Store the row for potential undo
-    setDeletedRow(csvData[index]);
-    setDeletedRowIndex(index);
-
-    // Use setTimeout to allow animation to complete before removing from data
-    setTimeout(() => {
-      const newData = [...csvData];
-      newData.splice(index, 1);
-      setCsvData(newData);
-      setDeletingRowIndex(null);
-      setShowUndoSnackbar(true);
-
-      // Show notification with Undo button
-      showNotification(
-        `Row deleted by ${loginDetails.name}`,
-        "info"
-        // <Button color="inherit" size="small" onClick={handleUndo}>
-        // 	UNDO
-        // </Button>
-      );
-      // Log deletion with user info
-      console.log(`Row deleted by ${loginDetails.name} at ${loginDetails.currentDateTime}`);
-    }, 500); // 500ms for the animation to complete
-  };
-
-  // Handle undo of deletion
-  const handleUndo = () => {
-    if (deletedRow && deletedRowIndex !== null) {
-      const newData = [...csvData];
-      // Insert the deleted row back at its original position or at the end if index is out of bounds
-      if (deletedRowIndex >= newData.length) {
-        newData.push(deletedRow);
-      } else {
-        newData.splice(deletedRowIndex, 0, deletedRow);
-      }
-      setCsvData(newData);
-      toast.info("Deletion undone");
-    }
-    setShowUndoSnackbar(false);
-  };
-
-  if (isLoading) {
-    return (
-      <Box sx={{ p: 2, textAlign: "center" }}>
-        <CircularProgress size={24} />
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          Processing CSV file...
-        </Typography>
-      </Box>
-    );
-  }
-
-  // Check if button should be disabled
-  const isButtonDisabled = !areAllRequiredFieldsMapped();
-
-  // Determine which fields are already mapped and which are unmapped
-  const unmappedRequiredFieldLabels = getMissingRequiredFields();
-
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ mt: 3, mb: 3 }}>
         {/* Mapping Configuration at the top */}
-
-        {/* Left Side: Required Fields Status */}
         <Box
           sx={{
             flex: 1,
@@ -599,19 +394,28 @@ export default function CSVMapper({
                             <MenuItem value="" sx={{ fontSize: "0.85rem" }}>
                               <em>Skip</em>
                             </MenuItem>
-                            {systemFields.map((field) => (
-                              <MenuItem
-                                key={`field-${field.id}`}
-                                value={field.id}
-                                sx={{ fontSize: "0.85rem" }}
-                              >
-                                {field.label} {field.required ? "*" : ""}
-                              </MenuItem>
-                            ))}
+                            {systemFields
+                              .filter(
+                                (field) =>
+                                  // Show if not already mapped OR is the current value for this header
+                                  !Object.entries(mapping).some(
+                                    ([otherHeader, mappedId]) =>
+                                      otherHeader !== header && mappedId === field.id
+                                  )
+                              )
+                              .map((field) => (
+                                <MenuItem
+                                  key={`field-${field.id}`}
+                                  value={field.id}
+                                  sx={{ fontSize: "0.85rem" }}
+                                >
+                                  {field.label} {field.required ? "*" : ""}
+                                </MenuItem>
+                              ))}
                           </Select>
                         </FormControl>
                       </TableCell>
-                      {/* 3. Data Preview (first row only) */}
+                      {/* 3.  Data Preview (first row only) */}
                       <TableCell align="center">
                         <Typography
                           fontFamily="Work Sans"
@@ -630,31 +434,6 @@ export default function CSVMapper({
             </TableContainer>
           </CardContent>
         </Card>
-
-        {/* Undo Snackbar */}
-        {/* <Snackbar
-					open={showUndoSnackbar}
-					autoHideDuration={6000}
-					onClose={() => setShowUndoSnackbar(false)}
-					TransitionComponent={Slide}
-					anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-				>
-					<MuiAlert
-						elevation={6}
-						variant="filled"
-						severity="info"
-						action={
-							<Button color="inherit" size="small" onClick={handleUndo}>
-								UNDO
-							</Button>
-						}
-						onClose={() => setShowUndoSnackbar(false)}
-					>
-						Row deleted by {loginDetails.name}
-					</MuiAlert>
-				</Snackbar> */}
-
-        {/* Snackbar for all notifications */}
         <Snackbar
           open={snackbarOpen}
           autoHideDuration={6000}
