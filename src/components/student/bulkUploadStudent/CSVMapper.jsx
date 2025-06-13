@@ -131,13 +131,13 @@ export default function StudentCSVMapper({ file, onMappingComplete }) {
     return { errors, isValid: !hasError };
   };
 
-  // Add this function to show notifications consistently
-  const showNotification = (message, severity = "info", action = null) => {
-    setSnackbarMessage(message);
-    setSnackbarSeverity(severity);
-    setSnackbarAction(action);
-    setSnackbarOpen(true);
-  };
+	// Add this function to show notifications consistently
+	const showNotification = (message, severity = "info", action = null) => {
+		setSnackbarMessage(message);
+		setSnackbarSeverity(severity);
+		setSnackbarAction(action);
+		setSnackbarOpen(true);
+	};
 
   // Parse CSV file when it's selected
   useEffect(() => {
@@ -211,9 +211,9 @@ export default function StudentCSVMapper({ file, onMappingComplete }) {
             rowObj[header] = index < rowData.length ? rowData[index] : "";
           });
 
-          dataRows.push(rowObj);
-        }
-      }
+					dataRows.push(rowObj);
+				}
+			}
 
       setCsvData(dataRows);
       setIsLoading(false);
@@ -252,31 +252,31 @@ export default function StudentCSVMapper({ file, onMappingComplete }) {
       .filter((field) => field.required)
       .map((field) => field.id);
 
-    const mappedFieldIds = Object.values(mapping).filter(Boolean);
+		const mappedFieldIds = Object.values(mapping).filter(Boolean);
 
     return systemFields
       .filter((field) => field.required && !mappedFieldIds.includes(field.id))
       .map((field) => field.label);
   };
 
-  // Handle button click when disabled
-  const handleDisabledButtonClick = () => {
-    const missingFields = getMissingRequiredFields();
-    setErrorMessage(`Missing required fields: ${missingFields.join(", ")}`);
-    setShowError(true);
-  };
+	// Handle button click when disabled
+	const handleDisabledButtonClick = () => {
+		const missingFields = getMissingRequiredFields();
+		setErrorMessage(`Missing required fields: ${missingFields.join(", ")}`);
+		setShowError(true);
+	};
 
-  // Complete mapping and pass data back to parent
-  const completeMapping = () => {
-    if (areAllRequiredFieldsMapped()) {
-      // Include the edited data in the mapping completion
-      onMappingComplete(mapping, csvData);
-    } else {
-      const missingFields = getMissingRequiredFields();
-      setErrorMessage(`Missing required fields: ${missingFields.join(", ")}`);
-      setShowError(true);
-    }
-  };
+	// Complete mapping and pass data back to parent
+	const completeMapping = () => {
+		if (areAllRequiredFieldsMapped()) {
+			// Include the edited data in the mapping completion
+			onMappingComplete(mapping, csvData);
+		} else {
+			const missingFields = getMissingRequiredFields();
+			setErrorMessage(`Missing required fields: ${missingFields.join(", ")}`);
+			setShowError(true);
+		}
+	};
 
   // Validate a single row against required fields
 
@@ -294,11 +294,11 @@ export default function StudentCSVMapper({ file, onMappingComplete }) {
     setEditingErrors({});
   };
 
-  // Save edited row with improved error handling
-  const saveEditedRow = () => {
-    try {
-      // Get the existing data for this row
-      const originalRow = csvData[editingRowIndex];
+	// Save edited row with improved error handling
+	const saveEditedRow = () => {
+		try {
+			// Get the existing data for this row
+			const originalRow = csvData[editingRowIndex];
 
       // Create a merged version with just the edited fields
       const mergedData = { ...originalRow };
