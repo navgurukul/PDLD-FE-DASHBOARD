@@ -12,34 +12,12 @@ import {
   FormControl,
   Select,
   MenuItem,
-  Button,
   CircularProgress,
-  TextField,
-  IconButton,
-  Tooltip,
-  Card,
-  CardContent,
-  Chip,
   Snackbar,
-  Slide,
 } from "@mui/material";
 import MuiAlert from "@mui/material/Alert";
-import { alpha } from "@mui/material/styles";
-import { toast, ToastContainer } from "react-toastify";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import SaveIcon from "@mui/icons-material/Save";
-import CancelIcon from "@mui/icons-material/Cancel";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import WarningIcon from "@mui/icons-material/Warning";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ErrorIcon from "@mui/icons-material/Error";
-import { addSymbolBtn, EditPencilIcon, trash } from "../../../utils/imagePath";
-import ButtonCustom from "../../../components/ButtonCustom";
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "../../../theme/theme";
-import OutlinedButton from "../../../components/button/OutlinedButton";
 
 // Function to get login details from localStorage with fallback
 const getLoginDetails = () => {
@@ -317,7 +295,7 @@ export default function StudentCSVMapper({ file, mapping, setMapping, csvData, s
                     {missingFields.length > 0 && (
                       <span style={{ fontWeight: 600 }}>
                         . Missing:
-                        <span style={{ fontWeight: 400, marginLeft: 4 }}>
+                        <span style={{ fontWeight: 600, marginLeft: 4, color: "#F45050" }}>
                           {missingFields.map((f) => f.label).join(", ")}
                         </span>
                       </span>
@@ -342,9 +320,9 @@ export default function StudentCSVMapper({ file, mapping, setMapping, csvData, s
             mt: 3,
           }}
         >
-          Match your CSV columns to our System Fields. All fields marked with a <b>*</b> must be
-          mapped. The "Data Preview" column shows the first data entry from your file for that CSV
-          column.
+          Match your CSV columns to our System Fields. All fields marked with a{" "}
+          <span style={{ color: "#F45050", fontWeight: "bold" }}>*</span> must be mapped. The "Data
+          Preview" column shows the first data entry from your file for that CSV column.
         </Typography>
 
         {/* Data Preview with full width */}
@@ -459,7 +437,10 @@ export default function StudentCSVMapper({ file, mapping, setMapping, csvData, s
                               value={field.id}
                               sx={{ fontSize: "0.85rem" }}
                             >
-                              {field.label} {field.required ? "*" : ""}
+                              {field.label}
+                              {field.required && (
+                                <span style={{ color: "#F45050", marginLeft: 2 }}>*</span>
+                              )}
                             </MenuItem>
                           ))}
                       </Select>
