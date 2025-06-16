@@ -92,8 +92,10 @@ const CustomTooltip = ({ active, payload, label }) => {
                 <Typography
                   variant="body2"
                   sx={{
-                    color: subject === "mathematics" ? "#1976d2" : "text.primary",
-                    fontWeight: subject === "mathematics" ? 500 : 400,
+                    color: "#2F4F4F",
+                    fontWeight: 400,
+                    fontFamily: "Work Sans, sans-serif",
+                    fontSize: "14px",
                   }}
                 >
                   {subject.charAt(0).toUpperCase() +
