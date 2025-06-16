@@ -1042,7 +1042,7 @@ export default function UserCreationForm() {
                     : "Creating..."
                   : isEditMode
                   ? "Update User"
-                  : "Create User"
+                  : "Add User"
               }
               onClick={handleSubmit}
               disabled={isSubmitting}
