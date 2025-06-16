@@ -5,14 +5,15 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 const Breadcrumb = () => {
   const location = useLocation();
+  if (location.pathname === "/reports") return null;
   const pathnames = location.pathname.split("/").filter((x) => x);
   const schoolName = location.state?.schoolName;
   // Define path to label mapping
   const pathMap = {
-    schools: "School Management",
+    schools: "Schools",
     "add-school": "Add School",
     upload: "Bulk Upload",
-    users: "User Management",
+    users: "Users",
     userCreationForm: "Add User",
     reports: "Reports",
     allTest: "Tests", // made changes
@@ -49,22 +50,22 @@ const Breadcrumb = () => {
   let schoolDetailPath = "";
 
   // Add Home link as the first item
-  breadcrumbItems.push(
-    <Typography
-      key="home"
-      variant="subtitle2"
-      color="text.primary"
-      component={Link}
-      to="/"
-      sx={{
-        textDecoration: "none",
-        fontFamily: "Work Sans",
-        fontSize: "18px",
-      }}
-    >
-      Home
-    </Typography>
-  );
+  // breadcrumbItems.push(
+  //   <Typography
+  //     key="home"
+  //     variant="subtitle2"
+  //     color="text.primary"
+  //     component={Link}
+  //     to="/"
+  //     sx={{
+  //       textDecoration: "none",
+  //       fontFamily: "Work Sans",
+  //       fontSize: "18px",
+  //     }}
+  //   >
+  //     Home
+  //   </Typography>
+  // );
 
   // Special handling for schoolSubmission path
   let schoolSubmissionPath = "";
@@ -130,30 +131,30 @@ const Breadcrumb = () => {
     }
 
     if (
-  value === "schoolDetail" &&
-  i + 2 < pathnames.length &&
-  pathnames[i + 1] &&
-  pathnames[i + 2] === "student-profile"
-) {
-  const schoolDetailLink = `/schools/schoolDetail/${pathnames[i + 1]}`;
-  breadcrumbItems.push(
-    <Typography
-      key={currentPath}
-      variant="subtitle2"
-      color="text.primary"
-      component={Link}
-      to={schoolDetailLink}
-      sx={{
-        textDecoration: "none",
-        fontFamily: "Work Sans",
-        fontSize: "18px",
-      }}
-    >
-      Students
-    </Typography>
-  );
-  continue; // skip default schoolDetail
-}
+      value === "schoolDetail" &&
+      i + 2 < pathnames.length &&
+      pathnames[i + 1] &&
+      pathnames[i + 2] === "student-profile"
+    ) {
+      const schoolDetailLink = `/schools/schoolDetail/${pathnames[i + 1]}`;
+      breadcrumbItems.push(
+        <Typography
+          key={currentPath}
+          variant="subtitle2"
+          color="text.primary"
+          component={Link}
+          to={schoolDetailLink}
+          sx={{
+            textDecoration: "none",
+            fontFamily: "Work Sans",
+            fontSize: "18px",
+          }}
+        >
+          Students
+        </Typography>
+      );
+      continue; // skip default schoolDetail
+    }
     // Handle Edit Test breadcrumb
     if (value === "editTest") {
       breadcrumbItems.push(
