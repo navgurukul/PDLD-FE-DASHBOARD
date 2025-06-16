@@ -14,9 +14,6 @@ import {
   Stepper,
   Step,
   StepLabel,
-  Alert,
-  Divider,
-  Chip,
   IconButton,
   Tooltip,
   Dialog,
@@ -31,12 +28,9 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider, alpha } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import GetAppIcon from "@mui/icons-material/GetApp";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import CloseIcon from "@mui/icons-material/Close";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import WarningIcon from "@mui/icons-material/Warning";
 import InfoIcon from "@mui/icons-material/Info";
 import { useNavigate } from "react-router-dom";
 import ButtonCustom from "./ButtonCustom";
@@ -50,33 +44,7 @@ import { styled } from "@mui/material/styles";
 import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector";
 import CheckIcon from "@mui/icons-material/Check";
 import FileDownloadSvg from "../assets/file_download.svg";
-
-// Function to get login details from localStorage with fallback
-const getLoginDetails = () => {
-  // Default values as specified
-  let defaultDetails = {
-    username: "mahendra-shah",
-    currentDateTime: "2025-04-03 06:25:18",
-  };
-
-  try {
-    // Get user data from localStorage
-    const userDataString = localStorage.getItem("userData");
-    if (userDataString) {
-      const userData = JSON.parse(userDataString);
-      if (userData?.username || userData?.name || userData?.email) {
-        defaultDetails.name = userData.name || userData.username || userData.email;
-      }
-    }
-  } catch (error) {
-    console.error("Error parsing user data from localStorage:", error);
-  }
-
-  return defaultDetails;
-};
-
-// Get login details
-const loginDetails = getLoginDetails();
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 
 const theme = createTheme({
   typography: {
@@ -102,24 +70,6 @@ const theme = createTheme({
   },
 });
 
-function formatDateTime(dateString) {
-  const date = new Date(dateString);
-  const pad = (n) => n.toString().padStart(2, "0");
-  return (
-    date.getFullYear() +
-    "-" +
-    pad(date.getMonth() + 1) +
-    "-" +
-    pad(date.getDate()) +
-    " " +
-    pad(date.getHours()) +
-    ":" +
-    pad(date.getMinutes()) +
-    ":" +
-    pad(date.getSeconds())
-  );
-}
-// Delete Confirmation Modal Component
 const DeleteConfirmationModal = ({
   open,
   onClose,
@@ -338,22 +288,34 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
               <TableHead>
                 <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                   <TableCell width="60">
-                    <Typography variant="subtitle2">Row</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Row
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="subtitle2">School Name</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      School Name
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="subtitle2">UDISE Code</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      UDISE Code
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="subtitle2">Block Name</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Block Name
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="subtitle2">Cluster Name</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Cluster Name
+                    </Typography>
                   </TableCell>
                   <TableCell width="250">
-                    <Typography variant="subtitle2">Error Reason</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Error Reason
+                    </Typography>
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -361,7 +323,12 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
                 {currentData.map((row, index) => (
                   <TableRow
                     key={`error-row-${index}`}
-                    sx={{ backgroundColor: alpha("#f44336", 0.03) }}
+                    sx={{
+                      backgroundColor: alpha("#f44336", 0.03),
+                      "& td": {
+                        borderBottom: "none",
+                      },
+                    }}
                   >
                     <TableCell>{(page - 1) * rowsPerPage + index + 1}</TableCell>
                     <TableCell>{row.schoolName || ""}</TableCell>
@@ -530,7 +497,7 @@ export default function BulkUploadSchools() {
   const [errorData, setErrorData] = useState([]);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
-  const [uploadDateTime, setUploadDateTime] = useState(null);
+  // const [uploadDateTime, setUploadDateTime] = useState(null);
   const [mapping, setMapping] = useState({});
   const [csvData, setCsvData] = useState([]);
 
@@ -730,6 +697,16 @@ export default function BulkUploadSchools() {
     navigate("/schools");
   };
 
+  const handleUploadAnotherFile = () => {
+    setActiveStep(0); // ya 1, jo bhi file upload step hai
+    setFile(null);
+    setMappingConfig(null);
+    setUploadResult(null);
+    setErrorData([]);
+    setEditedCsvData(null);
+    setTotalUploadCount(0);
+  };
+
   const getUploadStatusColor = () => {
     if (!uploadResult) return "info";
 
@@ -749,6 +726,7 @@ export default function BulkUploadSchools() {
         </div>
 
         {/* Add stepper to show current stage of the process */}
+
         <Box sx={{ display: "flex", justifyContent: "center" }}>
           <Stepper
             activeStep={activeStep}
@@ -1005,7 +983,7 @@ export default function BulkUploadSchools() {
                   color: "#2F4F4F",
                   "&:hover": {
                     backgroundColor: "#f0f0f0",
-                    color: "#d32f2f",
+                    color: "#2F4F4F",
                   },
                 }}
               >
@@ -1027,7 +1005,26 @@ export default function BulkUploadSchools() {
             <Box
               sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}
             >
-              <OutlinedButton text={<span> {`< Back to Upload`}</span>} onClick={handleBackStep} />
+              <Button
+                variant="outlined"
+                onClick={handleBackStep}
+                sx={{
+                  borderRadius: "8px",
+                  height: "48px",
+                  color: "#2F4F4F",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontFamily: "Work Sans",
+                  fontSize: "18px",
+                  "&:hover": {
+                    backgroundColor: "#2F4F4F",
+                    color: "#fff",
+                    borderColor: "#2F4F4F",
+                  },
+                }}
+              >
+                {`< Back to Upload`}
+              </Button>
               <ButtonCustom
                 text="Proceed >"
                 btnWidth="200"
@@ -1043,100 +1040,162 @@ export default function BulkUploadSchools() {
             {uploadResult ? (
               // Enhanced Upload Results View
               <Box>
-                <Card
-                  variant="outlined"
+                <Box
                   sx={{
+                    backgroundColor: "#EAEDED",
+                    borderRadius: 2,
+                    p: 3,
                     mb: 3,
-                    borderColor:
-                      getUploadStatusColor() === "success"
-                        ? "success.light"
-                        : getUploadStatusColor() === "error"
-                        ? "error.light"
-                        : "warning.light",
+                    mt: 2,
+                    boxShadow: 0,
+                    mx: "auto",
                   }}
                 >
-                  <CardContent>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                      {getUploadStatusColor() === "success" ? (
-                        <CheckCircleOutlineIcon color="success" sx={{ fontSize: 28, mr: 1 }} />
-                      ) : getUploadStatusColor() === "error" ? (
-                        <ErrorOutlineIcon color="error" sx={{ fontSize: 28, mr: 1 }} />
-                      ) : (
-                        <WarningIcon color="warning" sx={{ fontSize: 28, mr: 1 }} />
-                      )}
-                      <Typography variant="h6" fontWeight="bold">
-                        Upload Results
-                      </Typography>
-                    </Box>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      color: "#2F4F4F",
+                      mb: 1,
+                      fontFamily: "Work Sans",
+                    }}
+                  >
+                    Upload Complete
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "#2F4F4F",
+                      fontFamily: "Work Sans",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Processed {totalUploadCount} records from <b>{file?.name}</b>
+                  </Typography>
+                </Box>
 
-                    <Box sx={{ mb: 3 }}>
-                      <Alert
-                        severity={getUploadStatusColor()}
-                        sx={{ mb: 2 }}
-                        icon={getUploadStatusColor() === "warning" ? <WarningIcon /> : undefined}
-                      >
-                        <Typography variant="body1">
-                          {uploadResult?.data?.successCount > 0
-                            ? errorData.length > 0
-                              ? `${uploadResult.data.successCount} of ${totalUploadCount} schools uploaded successfully. ${errorData.length} schools had errors.`
-                              : `All ${uploadResult.data.successCount} schools uploaded successfully!`
-                            : errorData.length > 0
-                            ? `Upload completed with ${errorData.length} errors. No new schools were added.`
-                            : `All schools already exist in the database.`}
-                        </Typography>
-                      </Alert>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        gap: 3,
+                        mb: 3,
+                        mt: 2,
+                      }}
+                    >
+                      {/* Schools Uploaded Box */}
 
                       <Box
                         sx={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: 3,
-                          mb: 3,
+                          flex: 1,
+                          backgroundColor: "#E9F3E9",
+                          borderRadius: 2,
                           p: 2,
-                          borderRadius: 1,
-                          backgroundColor: alpha("#f5f5f5", 0.7),
+                          minWidth: 120,
+                          boxShadow: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
                         }}
                       >
-                        <Box sx={{ textAlign: "center", minWidth: 120 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Total Records
-                          </Typography>
-                          <Typography variant="h5" sx={{ mt: 1, color: "text.primary" }}>
-                            {totalUploadCount}
-                          </Typography>
-                        </Box>
-
-                        <Divider orientation="vertical" flexItem />
-
-                        <Box sx={{ textAlign: "center", minWidth: 120 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Successful
-                          </Typography>
-                          <Typography variant="h5" sx={{ mt: 1, color: "success.main" }}>
-                            {uploadResult?.data?.successCount || 0}
-                          </Typography>
-                        </Box>
-
-                        <Divider orientation="vertical" flexItem />
-
-                        <Box sx={{ textAlign: "center", minWidth: 120 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Failed
-                          </Typography>
+                        {/* Custom CheckCircle SVG */}
+                        <svg width="40" height="40" viewBox="0 0 40 40">
+                          <circle cx="20" cy="20" r="20" fill="#228B22" />
+                          <polyline
+                            points="13,21 18,26 27,15"
+                            fill="none"
+                            stroke="#fff"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <Box>
                           <Typography
-                            variant="h5"
+                            variant="h4"
                             sx={{
-                              mt: 1,
-                              color: errorData.length > 0 ? "error.main" : "text.disabled",
+                              color: "#228B22",
+                              fontWeight: 700,
+                              fontFamily: "Work Sans",
+                              lineHeight: 1,
+                              fontSize: 18,
                             }}
                           >
-                            {errorData.length || uploadResult?.data?.errorCount || 0}
+                            {uploadResult?.data?.successCount || 0}
+                          </Typography>
+                          <Typography
+                            variant="subtitle1"
+                            sx={{
+                              color: "#228B22",
+                              fontWeight: 400,
+                              fontFamily: "Work Sans",
+                              fontSize: 12,
+                            }}
+                          >
+                            Schools Uploaded
                           </Typography>
                         </Box>
-
-                        {errorData.length > 0 && (
-                          <>
-                            <Divider orientation="vertical" flexItem />
+                      </Box>
+                      {/* Records Failed Box */}
+                      <Box
+                        sx={{
+                          flex: 1,
+                          backgroundColor: "#FDDCDC",
+                          borderRadius: 2,
+                          p: 2,
+                          minWidth: 120,
+                          boxShadow: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                        }}
+                      >
+                        {/* Custom Warning SVG */}
+                        <svg width="40" height="40" viewBox="0 0 40 40">
+                          <circle cx="20" cy="20" r="20" fill="#F45050" />
+                          <text
+                            x="20"
+                            y="27"
+                            textAnchor="middle"
+                            fontSize="28"
+                            fontWeight="bold"
+                            fill="#fff"
+                            fontFamily="Arial"
+                          >
+                            !
+                          </text>
+                        </svg>
+                        <Box>
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              color: "#F45050",
+                              fontWeight: 700,
+                              fontFamily: "Work Sans",
+                              lineHeight: 1,
+                              fontSize: 18,
+                            }}
+                          >
+                            {uploadResult?.data?.errorCount || 0}
+                          </Typography>
+                          <Typography
+                            variant="subtitle1"
+                            sx={{
+                              color: "#F45050",
+                              fontWeight: 400,
+                              fontFamily: "Work Sans",
+                              fontSize: 14,
+                            }}
+                          >
+                            Records Failed
+                          </Typography>
+                        </Box>
+                      </Box>
+                      {errorData.length > 0 && (
+                        <>
+                          {/* <Divider orientation="vertical" flexItem />
 
                             <Box
                               sx={{
@@ -1156,18 +1215,67 @@ export default function BulkUploadSchools() {
                               >
                                 View Errors
                               </Button>
-                            </Box>
-                          </>
-                        )}
-                      </Box>
+                            </Box> */}
+                        </>
+                      )}
                     </Box>
+                    {/* </Box> */}
 
                     {/* Display a small preview of errors if any */}
                     {errorData.length > 0 && (
                       <Box sx={{ mb: 3 }}>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Error Preview
-                        </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            backgroundColor: "#fff",
+                            borderRadius: 2,
+                            p: 2,
+                            minWidth: 120,
+                            boxShadow: 0,
+                            mt: 2,
+                          }}
+                        >
+                          <Box>
+                            <Typography
+                              variant="subtitle1"
+                              sx={{
+                                color: "#2F4F4F",
+                                fontWeight: 600,
+                                fontFamily: "Work Sans",
+                              }}
+                            >
+                              Unsuccessful Records
+                            </Typography>
+                          </Box>
+                          {errorData.length > 0 && (
+                            <Button
+                              variant="outlined"
+                              startIcon={<FileDownloadIcon sx={{ color: "inherit" }} />}
+                              onClick={handleViewErrorData}
+                              sx={{
+                                borderRadius: "8px",
+                                height: "48px",
+                                color: "#2F4F4F",
+                                textTransform: "none",
+                                fontWeight: 600,
+                                fontFamily: "Work Sans",
+                                fontSize: "18px",
+                                "&:hover": {
+                                  backgroundColor: "#2F4F4F",
+                                  color: "#fff",
+                                  borderColor: "#2F4F4F",
+                                  "& .MuiSvgIcon-root": {
+                                    color: "#fff",
+                                  },
+                                },
+                              }}
+                            >
+                              Download Failed Records(.csv)
+                            </Button>
+                          )}
+                        </Box>
 
                         <TableContainer
                           component={Paper}
@@ -1176,17 +1284,31 @@ export default function BulkUploadSchools() {
                         >
                           <Table size="small">
                             <TableHead>
-                              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                                <TableCell width="40%">School Name</TableCell>
-                                <TableCell width="20%">UDISE Code</TableCell>
-                                <TableCell width="40%">Error</TableCell>
+                              <TableRow>
+                                <TableCell align="center" sx={{ py: 2 }}>
+                                  {" "}
+                                  <Typography sx={{ fontWeight: 600 }}>Row No</Typography>
+                                </TableCell>
+                                <TableCell width="40%" sx={{ py: 2 }}>
+                                  {" "}
+                                  <Typography sx={{ fontWeight: 600 }}>School Name</Typography>
+                                </TableCell>
+                                {/* <TableCell width="20%">UDISE Code</TableCell> */}
+                                <TableCell width="40%" sx={{ py: 2 }}>
+                                  {" "}
+                                  <Typography sx={{ fontWeight: 600 }}>Error Reason</Typography>
+                                </TableCell>
                               </TableRow>
                             </TableHead>
                             <TableBody>
                               {errorData.slice(0, 3).map((error, index) => (
-                                <TableRow key={`preview-error-${index}`}>
+                                <TableRow
+                                  key={`preview-error-${index}`}
+                                  sx={{ "& td": { borderBottom: "none", py: 1.5 } }}
+                                >
+                                  <TableCell align="center">{error.rowNo}</TableCell>
                                   <TableCell>{error.schoolName || ""}</TableCell>
-                                  <TableCell>{error.udiseCode || ""}</TableCell>
+                                  {/* <TableCell>{error.udiseCode || ""}</TableCell> */}
                                   <TableCell>
                                     <Tooltip title={error.reason || "Unknown error"}>
                                       <Typography
@@ -1231,25 +1353,42 @@ export default function BulkUploadSchools() {
                         alignItems: "center",
                       }}
                     >
-                      <Typography variant="caption" color="text.secondary">
-                        Uploaded by {loginDetails.name} at{" "}
-                        {uploadDateTime ? formatDateTime(uploadDateTime) : "-"}
-                      </Typography>
-
-                      <Box sx={{ display: "flex", gap: 2 }}>
-                        {errorData.length > 0 && (
-                          <Button
-                            variant="outlined"
-                            startIcon={<FileDownloadIcon />}
-                            onClick={handleViewErrorData}
-                            color="error"
-                            sx={{ borderRadius: "8px", height: "48px" }}
-                          >
-                            Download Errors
-                          </Button>
-                        )}
-
-                        <ButtonCustom text="Done" btnWidth="120" onClick={handleDoneUpload} />
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          width: "100%",
+                          maxWidth: "100%",
+                          mx: "auto",
+                          mt: 3,
+                        }}
+                      >
+                        <Button
+                          variant="outlined"
+                          onClick={handleUploadAnotherFile}
+                          startIcon={<FileUploadIcon sx={{ color: "inherit" }} />}
+                          sx={{
+                            borderRadius: "8px",
+                            height: "48px",
+                            color: "#2F4F4F",
+                            textTransform: "none",
+                            fontWeight: 600,
+                            fontFamily: "Work Sans",
+                            fontSize: "18px",
+                            "&:hover": {
+                              backgroundColor: "#2F4F4F",
+                              color: "#fff",
+                              borderColor: "#2F4F4F",
+                              "& .MuiSvgIcon-root": {
+                                color: "#fff",
+                              },
+                            },
+                          }}
+                        >
+                          Upload Another File
+                        </Button>
+                        <ButtonCustom text="Go to School List >" onClick={handleDoneUpload} />
                       </Box>
                     </Box>
                   </CardContent>
@@ -1380,7 +1519,26 @@ export default function BulkUploadSchools() {
                 </TableContainer>
 
                 <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <OutlinedButton text={"< Back to Mapping"} onClick={handleBackStep} />
+                  <Button
+                    variant="outlined"
+                    onClick={handleBackStep}
+                    sx={{
+                      borderRadius: "8px",
+                      height: "48px",
+                      color: "#2F4F4F",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      fontFamily: "Work Sans",
+                      fontSize: "18px",
+                      "&:hover": {
+                        backgroundColor: "#2F4F4F",
+                        color: "#fff",
+                        borderColor: "#2F4F4F",
+                      },
+                    }}
+                  >
+                    {`< Back to Mapping`}
+                  </Button>
 
                   <ButtonCustom
                     text={isUploading ? "Uploading..." : "Upload Schools "}
