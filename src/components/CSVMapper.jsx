@@ -15,38 +15,10 @@ import {
   Card,
   CardContent,
   Snackbar,
-  Slide,
 } from "@mui/material";
 import MuiAlert from "@mui/material/Alert";
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "../theme/theme";
-
-//  Function to get login details from localStorage with fallback
-const getLoginDetails = () => {
-  // Default values as specified
-  let defaultDetails = {
-    username: "mahendra-shah",
-    currentDateTime: "2025-04-03 06:25:18",
-  };
-
-  try {
-    // Get user data from localStorage
-    const userDataString = localStorage.getItem("userData");
-    if (userDataString) {
-      const userData = JSON.parse(userDataString);
-      if (userData?.username || userData?.name || userData?.email) {
-        defaultDetails.name = userData.name || userData.username || userData.email;
-      }
-    }
-  } catch (error) {
-    console.error("Error parsing user data from localStorage:", error);
-  }
-
-  return defaultDetails;
-};
-
-// Get login details
-const loginDetails = getLoginDetails();
 
 export default function CSVMapper({
   file,
@@ -290,7 +262,7 @@ export default function CSVMapper({
                     {missingFields.length > 0 && (
                       <span style={{ fontWeight: 600 }}>
                         . Missing:
-                        <span style={{ fontWeight: 400, marginLeft: 4 }}>
+                        <span style={{ fontWeight: 400, marginLeft: 4, color: "#F45050" }}>
                           {missingFields.map((f) => f.label).join(", ")}
                         </span>
                       </span>
@@ -316,9 +288,9 @@ export default function CSVMapper({
             mt: 3,
           }}
         >
-          Match your CSV columns to our System Fields. All fields marked with a <b>*</b> must be
-          mapped. The "Data Preview" column shows the first data entry from your file for that CSV
-          column.
+          Match your CSV columns to our System Fields. All fields marked with a{" "}
+          <span style={{ color: "#F45050", fontWeight: "bold" }}>*</span> must be mapped. The "Data
+          Preview" column shows the first data entry from your file for that CSV column.
         </Typography>
         {/* Data Preview with full width */}
         <Card variant="outlined" sx={{ borderRadius: 2 }}>
@@ -409,7 +381,10 @@ export default function CSVMapper({
                                   value={field.id}
                                   sx={{ fontSize: "0.85rem" }}
                                 >
-                                  {field.label} {field.required ? "*" : ""}
+                                  {field.label}
+                                  {field.required && (
+                                    <span style={{ color: "#F45050", marginLeft: 2 }}>*</span>
+                                  )}
                                 </MenuItem>
                               ))}
                           </Select>
