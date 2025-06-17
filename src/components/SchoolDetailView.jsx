@@ -84,7 +84,7 @@ export default function SchoolDetailView() {
   const [school, setSchool] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { state } = useLocation();
-  const [tabValue, setTabValue] = useState(state?.selectedTab || 0);
+  const [tabValue, setTabValue] = useState(state?.selectedTab || 1); // Default to Students tab if no state provided
 
   const theme = useTheme();
 
@@ -124,6 +124,15 @@ export default function SchoolDetailView() {
       localStorage.setItem("lastSchoolId", schoolId);
     }
   }, [state, schoolId]);
+
+  useEffect(() => {
+  // Agar schoolData ya schoolName state me ho to localStorage me save karo
+  if (state?.schoolData?.schoolName) {
+    localStorage.setItem("currentSchoolName", state.schoolData.schoolName);
+  } else if (state?.schoolName) {
+    localStorage.setItem("currentSchoolName", state.schoolName);
+  }
+}, [state]);
 
   // Handle tab change
   const handleTabChange = (event, newValue) => {
