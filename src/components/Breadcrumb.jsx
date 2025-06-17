@@ -7,7 +7,14 @@ const Breadcrumb = () => {
   const location = useLocation();
   if (location.pathname === "/reports") return null;
   const pathnames = location.pathname.split("/").filter((x) => x);
-  const schoolName = location.state?.schoolName;
+  
+ const schoolName =
+    location.state?.schoolData?.schoolName ||
+    location.state?.schoolName ||
+    localStorage.getItem("currentSchoolName") ||
+    "School Detail";
+
+
   // Define path to label mapping
   const pathMap = {
     schools: "Schools",
@@ -130,31 +137,31 @@ const Breadcrumb = () => {
       continue;
     }
 
-    if (
-      value === "schoolDetail" &&
-      i + 2 < pathnames.length &&
-      pathnames[i + 1] &&
-      pathnames[i + 2] === "student-profile"
-    ) {
-      const schoolDetailLink = `/schools/schoolDetail/${pathnames[i + 1]}`;
-      breadcrumbItems.push(
-        <Typography
-          key={currentPath}
-          variant="subtitle2"
-          color="text.primary"
-          component={Link}
-          to={schoolDetailLink}
-          sx={{
-            textDecoration: "none",
-            fontFamily: "Work Sans",
-            fontSize: "18px",
-          }}
-        >
-          Students
-        </Typography>
-      );
-      continue; // skip default schoolDetail
-    }
+    // if (
+    //   value === "schoolDetail" &&
+    //   i + 2 < pathnames.length &&
+    //   pathnames[i + 1] &&
+    //   pathnames[i + 2] === "student-profile"
+    // ) {
+    //   const schoolDetailLink = `/schools/schoolDetail/${pathnames[i + 1]}`;
+    //   breadcrumbItems.push(
+    //     <Typography
+    //       key={currentPath}
+    //       variant="subtitle2"
+    //       color="text.primary"
+    //       component={Link}
+    //       to={schoolDetailLink}
+    //       sx={{
+    //         textDecoration: "none",
+    //         fontFamily: "Work Sans",
+    //         fontSize: "18px",
+    //       }}
+    //     >
+    //       Students
+    //     </Typography>
+    //   );
+    //   continue; // skip default schoolDetail
+    // }
     // Handle Edit Test breadcrumb
     if (value === "editTest") {
       breadcrumbItems.push(
@@ -240,7 +247,10 @@ const Breadcrumb = () => {
         i + 1 === pathnames.length - 1);
 
     // Use the path map to get a friendly name, or capitalize the first letter
-    const displayName = pathMap[value] || value.charAt(0).toUpperCase() + value.slice(1);
+     const displayName =
+  value === "schoolDetail"
+    ? schoolName
+    : pathMap[value] || value.charAt(0).toUpperCase() + value.slice(1);
 
     if (isLast) {
       breadcrumbItems.push(
@@ -309,3 +319,9 @@ const Breadcrumb = () => {
 };
 
 export default Breadcrumb;
+
+
+
+
+
+
