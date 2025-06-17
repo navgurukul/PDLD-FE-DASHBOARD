@@ -746,7 +746,7 @@ export default function AddSchool({ onClose, onSave }) {
 									: "Creating..."
 								: schoolId
 								? "Update School"
-								: "Create School"
+								: "Add School"
 						}
 						onClick={handleSubmit}
 					/>

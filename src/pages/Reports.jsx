@@ -1011,7 +1011,7 @@ th, td {
 
   return (
     <ThemeProvider theme={theme}>
-      <div className="main-page-wrapper">
+      <div className="main-page-wrapper mt-6">
         <div className="flex justify-between items-center">
           <div>
             <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">School Performance Report</h5>
