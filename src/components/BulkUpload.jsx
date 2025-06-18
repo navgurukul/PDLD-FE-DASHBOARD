@@ -45,6 +45,8 @@ import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector
 import CheckIcon from "@mui/icons-material/Check";
 import FileDownloadSvg from "../assets/file_download.svg";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const theme = createTheme({
   typography: {
@@ -218,10 +220,10 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `error_rows_${loginDetails.name}_${new Date().toISOString().slice(0, 10)}.csv`
-    );
+    // link.setAttribute(
+    //   "download",
+    //   `error_rows_${loginDetails.name}_${new Date().toISOString().slice(0, 10)}.csv`
+    // );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -624,10 +626,14 @@ export default function BulkUploadSchools() {
       if (successCount > 0) {
         toast.success(`Upload completed: ${successCount} schools added successfully`);
       } else if (existingCount > 0) {
-        toast.info(`All schools already exist in the database`);
+        // toast.info(`All schools already exist in the database`);
+        toast.info(`${existingCount} records already exist in the database`);
       } else {
         toast.warning(`Upload completed with no new schools added`);
       }
+      if ((response.data?.data?.errorCount || 0) > 0) {
+  toast.error(`${response.data.data.errorCount} records failed to upload`);
+}
     } catch (error) {
       console.error("Error uploading file:", error);
       toast.error(error.response?.data?.message || "Error uploading file");
@@ -698,7 +704,7 @@ export default function BulkUploadSchools() {
   };
 
   const handleUploadAnotherFile = () => {
-    setActiveStep(0); // ya 1, jo bhi file upload step hai
+    setActiveStep(0); 
     setFile(null);
     setMappingConfig(null);
     setUploadResult(null);
@@ -709,7 +715,7 @@ export default function BulkUploadSchools() {
 
   const getUploadStatusColor = () => {
     if (!uploadResult) return "info";
-
+const totalCount = response.data?.data?.totalCount || totalUploadCount;
     const successCount = uploadResult?.data?.successCount || 0;
     const errorCount = errorData.length;
 
@@ -727,7 +733,7 @@ export default function BulkUploadSchools() {
 
         {/* Add stepper to show current stage of the process */}
 
-        <Box sx={{ display: "flex", justifyContent: "center" }}>
+        <Box sx={{width: "100%", display: "flex", justifyContent: "center" }}>
           <Stepper
             activeStep={activeStep}
             alternativeLabel
@@ -1588,6 +1594,7 @@ export default function BulkUploadSchools() {
           />
         )}
       </Box>
+       <ToastContainer position="top-right" autoClose={4000} />
     </ThemeProvider>
   );
 }
