@@ -364,7 +364,7 @@ export default function CSVMapper({
                             }}
                           >
                             <MenuItem value="" sx={{ fontSize: "0.85rem" }}>
-                              <em>Skip</em>
+                              <em>Do not import</em>
                             </MenuItem>
                             {systemFields
                               .filter(
