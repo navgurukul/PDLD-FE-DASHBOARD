@@ -421,7 +421,7 @@ export default function StudentCSVMapper({ file, mapping, setMapping, csvData, s
                         }}
                       >
                         <MenuItem value="" sx={{ fontSize: "0.85rem" }}>
-                          <em>Skip</em>
+                          <em>Do not import</em>
                         </MenuItem>
                         {systemFields
                           .filter(
