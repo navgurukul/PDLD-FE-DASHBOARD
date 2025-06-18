@@ -22,7 +22,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import { useNavigate } from "react-router-dom";
 import ButtonCustom from "../../ButtonCustom";
 import apiInstance from "../../../../api";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import StudentUploadStepper from "./StudentUploadStepper";
 import StudentCSVMapper from "./CSVMapper";
 import StudentSampleCSVModal from "./SampleCSVModal";
@@ -1258,6 +1258,7 @@ export default function BulkUploadStudents() {
           />
         )}
       </Box>
+       <ToastContainer position="top-right" autoClose={4000} />
     </ThemeProvider>
   );
 }
