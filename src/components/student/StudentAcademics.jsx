@@ -356,27 +356,30 @@ const StudentAcademics = ({
   );
 
   // Dynamically generate columns for syllabus table based on available subjects
-const getSubjectColumns = () => {
-  return Array.from(subjectOptions).map((subject) => ({
-    name: subject,
-    label: subject,
-    options: {
-      filter: false,
-      sort: true,
-      setCellProps: () => ({
-        style: { textAlign: "center" },
-      }),
-      customBodyRender: (value) => (
-        <span style={{ display: "block", textAlign: "right", width: "30%" }}>
-          {value === undefined || value === null || value === "" || (typeof value === "number" && isNaN(value))
-            ? "-"
-            : value}
-        </span>
-      ),
-      customHeadLabelRender: defaultCustomHeadLabelRender,
-    },
-  }));
-};
+  const getSubjectColumns = () => {
+    return Array.from(subjectOptions).map((subject) => ({
+      name: subject,
+      label: subject,
+      options: {
+        filter: false,
+        sort: true,
+        setCellProps: () => ({
+          style: { textAlign: "center" },
+        }),
+        customBodyRender: (value) => (
+          <span style={{ display: "block", textAlign: "right", width: "30%" }}>
+            {value === undefined ||
+            value === null ||
+            value === "" ||
+            (typeof value === "number" && isNaN(value))
+              ? "-"
+              : value}
+          </span>
+        ),
+        customHeadLabelRender: defaultCustomHeadLabelRender,
+      },
+    }));
+  };
 
   // Basic columns for the syllabus table
   const baseColumns = [
@@ -393,19 +396,19 @@ const getSubjectColumns = () => {
         ),
       },
     },
-   {
-  name: "maxMarks",
-  label: "Max Marks",
-  options: {
-    filter: false,
-    sort: true,
-    customHeadLabelRender: defaultCustomHeadLabelRender,
-    setCellProps: () => ({ style: { textAlign: "right" } }),
-    customBodyRender: (value) => (
-      <span style={{ display: "block", textAlign: "center", width: "50%" }}>{value}</span>
-    ),
-  },
-}
+    {
+      name: "maxMarks",
+      label: "Max Marks",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: defaultCustomHeadLabelRender,
+        setCellProps: () => ({ style: { textAlign: "right" } }),
+        customBodyRender: (value) => (
+          <span style={{ display: "block", textAlign: "center", width: "50%" }}>{value}</span>
+        ),
+      },
+    },
   ];
 
   // Append subject columns dynamically
@@ -651,136 +654,164 @@ const getSubjectColumns = () => {
           </div>
 
           {syllabusView === "aggregate" ? (
-            <>
-              {/* Syllabus Test MUIDataTable */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <MUIDataTable
-                  data={filteredSyllabusData}
-                  columns={syllabusColumns}
-                  options={options}
-                />
+            syllabusData.length === 0 ? (
+              <div
+                className="text-[#2F4F4F]"
+                style={{
+                  fontFamily: "Work Sans",
+                  fontWeight: 400,
+                  fontSize: "18px",
+                  textAlign: "left",
+                }}
+              >
+                No syllabus assessments have been conducted for this student yet.
               </div>
-            </>
-          ) : (
-            <>
-              {/* Filters */}
-              <div className="flex flex-wrap gap-4 mb-4">
-                {/* Month Dropdown */}
-                <FormControl sx={{ minWidth: 120 }} size="small">
-                  <InputLabel id="month-select-label">Month</InputLabel>
-                  <Select
-                    labelId="month-select-label"
-                    id="month-select"
-                    value={syllabusMonth}
-                    label="Month"
-                    onChange={(e) => setSyllabusMonth(e.target.value)}
-                    sx={{
-                      borderRadius: "8px",
-                      backgroundColor: "#fff",
-                      height: "40px",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderRadius: "8px",
-                      },
-                    }}
-                  >
-                    <MenuItem value="All">All Months</MenuItem>
-                    {monthOptions.map((month) => (
-                      <MenuItem key={month} value={month}>
-                        {month}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Max Marks Dropdown */}
-                <FormControl sx={{ minWidth: 120 }} size="small">
-                  <InputLabel id="marks-select-label">Max Marks</InputLabel>
-                  <Select
-                    labelId="marks-select-label"
-                    id="marks-select"
-                    value={maxMarks}
-                    label="Max Marks"
-                    onChange={(e) => setMaxMarks(e.target.value)}
-                    sx={{
-                      borderRadius: "8px",
-                      backgroundColor: "#fff",
-                      height: "40px",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderRadius: "8px",
-                      },
-                    }}
-                  >
-                    <MenuItem value="All">All Marks</MenuItem>
-                    {maxMarksOptions.map((marks) => (
-                      <MenuItem key={marks} value={marks.toString()}>
-                        {marks}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Status Dropdown */}
-                <FormControl sx={{ minWidth: 120 }} size="small">
-                  <InputLabel id="status-select-label">Status</InputLabel>
-                  <Select
-                    labelId="status-select-label"
-                    id="status-select"
-                    value={status}
-                    label="Status"
-                    onChange={(e) => setStatus(e.target.value)}
-                    sx={{
-                      borderRadius: "8px",
-                      backgroundColor: "#fff",
-                      height: "40px",
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderRadius: "8px",
-                      },
-                    }}
-                  >
-                    <MenuItem value="All">All Status</MenuItem>
-                    {statusOptions.map((statusOption) => (
-                      <MenuItem key={statusOption} value={statusOption}>
-                        {statusOption}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/*  Clear Filters  for the Syllabus*/}
-                {isAnySyllabusFilterActive && (
-                  <Button
-                    variant="text"
-                    onClick={resetSyllabusFilters}
-                    sx={{
-                      color: "#2F4F4F",
-                      fontWeight: 600,
-                      fontSize: 16,
-                      textTransform: "none",
-                      height: "40px",
-                      padding: "0 12px",
-                      background: "transparent",
-                      "&:hover": {
-                        background: "#f5f5f5",
-                      },
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                )}
+            ) : (
+              <>
+                {/* Syllabus Test MUIDataTable */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <MUIDataTable
+                    data={filteredSyllabusData}
+                    columns={syllabusColumns}
+                    options={options}
+                  />
+                </div>
+              </>
+            )
+          ) : syllabusView === "subjectwise" ? (
+            syllabusData.length === 0 ? (
+              <div
+                className="text-[#2F4F4F]"
+                style={{
+                  fontFamily: "Work Sans",
+                  fontWeight: 400,
+                  fontSize: "18px",
+                  textAlign: "left",
+                }}
+              >
+                No syllabus assessments have been conducted for this student yet.
               </div>
+            ) : (
+              <>
+                {/* Filters */}
+                <div className="flex flex-wrap gap-4 mb-4">
+                  {/* Month Dropdown */}
+                  <FormControl sx={{ minWidth: 120 }} size="small">
+                    <InputLabel id="month-select-label">Month</InputLabel>
+                    <Select
+                      labelId="month-select-label"
+                      id="month-select"
+                      value={syllabusMonth}
+                      label="Month"
+                      onChange={(e) => setSyllabusMonth(e.target.value)}
+                      sx={{
+                        borderRadius: "8px",
+                        backgroundColor: "#fff",
+                        height: "40px",
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderRadius: "8px",
+                        },
+                      }}
+                    >
+                      <MenuItem value="All">All Months</MenuItem>
+                      {monthOptions.map((month) => (
+                        <MenuItem key={month} value={month}>
+                          {month}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
-              {/* Subject-wise view using the StudentReportSubjectWise component */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <StudentReportSubjectWise
-                  academicData={academicData}
-                  syllabusMonth={syllabusMonth}
-                  maxMarks={maxMarks}
-                  status={status}
-                  subject={subject}
-                />
-              </div>
-            </>
-          )}
+                  {/* Max Marks Dropdown */}
+                  <FormControl sx={{ minWidth: 120 }} size="small">
+                    <InputLabel id="marks-select-label">Max Marks</InputLabel>
+                    <Select
+                      labelId="marks-select-label"
+                      id="marks-select"
+                      value={maxMarks}
+                      label="Max Marks"
+                      onChange={(e) => setMaxMarks(e.target.value)}
+                      sx={{
+                        borderRadius: "8px",
+                        backgroundColor: "#fff",
+                        height: "40px",
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderRadius: "8px",
+                        },
+                      }}
+                    >
+                      <MenuItem value="All">All Marks</MenuItem>
+                      {maxMarksOptions.map((marks) => (
+                        <MenuItem key={marks} value={marks.toString()}>
+                          {marks}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Status Dropdown */}
+                  <FormControl sx={{ minWidth: 120 }} size="small">
+                    <InputLabel id="status-select-label">Status</InputLabel>
+                    <Select
+                      labelId="status-select-label"
+                      id="status-select"
+                      value={status}
+                      label="Status"
+                      onChange={(e) => setStatus(e.target.value)}
+                      sx={{
+                        borderRadius: "8px",
+                        backgroundColor: "#fff",
+                        height: "40px",
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderRadius: "8px",
+                        },
+                      }}
+                    >
+                      <MenuItem value="All">All Status</MenuItem>
+                      {statusOptions.map((statusOption) => (
+                        <MenuItem key={statusOption} value={statusOption}>
+                          {statusOption}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/*  Clear Filters  for the Syllabus*/}
+                  {isAnySyllabusFilterActive && (
+                    <Button
+                      variant="text"
+                      onClick={resetSyllabusFilters}
+                      sx={{
+                        color: "#2F4F4F",
+                        fontWeight: 600,
+                        fontSize: 16,
+                        textTransform: "none",
+                        height: "40px",
+                        padding: "0 12px",
+                        background: "transparent",
+                        "&:hover": {
+                          background: "#f5f5f5",
+                        },
+                      }}
+                    >
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+
+                {/* Subject-wise view using the StudentReportSubjectWise component */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <StudentReportSubjectWise
+                    academicData={academicData}
+                    syllabusMonth={syllabusMonth}
+                    maxMarks={maxMarks}
+                    status={status}
+                    subject={subject}
+                  />
+                </div>
+              </>
+            )
+          ) : null}
         </div>
 
         {/* Remedial Test Section */}

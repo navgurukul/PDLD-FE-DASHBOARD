@@ -530,7 +530,17 @@ export default function Users() {
                   })
                 }
               >
-                <img src={EditPencilIcon} alt="Edit" className="w-5 h-5" />
+                <img
+                  src={EditPencilIcon}
+                  alt="Edit"
+                  style={{
+                    width: 18,
+                    height: 18,
+                    minWidth: 20,
+                    minHeight: 20,
+                    objectFit: "contain",
+                  }}
+                />
               </button>
               <Button
                 variant="text"
@@ -543,7 +553,17 @@ export default function Users() {
                 }}
                 onClick={() => openDeleteModal(user)}
               >
-                <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
+                <img
+                  src={trash}
+                  alt="Delete"
+                  style={{
+                    width: 18,
+                    height: 18,
+                    minWidth: 20,
+                    minHeight: 20,
+                    objectFit: "contain",
+                  }}
+                />
                 &nbsp;
               </Button>
             </div>
