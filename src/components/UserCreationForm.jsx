@@ -483,43 +483,37 @@ export default function UserCreationForm() {
   const loadAvailableClusters = (blockName) => {
     if (!blockName || !blocksData.length) return;
 
-    console.log(`Loading clusters for block: ${blockName}`);
-
-    // Find the selected block in the data - make the comparison case-insensitive
-    const selectedBlock = blocksData.find(
-      (block) => block.blockName.toLowerCase() === blockName.toLowerCase()
+    console.log(`Loading clusters for block: "${blockName}"`);
+    console.log(
+      "Available blocks in data:",
+      blocksData.map((b) => `"${b.blockName}"`)
     );
 
+    // Find exact match by blockName (case-sensitive for exact data match)
+    const selectedBlock = blocksData.find((block) => block.blockName === blockName);
+
     if (selectedBlock) {
-      console.log("Found matching block:", selectedBlock.blockName);
-      console.log("Available clusters:", selectedBlock.clusters.length);
-
-      // Format clusters for the dropdown, including assignment status
-      const clusters = selectedBlock.clusters.map((cluster) => {
-        // Ensure we have all needed properties, providing defaults for missing ones
-        return {
-          id: cluster.name,
-          name: cluster.name,
-          totalSchool: cluster.totalSchool || 0,
-          // Explicitly convert to boolean to prevent undefined issues
-          isCPAssigned: cluster.isCPAssigned === true,
-          isCACAssigned: cluster.isCACAssigned === true,
-        };
-      });
-
-      // Log the clusters to help with debugging
+      console.log("✅ Found exact matching block:", selectedBlock.blockName);
+      console.log("📊 Available clusters:", selectedBlock.clusters.length);
       console.log(
-        "Processed clusters with assignment data:",
-        clusters.map((c) => `${c.name} (CP: ${c.isCPAssigned}, CAC: ${c.isCACAssigned})`)
+        "🏷️ Cluster names:",
+        selectedBlock.clusters.map((c) => c.name)
       );
+
+       
+      const clusters = selectedBlock.clusters.map((cluster) => ({
+        id: cluster.name,
+        name: cluster.name,
+        totalSchool: cluster.totalSchool || 0,
+        isCPAssigned: cluster.isCPAssigned === true,
+        isCACAssigned: cluster.isCACAssigned === true,
+      }));
 
       setAvailableClusters(clusters);
     } else {
-      console.log("No matching block found for:", blockName);
-      console.log(
-        "Available block names:",
-        blocksData.map((b) => b.blockName)
-      );
+             blocksData.forEach((block, index) => {
+        console.log(`  ${index + 1}. "${block.blockName}" (${block.clusters.length} clusters)`);
+      });
       setAvailableClusters([]);
     }
   };
@@ -573,55 +567,56 @@ export default function UserCreationForm() {
 
   // Updated handleBlockChange function with modal confirmation
   const handleBlockChange = (event) => {
-    const blockName = event.target.value;
+    const selectedBlockName = event.target.value; // This should be exact blockName
     const previousBlock = formData.block;
 
+     
     // Check if we have selected clusters that will be lost
-    if (isEditMode && selectedEntities.clusters.length > 0 && previousBlock !== blockName) {
-      // Show confirmation modal with the right format for DeleteConfirmationModal
+    if (isEditMode && selectedEntities.clusters.length > 0 && previousBlock !== selectedBlockName) {
       setConfirmDialog({
         open: true,
         title: "Change Block?",
-        // Message without the entity name since we're using the full message
-        message: `Changing the block from "${previousBlock}" to "${blockName}" will reset your cluster selections. Are you sure you want to proceed`,
+        message: `Changing the block from "${previousBlock}" to "${selectedBlockName}" will reset your cluster selections. Are you sure you want to proceed`,
         confirmAction: () => {
-          // User confirmed, proceed with change
-          setFormData({ ...formData, block: blockName });
-
-          // Reset cluster and school selections when block changes
+          setFormData({ ...formData, block: selectedBlockName });
           setSelectedEntities({
             ...selectedEntities,
             clusters: [],
             schools: [],
           });
-
-          loadAvailableClusters(blockName);
+          loadAvailableClusters(selectedBlockName);
           toast.info("Block changed. Cluster selections have been reset.");
         },
       });
     } else {
       // No confirmation needed, just make the change
-      setFormData({ ...formData, block: blockName });
-
-      // Reset cluster and school selections when block changes
+      setFormData({ ...formData, block: selectedBlockName });
       setSelectedEntities({
         ...selectedEntities,
         clusters: [],
         schools: [],
       });
-
-      loadAvailableClusters(blockName);
+      loadAvailableClusters(selectedBlockName);
     }
   };
 
-  // KEEP this effect but simplify it:
+   
+
   useEffect(() => {
     if (blocksData.length > 0) {
-      // Format blocks for the dropdown
-      const blocks = blocksData.map((block) => ({
-        id: block.blockName,
-        name: block.blockName,
-      }));
+      console.log("📋 Setting up available blocks:");
+
+      // Use exact blockName for both id and display
+      const blocks = blocksData.map((block) => {
+        console.log(`  📁 "${block.blockName}" - ${block.clusters.length} clusters`);
+        return {
+          id: block.blockName, // Use exact blockName as ID
+          name: block.blockName, // Use exact blockName for display
+          clustersCount: block.clusters.length,
+          schoolsCount: block.totalSchoolInBlock,
+        };
+      });
+
       setAvailableBlocks(blocks);
 
       // If there's a block selected, load its clusters
@@ -690,6 +685,39 @@ export default function UserCreationForm() {
       });
     }
   };
+
+  const renderBlockSelect = () => (
+    <div className="mb-6">
+      <FormControl fullWidth required>
+        <InputLabel>Select Block</InputLabel>
+        <Select
+          sx={{
+            height: "48px",
+            "& .MuiSelect-select": {
+              height: "48px",
+              display: "flex",
+              alignItems: "center",
+            },
+          }}
+          value={formData.block || ""}
+          onChange={handleBlockChange}
+          label="Select Block"
+          renderValue={(selected) => {
+            // Show the exact selected blockName
+            return selected || "Select a block";
+          }}
+        >
+          {/* Map through blocksData directly to show exact blockName */}
+          {blocksData.map((block) => (
+            <MenuItem key={block.blockName} value={block.blockName}>
+              {block.blockName} ({block.clusters.length} clusters, {block.totalSchoolInBlock}{" "}
+              schools)
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    </div>
+  );
 
   return (
     <ThemeProvider theme={theme}>
@@ -803,24 +831,32 @@ export default function UserCreationForm() {
                   value={formData.block || ""}
                   onChange={handleBlockChange}
                   label="Select Block"
-                  renderValue={(selected) => {
-                    // Check if the selected value actually exists in the dropdown
-                    const matchingBlock = availableBlocks.find(
-                      (block) =>
-                        block.id === selected || block.id.toLowerCase() === selected.toLowerCase()
-                    );
-
-                    if (matchingBlock) {
-                      return capitalizeFirstLetter(matchingBlock.name);
-                    }
-
-                    // Fallback to just displaying the value
-                    return capitalizeFirstLetter(selected);
+                  renderValue={(selected) => selected || "Select a block"}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 180, // Even smaller - shows ~4-5 items
+                        overflowY: "auto",
+                      },
+                    },
                   }}
                 >
-                  {availableBlocks.map((block) => (
-                    <MenuItem key={block.id} value={block.id}>
-                      {capitalizeFirstLetter(block.name)}
+                  {blocksData.map((block) => (
+                    <MenuItem
+                      key={block.blockName}
+                      value={block.blockName}
+                      sx={{
+                        fontSize: "14px",
+                        py: 0.5, // Reduced vertical padding
+                        minHeight: "40px", // Smaller item height
+                      }}
+                    >
+                      <div style={{ width: "100%" }}>
+                        <div style={{ fontWeight: 500 }}>{block.blockName}</div>
+                        <div style={{ fontSize: "11px", color: "#666" }}>
+                          {block.clusters.length} clusters • {block.totalSchoolInBlock} schools
+                        </div>
+                      </div>
                     </MenuItem>
                   ))}
                 </Select>
