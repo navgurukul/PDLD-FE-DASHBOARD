@@ -13,7 +13,7 @@ const SpinnerPageOverlay = ({ isLoading }) => {
 				display: "flex",
 				justifyContent: "center",
 				alignItems: "center",
-				zIndex: 9999,
+				zIndex: 9999999,
 			}}
 		>
 			<CircularProgress size={60} thickness={4} sx={{ color: "#2F4F4F" }} />
