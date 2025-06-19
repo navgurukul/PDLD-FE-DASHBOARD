@@ -570,7 +570,6 @@ export default function UserCreationForm() {
     const selectedBlockName = event.target.value; // This should be exact blockName
     const previousBlock = formData.block;
 
-     
     // Check if we have selected clusters that will be lost
     if (isEditMode && selectedEntities.clusters.length > 0 && previousBlock !== selectedBlockName) {
       setConfirmDialog({
@@ -599,8 +598,6 @@ export default function UserCreationForm() {
       loadAvailableClusters(selectedBlockName);
     }
   };
-
-   
 
   useEffect(() => {
     if (blocksData.length > 0) {
@@ -1100,7 +1097,13 @@ export default function UserCreationForm() {
         confirmText="Confirm"
         cancelText="Cancel"
       />
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
+      <ToastContainer
+        style={{ zIndex: 99999999 }}
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        closeOnClick
+      />
     </ThemeProvider>
   );
 }

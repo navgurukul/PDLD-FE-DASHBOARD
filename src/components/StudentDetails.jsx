@@ -714,6 +714,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           autoClose={3000}
           hideProgressBar={false}
           closeOnClick
+          style={{ zIndex: 99999999 }}
         />
       </Box>
     </ThemeProvider>

@@ -1020,7 +1020,13 @@ export default function AddStudent({ isEditMode = false }) {
         />
       )}
 
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick />
+      <ToastContainer
+        style={{ zIndex: 99999999 }}
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        closeOnClick
+      />
     </ThemeProvider>
   );
 }
