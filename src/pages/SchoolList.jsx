@@ -500,7 +500,17 @@ export default function SchoolList() {
                   });
                 }}
               >
-                <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
+                <img
+                  src={EditPencilIcon}
+                  alt="Edit"
+                  style={{
+                    width: 18,
+                    height: 18,
+                    minWidth: 20,
+                    minHeight: 20,
+                    objectFit: "contain",
+                  }}
+                />
                 &nbsp;
               </Button>
               <Button
@@ -514,7 +524,17 @@ export default function SchoolList() {
                 }}
                 onClick={() => openDeleteModal(schoolObj)}
               >
-                <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
+                <img
+                  src={trash}
+                  alt="Delete"
+                  style={{
+                    width: 18,
+                    height: 18,
+                    minWidth: 20,
+                    minHeight: 20,
+                    objectFit: "contain",
+                  }}
+                />
                 &nbsp;
               </Button>
 
