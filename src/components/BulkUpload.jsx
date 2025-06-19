@@ -499,7 +499,7 @@ export default function BulkUploadSchools() {
   const [errorData, setErrorData] = useState([]);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
-  // const [uploadDateTime, setUploadDateTime] = useState(null);
+  const [uploadDateTime, setUploadDateTime] = useState(null);
   const [mapping, setMapping] = useState({});
   const [csvData, setCsvData] = useState([]);
 
@@ -632,8 +632,8 @@ export default function BulkUploadSchools() {
         toast.warning(`Upload completed with no new schools added`);
       }
       if ((response.data?.data?.errorCount || 0) > 0) {
-  toast.error(`${response.data.data.errorCount} records failed to upload`);
-}
+        toast.error(`${response.data.data.errorCount} records failed to upload`);
+      }
     } catch (error) {
       console.error("Error uploading file:", error);
       toast.error(error.response?.data?.message || "Error uploading file");
@@ -704,7 +704,7 @@ export default function BulkUploadSchools() {
   };
 
   const handleUploadAnotherFile = () => {
-    setActiveStep(0); 
+    setActiveStep(0);
     setFile(null);
     setMappingConfig(null);
     setUploadResult(null);
@@ -713,9 +713,37 @@ export default function BulkUploadSchools() {
     setTotalUploadCount(0);
   };
 
+  const handleDownloadFailedRecords = () => {
+    if (!errorData || errorData.length === 0) {
+      toast.error("No failed records to download.");
+      return;
+    }
+    const headers = ["schoolName", "udiseCode", "blockName", "clusterName", "reason"];
+    let csvContent = headers.join(",") + "\n";
+    errorData.forEach((row) => {
+      const values = headers.map((header) => {
+        const value = row[header] || "";
+        if (typeof value === "string" && (value.includes(",") || value.includes('"'))) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      });
+      csvContent += values.join(",") + "\n";
+    });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "failed_records.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Failed records downloaded.");
+  };
+
   const getUploadStatusColor = () => {
     if (!uploadResult) return "info";
-const totalCount = response.data?.data?.totalCount || totalUploadCount;
+    const totalCount = response.data?.data?.totalCount || totalUploadCount;
     const successCount = uploadResult?.data?.successCount || 0;
     const errorCount = errorData.length;
 
@@ -733,7 +761,7 @@ const totalCount = response.data?.data?.totalCount || totalUploadCount;
 
         {/* Add stepper to show current stage of the process */}
 
-        <Box sx={{width: "100%", display: "flex", justifyContent: "center" }}>
+        <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
           <Stepper
             activeStep={activeStep}
             alternativeLabel
@@ -1243,43 +1271,79 @@ const totalCount = response.data?.data?.totalCount || totalUploadCount;
                             mt: 2,
                           }}
                         >
-                          <Box>
-                            <Typography
-                              variant="subtitle1"
-                              sx={{
-                                color: "#2F4F4F",
-                                fontWeight: 600,
-                                fontFamily: "Work Sans",
-                              }}
-                            >
-                              Unsuccessful Records
-                            </Typography>
-                          </Box>
-                          {errorData.length > 0 && (
-                            <Button
-                              variant="outlined"
-                              startIcon={<FileDownloadIcon sx={{ color: "inherit" }} />}
-                              onClick={handleViewErrorData}
-                              sx={{
-                                borderRadius: "8px",
-                                height: "48px",
-                                color: "#2F4F4F",
-                                textTransform: "none",
-                                fontWeight: 600,
-                                fontFamily: "Work Sans",
-                                fontSize: "18px",
-                                "&:hover": {
-                                  backgroundColor: "#2F4F4F",
-                                  color: "#fff",
-                                  borderColor: "#2F4F4F",
-                                  "& .MuiSvgIcon-root": {
+                          {/* Left: Unsuccessful Records */}
+                          <Typography
+                            variant="subtitle1"
+                            sx={{
+                              color: "#2F4F4F",
+                              fontWeight: 600,
+                              fontFamily: "Work Sans",
+                              fontSize: "18px",
+                              flex: 1,
+                            }}
+                          >
+                            Unsuccessful Records
+                          </Typography>
+
+                          {/* Center: View all errors */}
+                          {errorData.length > 3 && (
+                            <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                              <Button
+                                variant="outlined"
+                                onClick={handleViewErrorData}
+                                startIcon={<InfoIcon />}
+                                color="primary"
+                                sx={{
+                                  borderRadius: "8px",
+                                  height: "auto",
+                                  color: "#2F4F4F",
+                                  textTransform: "none",
+                                  fontWeight: 600,
+                                  fontFamily: "Work Sans",
+                                  fontSize: "18px",
+                                  "&:hover": {
+                                    backgroundColor: "#2F4F4F",
                                     color: "#fff",
+                                    borderColor: "#2F4F4F",
+                                    "& .MuiSvgIcon-root": {
+                                      color: "#fff",
+                                    },
                                   },
-                                },
-                              }}
-                            >
-                              Download Failed Records(.csv)
-                            </Button>
+                                }}
+                              >
+                                View all {errorData.length} errors
+                              </Button>
+                            </Box>
+                          )}
+
+                          {/* Right: Download Failed Records */}
+                          {errorData.length > 0 && (
+                            <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+                              <Button
+                                variant="outlined"
+                                startIcon={<FileDownloadIcon sx={{ color: "inherit" }} />}
+                                onClick={handleDownloadFailedRecords}
+                                sx={{
+                                  borderRadius: "8px",
+                                  height: "auto",
+                                  color: "#2F4F4F",
+                                  textTransform: "none",
+                                  fontWeight: 600,
+                                  fontFamily: "Work Sans",
+                                  fontSize: "18px",
+                                  "&:hover": {
+                                    backgroundColor: "#2F4F4F",
+                                    color: "#fff",
+                                    borderColor: "#2F4F4F",
+                                    "& .MuiSvgIcon-root": {
+                                      color: "#fff",
+                                    },
+                                  },
+                                }}
+                              >
+                                Download Failed Records(.csv)
+                              </Button>
+                            </Box>
                           )}
                         </Box>
 
@@ -1293,16 +1357,40 @@ const totalCount = response.data?.data?.totalCount || totalUploadCount;
                               <TableRow>
                                 <TableCell align="center" sx={{ py: 2 }}>
                                   {" "}
-                                  <Typography sx={{ fontWeight: 600 }}>Row No</Typography>
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 600,
+                                      fontFamily: "Work Sans",
+                                      color: "#2F4F4F",
+                                    }}
+                                  >
+                                    Row No
+                                  </Typography>
                                 </TableCell>
                                 <TableCell width="40%" sx={{ py: 2 }}>
                                   {" "}
-                                  <Typography sx={{ fontWeight: 600 }}>School Name</Typography>
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 600,
+                                      fontFamily: "Work Sans",
+                                      color: "#2F4F4F",
+                                    }}
+                                  >
+                                    School Name
+                                  </Typography>
                                 </TableCell>
                                 {/* <TableCell width="20%">UDISE Code</TableCell> */}
                                 <TableCell width="40%" sx={{ py: 2 }}>
                                   {" "}
-                                  <Typography sx={{ fontWeight: 600 }}>Error Reason</Typography>
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 600,
+                                      fontFamily: "Work Sans",
+                                      color: "#2F4F4F",
+                                    }}
+                                  >
+                                    Error Reason
+                                  </Typography>
                                 </TableCell>
                               </TableRow>
                             </TableHead>
@@ -1312,8 +1400,12 @@ const totalCount = response.data?.data?.totalCount || totalUploadCount;
                                   key={`preview-error-${index}`}
                                   sx={{ "& td": { borderBottom: "none", py: 1.5 } }}
                                 >
-                                  <TableCell align="center">{error.rowNo}</TableCell>
-                                  <TableCell>{error.schoolName || ""}</TableCell>
+                                  <TableCell align="center" sx={{ color: "#2F4F4F" }}>
+                                    {error.rowNo}
+                                  </TableCell>
+                                  <TableCell sx={{ color: "#2F4F4F" }}>
+                                    {error.schoolName || ""}
+                                  </TableCell>
                                   {/* <TableCell>{error.udiseCode || ""}</TableCell> */}
                                   <TableCell>
                                     <Tooltip title={error.reason || "Unknown error"}>
@@ -1333,7 +1425,7 @@ const totalCount = response.data?.data?.totalCount || totalUploadCount;
                                   </TableCell>
                                 </TableRow>
                               ))}
-                              {errorData.length > 3 && (
+                              {/* {errorData.length > 3 && (
                                 <TableRow>
                                   <TableCell colSpan={3} align="center">
                                     <Button
@@ -1345,7 +1437,7 @@ const totalCount = response.data?.data?.totalCount || totalUploadCount;
                                     </Button>
                                   </TableCell>
                                 </TableRow>
-                              )}
+                              )} */}
                             </TableBody>
                           </Table>
                         </TableContainer>
@@ -1594,7 +1686,7 @@ const totalCount = response.data?.data?.totalCount || totalUploadCount;
           />
         )}
       </Box>
-       <ToastContainer position="top-right" autoClose={4000} />
+      <ToastContainer position="top-right" autoClose={4000} />
     </ThemeProvider>
   );
 }
