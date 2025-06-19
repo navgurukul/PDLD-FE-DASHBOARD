@@ -262,7 +262,7 @@ export default function CSVMapper({
                     {missingFields.length > 0 && (
                       <span style={{ fontWeight: 600 }}>
                         . Missing:
-                        <span style={{ fontWeight: 400, marginLeft: 4, color: "#F45050" }}>
+                        <span style={{ fontWeight: 600, marginLeft: 4, color: "#F45050" }}>
                           {missingFields.map((f) => f.label).join(", ")}
                         </span>
                       </span>
@@ -364,7 +364,7 @@ export default function CSVMapper({
                             }}
                           >
                             <MenuItem value="" sx={{ fontSize: "0.85rem" }}>
-                              <em>Skip</em>
+                              <em>Do not import</em>
                             </MenuItem>
                             {systemFields
                               .filter(

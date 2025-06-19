@@ -84,7 +84,7 @@ export default function SchoolDetailView() {
   const [school, setSchool] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { state } = useLocation();
-  const [tabValue, setTabValue] = useState(state?.selectedTab || 1); // Default to Students tab if no state provided
+  const [tabValue, setTabValue] = useState(state?.selectedTab || 0);  // Default to Schoool Details tab if no state provided
 
   const theme = useTheme();
 
