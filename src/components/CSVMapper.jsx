@@ -262,7 +262,7 @@ export default function CSVMapper({
                     {missingFields.length > 0 && (
                       <span style={{ fontWeight: 600 }}>
                         . Missing:
-                        <span style={{ fontWeight: 400, marginLeft: 4, color: "#F45050" }}>
+                        <span style={{ fontWeight: 600, marginLeft: 4, color: "#F45050" }}>
                           {missingFields.map((f) => f.label).join(", ")}
                         </span>
                       </span>
