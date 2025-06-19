@@ -1686,7 +1686,7 @@ export default function BulkUploadSchools() {
           />
         )}
       </Box>
-      <ToastContainer position="top-right" autoClose={4000} />
+      <ToastContainer style={{ zIndex: 99999999 }} position="top-right" autoClose={4000} />
     </ThemeProvider>
   );
 }

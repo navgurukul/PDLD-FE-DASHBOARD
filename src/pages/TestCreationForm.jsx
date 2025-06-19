@@ -1503,6 +1503,7 @@ const TestCreationForm = () => {
         pauseOnFocusLoss
         draggable
         pauseOnHover
+        style={{ zIndex: 99999999 }}
       />
 
       {/* Summary Modal */}

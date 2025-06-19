@@ -918,7 +918,7 @@ export default function Users() {
           icon={<DeleteOutlineIcon fontSize="large" />}
         />
 
-        <ToastContainer position="top-right" autoClose={3000} />
+        <ToastContainer style={{ zIndex: 99999999 }} position="top-right" autoClose={3000} />
       </div>
       {isLoading && <SpinnerPageOverlay />}
     </ThemeProvider>

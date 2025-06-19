@@ -9,7 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 import ButtonCustom from "../../components/ButtonCustom";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import DownloadModal from "../../components/modal/DownloadModal"; // Import the download modal
-import api from "../../../api"; 
+import api from "../../../api";
 
 // Internal styles
 const styles = {
@@ -129,23 +129,23 @@ export default function SchoolReport() {
     try {
       // Get all available classes from the API data
       const result = await api.get(`/report/classes/${schoolId}`);
-      
+
       if (result.data && result.data.success) {
         // Extract unique class values and format for dropdown
         const classes = result.data.data || [];
-        const uniqueClasses = [...new Set(classes.map(item => item.testClass))];
-        
+        const uniqueClasses = [...new Set(classes.map((item) => item.testClass))];
+
         // Format classes for dropdown
         const formattedClasses = uniqueClasses
-          .filter(cls => cls) // Filter out any null/undefined values
+          .filter((cls) => cls) // Filter out any null/undefined values
           .sort((a, b) => parseInt(a) - parseInt(b)) // Sort numerically
-          .map(cls => ({
+          .map((cls) => ({
             value: cls,
-            label: `Class ${cls}`
+            label: `Class ${cls}`,
           }));
-        
+
         setAvailableClasses(formattedClasses);
-        
+
         // Set first class as default if available
         if (formattedClasses.length > 0 && !selectedClass) {
           setSelectedClass(parseInt(formattedClasses[0].value, 10));
@@ -169,18 +169,18 @@ export default function SchoolReport() {
 
       if (result.data && result.data.success) {
         setReports(result.data.data || []);
-        
+
         // If we don't have available classes yet, extract them from this response
         if (availableClasses.length === 0) {
-          const uniqueClasses = [...new Set(result.data.data.map(item => item.testClass))];
+          const uniqueClasses = [...new Set(result.data.data.map((item) => item.testClass))];
           const formattedClasses = uniqueClasses
-            .filter(cls => cls)
+            .filter((cls) => cls)
             .sort((a, b) => parseInt(a) - parseInt(b))
-            .map(cls => ({
+            .map((cls) => ({
               value: cls,
-              label: `Class ${cls}`
+              label: `Class ${cls}`,
             }));
-            
+
           if (formattedClasses.length > 0) {
             setAvailableClasses(formattedClasses);
           }
@@ -248,7 +248,7 @@ export default function SchoolReport() {
   // Handle download confirmation from modal
   const handleDownloadConfirm = async (downloadOptions) => {
     const { format, rows } = downloadOptions;
-    
+
     try {
       setIsLoading(true);
       toast.info(`Generating ${format.toUpperCase()} report for Class ${selectedClass}...`);
@@ -260,7 +260,6 @@ export default function SchoolReport() {
       } else {
         handleDownloadPDF(dataToDownload);
       }
-
     } catch (error) {
       console.error("Error downloading report:", error);
       toast.error("An error occurred while generating the report");
@@ -271,12 +270,7 @@ export default function SchoolReport() {
 
   // Download report as CSV
   const handleDownloadCSV = (data) => {
-    const headers = [
-      "Name of Exam",
-      "Total Students",
-      "Max Marks",
-      ...allSubjects
-    ];
+    const headers = ["Name of Exam", "Total Students", "Max Marks", ...allSubjects];
 
     let csvContent = headers.join(",") + "\n";
 
@@ -285,7 +279,7 @@ export default function SchoolReport() {
         report.examName,
         report.totalStudents,
         report.maxMarks,
-        ...allSubjects.map(subject => report[subject])
+        ...allSubjects.map((subject) => report[subject]),
       ];
 
       csvContent +=
@@ -306,7 +300,9 @@ export default function SchoolReport() {
     link.href = url;
     link.setAttribute(
       "download",
-      `Class_${selectedClass}_Report_${schoolInfo?.schoolName || 'School'}_${new Date().toISOString().split("T")[0]}.csv`
+      `Class_${selectedClass}_Report_${schoolInfo?.schoolName || "School"}_${
+        new Date().toISOString().split("T")[0]
+      }.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -322,22 +318,22 @@ export default function SchoolReport() {
   // Download report as PDF
   const handleDownloadPDF = (data) => {
     // Create a new window for printing
-    const printWindow = window.open('', '_blank');
-    
+    const printWindow = window.open("", "_blank");
+
     // Calculate statistics
     const totalTests = data.length;
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
-    
+
     // Generate HTML content for the PDF
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Class ${selectedClass} Test Report - ${schoolInfo?.schoolName || 'School'}</title>
+        <title>Class ${selectedClass} Test Report - ${schoolInfo?.schoolName || "School"}</title>
         <style>
           @media print {
             @page {
@@ -536,7 +532,7 @@ export default function SchoolReport() {
         <div class="container">
           <div class="header">
             <h1>Class ${selectedClass} Test Report</h1>
-            <div class="subtitle">${schoolInfo?.schoolName || 'School Report'}</div>
+            <div class="subtitle">${schoolInfo?.schoolName || "School Report"}</div>
             <div class="date">Generated on: ${currentDate}</div>
           </div>
           
@@ -544,7 +540,7 @@ export default function SchoolReport() {
             <h3>Report Information:</h3>
             <div class="info-item"><strong>Class:</strong> ${selectedClass}</div>
             <div class="info-item"><strong>Total Tests:</strong> ${totalTests}</div>
-            <div class="info-item"><strong>School:</strong> ${schoolInfo?.schoolName || 'N/A'}</div>
+            <div class="info-item"><strong>School:</strong> ${schoolInfo?.schoolName || "N/A"}</div>
           </div>
           
           <table>
@@ -553,30 +549,34 @@ export default function SchoolReport() {
                 <th class="exam-header">Name of Exam</th>
                 <th>Total Students</th>
                 <th>Max Marks</th>
-                ${allSubjects.map(subject => `<th>${subject}</th>`).join('')}
+                ${allSubjects.map((subject) => `<th>${subject}</th>`).join("")}
               </tr>
             </thead>
             <tbody>
-              ${data.map(report => {
-                const isLowScore = (value, maxMarks) => {
-                  const num = parseFloat(value);
-                  const threshold = maxMarks ? maxMarks / 3 : 15;
-                  return !isNaN(num) && num < threshold;
-                };
-                
-                return `
+              ${data
+                .map((report) => {
+                  const isLowScore = (value, maxMarks) => {
+                    const num = parseFloat(value);
+                    const threshold = maxMarks ? maxMarks / 3 : 15;
+                    return !isNaN(num) && num < threshold;
+                  };
+
+                  return `
                   <tr>
                     <td class="exam-name">${report.examName}</td>
                     <td>${report.totalStudents}</td>
                     <td>${report.maxMarks}</td>
-                    ${allSubjects.map(subject => {
-                      const value = report[subject];
-                      const isLow = isLowScore(value, report.maxMarks);
-                      return `<td class="${isLow ? 'low-score' : ''}">${value}</td>`;
-                    }).join('')}
+                    ${allSubjects
+                      .map((subject) => {
+                        const value = report[subject];
+                        const isLow = isLowScore(value, report.maxMarks);
+                        return `<td class="${isLow ? "low-score" : ""}">${value}</td>`;
+                      })
+                      .join("")}
                   </tr>
                 `;
-              }).join('')}
+                })
+                .join("")}
             </tbody>
           </table>
           
@@ -600,13 +600,13 @@ export default function SchoolReport() {
       </body>
       </html>
     `;
-    
+
     // Write the content to the new window
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-    
+
     // Wait for content to load, then trigger print
-    printWindow.onload = function() {
+    printWindow.onload = function () {
       setTimeout(() => {
         printWindow.print();
         toast.success(`PDF report ready for Class ${selectedClass}`);
@@ -757,10 +757,7 @@ export default function SchoolReport() {
               >
                 {availableClasses.length > 0 ? (
                   availableClasses.map((classOption) => (
-                    <MenuItem 
-                      key={classOption.value} 
-                      value={parseInt(classOption.value, 10)}
-                    >
+                    <MenuItem key={classOption.value} value={parseInt(classOption.value, 10)}>
                       {classOption.label}
                     </MenuItem>
                   ))
@@ -772,11 +769,7 @@ export default function SchoolReport() {
           </div>
 
           {/* Download Report Button */}
-          <ButtonCustom 
-            text={"Download Report"} 
-            onClick={handleDownloadClick} 
-            btnWidth={200} 
-          />
+          <ButtonCustom text={"Download Report"} onClick={handleDownloadClick} btnWidth={200} />
         </div>
 
         {/* Data Table */}
@@ -811,6 +804,7 @@ export default function SchoolReport() {
           autoClose={3000}
           hideProgressBar={false}
           closeOnClick
+          style={{ zIndex: 99999999 }}
         />
       </div>
     </ThemeProvider>

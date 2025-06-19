@@ -531,6 +531,7 @@ export default function SchoolDetailView() {
           autoClose={3000}
           hideProgressBar={false}
           closeOnClick
+          style={{ zIndex: 9999 }}
         />
       </div>
     </ThemeProvider>
