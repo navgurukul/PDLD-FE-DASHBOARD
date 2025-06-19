@@ -11,19 +11,19 @@ const Header = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const userName = getUserName();
-  
+
   // Generate initials from username
   const getInitials = (name) => {
     if (!name) return "U";
-    
+
     const nameParts = name.split(" ");
     if (nameParts.length === 1) {
       return name.charAt(0).toUpperCase();
     }
-    
+
     return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
   };
-  
+
   const userInitials = getInitials(userName);
 
   // Close dropdown when clicking outside
@@ -47,7 +47,7 @@ const Header = () => {
   };
 
   return (
-    <header className="w-full fixed z-100 bg-white shadow-md p-4 flex justify-between items-center">
+    <header className="w-full fixed z-10000 bg-white shadow-md p-4 flex justify-between items-center">
       <Link to="/">
         <img
           src={pdldLogo}
@@ -65,15 +65,15 @@ const Header = () => {
           <img src={notificationsIcon} alt="notifications" style={{ marginRight: "16px" }} />
         </button>
         <div className="relative" ref={dropdownRef}>
-          <div 
-            className="flex items-center cursor-pointer" 
+          <div
+            className="flex items-center cursor-pointer"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
             <div className="ml-4 rounded-full w-10 h-10 bg-[#FFD700] flex items-center justify-center text-black font-medium">
               {userInitials}
-            </div> 
+            </div>
           </div>
-          
+
           {dropdownOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
               <button
