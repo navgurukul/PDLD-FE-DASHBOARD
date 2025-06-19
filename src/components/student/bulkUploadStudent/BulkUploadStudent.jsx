@@ -218,7 +218,10 @@ export default function BulkUploadStudents() {
       if (successCount > 0) {
         toast.success(`Upload completed: ${successCount} students added successfully`);
       } else if (existingCount > 0) {
-        toast.info(`All students already exist in the database`);
+        toast.info(`${existingCount} students already exist in the database`);
+      }
+      if ((response.data?.data?.errorCount || 0) > 0) {
+        toast.error(`${response.data.data.errorCount} records failed to upload`);
       } else {
         toast.warning(`Upload completed with no new students added`);
       }
@@ -811,42 +814,78 @@ export default function BulkUploadStudents() {
                             borderRadius: 2,
                             p: 2,
                             mb: 2,
+                            backgroundColor: "#fff",
                           }}
                         >
+                          {/* Left: Unsuccessful Records */}
                           <Typography
                             sx={{
                               fontWeight: 700,
                               fontFamily: "Work Sans",
                               color: "#2F4F4F",
                               fontSize: "18px",
+                              flex: 1,
                             }}
                           >
                             Unsuccessful Records
                           </Typography>
 
-                          <Button
-                            variant="outlined"
-                            onClick={downloadErrorsCSV}
-                            startIcon={<FileDownloadIcon sx={{ color: "inherit" }} />}
-                            sx={{
-                              borderRadius: "8px",
-                              color: "#2F4F4F",
-                              textTransform: "none",
-                              fontWeight: 600,
-                              fontFamily: "Work Sans",
-                              fontSize: "18px",
-                              "&:hover": {
-                                backgroundColor: "#2F4F4F",
-                                color: "#fff",
-                                borderColor: "#2F4F4F",
-                                "& .MuiSvgIcon-root": {
+                          {/* Center: View all errors button */}
+                          {errorData.length > 3 && (
+                            <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                              <Button
+                                variant="outlined"
+                                onClick={handleViewErrorData}
+                                startIcon={<InfoIcon />}
+                                color="primary"
+                                sx={{
+                                  borderRadius: "8px",
+                                  color: "#2F4F4F",
+                                  textTransform: "none",
+                                  fontWeight: 600,
+                                  fontFamily: "Work Sans",
+                                  fontSize: "18px",
+                                  "&:hover": {
+                                    backgroundColor: "#2F4F4F",
+                                    color: "#fff",
+                                    borderColor: "#2F4F4F",
+                                    "& .MuiSvgIcon-root": {
+                                      color: "#fff",
+                                    },
+                                  },
+                                }}
+                              >
+                                View all {errorData.length} errors
+                              </Button>
+                            </Box>
+                          )}
+
+                          {/* Right: Download Failed Records */}
+                          <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+                            <Button
+                              variant="outlined"
+                              onClick={downloadErrorsCSV}
+                              startIcon={<FileDownloadIcon sx={{ color: "inherit" }} />}
+                              sx={{
+                                borderRadius: "8px",
+                                color: "#2F4F4F",
+                                textTransform: "none",
+                                fontWeight: 600,
+                                fontFamily: "Work Sans",
+                                fontSize: "18px",
+                                "&:hover": {
+                                  backgroundColor: "#2F4F4F",
                                   color: "#fff",
+                                  borderColor: "#2F4F4F",
+                                  "& .MuiSvgIcon-root": {
+                                    color: "#fff",
+                                  },
                                 },
-                              },
-                            }}
-                          >
-                            Download Errors
-                          </Button>
+                              }}
+                            >
+                              Download Failed Records (.csv)
+                            </Button>
+                          </Box>
                         </Box>
 
                         <TableContainer
@@ -978,13 +1017,27 @@ export default function BulkUploadStudents() {
                                 >
                                   <TableCell align="right">{error.row || ""}</TableCell>{" "}
                                   {/* Row No. */}
-                                  <TableCell>{error.fullName || ""}</TableCell>
-                                  <TableCell>{error.aparID || ""}</TableCell>
-                                  <TableCell>{error.class ? `Class ${error.class}` : ""}</TableCell>
-                                  <TableCell>{error.fatherName || ""}</TableCell>
-                                  <TableCell>{error.motherName || ""}</TableCell>
-                                  <TableCell>{error.gender || ""}</TableCell>
-                                  <TableCell>{error.hostel || ""}</TableCell>
+                                  <TableCell sx={{ color: "#2F4F4F" }}>
+                                    {error.fullName || ""}
+                                  </TableCell>
+                                  <TableCell sx={{ color: "#2F4F4F" }}>
+                                    {error.aparID || ""}
+                                  </TableCell>
+                                  <TableCell sx={{ color: "#2F4F4F" }}>
+                                    {error.class ? `Class ${error.class}` : ""}
+                                  </TableCell>
+                                  <TableCell sx={{ color: "#2F4F4F" }}>
+                                    {error.fatherName || ""}
+                                  </TableCell>
+                                  <TableCell sx={{ color: "#2F4F4F" }}>
+                                    {error.motherName || ""}
+                                  </TableCell>
+                                  <TableCell sx={{ color: "#2F4F4F" }}>
+                                    {error.gender || ""}
+                                  </TableCell>
+                                  <TableCell sx={{ color: "#2F4F4F" }}>
+                                    {error.hostel || ""}
+                                  </TableCell>
                                   <TableCell>
                                     <Tooltip title={error.error || "Unknown error"}>
                                       <Typography
@@ -1003,7 +1056,7 @@ export default function BulkUploadStudents() {
                                   </TableCell>
                                 </TableRow>
                               ))}
-                              {errorData.length > 3 && (
+                              {/* {errorData.length > 3 && (
                                 <TableRow>
                                   <TableCell colSpan={8} align="center">
                                     <Button
@@ -1016,7 +1069,7 @@ export default function BulkUploadStudents() {
                                     </Button>
                                   </TableCell>
                                 </TableRow>
-                              )}
+                              )} */}
                             </TableBody>
                           </Table>
                         </TableContainer>
@@ -1258,7 +1311,7 @@ export default function BulkUploadStudents() {
           />
         )}
       </Box>
-       <ToastContainer position="top-right" autoClose={4000} />
+      <ToastContainer position="top-right" autoClose={4000} />
     </ThemeProvider>
   );
 }
