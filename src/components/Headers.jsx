@@ -12,7 +12,7 @@ const Header = () => {
   const { logout } = useAuth();
   const userName = getUserName();
 
-  // Generate initials from username
+  //  Generate initials from username
   const getInitials = (name) => {
     if (!name) return "U";
 
