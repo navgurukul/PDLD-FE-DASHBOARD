@@ -602,6 +602,7 @@ export default function TestListTable() {
                         "&.Mui-checked": {
                           color: "#2F4F4F",
                         },
+                        padding: "2px",
                       }}
                     />
                     {option}
@@ -755,6 +756,7 @@ export default function TestListTable() {
                         "&.Mui-checked": {
                           color: "#2F4F4F",
                         },
+                        padding: "2px",
                       }}
                     />
                     {option}
