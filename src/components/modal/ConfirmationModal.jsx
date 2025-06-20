@@ -17,12 +17,15 @@ const ConfirmationModal = ({
 
   return (
     // Modal overlay with rgba background for transparency
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
-    >
+   <div
+  className="fixed inset-0 flex items-center justify-center"
+  style={{ backgroundColor: "rgba(0, 0, 0, 0.5)", zIndex: 12000 }} // overlay par z-index
+>
       {/* Modal content */}
-      <div className="bg-white rounded-lg shadow-lg w-[540px] max-w-[95vw] p-6">
+     <div
+    className="bg-white rounded-lg shadow-lg w-[540px] max-w-[95vw] p-6"
+    style={{ zIndex: 12001, position: "relative" }} // modal box par z-index
+  >
         {/* Modal header */}
         <h2
           style={{
