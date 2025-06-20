@@ -322,7 +322,7 @@ export default function BulkUploadStudents() {
   const downloadErrorsCSV = () => {
     // Define headers for the CSV (removing schoolUdiseCode)
     const csvHeaders = [
-      { id: "name", label: "fullName" },
+      { id: "fullName", label: "fullName" },
       { id: "fatherName", label: "fatherName" },
       { id: "motherName", label: "motherName" },
       { id: "dob", label: "dob" },
@@ -845,6 +845,7 @@ export default function BulkUploadStudents() {
                                   fontWeight: 600,
                                   fontFamily: "Work Sans",
                                   fontSize: "18px",
+                                  whiteSpace: "nowrap",
                                   "&:hover": {
                                     backgroundColor: "#2F4F4F",
                                     color: "#fff",
@@ -873,6 +874,7 @@ export default function BulkUploadStudents() {
                                 fontWeight: 600,
                                 fontFamily: "Work Sans",
                                 fontSize: "18px",
+                                whiteSpace: "nowrap",
                                 "&:hover": {
                                   backgroundColor: "#2F4F4F",
                                   color: "#fff",
@@ -903,6 +905,7 @@ export default function BulkUploadStudents() {
                                       fontFamily: "Work Sans",
                                       fontSize: "14px",
                                       color: "#2F4F4F",
+                                    
                                     }}
                                   >
                                     Row No.

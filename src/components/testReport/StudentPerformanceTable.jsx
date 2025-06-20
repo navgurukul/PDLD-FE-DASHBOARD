@@ -360,14 +360,14 @@ const StudentPerformanceTable = ({
   const handleDownloadCSV = (data) => {
     const headers = isRemedialTest
       ? ["Student Name", "Grade Level", "Status"]
-      : ["Student Name", "Score", "Result", "Change from Class Avg.(80)"];
+      : ["Student Name", "Marks", "Result", "Change from Class Avg.(80)"];
 
     const csvRows = [
       headers,
       ...data.map((student) =>
         isRemedialTest
           ? [student.name, student.grade || student.originalScore, student.result]
-          : [student.name, student.score, student.result, student.vsClassAvg]
+          : [student.name, student.isAbsent ? "Absent" : student.marks, student.result, student.vsClassAvg]
       ),
     ];
     const csvContent = csvRows.map((row) => row.join(",")).join("\n");
@@ -407,7 +407,7 @@ const StudentPerformanceTable = ({
           return `
             <tr>
               <td style="padding:6px;border:1px solid #ddd;text-align:left;">${student.name}</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.score}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.isAbsent ? "Absent" : student.marks}</td>
               <td style="padding:6px;border:1px solid #ddd;text-align:center;">${
                 student.result
               }</td>
@@ -435,7 +435,7 @@ const StudentPerformanceTable = ({
       : `
         <tr>
           <th style="text-align:left;">Student Name</th>
-          <th>Score</th>
+          <th>Marks</th>
           <th>Result</th>
           <th>Change from Class Avg.(80)</th>
         </tr>
