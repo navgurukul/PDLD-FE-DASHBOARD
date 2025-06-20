@@ -237,10 +237,12 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
       onClose={onClose}
       maxWidth="lg"
       fullWidth
+      sx={{ zIndex: 13010 }}
       PaperProps={{
         sx: {
           borderRadius: 2,
           maxHeight: "90vh",
+          zIndex: 13010,
         },
       }}
     >
@@ -261,7 +263,7 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
       <DialogContent dividers>
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {errorData.length} record(s) could not be processed due to errors. Review and fix these
+            {errorData.length} records could not be processed due to errors. Review and fix these
             issues.
           </Typography>
 
@@ -330,6 +332,8 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
                       "& td": {
                         borderBottom: "none",
                       },
+                      height: 60,
+                      "& > *": { py: 2 },
                     }}
                   >
                     <TableCell>{(page - 1) * rowsPerPage + index + 1}</TableCell>
@@ -387,13 +391,15 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
       </DialogContent>
 
       <DialogActions sx={{ p: 2 }}>
-        <OutlinedButton text={"Close"} onClick={onClose} />
+        <Button onClick={onClose} color="primary">
+          Close
+        </Button>
 
-        <ButtonCustom
+        {/* <ButtonCustom
           text={"Download Errors CSV"}
           imageName={<FileDownloadIcon />}
           onClick={downloadErrorsCSV}
-        />
+        /> */}
       </DialogActions>
     </Dialog>
   );
@@ -1301,6 +1307,7 @@ export default function BulkUploadSchools() {
                                   fontWeight: 600,
                                   fontFamily: "Work Sans",
                                   fontSize: "18px",
+                                  whiteSpace: "nowrap",
                                   "&:hover": {
                                     backgroundColor: "#2F4F4F",
                                     color: "#fff",
@@ -1331,6 +1338,7 @@ export default function BulkUploadSchools() {
                                   fontWeight: 600,
                                   fontFamily: "Work Sans",
                                   fontSize: "18px",
+                                  whiteSpace: "nowrap",
                                   "&:hover": {
                                     backgroundColor: "#2F4F4F",
                                     color: "#fff",
@@ -1401,7 +1409,11 @@ export default function BulkUploadSchools() {
                                   sx={{ "& td": { borderBottom: "none", py: 1.5 } }}
                                 >
                                   <TableCell align="center" sx={{ color: "#2F4F4F" }}>
-                                    {error.rowNo}
+                                    {error.rowIndex !== undefined
+                                      ? error.rowIndex
+                                      : error.rowNo !== undefined
+                                      ? error.rowNo
+                                      : ""}
                                   </TableCell>
                                   <TableCell sx={{ color: "#2F4F4F" }}>
                                     {error.schoolName || ""}
