@@ -125,40 +125,41 @@ export default function SchoolReport() {
   };
 
   // Function to fetch all classes for the school
-  const fetchAvailableClasses = async () => {
-    try {
-      // Get all available classes from the API data
-      const result = await api.get(`/report/classes/${schoolId}`);
+  // const fetchAvailableClasses = async () => {
+  //   try {
+  //     // Get all available classes from the API data
+  //     const result = await api.get(`/report/classes/${schoolId}`);
 
-      if (result.data && result.data.success) {
-        // Extract unique class values and format for dropdown
-        const classes = result.data.data || [];
-        const uniqueClasses = [...new Set(classes.map((item) => item.testClass))];
+  //     if (result.data && result.data.success) {
+  //       // Extract unique class values and format for dropdown
+  //       const classes = result.data.data || [];
+  //       console.log("Classes:", classes);
+  //       const uniqueClasses = [...new Set(classes.map((item) => item.testClass))];
 
-        // Format classes for dropdown
-        const formattedClasses = uniqueClasses
-          .filter((cls) => cls) // Filter out any null/undefined values
-          .sort((a, b) => parseInt(a) - parseInt(b)) // Sort numerically
-          .map((cls) => ({
-            value: cls,
-            label: `Class ${cls}`,
-          }));
+  //       // Format classes for dropdown
+  //       const formattedClasses = uniqueClasses
+  //         .filter((cls) => cls) // Filter out any null/undefined values
+  //         .sort((a, b) => parseInt(a) - parseInt(b)) // Sort numerically
+  //         .map((cls) => ({
+  //           value: cls,
+  //           label: `Class ${cls}`,
+  //         }));
 
-        setAvailableClasses(formattedClasses);
+  //       setAvailableClasses(formattedClasses);
 
-        // Set first class as default if available
-        if (formattedClasses.length > 0 && !selectedClass) {
-          setSelectedClass(parseInt(formattedClasses[0].value, 10));
-        }
-      } else {
-        console.error("API Error:", result.data?.error);
-        setAvailableClasses([]);
-      }
-    } catch (error) {
-      console.error("Error fetching classes:", error);
-      setAvailableClasses([]);
-    }
-  };
+  //       // Set first class as default if available
+  //       if (formattedClasses.length > 0 && !selectedClass) {
+  //         setSelectedClass(parseInt(formattedClasses[0].value, 10));
+  //       }
+  //     } else {
+  //       console.error("API Error:", result.data?.error);
+  //       setAvailableClasses([]);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching classes:", error);
+  //     setAvailableClasses([]);
+  //   }
+  // };
 
   // Function to fetch report data from API
   const fetchReportData = async (classNumber) => {
@@ -200,7 +201,7 @@ export default function SchoolReport() {
   // Fetch available classes and school info when component mounts
   useEffect(() => {
     if (schoolId) {
-      fetchAvailableClasses();
+      // fetchAvailableClasses();
       fetchSchoolInfo();
     }
   }, [schoolId]);
@@ -755,15 +756,31 @@ export default function SchoolReport() {
                   },
                 }}
               >
-                {availableClasses.length > 0 ? (
+                {/* {availableClasses.length > 0 ? (
                   availableClasses.map((classOption) => (
                     <MenuItem key={classOption.value} value={parseInt(classOption.value, 10)}>
                       {classOption.label}
                     </MenuItem>
                   ))
                 ) : (
-                  <MenuItem value={1}>Class 1</MenuItem>
-                )}
+                  <>
+                    <MenuItem value={1}>Class 1</MenuItem>
+                    <MenuItem value={2}>Class 2</MenuItem>
+                  </>
+                )} */}
+
+                <MenuItem value={1}>Class 1</MenuItem>
+                <MenuItem value={2}>Class 2</MenuItem>
+                <MenuItem value={3}>Class 3</MenuItem>
+                <MenuItem value={4}>Class 4</MenuItem>
+                <MenuItem value={5}>Class 5</MenuItem>
+                <MenuItem value={5}>Class 6</MenuItem>
+                <MenuItem value={5}>Class 7</MenuItem>
+                <MenuItem value={5}>Class 8</MenuItem>
+                <MenuItem value={5}>Class 9</MenuItem>
+                <MenuItem value={5}>Class 10</MenuItem>
+                <MenuItem value={5}>Class 11</MenuItem>
+                <MenuItem value={5}>Class 12</MenuItem>
               </Select>
             </FormControl>
           </div>
