@@ -1376,6 +1376,7 @@ th, td {
               boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
             },
           }}
+            sx={{ zIndex: 12000 }} 
         >
           {selectedClassData && (
             <div className="flex flex-col w-full">
