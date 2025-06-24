@@ -522,7 +522,6 @@ export default function SchoolDetailView() {
           <SchoolReport
             schoolId={schoolId}
             schoolName={school.schoolName}
-            udiseCode={school.udiseCode}
           />
         </TabPanel>
 
