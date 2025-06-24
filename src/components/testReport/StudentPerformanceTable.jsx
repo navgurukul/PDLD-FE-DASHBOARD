@@ -360,14 +360,14 @@ const StudentPerformanceTable = ({
   const handleDownloadCSV = (data) => {
     const headers = isRemedialTest
       ? ["Student Name", "Grade Level", "Status"]
-      : ["Student Name", "Marks", "Result", "Change from Class Avg.(80)"];
+      : ["Student Name", "Marks", "Result"];
 
     const csvRows = [
       headers,
       ...data.map((student) =>
         isRemedialTest
           ? [student.name, student.grade || student.originalScore, student.result]
-          : [student.name, student.isAbsent ? "Absent" : student.marks, student.result, student.vsClassAvg]
+          : [student.name, student.isAbsent ? "Absent" : student.marks, student.result]
       ),
     ];
     const csvContent = csvRows.map((row) => row.join(",")).join("\n");
@@ -411,13 +411,6 @@ const StudentPerformanceTable = ({
               <td style="padding:6px;border:1px solid #ddd;text-align:center;">${
                 student.result
               }</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;color:${
-                student.vsClassAvg === "0.0"
-                  ? "#c62828"
-                  : student.vsClassAvg.startsWith("+")
-                  ? "#2e7d32"
-                  : "#c62828"
-              };">${student.vsClassAvg}</td>
             </tr>
           `;
         }
@@ -437,7 +430,6 @@ const StudentPerformanceTable = ({
           <th style="text-align:left;">Student Name</th>
           <th>Marks</th>
           <th>Result</th>
-          <th>Change from Class Avg.(80)</th>
         </tr>
       `;
 
@@ -523,7 +515,7 @@ const StudentPerformanceTable = ({
                 ? "Absent"
                 : `${student.score}/${maxScore || 100}`,
               result: resultStatus,
-              vsClassAvg: vsClassAvgDisplay,
+              // vsClassAvg: vsClassAvgDisplay,
               grade: student.grade,
             };
           })
@@ -659,38 +651,38 @@ const StudentPerformanceTable = ({
               },
             },
           },
-          {
-            name: "vsClassAvg",
-            label: "Change from Class Avg.(80)",
-            options: {
-              filter: false,
-              sort: true,
-              sortThirdClickReset: true,
-              setCellHeaderProps: () => ({
-                style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
-              }),
-              setCellProps: () => ({
-                style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
-              }),
-              customBodyRenderLite: (dataIndex) => {
-                const student = paginatedTableData[dataIndex];
-                if (student.isAbsent) {
-                  return <span style={{ color: "#949494" }}>-</span>;
-                }
+          // {
+          //   name: "vsClassAvg",
+          //   label: "Change from Class Avg.(80)",
+          //   options: {
+          //     filter: false,
+          //     sort: true,
+          //     sortThirdClickReset: true,
+          //     setCellHeaderProps: () => ({
+          //       style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
+          //     }),
+          //     setCellProps: () => ({
+          //       style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
+          //     }),
+          //     customBodyRenderLite: (dataIndex) => {
+          //       const student = paginatedTableData[dataIndex];
+          //       if (student.isAbsent) {
+          //         return <span style={{ color: "#949494" }}>-</span>;
+          //       }
 
-                let value = student.vsClassAvg;
-                if (typeof value === "string" && value.startsWith("+")) {
-                  value = value.slice(1);
-                }
+          //       let value = student.vsClassAvg;
+          //       if (typeof value === "string" && value.startsWith("+")) {
+          //         value = value.slice(1);
+          //       }
 
-                const num = Number(value);
-                const display =
-                  !isNaN(num) && Number.isFinite(num) ? (Number.isInteger(num) ? num : num) : value;
+          //       const num = Number(value);
+          //       const display =
+          //         !isNaN(num) && Number.isFinite(num) ? (Number.isInteger(num) ? num : num) : value;
 
-                return <span style={{ color: "#2F4F4F" }}>{display}</span>;
-              },
-            },
-          },
+          //       return <span style={{ color: "#2F4F4F" }}>{display}</span>;
+          //     },
+          //   },
+          // },
           {
             name: "result",
             label: "Status",
