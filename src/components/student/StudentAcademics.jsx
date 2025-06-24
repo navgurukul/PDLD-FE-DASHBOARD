@@ -116,14 +116,12 @@ const StudentAcademics = ({
 
   // Function to determine grade based on percentage
   const getGrade = (percentage) => {
-    if (percentage >= 90) return "A";
-    if (percentage >= 80) return "B";
-    if (percentage >= 60) return "C";
-    if (percentage >= 40) return "D";
-    if (percentage >= 20) return "E";
-    return "F";
+    if (percentage >= 85) return "A";
+    if (percentage >= 60) return "B";
+    if (percentage >= 45) return "C";
+    if (percentage >= 33) return "D";
+    return "E";
   };
-
   // Format percentage without % sign for display
   const formatPercentage = (percentage) => {
     return Math.round(percentage);
@@ -458,24 +456,19 @@ const StudentAcademics = ({
         filter: false,
         sort: true,
         setCellProps: () => ({ style: { textAlign: "left" } }),
-        customBodyRender: (value) => {
-          let color = "";
-          if (value === "A") color = "text-green-600";
-          else if (value === "B") color = "text-blue-600";
-          else if (value === "C") color = "text-yellow-600";
-          else if (value === "D") color = "text-orange-500";
-          else if (value === "E" || value === "F") color = "text-red-500";
-
-          // Add style with textAlign: "left" to ensure the content is left-aligned
-          return (
-            <span
-              className={`font-medium ${color}`}
-              style={{ display: "block", textAlign: "left", width: "100%" }}
-            >
-              {value}
-            </span>
-          );
-        },
+        customBodyRender: (value) => (
+          <span
+            style={{
+              display: "block",
+              textAlign: "left",
+              width: "100%",
+              color: "#2F4F4F",
+              fontWeight: 400, // normal
+            }}
+          >
+            {value}
+          </span>
+        ),
         customHeadLabelRender: defaultCustomHeadLabelRender,
       },
     },
