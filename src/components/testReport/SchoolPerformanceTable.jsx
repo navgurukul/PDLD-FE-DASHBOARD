@@ -820,7 +820,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   <InputLabel
                     id="status-select-label"
                     sx={{
-                      color: "#2F4F4F", fontFamily:"Work Sans", fontSize: "14px", fontWeight: 400,
+                      color: "#2F4F4F",
+                      fontFamily: "Work Sans",
+                      fontSize: "14px",
+                      fontWeight: 400,
                       transform: "translate(14px, 14px) scale(1)",
                       "&.Mui-focused, &.MuiFormLabel-filled": {
                         transform: "translate(14px, -9px) scale(0.75)",
@@ -905,7 +908,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           </div>
         )}
 
-        {schools.length > 0 && (
+        {schools.length > 0 && !isRemedialTest && (
           <div
             style={{
               borderRadius: "8px",
@@ -920,7 +923,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             Maximum Marks: 100 (Pass Percentage ≥ 33%)
           </div>
         )}
-
         {/* Data Table, Border, Pagination: Only when submissions exist */}
         {schools.length > 0 ? (
           <>
