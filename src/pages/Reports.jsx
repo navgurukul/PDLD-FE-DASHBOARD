@@ -144,6 +144,7 @@ const Reports = () => {
   const [selectedCluster, setSelectedCluster] = useState("");
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [selectedClassData, setSelectedClassData] = useState(null);
+  const [academicYear, setAcademicYear] = useState("2024-25");
 
   // State for available blocks and clusters
   const [availableBlocks, setAvailableBlocks] = useState([]);
@@ -196,11 +197,11 @@ const Reports = () => {
       const response = await apiInstance.get(url);
 
       if (response.data.success) {
-        const { schools, pagination } = response.data.data;
+        const { schools, pagination, academicYear } = response.data.data;
         setReportData(schools);
         setTotalRecords(pagination.totalSchools);
         setTotalPages(pagination.totalPages);
-
+        if (academicYear) setAcademicYear(academicYear);
         // Extract blocks and clusters if not already done
         if (availableBlocks.length === 0 || availableClusters.length === 0) {
           extractBlocksAndClusters(schools);
@@ -768,18 +769,18 @@ const Reports = () => {
               page-break-inside: avoid;
               page-break-after: auto;
             }
-thead tr.group-row {
-  height: 72px;
-}
+            thead tr.group-row {
+            height: 72px;
+            }
 
-thead tr.sub-row,
-tbody tr {
-  height: 60px;
-}
+            thead tr.sub-row,
+            tbody tr {
+            height: 60px;
+            }
 
-th, td {
-  vertical-align: middle;
-}
+            th, td {
+            vertical-align: middle;
+            }
 
           }
         </style>
@@ -788,7 +789,7 @@ th, td {
         <div class="container">
           <div class="header">
             <h1>${selectedSubject} Performance Report</h1>
-            <div class="subtitle">Academic Year 2024-25</div>
+           <div class="subtitle">Academic Year ${academicYear}</div>
             <div class="date">Generated on: ${currentDate}</div>
           </div>
           
@@ -1030,7 +1031,7 @@ th, td {
                 alignItems: "center",
               }}
             >
-              Academic Year {"2024-25"}
+              Academic Year {academicYear}
             </Typography>
           </div>
         </div>
@@ -1376,7 +1377,7 @@ th, td {
               boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
             },
           }}
-            sx={{ zIndex: 12000 }} 
+          sx={{ zIndex: 12000 }}
         >
           {selectedClassData && (
             <div className="flex flex-col w-full">
