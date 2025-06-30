@@ -31,6 +31,7 @@ import FolderEmptyImg from "../../assets/Folder Empty 1.svg";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DownloadModal from "../../components/modal/DownloadModal";
+import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { Search } from "lucide-react";
 
 // Create MUI theme to match TestListTable
@@ -124,6 +125,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   const [schools, setSchools] = useState([]);
   const [totalSchools, setTotalSchools] = useState(0);
   const [schoolsSubmitted, setSchoolsSubmitted] = useState(0);
+  const [pendingSchools, setPendingSchools] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -161,13 +163,32 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   const currentTestId = getTestIdFromUrl();
 
-  const fetchData = async () => {
+  const [maxScore, setMaxScore] = useState(null);
+  const [requiredMarksToPass, setRequiredMarksToPass] = useState(null);
+
+  const fetchData = async (page = 1, size = pageSize) => {
     setLoading(true);
     try {
-      const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`);
-
+      const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
+        params: {
+          page: page,
+          pageSize: size
+        }
+      });
       if (response.data && response.data.success) {
-        const { schools: apiSchools, totalSubmittedSchools, pagination } = response.data.data;
+        const { 
+          schools: apiSchools, 
+          totalSubmittedSchools, 
+          totalpendingSchools,
+          totalEligibleSchools,
+          pagination, 
+          maxScore 
+        } = response.data.data;
+
+        // Get requiredMarksToPass from first school (assuming all same)
+        const requiredMarks = apiSchools.length > 0 ? apiSchools[0].requiredMarksToPass : null;
+        setMaxScore(maxScore);
+        setRequiredMarksToPass(requiredMarks);
 
         // Transform API data to match the component's expected format
         const formattedSchools = apiSchools.map((school) => ({
@@ -178,7 +199,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           clusterName: school.clusterName,
           udiseCode: school.udiseCode,
           passRate: school.successRate, // Map successRate to passRate
-          submitted: true, // All schools in the response are submitted
+          submitted: school.status === "submitted",
           totalStudents: school.totalStudents,
           presentStudents: school.presentStudents,
           absentStudents: school.absentStudents,
@@ -187,7 +208,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
         setSchools(formattedSchools);
         setSchoolsSubmitted(totalSubmittedSchools);
-        setTotalSchools(response.data.data.totalEligibleSchools || totalSubmittedSchools);
+        setPendingSchools(totalpendingSchools);
+        setTotalSchools(totalEligibleSchools || (totalSubmittedSchools + totalpendingSchools));
       } else {
         setError("Failed to load data");
       }
@@ -200,8 +222,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [currentTestId]);
+    fetchData(currentPage, pageSize);
+  }, [currentTestId, currentPage, pageSize]);
 
   // Filter schools based on search query and status
   const filteredSchools = useMemo(() => {
@@ -404,12 +426,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     submitted: school.submitted,
   }));
 
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    return tableData.slice(start, end);
-  }, [tableData, currentPage, pageSize]);
-
   const resetFilters = () => {
     setSearchQuery("");
     setStatusFilter("");
@@ -462,8 +478,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             <div
               className="inline-block px-2 py-1 rounded-full text-xs"
               style={{
-                backgroundColor: status === "Submitted" ? "#e8f5e9" : "#fff8e1",
-                color: status === "Submitted" ? "#2e7d32" : "#f57c00",
+                backgroundColor: status === "Submitted" ? "#e8f5e9" : "#FDDCDC",
+                color: status === "Submitted" ? "#2e7d32" : "#F45050",
                 fontWeight: 400,
                 fontFamily: "Work Sans",
                 fontSize: "12px",
@@ -639,8 +655,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     rowsPerPageOptions: [10, 15, 20, 50, 100],
     pagination: false,
     elevation: 0,
-    tableBodyMaxHeight: "calc(100vh - 300px)",
-    fixedHeader: true,
     setTableProps: () => ({
       style: {
         borderCollapse: "collapse",
@@ -653,17 +667,12 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     }),
   };
 
-  // Calculate pending schools
-  const pendingSchools = totalSchools - schoolsSubmitted;
+  // Calculate submission rate
   const submissionRate = totalSchools > 0 ? Math.round((schoolsSubmitted / totalSchools) * 100) : 0;
 
   // Show loading indicator while fetching data
   if (loading) {
-    return (
-      <div className="flex justify-center items-center p-10" style={{ minHeight: "300px" }}>
-        <CircularProgress size={60} thickness={4} sx={{ color: "#2F4F4F" }} />
-      </div>
-    );
+    return <SpinnerPageOverlay isLoading={true} />;
   }
 
   // Show error message if data fetch failed
@@ -695,11 +704,14 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   const handlePageChange = (event, page) => {
     setCurrentPage(page);
+    // Data will be fetched automatically via useEffect when currentPage changes
   };
 
   const handlePageSizeChange = (event) => {
-    setPageSize(event.target.value);
-    setCurrentPage(1);
+    const newPageSize = event.target.value;
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+    // Data will be fetched automatically via useEffect when pageSize changes
   };
 
   return (
@@ -920,7 +932,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               fontFamily: "Work Sans",
             }}
           >
-            Maximum Marks: 100 (Pass Percentage ≥ 33%)
+             Maximum Marks: {maxScore} 
           </div>
         )}
         {/* Data Table, Border, Pagination: Only when submissions exist */}
@@ -928,7 +940,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           <>
             <div className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto">
               <MUIDataTable
-                data={paginatedData}
+                data={tableData}
                 columns={columns}
                 options={{
                   ...options,
@@ -950,7 +962,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               <div style={{ width: "180px" }}></div>
               <div style={{ display: "flex", justifyContent: "center" }}>
                 <Pagination
-                  count={Math.ceil(tableData.length / pageSize)}
+                  count={Math.ceil(totalSchools / pageSize)}
                   page={currentPage}
                   onChange={handlePageChange}
                   showFirstButton
@@ -1068,7 +1080,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         totalRecords={tableData.length} // Or total count if you have it
         subject={"School Performance"}
       />
-      {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
+      {isLoading && !loading && <SpinnerPageOverlay isLoading={isLoading} />}
       <ToastContainer
         style={{ zIndex: 99999999 }}
         position="top-right"
