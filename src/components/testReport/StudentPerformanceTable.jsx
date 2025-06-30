@@ -407,7 +407,9 @@ const StudentPerformanceTable = ({
           return `
             <tr>
               <td style="padding:6px;border:1px solid #ddd;text-align:left;">${student.name}</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.isAbsent ? "Absent" : student.marks}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${
+                student.isAbsent ? "Absent" : student.marks
+              }</td>
               <td style="padding:6px;border:1px solid #ddd;text-align:center;">${
                 student.result
               }</td>
@@ -883,11 +885,12 @@ const StudentPerformanceTable = ({
             color: "#2F4F4F",
           }}
         >
-          {isRemedialTest
+          {/* {isRemedialTest
             ? ""
             : `Maximum Marks: ${maxScore || 100} (Pass Percentage ≥ ${Math.round(
                 ((passThreshold || 35) / (maxScore || 100)) * 100
-              )}%)`}
+              )}%)`} */}
+          {isRemedialTest ? "" : `Maximum Marks: ${maxScore || 100}`}
         </div>
         {/* Data Table */}
         <div
