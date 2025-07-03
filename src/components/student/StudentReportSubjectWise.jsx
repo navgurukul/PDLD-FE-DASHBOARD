@@ -66,11 +66,7 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
         // Apply filters if set
         const passesMonthFilter = syllabusMonth === "All" || month === syllabusMonth;
         const passesMaxMarksFilter = maxMarks === "All" || test.maxScore === parseInt(maxMarks);
-        const passesStatusFilter =
-          status === "All" ||
-          (status === "Excellent" && test.score >= 75) ||
-          (status === "Satisfactory" && test.score >= 60 && test.score < 75) ||
-          (status === "Needs Improvement" && test.score < 60);
+        const passesStatusFilter = status === "All" || testStatus === status; // Fixed: Direct status matching
 
         if (passesMonthFilter && passesMaxMarksFilter && passesStatusFilter) {
           processedTestData.push(testRow);
