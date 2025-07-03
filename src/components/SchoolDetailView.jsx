@@ -13,7 +13,7 @@ import {
   Divider,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack"; 
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
@@ -80,7 +80,7 @@ export default function SchoolDetailView() {
   const [school, setSchool] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { state } = useLocation();
-  const [tabValue, setTabValue] = useState(state?.selectedTab || 0);  // Default to Schoool Details tab if no state provided
+  const [tabValue, setTabValue] = useState(state?.selectedTab || 0); // Default to Schoool Details tab if no state provided
 
   const theme = useTheme();
 
@@ -122,13 +122,13 @@ export default function SchoolDetailView() {
   }, [state, schoolId]);
 
   useEffect(() => {
-  // Agar schoolData ya schoolName state me ho to localStorage me save karo
-  if (state?.schoolData?.schoolName) {
-    localStorage.setItem("currentSchoolName", state.schoolData.schoolName);
-  } else if (state?.schoolName) {
-    localStorage.setItem("currentSchoolName", state.schoolName);
-  }
-}, [state]);
+    // Agar schoolData ya schoolName state me ho to localStorage me save karo
+    if (state?.schoolData?.schoolName) {
+      localStorage.setItem("currentSchoolName", state.schoolData.schoolName);
+    } else if (state?.schoolName) {
+      localStorage.setItem("currentSchoolName", state.schoolName);
+    }
+  }, [state]);
 
   // Handle tab change
   const handleTabChange = (event, newValue) => {
@@ -163,7 +163,11 @@ export default function SchoolDetailView() {
 
   // Get CP name from school data
   const getCPName = () => {
-    if (school.assignedCP && typeof school.assignedCP === "object" && school.assignedCP.name) {
+    if (
+      school.assignedCP &&
+      typeof school.assignedCP === "object" &&
+      school.assignedCP.name
+    ) {
       return school.assignedCP.name;
     }
     return "Not Assigned";
@@ -192,13 +196,37 @@ export default function SchoolDetailView() {
   return (
     <ThemeProvider theme={theme}>
       <div className="main-page-wrapper sm:px-4">
-        <div className="header-container flex justify-between items-center mb-1">
-          <div className="flex items-center mt-5">
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", md: "center" },
+            gap: { xs: 2, md: 0 },
+            mb: 1,
+            mt: { xs: 2, md: 0 },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: { xs: 1, sm: 2 },
+              mt: { xs: 0, md: 5 },
+            }}
+          >
             <h5 className="text-lg font-bold text-[#2F4F4F]">
               {school.udiseCode} - {capitalizeFirstLetter(school.schoolName)}
             </h5>
-          </div>
-          <div>
+          </Box>
+          <Box
+            sx={{
+              flexShrink: 0,
+              width: { xs: "100%", md: "auto" },
+              mt: { xs: 0, md: 5 },
+            }}
+          >
             <Typography
               variant="subtitle1"
               sx={{
@@ -209,12 +237,16 @@ export default function SchoolDetailView() {
                 height: "48px",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                whiteSpace: "nowrap",
+                width: { xs: "100%", md: "auto" },
               }}
             >
               Academic Year {school.academicYear || "2024-25"}
             </Typography>
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs
@@ -433,7 +465,7 @@ export default function SchoolDetailView() {
               </Card>
             </Grid>
 
-            <Grid item xs={6}>
+            <Grid item xs={12} md={6}>
               <Card>
                 <CardContent>
                   <Typography
@@ -452,7 +484,7 @@ export default function SchoolDetailView() {
 
                   <Grid container spacing={2}>
                     {/* Labels row */}
-                    <Grid item xs={6}>
+                    <Grid item xs={12} sm={6}>
                       <Typography
                         variant="subtitle2"
                         color="text.secondary"
@@ -465,7 +497,7 @@ export default function SchoolDetailView() {
                         Cluster Academic Coordinator
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={12} sm={6}>
                       <Typography
                         variant="subtitle2"
                         color="text.secondary"
@@ -479,7 +511,7 @@ export default function SchoolDetailView() {
                       </Typography>
                     </Grid>
                     {/* Values row */}
-                    <Grid item xs={6}>
+                    <Grid item xs={12} sm={6}>
                       <Typography
                         variant="body1"
                         sx={{
@@ -492,7 +524,7 @@ export default function SchoolDetailView() {
                         {getCACName()}
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={12} sm={6}>
                       <Typography
                         variant="body1"
                         sx={{
@@ -519,10 +551,7 @@ export default function SchoolDetailView() {
 
         <TabPanel value={tabValue} index={2}>
           {/* Use the SchoolReport component here */}
-          <SchoolReport
-            schoolId={schoolId}
-            schoolName={school.schoolName}
-          />
+          <SchoolReport schoolId={schoolId} schoolName={school.schoolName} />
         </TabPanel>
 
         <ToastContainer
