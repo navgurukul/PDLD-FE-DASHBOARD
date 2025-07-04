@@ -26,6 +26,16 @@ import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
 import { SUBJECTS_BY_GRADE } from "../data/testData"; // Import testData for curriculum mapping
 
+// Utility function to convert text to title case
+const toTitleCase = (str) => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 // Utility function to check if curriculum note should be shown
 const shouldShowCurriculumNote = (subject, groupTitle) => {
   // Map group titles to class ranges
@@ -429,7 +439,7 @@ const Reports = () => {
             {data.map((school, index) => (
               <tr key={index}>
                 <td style={{ maxWidth: "300px", wordWrap: "break-word" }}>
-                  {school.udiseCode} - {school.schoolName}
+                  {school.udiseCode} - {toTitleCase(school.schoolName)}
                 </td>
                 <td
                   className={parseInt(school.primaryAvg) < 20 ? "low-score" : ""}
@@ -536,7 +546,7 @@ const Reports = () => {
         const showNote = shouldShowCurriculumNote(selectedSubject, groupTitle);
         
         setSelectedClassData({
-          school: school.schoolName,
+          school: toTitleCase(school.schoolName),
           udiseCode: school.udiseCode,
           id: school.id,
           subject: selectedSubject,
@@ -611,7 +621,7 @@ const Reports = () => {
             const higherData = school.subjectPerformance[3] || {};
 
             return {
-              schoolName: school.schoolName,
+              schoolName: toTitleCase(school.schoolName),
               udiseCode: school.udiseCode,
               primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
               primaryPass: primaryData.primaryPass !== undefined ? primaryData.primaryPass : null,
@@ -927,7 +937,7 @@ const Reports = () => {
 
                   return `
                   <tr>
-                    <td class="school-name">${school.udiseCode} - ${school.schoolName}</td>
+                    <td class="school-name">${school.udiseCode} - ${toTitleCase(school.schoolName)}</td>
                     <td class="${isLowScore(school.primaryAvg) ? "low-score" : ""}">
                       ${school.primaryAvg !== null ? school.primaryAvg : "-"}
                     </td>
@@ -1008,7 +1018,7 @@ const Reports = () => {
 
     data.forEach((school) => {
       const rowData = [
-        `${school.udiseCode} - ${school.schoolName}`,
+        `${school.udiseCode} - ${toTitleCase(school.schoolName)}`,
         school.primaryAvg || "-",
         school.primaryPass ? `${school.primaryPass}%` : "-",
         school.upperPrimaryAvg || "-",
@@ -1030,7 +1040,7 @@ const Reports = () => {
           .join(",") + "\n";
     });
 
-    // Create download link
+    //  Create download link
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1059,7 +1069,7 @@ const Reports = () => {
     const higherData = school.subjectPerformance[3] || {};
 
     return {
-      schoolName: school.schoolName,
+      schoolName: toTitleCase(school.schoolName),
       udiseCode: school.udiseCode,
       id: school.id,
       primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
