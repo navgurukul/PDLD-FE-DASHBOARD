@@ -222,14 +222,14 @@ export default function SchoolReport({ schoolName }) {
 
   // Download report as CSV
   const handleDownloadCSV = (data) => {
-    const headers = ["Name of Exam", "Total Students", "Max Marks", ...allSubjects];
+    const headers = ["Name of Exam", /* "Total Students", */ "Max Marks", ...allSubjects];
 
     let csvContent = headers.join(",") + "\n";
 
     data.forEach((report) => {
       const rowData = [
         report.examName,
-        report.totalStudents,
+        // report.totalStudents,
         report.maxMarks,
         ...allSubjects.map((subject) => report[subject]),
       ];
@@ -500,7 +500,7 @@ ${schoolName || "N/A"}</div>
             <thead>
               <tr>
                 <th class="exam-header">Name of Exam</th>
-                <th>Total Students</th>
+                <!-- <th>Total Students</th> -->
                 <th>Max Marks</th>
                 ${allSubjects.map((subject) => `<th>${subject}</th>`).join("")}
               </tr>
@@ -517,7 +517,7 @@ ${schoolName || "N/A"}</div>
                   return `
                   <tr>
                     <td class="exam-name">${report.examName}</td>
-                    <td>${report.totalStudents}</td>
+                    <!-- <td>${report.totalStudents}</td> -->
                     <td>${report.maxMarks}</td>
                     ${allSubjects
                       .map((subject) => {
