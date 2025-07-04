@@ -78,6 +78,7 @@ export default function UserCreationForm() {
     cluster: "",
     school: "",
     username: "",
+    crcCode: "",
   });
 
   const [blocksData, setBlocksData] = useState([]);
@@ -267,6 +268,12 @@ export default function UserCreationForm() {
       return false;
     }
 
+    // Validate CRC code for CAC role
+    if (formData.role === "CAC" && !formData.crcCode.trim()) {
+      toast.error("CRC code is required for Cluster Academic Coordinator role");
+      return false;
+    }
+
     // Validate block selection for roles that require it
     if (hierarchyFields.showBlock && !formData.block) {
       toast.error("Please select a block");
@@ -285,7 +292,7 @@ export default function UserCreationForm() {
   // Handle role change to determine which fields to show
   const handleRoleChange = (event) => {
     const role = event.target.value;
-    setFormData({ ...formData, role, block: "" });
+    setFormData({ ...formData, role, block: "", crcCode: "" });
 
     // Reset selections when role changes
     setSelectedEntities({
@@ -416,6 +423,11 @@ export default function UserCreationForm() {
           updateData.email = formData.email;
         }
 
+        // Add CRC code for CAC role
+        if (formData.role === "CAC" && formData.crcCode) {
+          updateData.CRCCode = formData.crcCode;
+        }
+
         // Call update API
         const response = await apiInstance.put(`/user/update/${userId}`, updateData);
         console.log("User updated:", response.data);
@@ -438,6 +450,11 @@ export default function UserCreationForm() {
 
         if (formData.email) {
           userData.email = formData.email;
+        }
+
+        // Add CRC code for CAC role
+        if (formData.role === "CAC" && formData.crcCode) {
+          userData.CRCCode = formData.crcCode;
         }
 
         // Call create API
@@ -548,6 +565,7 @@ export default function UserCreationForm() {
       role: roleCode,
       block: assignedBlock,
       username: user.username || "",
+      crcCode: user.CRCCode || "",
     });
 
     // Set selected entities
@@ -811,6 +829,27 @@ export default function UserCreationForm() {
               </Select>
             </FormControl>
           </div>
+
+          {/* Add CRC Code field for CAC role */}
+          {formData.role === "CAC" && (
+            <div className="mb-6">
+              <TextField
+                label="CRC Code"
+                name="crcCode"
+                value={formData.crcCode}
+                onChange={handleInputChange}
+                required
+                fullWidth
+                placeholder="Enter CRC code"
+                variant="outlined"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    height: "48px",
+                  },
+                }}
+              />
+            </div>
+          )}
 
           {hierarchyFields.showBlock && (
             <div className="mb-6">
