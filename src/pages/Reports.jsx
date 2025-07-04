@@ -24,6 +24,29 @@ import apiInstance from "../../api"; // Updated import path
 import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
+import { SUBJECTS_BY_GRADE } from "../data/testData"; // Import testData for curriculum mapping
+
+// Utility function to check if curriculum note should be shown
+const shouldShowCurriculumNote = (subject, groupTitle) => {
+  // Map group titles to class ranges
+  const groupClassMapping = {
+    "Primary (1-5)": [1, 2, 3, 4, 5],
+    "Upper Primary (6-8)": [6, 7, 8],
+    "High School (9-10)": [9, 10],
+    "Higher Secondary (11-12)": [11, 12]
+  };
+
+  const classesInGroup = groupClassMapping[groupTitle];
+  if (!classesInGroup) return false;
+
+  // Check how many classes in this group have this subject
+  const classesWithSubject = classesInGroup.filter(classNum => 
+    SUBJECTS_BY_GRADE[classNum] && SUBJECTS_BY_GRADE[classNum].includes(subject)
+  );
+
+  // Show note only if subject is present in SOME but not ALL classes of the group
+  return classesWithSubject.length > 0 && classesWithSubject.length < classesInGroup.length;
+};
 
 const theme = createTheme({
   typography: {
@@ -144,13 +167,68 @@ const Reports = () => {
   const [selectedCluster, setSelectedCluster] = useState("");
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [selectedClassData, setSelectedClassData] = useState(null);
+  const [academicYear, setAcademicYear] = useState("2024-25");
 
   // State for available blocks and clusters
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [availableClusters, setAvailableClusters] = useState([]);
-
+  
   // Changed from fixed pageSize to state
   const [pageSize, setPageSize] = useState(15);
+
+  // Curriculum mapping for subjects
+  // Dynamic function to get expected classes for a subject in a group using testData.js
+  const getExpectedClassesForSubject = (subject, groupTitle) => {
+    const groupClassMapping = {
+      "Primary (1-5)": [1, 2, 3, 4, 5],
+      "Upper Primary (6-8)": [6, 7, 8],
+      "High School (9-10)": [9, 10],
+      "Higher Secondary (11-12)": [11, 12]
+    };
+
+    const classesInGroup = groupClassMapping[groupTitle];
+    if (!classesInGroup) return [];
+
+    // Filter classes that have this subject according to testData.js
+    return classesInGroup.filter(classNum => 
+      SUBJECTS_BY_GRADE[classNum] && SUBJECTS_BY_GRADE[classNum].includes(subject)
+    );
+  };
+
+  // Helper function to check curriculum availability
+  const checkCurriculumAvailability = (subject, groupTitle, classesInData) => {
+    const expectedClasses = getExpectedClassesForSubject(subject, groupTitle);
+    const actualClasses = classesInData.map(c => c.class);
+    
+    // Check if ALL classes that should have this subject are represented in the data
+    // If expected classes list is empty, it means subject is not taught in this group at all
+    if (expectedClasses.length === 0) {
+      return {
+        allClassesHaveSubject: false,
+        expectedClasses,
+        actualClasses,
+        reason: "Subject not taught in this group"
+      };
+    }
+    
+    // Check if subject is available in all classes of the group
+    const groupClassMapping = {
+      "Primary (1-5)": [1, 2, 3, 4, 5],
+      "Upper Primary (6-8)": [6, 7, 8],
+      "High School (9-10)": [9, 10],
+      "Higher Secondary (11-12)": [11, 12]
+    };
+    
+    const allClassesInGroup = groupClassMapping[groupTitle] || [];
+    const allClassesHaveSubject = expectedClasses.length === allClassesInGroup.length;
+    
+    return {
+      allClassesHaveSubject,
+      expectedClasses,
+      actualClasses,
+      totalClassesInGroup: allClassesInGroup.length
+    };
+  };
 
   // Add page size change handler
   const handlePageSizeChange = (event) => {
@@ -196,11 +274,11 @@ const Reports = () => {
       const response = await apiInstance.get(url);
 
       if (response.data.success) {
-        const { schools, pagination } = response.data.data;
+        const { schools, pagination, academicYear } = response.data.data;
         setReportData(schools);
         setTotalRecords(pagination.totalSchools);
         setTotalPages(pagination.totalPages);
-
+        if (academicYear) setAcademicYear(academicYear);
         // Extract blocks and clusters if not already done
         if (availableBlocks.length === 0 || availableClusters.length === 0) {
           extractBlocksAndClusters(schools);
@@ -350,7 +428,9 @@ const Reports = () => {
           <tbody>
             {data.map((school, index) => (
               <tr key={index}>
-                <td style={{ maxWidth: "300px", wordWrap: "break-word" }}>{school.schoolName}</td>
+                <td style={{ maxWidth: "300px", wordWrap: "break-word" }}>
+                  {school.udiseCode} - {school.schoolName}
+                </td>
                 <td
                   className={parseInt(school.primaryAvg) < 20 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 1)}
@@ -452,13 +532,17 @@ const Reports = () => {
 
       // Only open modal if there are classes for this level
       if (levelData && levelData.classes && levelData.classes.length > 0) {
+        // Use the utility function to check if curriculum note should be shown
+        const showNote = shouldShowCurriculumNote(selectedSubject, groupTitle);
+        
         setSelectedClassData({
           school: school.schoolName,
           udiseCode: school.udiseCode,
           id: school.id,
           subject: selectedSubject,
-          data: [levelData], // Only include the selected level data
+          data: [levelData],
           groupTitle: groupTitle,
+          showCurriculumNote: showNote
         });
 
         setClassModalOpen(true);
@@ -528,6 +612,7 @@ const Reports = () => {
 
             return {
               schoolName: school.schoolName,
+              udiseCode: school.udiseCode,
               primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
               primaryPass: primaryData.primaryPass !== undefined ? primaryData.primaryPass : null,
               upperPrimaryAvg:
@@ -768,18 +853,18 @@ const Reports = () => {
               page-break-inside: avoid;
               page-break-after: auto;
             }
-thead tr.group-row {
-  height: 72px;
-}
+            thead tr.group-row {
+            height: 72px;
+            }
 
-thead tr.sub-row,
-tbody tr {
-  height: 60px;
-}
+            thead tr.sub-row,
+            tbody tr {
+            height: 60px;
+            }
 
-th, td {
-  vertical-align: middle;
-}
+            th, td {
+            vertical-align: middle;
+            }
 
           }
         </style>
@@ -788,7 +873,7 @@ th, td {
         <div class="container">
           <div class="header">
             <h1>${selectedSubject} Performance Report</h1>
-            <div class="subtitle">Academic Year 2024-25</div>
+           <div class="subtitle">Academic Year ${academicYear}</div>
             <div class="date">Generated on: ${currentDate}</div>
           </div>
           
@@ -842,7 +927,7 @@ th, td {
 
                   return `
                   <tr>
-                    <td class="school-name">${school.schoolName}</td>
+                    <td class="school-name">${school.udiseCode} - ${school.schoolName}</td>
                     <td class="${isLowScore(school.primaryAvg) ? "low-score" : ""}">
                       ${school.primaryAvg !== null ? school.primaryAvg : "-"}
                     </td>
@@ -885,7 +970,7 @@ th, td {
           
           <div class="footer">
             <p>This report is generated automatically from the School Performance System</p>
-            <p>© 2024-25 Academic Performance Tracking System</p>
+            <p>© ${academicYear} Academic Performance Tracking System</p>
           </div>
         </div>
       </body>
@@ -923,7 +1008,7 @@ th, td {
 
     data.forEach((school) => {
       const rowData = [
-        school.schoolName,
+        `${school.udiseCode} - ${school.schoolName}`,
         school.primaryAvg || "-",
         school.primaryPass ? `${school.primaryPass}%` : "-",
         school.upperPrimaryAvg || "-",
@@ -975,6 +1060,7 @@ th, td {
 
     return {
       schoolName: school.schoolName,
+      udiseCode: school.udiseCode,
       id: school.id,
       primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
       primaryPass: primaryData.primaryPass !== undefined ? primaryData.primaryPass : null,
@@ -1012,12 +1098,21 @@ th, td {
   return (
     <ThemeProvider theme={theme}>
       <div className="main-page-wrapper mt-6">
-        <div className="flex justify-between items-center">
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", md: "center" },
+            gap: { xs: 2, md: 0 },
+            mb: 4
+          }}
+        >
           <div>
             <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">School Performance Report</h5>
           </div>
 
-          <div className="bg-gray-300 rounded">
+          <Box sx={{ flexShrink: 0, width: { xs: "100%", md: "auto" } }}>
             <Typography
               variant="subtitle1"
               sx={{
@@ -1028,12 +1123,16 @@ th, td {
                 height: "48px",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                whiteSpace: "nowrap",
+                width: { xs: "100%", md: "auto" }
               }}
             >
-              Academic Year {"2024-25"}
+              Academic Year {academicYear}
             </Typography>
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
@@ -1376,7 +1475,7 @@ th, td {
               boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
             },
           }}
-            sx={{ zIndex: 12000 }} 
+          sx={{ zIndex: 12000 }}
         >
           {selectedClassData && (
             <div className="flex flex-col w-full">
@@ -1473,9 +1572,32 @@ th, td {
                   </div>
                 ))}
               </div>
+
+              {/* Curriculum Note - Only show when not all classes have the subject */}
+              {selectedClassData.showCurriculumNote && (
+                <div 
+                  className="mt-5"
+                  style={{
+                   
+                  }}
+                >
+                  <div 
+                    className="text-[#2F4F4F]"
+                    style={{
+                      fontFamily: "'Work Sans', sans-serif",
+                      fontWeight: 400,
+                      fontSize: "12px",
+                    }}
+                  >
+                    <strong>Note:</strong> This report includes only those classes where this subject is part of the curriculum.
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </Dialog>
+
+
 
         {/* Download Modal */}
         <DownloadModal

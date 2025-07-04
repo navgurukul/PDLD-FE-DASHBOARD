@@ -102,6 +102,7 @@ const theme = createTheme({
 
 export default function SchoolReport({ schoolName }) {
   const [reports, setReports] = useState([]);
+  const [academicYear, setAcademicYear] = useState(null);
   const [selectedClass, setSelectedClass] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [availableClasses, setAvailableClasses] = useState([]);
@@ -154,6 +155,14 @@ export default function SchoolReport({ schoolName }) {
       fetchReportData(selectedClass);
     }
   }, [selectedClass, schoolId]);
+
+  // Get academic year from localStorage
+  useEffect(() => {
+    const storedAcademicYear = localStorage.getItem("currentAcademicYear");
+    if (storedAcademicYear) {
+      setAcademicYear(storedAcademicYear);
+    }
+  }, []);
 
   // Handle class change
   const handleClassChange = (e) => {
@@ -213,14 +222,14 @@ export default function SchoolReport({ schoolName }) {
 
   // Download report as CSV
   const handleDownloadCSV = (data) => {
-    const headers = ["Name of Exam", "Total Students", "Max Marks", ...allSubjects];
+    const headers = ["Name of Exam", /* "Total Students", */ "Max Marks", ...allSubjects];
 
     let csvContent = headers.join(",") + "\n";
 
     data.forEach((report) => {
       const rowData = [
         report.examName,
-        report.totalStudents,
+        // report.totalStudents,
         report.maxMarks,
         ...allSubjects.map((subject) => report[subject]),
       ];
@@ -491,7 +500,7 @@ ${schoolName || "N/A"}</div>
             <thead>
               <tr>
                 <th class="exam-header">Name of Exam</th>
-                <th>Total Students</th>
+                <!-- <th>Total Students</th> -->
                 <th>Max Marks</th>
                 ${allSubjects.map((subject) => `<th>${subject}</th>`).join("")}
               </tr>
@@ -508,7 +517,7 @@ ${schoolName || "N/A"}</div>
                   return `
                   <tr>
                     <td class="exam-name">${report.examName}</td>
-                    <td>${report.totalStudents}</td>
+                    <!-- <td>${report.totalStudents}</td> -->
                     <td>${report.maxMarks}</td>
                     ${allSubjects
                       .map((subject) => {
@@ -538,7 +547,7 @@ ${schoolName || "N/A"}</div>
           
           <div class="footer">
             <p>This report is generated automatically from the School Performance System</p>
-            <p>© 2024-25 Academic Performance Tracking System</p>
+            <p>© ${academicYear || "2024-25"} Academic Performance Tracking System</p>
           </div>
         </div>
       </body>
@@ -739,9 +748,8 @@ ${schoolName || "N/A"}</div>
 
         {/* Note text */}
         <div style={styles.noteText}>
-          <span className="font-bold">Note:</span> These marks represent the subject-wise average
-          score of the class, calculated as: (Total Marks Obtained in the Subject ÷ Number of
-          Students Appeared)
+          <span style={{ fontFamily: "'Work Sans', sans-serif", fontWeight: 600, fontSize: "14px", color:"#2F4F4F" }}>Note:</span>
+          <span style={{ fontFamily: "'Work Sans', sans-serif", fontWeight: 400, fontSize: "14px",color:"#2F4F4F" }}> These marks represent the subject-wise average score of the class, calculated as: (Total Marks Obtained in the Subject ÷ Number of Students Appeared)</span>
         </div>
 
         {/* Download Modal */}
