@@ -102,6 +102,7 @@ const DeleteConfirmationModal = ({
       onClose={isProcessing ? null : onClose}
       aria-labelledby="confirmation-modal-title"
       aria-describedby="confirmation-modal-description"
+      sx={{ zIndex: 99999999 }}
     >
       <Box sx={modalStyle}>
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
@@ -1043,7 +1044,19 @@ export default function BulkUploadSchools() {
             />
 
             <Box
-              sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}
+              sx={{ 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center", 
+                mt: 2,
+                gap: 2,
+                flexDirection: { xs: "column", sm: "row" },
+                "@media (max-width: 600px)": {
+                  flexDirection: "column",
+                  gap: 2,
+                  justifyContent: "center"
+                }
+              }}
             >
               <Button
                 variant="outlined"
@@ -1055,7 +1068,10 @@ export default function BulkUploadSchools() {
                   textTransform: "none",
                   fontWeight: 600,
                   fontFamily: "Work Sans",
-                  fontSize: "18px",
+                  fontSize: { xs: "14px", sm: "16px", md: "18px" },
+                  minWidth: { xs: "140px", sm: "160px" },
+                  width: { xs: "100%", sm: "auto" },
+                  maxWidth: { xs: "300px", sm: "none" },
                   "&:hover": {
                     backgroundColor: "#2F4F4F",
                     color: "#fff",
@@ -1065,12 +1081,14 @@ export default function BulkUploadSchools() {
               >
                 {`< Back to Upload`}
               </Button>
-              <ButtonCustom
-                text="Proceed >"
-                btnWidth="200"
-                onClick={handleConfirmMapping}
-                disabled={isConfirmMappingDisabled}
-              />
+              <Box sx={{ width: { xs: "100%", sm: "200px" }, maxWidth: { xs: "300px", sm: "none" } }}>
+                <ButtonCustom
+                  text="Proceed >"
+                  btnWidth={{ xs: "100%", sm: "200" }}
+                  onClick={handleConfirmMapping}
+                  disabled={isConfirmMappingDisabled}
+                />
+              </Box>
             </Box>
           </Box>
         )}
@@ -1472,6 +1490,13 @@ export default function BulkUploadSchools() {
                           maxWidth: "100%",
                           mx: "auto",
                           mt: 3,
+                          gap: 2,
+                          flexDirection: { xs: "column", sm: "row" },
+                          "@media (max-width: 600px)": {
+                            flexDirection: "column",
+                            gap: 2,
+                            justifyContent: "center"
+                          }
                         }}
                       >
                         <Button
@@ -1485,7 +1510,10 @@ export default function BulkUploadSchools() {
                             textTransform: "none",
                             fontWeight: 600,
                             fontFamily: "Work Sans",
-                            fontSize: "18px",
+                            fontSize: { xs: "14px", sm: "16px", md: "18px" },
+                            minWidth: { xs: "180px", sm: "200px" },
+                            width: { xs: "100%", sm: "auto" },
+                            maxWidth: { xs: "300px", sm: "none" },
                             "&:hover": {
                               backgroundColor: "#2F4F4F",
                               color: "#fff",
@@ -1498,7 +1526,13 @@ export default function BulkUploadSchools() {
                         >
                           Upload Another File
                         </Button>
-                        <ButtonCustom text="Go to School List >" onClick={handleDoneUpload} />
+                        <Box sx={{ width: { xs: "100%", sm: "200px" }, maxWidth: { xs: "300px", sm: "none" } }}>
+                          <ButtonCustom 
+                            text="Go to School List >" 
+                            onClick={handleDoneUpload} 
+                            btnWidth={{ xs: "100%", sm: "200" }}
+                          />
+                        </Box>
                       </Box>
                     </Box>
                   </CardContent>
