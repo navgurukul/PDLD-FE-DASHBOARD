@@ -110,6 +110,7 @@ export default function SchoolList() {
   // Then in your component
   const location = useLocation();
   const [schools, setSchools] = useState([]);
+  const [academicYear, setAcademicYear] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -142,6 +143,10 @@ export default function SchoolList() {
       if (response.data.success) {
         setSchools(response.data.data.schools);
         setPagination(response.data.data.pagination);
+        // Capture academic year from API response
+        if (response.data.data.academicYear) {
+          setAcademicYear(response.data.data.academicYear);
+        }
       } else {
         toast.error("Failed to fetch schools");
       }
@@ -377,7 +382,10 @@ export default function SchoolList() {
             <div
               onClick={() =>
                 navigate(`/schools/schoolDetail/${schoolId}`, {
-                  state: { schoolData: schoolObj },
+                  state: { 
+                    schoolData: schoolObj,
+                    academicYear: academicYear 
+                  },
                 })
               }
               style={{

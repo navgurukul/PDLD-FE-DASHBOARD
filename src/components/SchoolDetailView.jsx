@@ -78,6 +78,7 @@ export default function SchoolDetailView() {
   const { schoolId } = useParams();
   const navigate = useNavigate();
   const [school, setSchool] = useState(null);
+  const [academicYear, setAcademicYear] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { state } = useLocation();
   const [tabValue, setTabValue] = useState(state?.selectedTab || 0); // Default to Schoool Details tab if no state provided
@@ -86,19 +87,27 @@ export default function SchoolDetailView() {
 
   useEffect(() => {
     let schoolData = null;
+    let apiAcademicYear = null;
 
     // First, check if we have data in location state
     if (state && state.schoolData) {
       schoolData = state.schoolData;
+      // Check if academic year is available in state (from API response)
+      apiAcademicYear = state.academicYear;
       // Store in localStorage for persistence
       localStorage.setItem("currentSchoolData", JSON.stringify(schoolData));
+      if (apiAcademicYear) {
+        localStorage.setItem("currentAcademicYear", apiAcademicYear);
+      }
     }
     // If not in state, try localStorage
     else {
       const storedData = localStorage.getItem("currentSchoolData");
+      const storedAcademicYear = localStorage.getItem("currentAcademicYear");
       if (storedData) {
         try {
           schoolData = JSON.parse(storedData);
+          apiAcademicYear = storedAcademicYear;
         } catch (e) {
           console.error("Error parsing stored school data", e);
         }
@@ -107,6 +116,7 @@ export default function SchoolDetailView() {
 
     if (schoolData) {
       setSchool(schoolData);
+      setAcademicYear(apiAcademicYear);
       setIsLoading(false);
     } else {
       // In a real app, you would fetch the data from API using the schoolId
@@ -243,7 +253,7 @@ export default function SchoolDetailView() {
                 width: { xs: "100%", md: "auto" },
               }}
             >
-              Academic Year {school.academicYear || "2024-25"}
+              Academic Year {academicYear || school.academicYear || "2024-25"}
             </Typography>
           </Box>
         </Box>
