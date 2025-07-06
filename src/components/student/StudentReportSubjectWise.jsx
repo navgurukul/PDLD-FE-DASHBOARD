@@ -279,8 +279,14 @@ const StudentReportSubjectWise = ({ academicData, syllabusMonth, maxMarks, statu
 
           return (
             <span
-              className={`px-2 py-1 text-xs font-medium  ${statusClass}`}
-              style={{ display: "inline-block", textAlign: "left", borderRadius: "4px" }}
+              className={`px-2 py-1 text-xs ${statusClass}`}
+              style={{ 
+                display: "inline-block", 
+                textAlign: "left", 
+                borderRadius: "4px",
+                fontWeight: 400,
+                fontFamily: "Work Sans"
+              }}
             >
               {value}
             </span>

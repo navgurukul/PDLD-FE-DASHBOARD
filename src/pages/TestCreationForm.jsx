@@ -1279,7 +1279,16 @@ const TestCreationForm = () => {
                     required
                   />
                   <div className="mt-1">
-                    <span className="text-sm text-[#483D8B]-700">Max Score upper limit is 100</span>
+                    <div
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        color: "#483D8B",
+                        fontSize: "14px",
+                      }}
+                    >
+                      Max Score upper limit is 100
+                    </div>
                   </div>
                 </div>
               )}

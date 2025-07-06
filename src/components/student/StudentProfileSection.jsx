@@ -45,11 +45,8 @@ const StudentProfileView = () => {
 
   // Download modal states
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
-  const [academicData, setAcademicData] = useState({
-    aggregate: [],
-    subjectwise: [],
-    remedial: [],
-  });
+  const [activeAcademicTab, setActiveAcademicTab] = useState("aggregate"); // Track which academic sub-tab is active
+  
 
   // Format date helper function
   const formatDate = (dateString) => {
@@ -78,34 +75,9 @@ const StudentProfileView = () => {
     setTabValue(newValue);
   };
 
-  // Fetch academic performance data
-  const fetchAcademicData = async () => {
-    try {
-      // Fetch aggregate data
-      const aggregateResponse = await apiInstance.get(`/student/academic/aggregate/${studentId}`);
-
-      // Fetch subjectwise data
-      const subjectwiseResponse = await apiInstance.get(
-        `/student/academic/subjectwise/${studentId}`
-      );
-
-      // Fetch remedial data
-      const remedialResponse = await apiInstance.get(`/student/academic/remedial/${studentId}`);
-
-      setAcademicData({
-        aggregate: aggregateResponse.data?.success ? aggregateResponse.data.data || [] : [],
-        subjectwise: subjectwiseResponse.data?.success ? subjectwiseResponse.data.data || [] : [],
-        remedial: remedialResponse.data?.success ? remedialResponse.data.data || [] : [],
-      });
-    } catch (error) {
-      console.error("Error fetching academic data:", error);
-      // Set empty data if API calls fail
-      setAcademicData({
-        aggregate: [],
-        subjectwise: [],
-        remedial: [],
-      });
-    }
+  // Handle academic sub-tab change from StudentAcademics component
+  const handleAcademicTabChange = (activeTab, data) => {
+    setActiveAcademicTab(activeTab);
   };
 
   // Fetch student profile data
@@ -147,7 +119,7 @@ const StudentProfileView = () => {
         });
 
         // Fetch academic data after getting student profile
-        await fetchAcademicData();
+        
       } else {
         toast.error("Failed to load student profile. Please try again.");
         setError("Unable to fetch student data. Please try again.");
@@ -193,10 +165,25 @@ const StudentProfileView = () => {
       setIsLoading(true);
       toast.info(`Generating ${format.toUpperCase()} report for ${student.fullName}...`);
 
+      // Determine actual report type based on current tab and user selection
+      let actualReportType = reportType;
+      
+      // If user selected comprehensive, use current academic tab to determine what to include
+      if (reportType === "comprehensive") {
+        // When on academics tab (tabValue 1), use the active academic sub-tab
+        if (tabValue === 1) {
+          // Include the active academic tab + remedial data
+          actualReportType = `${activeAcademicTab}+remedial`;
+        } else {
+          // If on overview tab, include all data (keep comprehensive)
+          actualReportType = "comprehensive";
+        }
+      }
+
       if (format === "csv") {
-        handleDownloadCSV(reportType);
+        handleDownloadCSV(actualReportType);
       } else {
-        handleDownloadPDF(reportType);
+        handleDownloadPDF(actualReportType);
       }
     } catch (error) {
       console.error("Error downloading report:", error);
@@ -206,144 +193,227 @@ const StudentProfileView = () => {
     }
   };
 
+  // Helper to process academic data similar to StudentAcademics component
+  const processAcademicData = () => {
+    if (!student?.academic?.months) return { aggregate: [], subjectwise: [], remedial: [] };
+
+    const aggregateData = [];
+    const subjectwiseData = [];
+    const remedialData = [];
+
+    // Get all unique subjects from syllabus tests
+    const allSubjects = new Set();
+    student.academic.months.forEach((monthData) => {
+      monthData.tests.forEach((test) => {
+        if (test.testType === "SYLLABUS" && test.subject) {
+          allSubjects.add(test.subject === "Maths" ? "Mathematics" : test.subject);
+        }
+      });
+    });
+
+    student.academic.months.forEach((monthData) => {
+      // Group syllabus tests by test tag for aggregate view
+      const syllabusTests = monthData.tests.filter((test) => test.testType === "SYLLABUS");
+      
+      if (syllabusTests.length > 0) {
+        const testsByTag = {};
+        
+        syllabusTests.forEach((test) => {
+          const testTag = test.testTag || "Monthly";
+          if (!testsByTag[testTag]) {
+            testsByTag[testTag] = {
+              tests: [],
+              subjectScores: {},
+              totalScore: 0,
+              totalMaxScore: 0,
+            };
+          }
+          
+          testsByTag[testTag].tests.push(test);
+          
+          const subjectName = test.subject === "Maths" ? "Mathematics" : test.subject;
+          if (subjectName && test.score !== null) {
+            testsByTag[testTag].subjectScores[subjectName] = test.score;
+            testsByTag[testTag].totalScore += test.score;
+            testsByTag[testTag].totalMaxScore += test.maxScore;
+          }
+        });
+
+        // Create aggregate entries
+        Object.entries(testsByTag).forEach(([tag, data]) => {
+          const percentage = data.totalMaxScore > 0 ? Math.round((data.totalScore / data.totalMaxScore) * 100) : 0;
+          const grade = percentage >= 85 ? "A" : percentage >= 60 ? "B" : percentage >= 45 ? "C" : percentage >= 33 ? "D" : "E";
+          
+          aggregateData.push({
+            testType: tag,
+            maxMarks: data.tests[0]?.maxScore || 100,
+            overallPercentage: percentage,
+            grade: grade,
+            ...data.subjectScores
+          });
+        });
+      }
+
+      // Process individual tests for subjectwise view
+      syllabusTests.forEach((test) => {
+        const testDate = new Date(test.testDate);
+        const day = testDate.getDate();
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = monthNames[testDate.getMonth()];
+        const year = testDate.getFullYear().toString().substr(-2);
+        const formattedDate = `${day} ${month}' ${year}`;
+        
+        let testStatus = "Absent";
+        if (test.score !== null) {
+          testStatus = test.passStatus ? "Pass" : "Fail";
+        }
+
+        subjectwiseData.push({
+          name: test.testName,
+          type: test.testTag,
+          date: formattedDate,
+          maxMarks: test.maxScore,
+          marksSecured: test.score !== null ? test.score : 0,
+          status: testStatus
+        });
+      });
+
+      // Process remedial tests
+      const remedialTests = monthData.tests.filter((test) => test.testType === "REMEDIAL");
+      remedialTests.forEach((test) => {
+        const testDate = new Date(test.testDate);
+        const day = testDate.getDate();
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = monthNames[testDate.getMonth()];
+        const year = testDate.getFullYear().toString().substr(-2);
+        const formattedDate = `${day} ${month}' ${year}`;
+
+        remedialData.push({
+          testName: test.testName || `${test.subject} Remedial`,
+          subject: test.subject,
+          examDate: formattedDate,
+          grade: test.grade || "N/A"
+        });
+      });
+    });
+
+    return { 
+      aggregate: aggregateData, 
+      subjectwise: subjectwiseData, 
+      remedial: remedialData,
+      allSubjects: Array.from(allSubjects)
+    };
+  };
+
   // Download report as CSV
   const handleDownloadCSV = (reportType) => {
     let csvContent = "";
     let filename = "";
+    
+    const academicData = processAcademicData();
 
-    if (reportType === "aggregate" || reportType === "comprehensive") {
-      // Aggregate Report CSV
-      const aggregateHeaders = [
-        "Test Name",
-        "Test Date",
-        "Total Marks",
-        "Obtained Marks",
-        "Percentage",
-        "Grade",
-        "Rank",
-      ];
+    // Add student info header
+    csvContent += `STUDENT INFORMATION\n`;
+    csvContent += `Student Name,${student.fullName}\n`;
+    csvContent += `Class,${student.class}\n`;
+    csvContent += `School,${schoolName || "N/A"}\n`;
+    csvContent += `Father's Name,${student.fatherName || "N/A"}\n`;
+    csvContent += `Mother's Name,${student.motherName || "N/A"}\n`;
+    csvContent += `Date of Birth,${formatDate(student.dob)}\n`;
+    csvContent += `Academic Year,${student.academic?.year || "2024-25"}\n\n`;
 
+    // Handle different report types
+    const includeAggregate = reportType === "aggregate" || reportType === "comprehensive" || reportType === "aggregate+remedial";
+    const includeSubjectwise = reportType === "subjectwise" || reportType === "comprehensive" || reportType === "subjectwise+remedial";
+    const includeRemedial = reportType === "remedial" || reportType === "comprehensive" || reportType.includes("+remedial");
+
+    if (includeAggregate) {
+      // Create dynamic headers based on available subjects - subjects after Max Marks
+      const subjectHeaders = academicData.allSubjects || [];
+      const aggregateHeaders = ["Test Type", "Max Marks", ...subjectHeaders, "Overall %", "Grade"];
+      
       csvContent += "AGGREGATE PERFORMANCE REPORT\n";
-      csvContent += `Student: ${student.fullName}\n`;
-      csvContent += `Class: ${student.class}\n`;
-      csvContent += `School: ${schoolName}\n\n`;
       csvContent += aggregateHeaders.join(",") + "\n";
-
+      
       academicData.aggregate.forEach((test) => {
         const rowData = [
-          test.testName || "N/A",
-          formatDate(test.testDate) || "N/A",
-          test.totalMarks || "N/A",
-          test.obtainedMarks || "N/A",
-          test.percentage || "N/A",
-          test.grade || "N/A",
-          test.rank || "N/A",
+          test.testType || "N/A",
+          test.maxMarks || "N/A"
         ];
-        csvContent +=
-          rowData
-            .map((cell) => {
-              if (cell && cell.toString().includes(",")) {
-                return `"${cell}"`;
-              }
-              return cell;
-            })
-            .join(",") + "\n";
+        
+        // Add subject scores after Max Marks
+        subjectHeaders.forEach(subject => {
+          rowData.push(test[subject] || "N/A");
+        });
+        
+        // Add Overall % and Grade at the end
+        rowData.push(test.overallPercentage + "%");
+        rowData.push(test.grade || "N/A");
+        
+        csvContent += rowData.map((cell) => (cell && cell.toString().includes(",") ? `"${cell}"` : cell)).join(",") + "\n";
       });
     }
 
-    if (reportType === "subjectwise" || reportType === "comprehensive") {
-      if (csvContent) csvContent += "\n\n";
-
-      // Subjectwise Report CSV
+    if (includeSubjectwise) {
+      if (csvContent && !csvContent.endsWith("\n\n")) csvContent += "\n\n";
       const subjectwiseHeaders = [
-        "Subject",
         "Test Name",
-        "Test Date",
-        "Max Marks",
-        "Obtained Marks",
-        "Percentage",
-        "Grade",
+        "Test Type", 
+        "Date of Test",
+        "Maximum Marks",
+        "Marks Secured",
+        "Status"
       ];
-
       csvContent += "SUBJECT-WISE PERFORMANCE REPORT\n";
-      if (reportType === "subjectwise") {
-        csvContent += `Student: ${student.fullName}\n`;
-        csvContent += `Class: ${student.class}\n`;
-        csvContent += `School: ${schoolName}\n\n`;
-      }
       csvContent += subjectwiseHeaders.join(",") + "\n";
-
-      academicData.subjectwise.forEach((subject) => {
+      
+      academicData.subjectwise.forEach((test) => {
         const rowData = [
-          subject.subjectName || "N/A",
-          subject.testName || "N/A",
-          formatDate(subject.testDate) || "N/A",
-          subject.maxMarks || "N/A",
-          subject.obtainedMarks || "N/A",
-          subject.percentage || "N/A",
-          subject.grade || "N/A",
+          test.name || "N/A",
+          test.type || "N/A",
+          test.date || "N/A",
+          test.maxMarks || "N/A",
+          test.marksSecured || "N/A",
+          test.status || "N/A"
         ];
-        csvContent +=
-          rowData
-            .map((cell) => {
-              if (cell && cell.toString().includes(",")) {
-                return `"${cell}"`;
-              }
-              return cell;
-            })
-            .join(",") + "\n";
+        csvContent += rowData.map((cell) => (cell && cell.toString().includes(",") ? `"${cell}"` : cell)).join(",") + "\n";
       });
     }
 
-    if (reportType === "remedial" || reportType === "comprehensive") {
-      if (csvContent) csvContent += "\n\n";
-
-      // Remedial Report CSV
-      const remedialHeaders = ["Subject", "Topic", "Weakness Level", "Recommendation", "Priority"];
-
+    if (includeRemedial) {
+      if (csvContent && !csvContent.endsWith("\n\n")) csvContent += "\n\n";
+      const remedialHeaders = ["Test Name", "Subject", "Exam Date", "Grade"];
       csvContent += "REMEDIAL RECOMMENDATIONS\n";
-      if (reportType === "remedial") {
-        csvContent += `Student: ${student.fullName}\n`;
-        csvContent += `Class: ${student.class}\n`;
-        csvContent += `School: ${schoolName}\n\n`;
-      }
       csvContent += remedialHeaders.join(",") + "\n";
-
+      
       academicData.remedial.forEach((item) => {
         const rowData = [
+          item.testName || "N/A",
           item.subject || "N/A",
-          item.topic || "N/A",
-          item.weaknessLevel || "N/A",
-          item.recommendation || "N/A",
-          item.priority || "N/A",
+          item.examDate || "N/A",
+          item.grade || "N/A"
         ];
-        csvContent +=
-          rowData
-            .map((cell) => {
-              if (cell && cell.toString().includes(",")) {
-                return `"${cell}"`;
-              }
-              return cell;
-            })
-            .join(",") + "\n";
+        csvContent += rowData.map((cell) => (cell && cell.toString().includes(",") ? `"${cell}"` : cell)).join(",") + "\n";
       });
     }
 
-    // Set filename based on report type
-    const reportTypeText =
-      reportType === "comprehensive"
-        ? "Comprehensive"
-        : reportType === "aggregate"
-        ? "Aggregate"
-        : reportType === "subjectwise"
-        ? "SubjectWise"
-        : "Remedial";
+    // Set filename based on what's included
+    let reportTypeText = "Comprehensive";
+    if (reportType === "aggregate+remedial") {
+      reportTypeText = "Aggregate_with_Remedial";
+    } else if (reportType === "subjectwise+remedial") {
+      reportTypeText = "Subjectwise_with_Remedial";
+    } else if (reportType === "aggregate") {
+      reportTypeText = "Aggregate";
+    } else if (reportType === "subjectwise") {
+      reportTypeText = "Subjectwise";
+    } else if (reportType === "remedial") {
+      reportTypeText = "Remedial";
+    }
+    
+    filename = `${student.fullName}_${reportTypeText}_Report_${new Date().toISOString().split("T")[0]}.csv`;
 
-    filename = `${student.fullName}_${reportTypeText}_Report_${
-      new Date().toISOString().split("T")[0]
-    }.csv`;
-
-    // Create download link
+    // Download
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -351,8 +421,6 @@ const StudentProfileView = () => {
     link.setAttribute("download", filename);
     document.body.appendChild(link);
     link.click();
-
-    // Cleanup
     setTimeout(() => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
@@ -363,23 +431,32 @@ const StudentProfileView = () => {
   // Download report as PDF
   const handleDownloadPDF = (reportType) => {
     const printWindow = window.open("", "_blank");
-
     const currentDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+    
+    // Handle different report types
+    const includeAggregate = reportType === "aggregate" || reportType === "comprehensive" || reportType === "aggregate+remedial";
+    const includeSubjectwise = reportType === "subjectwise" || reportType === "comprehensive" || reportType === "subjectwise+remedial";
+    const includeRemedial = reportType === "remedial" || reportType === "comprehensive" || reportType.includes("+remedial");
 
-    const reportTypeText =
-      reportType === "comprehensive"
-        ? "Comprehensive Academic"
-        : reportType === "aggregate"
-        ? "Aggregate Performance"
-        : reportType === "subjectwise"
-        ? "Subject-wise Performance"
-        : "Remedial";
+    let reportTypeText = "Comprehensive Academic";
+    if (reportType === "aggregate+remedial") {
+      reportTypeText = "Aggregate Performance with Remedial";
+    } else if (reportType === "subjectwise+remedial") {
+      reportTypeText = "Subject-wise Performance with Remedial";
+    } else if (reportType === "aggregate") {
+      reportTypeText = "Aggregate Performance";
+    } else if (reportType === "subjectwise") {
+      reportTypeText = "Subject-wise Performance";
+    } else if (reportType === "remedial") {
+      reportTypeText = "Remedial Recommendations";
+    }
 
-    // Generate HTML content for the PDF
+    const academicData = processAcademicData();
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -603,171 +680,118 @@ const StudentProfileView = () => {
           <div class="student-info">
             <h3>Student Information</h3>
             <div class="info-grid">
-              <div class="info-item">
-                <strong>Full Name:</strong>
-                ${student.fullName}
-              </div>
-              <div class="info-item">
-                <strong>Class:</strong>
-                Class ${student.class}
-              </div>
-              <div class="info-item">
-                <strong>Father's Name:</strong>
-                ${student.fatherName || "N/A"}
-              </div>
-              <div class="info-item">
-                <strong>Mother's Name:</strong>
-                ${student.motherName || "N/A"}
-              </div>
-              <div class="info-item">
-                <strong>Date of Birth:</strong>
-                ${formatDate(student.dob)}
-              </div>
-              <div class="info-item">
-                <strong>School:</strong>
-                ${schoolName || "N/A"}
-              </div>
+              <div class="info-item"><strong>Full Name:</strong>${student.fullName}</div>
+              <div class="info-item"><strong>Class:</strong>Class ${student.class}</div>
+              <div class="info-item"><strong>Father's Name:</strong>${student.fatherName || "N/A"}</div>
+              <div class="info-item"><strong>Mother's Name:</strong>${student.motherName || "N/A"}</div>
+              <div class="info-item"><strong>Date of Birth:</strong>${formatDate(student.dob)}</div>
+              <div class="info-item"><strong>School:</strong>${schoolName || "N/A"}</div>
             </div>
           </div>
-          
           ${
-            (reportType === "aggregate" || reportType === "comprehensive") &&
-            academicData.aggregate.length > 0
-              ? `
-          <div class="section">
-            <h2>Aggregate Performance</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Test Name</th>
-                  <th>Test Date</th>
-                  <th>Total Marks</th>
-                  <th>Obtained Marks</th>
-                  <th>Percentage</th>
-                  <th>Grade</th>
-                  <th>Rank</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${academicData.aggregate
-                  .map((test) => {
-                    const percentage = parseFloat(test.percentage);
-                    const scoreClass =
-                      percentage < 40 ? "low-score" : percentage >= 80 ? "high-score" : "";
-
-                    return `
-                    <tr>
-                      <td>${test.testName || "N/A"}</td>
-                      <td>${formatDate(test.testDate) || "N/A"}</td>
-                      <td>${test.totalMarks || "N/A"}</td>
-                      <td>${test.obtainedMarks || "N/A"}</td>
-                      <td class="${scoreClass}">${
-                      test.percentage ? test.percentage + "%" : "N/A"
-                    }</td>
-                      <td>${test.grade || "N/A"}</td>
-                      <td>${test.rank || "N/A"}</td>
-                    </tr>
-                  `;
-                  })
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-          `
-              : ""
-          }
-          
-          ${
-            (reportType === "subjectwise" || reportType === "comprehensive") &&
-            academicData.subjectwise.length > 0
-              ? `
-          <div class="section">
-            <h2>Subject-wise Performance</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Subject</th>
-                  <th>Test Name</th>
-                  <th>Test Date</th>
-                  <th>Max Marks</th>
-                  <th>Obtained Marks</th>
-                  <th>Percentage</th>
-                  <th>Grade</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${academicData.subjectwise
-                  .map((subject) => {
-                    const percentage = parseFloat(subject.percentage);
-                    const scoreClass =
-                      percentage < 40 ? "low-score" : percentage >= 80 ? "high-score" : "";
-
-                    return `
-                    <tr>
-                      <td>${subject.subjectName || "N/A"}</td>
-                      <td>${subject.testName || "N/A"}</td>
-                      <td>${formatDate(subject.testDate) || "N/A"}</td>
-                      <td>${subject.maxMarks || "N/A"}</td>
-                      <td>${subject.obtainedMarks || "N/A"}</td>
-                      <td class="${scoreClass}">${
-                      subject.percentage ? subject.percentage + "%" : "N/A"
-                    }</td>
-                      <td>${subject.grade || "N/A"}</td>
-                    </tr>
-                  `;
-                  })
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-          `
-              : ""
-          }
-          
-          ${
-            (reportType === "remedial" || reportType === "comprehensive") &&
-            academicData.remedial.length > 0
-              ? `
-          <div class="section">
-            <h2>Remedial Recommendations</h2>
-            ${academicData.remedial
-              .map(
-                (item) => `
-              <div class="remedial-item">
-                <h4>${item.subject || "General"} - ${item.topic || "N/A"}</h4>
-                <p><strong>Weakness Level:</strong> ${item.weaknessLevel || "N/A"}</p>
-                <p><strong>Recommendation:</strong> ${item.recommendation || "N/A"}</p>
-                <p><strong>Priority:</strong> ${item.priority || "N/A"}</p>
-              </div>
+  includeAggregate && academicData.aggregate.length > 0
+    ? `
+            <div class="section">
+              <h2>Aggregate Performance</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Test Type</th>
+                    <th>Max Marks</th>
+                    ${academicData.allSubjects.map(subject => `<th>${subject}</th>`).join("")}
+                    <th>Overall %</th>
+                    <th>Grade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${academicData.aggregate
+                    .map(
+                      (test) => `
+                        <tr>
+                          <td>${test.testType || "N/A"}</td>
+                          <td>${test.maxMarks || "N/A"}</td>
+                          ${academicData.allSubjects.map(subject => `<td>${test[subject] || "N/A"}</td>`).join("")}
+                          <td class="${test.overallPercentage < 40 ? 'low-score' : test.overallPercentage > 80 ? 'high-score' : ''}">${test.overallPercentage}%</td>
+                          <td>${test.grade || "N/A"}</td>
+                        </tr>
+                      `
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
             `
-              )
-              .join("")}
-          </div>
-          `
-              : ""
-          }
-          
+    : ""
+}
+          ${
+  includeSubjectwise && academicData.subjectwise.length > 0
+    ? `
+            <div class="section">
+              <h2>Subject-wise Performance</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Test Name</th>
+                    <th>Test Type</th>
+                    <th>Date of Test</th>
+                    <th>Maximum Marks</th>
+                    <th>Marks Secured</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${academicData.subjectwise
+                    .map(
+                      (test) => `
+                        <tr>
+                          <td>${test.name || "N/A"}</td>
+                          <td>${test.type || "N/A"}</td>
+                          <td>${test.date || "N/A"}</td>
+                          <td>${test.maxMarks || "N/A"}</td>
+                          <td class="${test.marksSecured < (test.maxMarks * 0.4) ? 'low-score' : test.marksSecured > (test.maxMarks * 0.8) ? 'high-score' : ''}">${test.marksSecured || "N/A"}</td>
+                          <td><span style="color: ${test.status === 'Pass' ? '#4CAF50' : test.status === 'Fail' ? '#FF0000' : '#666'}">${test.status || "N/A"}</span></td>
+                        </tr>
+                      `
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
+            `
+    : ""
+}
+          ${
+  includeRemedial && academicData.remedial.length > 0
+    ? `
+            <div class="section">
+              <h2>Remedial Recommendations</h2>
+              ${academicData.remedial
+                .map(
+                  (item) => `
+                <div class="remedial-item">
+                  <h4>${item.subject || "General"} - ${item.testName || "N/A"}</h4>
+                  <p><strong>Exam Date:</strong> ${item.examDate || "N/A"}</p>
+                  <p><strong>Grade:</strong> ${item.grade || "N/A"}</p>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+            `
+    : ""
+}
           <div class="summary">
             <h3>Report Summary</h3>
             <div class="summary-grid">
-              <div class="summary-item">
-                <strong>Report Type:</strong>
-                ${reportTypeText}
-              </div>
-              <div class="summary-item">
-                <strong>Academic Year:</strong>
-                ${student.academic?.year || "2024-25"}
-              </div>
-              <div class="summary-item">
-                <strong>Generated:</strong>
-                ${currentDate}
-              </div>
+              <div class="summary-item"><strong>Report Type:</strong>${reportTypeText}</div>
+              <div class="summary-item"><strong>Academic Year:</strong>${student.academic?.year || "2024-25"}</div>
+              <div class="summary-item"><strong>Generated:</strong>${currentDate}</div>
             </div>
           </div>
           
           <div class="footer">
             <p>This report is generated automatically from the School Performance System</p>
-            <p>© 2024-25 Academic Performance Tracking System</p>
+            <p>© ${student.academic?.year || "2024-25"} Academic Performance Tracking System</p>
           </div>
         </div>
       </body>
@@ -873,12 +897,14 @@ const StudentProfileView = () => {
       <Box
         sx={{
           display: "flex",
+          flexDirection: { xs: "column", md: "row" },
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "flex-start", md: "center" },
+          gap: { xs: 2, md: 0 },
           marginTop: "24px 0px",
         }}
       >
-        <Box sx={{ display: "flex" }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: { xs: 1, sm: 2 } }}>
           <h5 className="text-lg font-bold text-[#2F4F4F] mr-4">{student.fullName}</h5>
           <Box
             sx={{
@@ -903,7 +929,7 @@ const StudentProfileView = () => {
 
         {/* Show Academic Year and Download Report button based on tab */}
         {student.academic && (
-          <div className="flex">
+          <div className="flex" style={{ flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
             <Typography
               variant="subtitle1"
               sx={{
@@ -914,7 +940,8 @@ const StudentProfileView = () => {
                 height: "48px",
                 display: "flex",
                 alignItems: "center",
-                marginRight: tabValue === 1 ? "16px" : 0,
+                marginRight: { xs: 0, md: tabValue === 1 ? "16px" : 0 },
+                marginBottom: { xs: tabValue === 1 ? "8px" : 0, md: 0 }
               }}
             >
               Academic Year {student.academic.year || "2024-25"}
@@ -953,8 +980,10 @@ const StudentProfileView = () => {
               <Box
                 sx={{
                   display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
                   justifyContent: "space-between",
-                  alignItems: "center",
+                  alignItems: { xs: "flex-start", sm: "center" },
+                  gap: { xs: 2, sm: 0 },
                   mb: 4, // 32px bottom margin
                 }}
               >
@@ -969,9 +998,16 @@ const StudentProfileView = () => {
               </Box>
 
               {/* First Row */}
-              <Box sx={{ display: "flex", mb: 3 }}>
+              <Box 
+                sx={{ 
+                  display: { xs: "grid", md: "flex" },
+                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                  gap: { xs: 2, sm: 3, md: 0 },
+                  mb: 3 
+                }}
+              >
                 {/* Father's Name */}
-                <Box sx={{ width: "25%", pr: 2 }}>
+                <Box sx={{ width: { md: "25%" }, pr: { md: 2 } }}>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                     Father's Name
                   </Typography>
@@ -981,7 +1017,7 @@ const StudentProfileView = () => {
                 </Box>
 
                 {/* Mother's Name */}
-                <Box sx={{ width: "25%", pr: 2 }}>
+                <Box sx={{ width: { md: "25%" }, pr: { md: 2 } }}>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                     Mother's Name
                   </Typography>
@@ -991,7 +1027,7 @@ const StudentProfileView = () => {
                 </Box>
 
                 {/* Date of Birth */}
-                <Box sx={{ width: "25%", pr: 2 }}>
+                <Box sx={{ width: { md: "25%" }, pr: { md: 2 } }}>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                     Date of Birth
                   </Typography>
@@ -1001,7 +1037,7 @@ const StudentProfileView = () => {
                 </Box>
 
                 {/* Hostel */}
-                <Box sx={{ width: "25%" }}>
+                <Box sx={{ width: { md: "25%" } }}>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                     Hostel
                   </Typography>
@@ -1012,9 +1048,15 @@ const StudentProfileView = () => {
               </Box>
 
               {/* Second Row */}
-              <Box sx={{ display: "flex" }}>
+              <Box 
+                sx={{ 
+                  display: { xs: "grid", md: "flex" },
+                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                  gap: { xs: 2, sm: 3, md: 0 }
+                }}
+              >
                 {/* Aadhar Id */}
-                <Box sx={{ width: "25%", pr: 2 }}>
+                <Box sx={{ width: { md: "25%" }, pr: { md: 2 } }}>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                     Aadhar Id
                   </Typography>
@@ -1024,7 +1066,7 @@ const StudentProfileView = () => {
                 </Box>
 
                 {/* Class */}
-                <Box sx={{ width: "25%", pr: 2 }}>
+                <Box sx={{ width: { md: "25%" }, pr: { md: 2 } }}>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                     Class
                   </Typography>
@@ -1034,7 +1076,7 @@ const StudentProfileView = () => {
                 </Box>
 
                 {(student.class === "11" || student.class === "12") && (
-                  <Box sx={{ width: "25%", pr: 2 }}>
+                  <Box sx={{ width: { md: "25%" }, pr: { md: 2 } }}>
                     <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                       Stream
                     </Typography>
@@ -1045,7 +1087,7 @@ const StudentProfileView = () => {
                 )}
                 {/* Optional Subjects for class 9-12 */}
                 {["9", "10", "11", "12"].includes(student.class) && (
-                  <Box sx={{ width: "50%", pr: 2 }}>
+                  <Box sx={{ width: { md: "50%" }, pr: { md: 2 } }}>
                     {" "}
                     {/* Increased width to 50% */}
                     <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
@@ -1082,7 +1124,7 @@ const StudentProfileView = () => {
                   </Box>
                 )}
                 {/* School Name */}
-                <Box sx={{ width: "50%" }}> 
+                <Box sx={{ width: { md: "50%" } }}> 
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                     School Name
                   </Typography>
@@ -1118,6 +1160,7 @@ const StudentProfileView = () => {
           studentId={studentId}
           schoolId={schoolId}
           academicData={student.academic}
+          onTabChange={handleAcademicTabChange}
         />
       </TabPanel>
 
