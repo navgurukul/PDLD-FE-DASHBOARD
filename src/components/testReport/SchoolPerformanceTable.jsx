@@ -201,6 +201,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           passRate: school.successRate, // Map successRate to passRate
           submitted: school.status === "submitted",
           totalStudents: school.totalStudents,
+          totalStudentsInClass: school.totalStudentsInClass, // For pending schools
           presentStudents: school.presentStudents,
           absentStudents: school.absentStudents,
           averageScore: school.averageScore,
@@ -393,38 +394,39 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   }, [filteredSchools, sortConfig]);
 
   // Format table data for MUIDataTable
-  const tableData = sortedSchools.map((school) => ({
-    id: school.id,
-    name: school.name || school.schoolName || "-",
-    status: school.submitted ? "Submitted" : "Pending",
-    totalStudents:
-      school.totalStudents === 0 ? "0" : school.totalStudents != null ? school.totalStudents : "-",
-    presentStudents:
-      school.presentStudents === 0
-        ? "0"
-        : school.presentStudents != null
-        ? school.presentStudents
-        : "-",
-    absentStudents:
-      school.absentStudents === 0
-        ? "0"
-        : school.absentStudents != null
-        ? school.absentStudents
-        : "-",
-    averageScore:
-      school.averageScore === 0 ? "0" : school.averageScore != null ? school.averageScore : "-",
-    passRate:
-      school.passRate === 0
-        ? "0%"
-        : school.passRate != null
-        ? `${school.passRate}%`
-        : school.successRate === 0
-        ? "0%"
-        : school.successRate != null
-        ? `${school.successRate}%`
-        : "-",
-    submitted: school.submitted,
-  }));
+  const tableData = sortedSchools.map((school) => {
+    const isPending = !school.submitted;
+    
+    return {
+      id: school.id,
+      name: school.name || school.schoolName || "-",
+      status: school.submitted ? "Submitted" : "Pending",
+      totalStudents: isPending 
+        ? (school.totalStudentsInClass != null ? school.totalStudentsInClass : "-")
+        : (school.totalStudents === 0 ? "0" : school.totalStudents != null ? school.totalStudents : "-"),
+      presentStudents: isPending 
+        ? "-"
+        : (school.presentStudents === 0 ? "0" : school.presentStudents != null ? school.presentStudents : "-"),
+      absentStudents: isPending 
+        ? "-"
+        : (school.absentStudents === 0 ? "0" : school.absentStudents != null ? school.absentStudents : "-"),
+      averageScore: isPending 
+        ? "-"
+        : (school.averageScore === 0 ? "0" : school.averageScore != null ? school.averageScore : "-"),
+      passRate: isPending 
+        ? "-"
+        : (school.passRate === 0
+          ? "0%"
+          : school.passRate != null
+          ? `${school.passRate}%`
+          : school.successRate === 0
+          ? "0%"
+          : school.successRate != null
+          ? `${school.successRate}%`
+          : "-"),
+      submitted: school.submitted,
+    };
+  });
 
   const resetFilters = () => {
     setSearchQuery("");
