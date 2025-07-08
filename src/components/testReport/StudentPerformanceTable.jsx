@@ -120,6 +120,7 @@ const StudentPerformanceTable = ({
   passThreshold,
   subject,
   schoolName,
+  testName,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -377,8 +378,21 @@ const StudentPerformanceTable = ({
     // Add school name and report info if available
     if (schoolName) {
       csvLines.push(`Student Performance Report`);
-      csvLines.push(`School: ${schoolName}`);
-      csvLines.push(`Generated on: ${currentDate}`);
+      csvLines.push(``); // Empty line
+      
+      // Report Information in single line format
+      let reportInfo = `Report Information: School: ${schoolName}`;
+      if (testName) {
+        reportInfo += `, Test: ${testName}`;
+      }
+      if (subject) {
+        reportInfo += `, Subject: ${subject}`;
+      }
+      if (maxScore) {
+        reportInfo += `, Maximum Marks: ${maxScore}`;
+      }
+      reportInfo += `, Generated on: ${currentDate}`;
+      csvLines.push(reportInfo);
       csvLines.push(""); // Empty line
     }
     
@@ -482,6 +496,26 @@ const StudentPerformanceTable = ({
         .header h1 { color: #2F4F4F; font-size: 22px; margin-bottom: 8px; }
         .header .school-name { color: #2F4F4F; font-size: 16px; font-weight: 600; margin-bottom: 5px; }
         .header .date { color: #666; font-size: 12px; }
+        .report-info { 
+          background-color: #f8f9fa;
+          padding: 12px;
+          margin-bottom: 20px;
+          border-radius: 6px;
+          border: 1px solid #e0e0e0;
+        }
+        .report-info h3 { 
+          color: #2F4F4F;
+          font-size: 14px;
+          margin-bottom: 8px;
+        }
+        .info-item {
+          display: inline-block;
+          color: #666;
+          font-size: 12px;
+        }
+        .info-item strong {
+          color: #2F4F4F;
+        }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
         th { background: #2F4F4F; color: #fff; padding: 8px 6px; border: 1px solid #2F4F4F; }
         td { padding: 6px; border: 1px solid #ddd; }
@@ -492,8 +526,13 @@ const StudentPerformanceTable = ({
     <body>
       <div class="header">
         <h1>Student Performance Report</h1>
-        ${schoolName ? `<div class="school-name">${schoolName}</div>` : ''}
-        <div class="date">Generated on: ${currentDate}</div>
+      </div>
+      
+      <div class="report-info">
+        <h3>Report Information</h3>
+        <div class="info-item">
+          ${schoolName ? `<strong>School:</strong> ${schoolName}, ` : ''}${testName ? `<strong>Test:</strong> ${testName}, ` : ''}${subject ? `<strong>Subject:</strong> ${subject}, ` : ''}${maxScore ? `<strong>Maximum Marks:</strong> ${maxScore}, ` : ''}<strong>Generated on:</strong> ${currentDate}
+        </div>
       </div>
       <table>
         <thead>
@@ -999,6 +1038,7 @@ StudentPerformanceTable.propTypes = {
   testType: PropTypes.string,
   subject: PropTypes.string,
   schoolName: PropTypes.string,
+  testName: PropTypes.string,
 };
 
 StudentPerformanceTable.defaultProps = {
