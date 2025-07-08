@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Button,
   TextField,
@@ -178,6 +178,9 @@ const Reports = () => {
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [selectedClassData, setSelectedClassData] = useState(null);
   const [academicYear, setAcademicYear] = useState("2024-25");
+  const [subjects, setSubjects] = useState([]); // Dynamic subjects from API
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
+  const subjectsFetched = useRef(false); // Track if subjects have been fetched
 
   // State for available blocks and clusters
   const [availableBlocks, setAvailableBlocks] = useState([]);
@@ -246,6 +249,51 @@ const Reports = () => {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
+  // Fetch unique subjects from API
+  const fetchSubjects = async () => {
+    // Prevent multiple calls
+    if (subjectsFetched.current) return;
+    
+    try {
+      setIsLoadingSubjects(true);
+      subjectsFetched.current = true; // Mark as fetching
+      
+      const response = await apiInstance.get('/report/unique-subjects');
+    
+      if (response.data.success && response.data.data && Array.isArray(response.data.data)) {
+        const fetchedSubjects = response.data.data;
+        setSubjects(fetchedSubjects);
+        
+        // Set default selected subject if current selection is not in the list
+        if (fetchedSubjects.length > 0) {
+          if (!fetchedSubjects.includes(selectedSubject)) {
+            setSelectedSubject(fetchedSubjects[0]);
+          }
+        }
+      } else {
+        // Fallback to hardcoded subjects if API fails
+        console.warn('Failed to fetch subjects from API, using fallback');
+        const fallbackSubjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
+        setSubjects(fallbackSubjects);
+        if (!fallbackSubjects.includes(selectedSubject)) {
+          setSelectedSubject(fallbackSubjects[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      // Fallback to hardcoded subjects if API fails
+      const fallbackSubjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
+      setSubjects(fallbackSubjects);
+      if (!fallbackSubjects.includes(selectedSubject)) {
+        setSelectedSubject(fallbackSubjects[0]);
+      }
+      // Only show toast once and only if we haven't shown it before
+      toast.error('Failed to load subjects, using default list');
+    } finally {
+      setIsLoadingSubjects(false);
+    }
+  };
+
   // Extract unique blocks and clusters from the API response
   const extractBlocksAndClusters = (schoolsData) => {
     const blocks = new Set();
@@ -259,6 +307,11 @@ const Reports = () => {
     setAvailableBlocks(Array.from(blocks).sort());
     setAvailableClusters(Array.from(clusters).sort());
   };
+
+  // Fetch subjects on component mount
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   // Fetch schools data from API
   useEffect(() => {
@@ -306,24 +359,27 @@ const Reports = () => {
 
   // Fetch all blocks and clusters for dropdowns (separate API call)
   useEffect(() => {
-    const fetchAllSchoolsForDropdowns = async () => {
-      try {
-        // This could be a separate API endpoint that returns all blocks and clusters
-        // For now, we'll just use the same endpoint with a larger page size
-        const response = await apiInstance.get(
-          `/report/subject-performance/${selectedSubject}?page=1&pageSize=100`
-        );
+    // Only fetch if we have a selected subject and subjects are loaded
+    if (selectedSubject && !isLoadingSubjects) {
+      const fetchAllSchoolsForDropdowns = async () => {
+        try {
+          // This could be a separate API endpoint that returns all blocks and clusters
+          // For now, we'll just use the same endpoint with a larger page size
+          const response = await apiInstance.get(
+            `/report/subject-performance/${selectedSubject}?page=1&pageSize=100`
+          );
 
-        if (response.data.success) {
-          extractBlocksAndClusters(response.data.data.schools);
+          if (response.data.success) {
+            extractBlocksAndClusters(response.data.data.schools);
+          }
+        } catch (error) {
+          console.error("Error fetching dropdown data:", error);
         }
-      } catch (error) {
-        console.error("Error fetching dropdown data:", error);
-      }
-    };
+      };
 
-    fetchAllSchoolsForDropdowns();
-  }, []);
+      fetchAllSchoolsForDropdowns();
+    }
+  }, [selectedSubject, isLoadingSubjects]); // Add proper dependencies
 
   // Custom Table Component
   const CustomTable = ({ data }) => {
@@ -1086,9 +1142,6 @@ const Reports = () => {
     };
   });
 
-  // Available subjects
-  const subjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
-
   // Filter schools by search query and limit to current page's data
   const filteredData = useMemo(() => {
     let data = searchQuery
@@ -1153,6 +1206,26 @@ const Reports = () => {
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
                   displayEmpty
+                  disabled={isLoadingSubjects || subjects.length === 0}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300, // Maximum height for dropdown
+                        overflow: 'auto', // Enable scrolling
+                        borderRadius: "8px",
+                        boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.15)",
+                      }
+                    },
+                    anchorOrigin: {
+                      vertical: "bottom",
+                      horizontal: "left",
+                    },
+                    transformOrigin: {
+                      vertical: "top",
+                      horizontal: "left",
+                    },
+                    getContentAnchorEl: null, // Prevents automatic positioning
+                  }}
                   sx={{
                     height: "48px",
                     borderRadius: "8px",
@@ -1171,11 +1244,17 @@ const Reports = () => {
                     },
                   }}
                 >
-                  {subjects.map((subject) => (
-                    <MenuItem key={subject} value={subject}>
-                      {subject}
-                    </MenuItem>
-                  ))}
+                  {isLoadingSubjects ? (
+                    <MenuItem disabled>Loading subjects...</MenuItem>
+                  ) : subjects.length === 0 ? (
+                    <MenuItem disabled>No subjects available</MenuItem>
+                  ) : (
+                    subjects.map((subject) => (
+                      <MenuItem key={subject} value={subject}>
+                        {subject}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             </div>
@@ -1229,6 +1308,25 @@ const Reports = () => {
                     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                     .join(" ");
                 }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300, // Maximum height for dropdown
+                      overflow: 'auto', // Enable scrolling
+                      borderRadius: "8px",
+                      boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.15)",
+                    }
+                  },
+                  anchorOrigin: {
+                    vertical: "bottom",
+                    horizontal: "left",
+                  },
+                  transformOrigin: {
+                    vertical: "top",
+                    horizontal: "left",
+                  },
+                  getContentAnchorEl: null, // Prevents automatic positioning
+                }}
                 sx={{
                   height: "48px",
                   borderRadius: "8px",
@@ -1272,6 +1370,25 @@ const Reports = () => {
                     .split(" ")
                     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                     .join(" ");
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300, // Maximum height for dropdown
+                      overflow: 'auto', // Enable scrolling
+                      borderRadius: "8px",
+                      boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.15)",
+                    }
+                  },
+                  anchorOrigin: {
+                    vertical: "bottom",
+                    horizontal: "left",
+                  },
+                  transformOrigin: {
+                    vertical: "top",
+                    horizontal: "left",
+                  },
+                  getContentAnchorEl: null, // Prevents automatic positioning
                 }}
                 sx={{
                   height: "48px",
