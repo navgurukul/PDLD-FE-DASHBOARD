@@ -34,6 +34,12 @@ import DownloadModal from "../../components/modal/DownloadModal";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { Search } from "lucide-react";
 
+// Utility function to convert school names to Title Case
+const toTitleCase = (str) => {
+  if (!str || typeof str !== 'string') return str;
+  return str.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+};
+
 // Create MUI theme to match TestListTable
 const theme = createTheme({
   typography: {
@@ -111,7 +117,7 @@ const theme = createTheme({
             color: "white",
           },
           "&:hover": {
-            backgroundColor: "#A3BFBF ", // Hover color
+            backgroundColor: "#A3BFBF", // Hover color
           },
         },
       },
@@ -121,6 +127,7 @@ const theme = createTheme({
 
 const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   const navigate = useNavigate();
+  
   // State for API data
   const [schools, setSchools] = useState([]);
   const [totalSchools, setTotalSchools] = useState(0);
@@ -193,8 +200,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         // Transform API data to match the component's expected format
         const formattedSchools = apiSchools.map((school) => ({
           id: school.id,
-          name: school.schoolName,
-          schoolName: school.schoolName,
+          name: toTitleCase(school.schoolName),
+          schoolName: toTitleCase(school.schoolName),
           blockName: school.blockName,
           clusterName: school.clusterName,
           udiseCode: school.udiseCode,
@@ -229,7 +236,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   // Filter schools based on search query and status
   const filteredSchools = useMemo(() => {
     return schools.filter((school) => {
-      const schoolName = (school.name || school.schoolName || "").toLowerCase();
+      const schoolName = toTitleCase(school.name || school.schoolName || "").toLowerCase();
       const matchesSearch = schoolName.includes(searchQuery.toLowerCase());
       const matchesStatus =
         !statusFilter ||
@@ -269,6 +276,26 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   };
 
   const handleDownloadCSV = (data) => {
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    
+    // Create CSV content with test information header (matching StudentPerformanceTable format)
+    const csvLines = [];
+    csvLines.push(`School Performance Report`);
+    csvLines.push(``); // Empty line
+    
+    // Report Information in single line format
+    let reportInfo = `Report Information: Test: ${testNameVal}`;
+    if (maxScore) {
+      reportInfo += `, Maximum Marks: ${maxScore}`;
+    }
+    reportInfo += `, Records in Report: ${data.length}, Generated on: ${currentDate}`;
+    csvLines.push(reportInfo);
+    csvLines.push(""); // Empty line before table data
+    
     const headers = [
       "School Name",
       "Status",
@@ -278,26 +305,28 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       "Average Score",
       "Pass Percentage",
     ];
-    let csvContent = headers.join(",") + "\n";
+    csvLines.push(headers.join(","));
+    
     data.forEach((row) => {
-      csvContent +=
-        [
-          row.name,
-          row.status,
-          row.totalStudents,
-          row.presentStudents,
-          row.absentStudents,
-          row.averageScore,
-          row.passRate,
-        ].join(",") + "\n";
+      csvLines.push([
+        toTitleCase(row.name),
+        row.status,
+        row.totalStudents,
+        row.presentStudents,
+        row.absentStudents,
+        row.averageScore,
+        row.passRate,
+      ].join(","));
     });
+    
+    const csvContent = csvLines.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute(
       "download",
-      `School_Performance_Report_${new Date().toISOString().split("T")[0]}.csv`
+      `${testNameVal}_School_Performance_Report_${new Date().toISOString().split("T")[0]}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -310,51 +339,95 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   const handleDownloadPDF = (data) => {
     const printWindow = window.open("", "_blank");
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    
     const htmlContent = `
+    <!DOCTYPE html>
     <html>
-      <head>
-        <title>School Performance Report</title>
-        <style>
-          body { font-family: Arial, sans-serif; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
-          th { background: #2F4F4F; color: #fff; }
-          td:first-child, th:first-child { text-align: left; }
-        </style>
-      </head>
-      <body>
-        <h2>School Performance Report</h2>
-        <table>
-          <thead>
+    <head>
+      <title>School Performance Report - ${testNameVal}</title>
+      <style>
+        @media print {
+          @page { size: A4 landscape; margin: 15mm; }
+        }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { color: #2F4F4F; font-size: 22px; margin-bottom: 8px; }
+        .header .school-name { color: #2F4F4F; font-size: 16px; font-weight: 600; margin-bottom: 5px; }
+        .header .date { color: #666; font-size: 12px; }
+        .report-info { 
+          background-color: #f8f9fa;
+          padding: 12px;
+          margin-bottom: 20px;
+          border-radius: 6px;
+          border: 1px solid #e0e0e0;
+        }
+        .report-info h3 { 
+          color: #2F4F4F;
+          font-size: 14px;
+          margin-bottom: 8px;
+        }
+        .info-item {
+          display: inline-block;
+          color: #666;
+          font-size: 12px;
+        }
+        .info-item strong {
+          color: #2F4F4F;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th { background: #2F4F4F; color: #fff; padding: 8px 6px; border: 1px solid #2F4F4F; }
+        td { padding: 6px; border: 1px solid #ddd; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        tr:hover { background: #e8f5f9; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>School Performance Report</h1>
+      </div>
+      
+      <div class="report-info">
+        <h3>Report Information</h3>
+        <div class="info-item">
+          <strong>Test:</strong> ${testNameVal}${maxScore ? `, <strong>Maximum Marks:</strong> ${maxScore}` : ''}, <strong>Records in Report:</strong> ${data.length}, <strong>Generated on:</strong> ${currentDate}
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left;">School Name</th>
+            <th style="text-align:center;">Status</th>
+            <th style="text-align:center;">No. Of Students</th>
+            <th style="text-align:center;">Students Present</th>
+            <th style="text-align:center;">Student Absent</th>
+            <th style="text-align:center;">Average Score</th>
+            <th style="text-align:center;">Pass Percentage</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data
+            .map(
+              (row) => `
             <tr>
-              <th>School Name</th>
-              <th>Status</th>
-              <th>No. Of Students</th>
-              <th>Students Present</th>
-              <th>Student Absent</th>
-              <th>Average Score</th>
-              <th>Pass Percentage</th>
+              <td style="text-align:left">${toTitleCase(row.name)}</td>
+              <td style="text-align:center">${row.status}</td>
+              <td style="text-align:center">${row.totalStudents}</td>
+              <td style="text-align:center">${row.presentStudents}</td>
+              <td style="text-align:center">${row.absentStudents}</td>
+              <td style="text-align:center">${row.averageScore}</td>
+              <td style="text-align:center">${row.passRate}</td>
             </tr>
-          </thead>
-          <tbody>
-            ${data
-              .map(
-                (row) => `
-              <tr>
-                <td style="text-align:left">${row.name}</td>
-                <td style="text-align:left">${row.status}</td>
-                <td>${row.totalStudents}</td>
-                <td>${row.presentStudents}</td>
-                <td>${row.absentStudents}</td>
-                <td>${row.averageScore}</td>
-                <td>${row.passRate}</td>
-              </tr>
-            `
-              )
-              .join("")}
-          </tbody>
-        </table>
-      </body>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </body>
     </html>
   `;
     printWindow.document.write(htmlContent);
@@ -399,7 +472,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     
     return {
       id: school.id,
-      name: school.name || school.schoolName || "-",
+      name: toTitleCase(school.name || school.schoolName) || "-",
       status: school.submitted ? "Submitted" : "Pending",
       totalStudents: isPending 
         ? (school.totalStudentsInClass != null ? school.totalStudentsInClass : "-")
