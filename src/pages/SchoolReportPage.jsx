@@ -479,6 +479,8 @@ const SchoolReportPage = () => {
       onExport={handleExportStudentData}
       testType={testData?.testType}
       subject={testData?.subject}
+      schoolName={schoolName}
+      testName={testName}
     />
   );
 
