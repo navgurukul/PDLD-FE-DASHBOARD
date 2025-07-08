@@ -5,7 +5,7 @@ import { FormControl, InputLabel, Select, MenuItem, Button } from "@mui/material
 import { ToggleButtonGroup, ToggleButton } from "@mui/material";
 import StudentReportSubjectWise from "./StudentReportSubjectWise";
 
-// Create theme matching the TestListTable styling
+//  Create theme matching the TestListTable styling
 const theme = createTheme({
   typography: {
     fontFamily: "'Karla', sans-serif",
@@ -99,6 +99,7 @@ const StudentAcademics = ({
   const [syllabusMonth, setSyllabusMonth] = useState("All");
   const [maxMarks, setMaxMarks] = useState("All");
   const [status, setStatus] = useState("All");
+  const [syllabusSubject, setSyllabusSubject] = useState("All"); // New subject filter for subjectwise
   const [remedialMonth, setRemedialMonth] = useState("All");
   const [subject, setSubject] = useState("All");
 
@@ -111,7 +112,8 @@ const StudentAcademics = ({
   const [monthOptions, setMonthOptions] = useState([]);
   const [maxMarksOptions, setMaxMarksOptions] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
-  const [subjectOptions, setSubjectOptions] = useState([]);
+  const [syllabusSubjectOptions, setSyllabusSubjectOptions] = useState([]); // Separate for syllabus
+  const [remedialSubjectOptions, setRemedialSubjectOptions] = useState([]); // Separate for remedial
   const [testTypeOptions, setTestTypeOptions] = useState([]);
 
   // Function to determine grade based on percentage
@@ -137,8 +139,10 @@ const StudentAcademics = ({
 
     // Sets to collect unique values for filters
     const months = new Set();
-    const subjects = new Set();
+    const syllabusSubjects = new Set(); // Separate for syllabus subjects
+    const remedialSubjects = new Set(); // Separate for remedial subjects
     const maxMarks = new Set();
+    const statusValues = new Set(); // Collect actual status values
     const testTypes = new Set();
 
     // Track test numbers to create sequential test names (Test - 1, Test - 2, etc.)
@@ -165,9 +169,21 @@ const StudentAcademics = ({
         ];
         months.add(monthNames[testDate.getMonth()]);
 
-        // Add subject to the set
+        // Add subject to appropriate set based on test type
         if (test.subject) {
-          subjects.add(test.subject === "Maths" ? "Mathematics" : test.subject);
+          const subjectName = test.subject === "Maths" ? "Mathematics" : test.subject;
+          if (test.testType === "SYLLABUS") {
+            syllabusSubjects.add(subjectName);
+            
+            // Collect status values from syllabus tests for dropdown options
+            let testStatus = "Absent";
+            if (test.score !== null) {
+              testStatus = test.passStatus ? "Pass" : "Fail";
+            }
+            statusValues.add(testStatus);
+          } else if (test.testType === "REMEDIAL") {
+            remedialSubjects.add(subjectName);
+          }
         }
       });
 
@@ -266,9 +282,10 @@ const StudentAcademics = ({
     setRemedialData(processedRemedialData);
     setMonthOptions([...months]);
     setMaxMarksOptions([...maxMarks].filter((mark) => mark !== null));
-    setSubjectOptions([...subjects]);
+    setSyllabusSubjectOptions([...syllabusSubjects]); // Set syllabus subjects
+    setRemedialSubjectOptions([...remedialSubjects]); // Set remedial subjects
     setTestTypeOptions([...testTypes]);
-    setStatusOptions(["Excellent", "Satisfactory", "Needs Improvement"]);
+    setStatusOptions([...statusValues]); // Set actual status values (Pass, Fail, Absent)
   }, [academicData]);
 
   // Filter data based on selections
@@ -324,9 +341,10 @@ const StudentAcademics = ({
     setSyllabusMonth("All");
     setMaxMarks("All");
     setStatus("All");
+    setSyllabusSubject("All"); // Reset subject filter
   };
   const isAnySyllabusFilterActive =
-    syllabusMonth !== "All" || maxMarks !== "All" || status !== "All";
+    syllabusMonth !== "All" || maxMarks !== "All" || status !== "All" || syllabusSubject !== "All";
 
   const resetRemedialFilters = () => {
     setRemedialMonth("All");
@@ -355,7 +373,7 @@ const StudentAcademics = ({
 
   // Dynamically generate columns for syllabus table based on available subjects
   const getSubjectColumns = () => {
-    return Array.from(subjectOptions).map((subject) => ({
+    return Array.from(syllabusSubjectOptions).map((subject) => ({
       name: subject,
       label: subject,
       options: {
@@ -510,22 +528,25 @@ const StudentAcademics = ({
         sort: true,
         setCellProps: () => ({ style: { textAlign: "left" } }),
         customBodyRender: (value) => {
-          // Format the grade to match Figma UI
+          // Format the grade to proper title case
           const formattedGrade = value ? value.replace(/_/g, " ") : "-";
-          const capitalizedGrade = formattedGrade.replace(/\b\w/g, (l) => l.toUpperCase());
+          const titleCaseGrade = formattedGrade.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
 
           return (
             <span
-              className="px-3 py-1 text-xs font-medium  bg-green-100 text-green-800"
+              className="px-3 py-1 bg-[#E9F3E9] text-[#228B22]"
               style={{
-                display: "block", // full width of cell
-                textAlign: "center", // left align content
-                minWidth: 80, // optional: minimum width
-                maxWidth: 120, // optional: maximum width
-                width: "auto", // full width of cel
+                display: "block",
+                textAlign: "center",
+                minWidth: 80,
+                maxWidth: 120,
+                width: "auto",
+                fontSize: "12px",
+                fontFamily: "'Work Sans', sans-serif",
+                fontWeight: 400,
               }}
             >
-              {capitalizedGrade}
+              {titleCaseGrade}
             </span>
           );
         },
@@ -769,6 +790,33 @@ const StudentAcademics = ({
                     </Select>
                   </FormControl>
 
+                  {/* Subject Dropdown */}
+                  <FormControl sx={{ minWidth: 120 }} size="small">
+                    <InputLabel id="syllabus-subject-select-label">Subject</InputLabel>
+                    <Select
+                      labelId="syllabus-subject-select-label"
+                      id="syllabus-subject-select"
+                      value={syllabusSubject}
+                      label="Subject"
+                      onChange={(e) => setSyllabusSubject(e.target.value)}
+                      sx={{
+                        borderRadius: "8px",
+                        backgroundColor: "#fff",
+                        height: "40px",
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderRadius: "8px",
+                        },
+                      }}
+                    >
+                      <MenuItem value="All">All Subjects</MenuItem>
+                      {syllabusSubjectOptions.map((subjectOption) => (
+                        <MenuItem key={subjectOption} value={subjectOption}>
+                          {subjectOption}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
                   {/*  Clear Filters  for the Syllabus*/}
                   {isAnySyllabusFilterActive && (
                     <Button
@@ -799,7 +847,7 @@ const StudentAcademics = ({
                     syllabusMonth={syllabusMonth}
                     maxMarks={maxMarks}
                     status={status}
-                    subject={subject}
+                    subject={syllabusSubject}
                   />
                 </div>
               </>
@@ -873,7 +921,7 @@ const StudentAcademics = ({
                     }}
                   >
                     <MenuItem value="All">All Subjects</MenuItem>
-                    {subjectOptions.map((subjectOption) => (
+                    {remedialSubjectOptions.map((subjectOption) => (
                       <MenuItem key={subjectOption} value={subjectOption}>
                         {subjectOption}
                       </MenuItem>
