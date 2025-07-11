@@ -916,6 +916,7 @@ export default function Users() {
           cancelText="Cancel"
           confirmButtonColor="error"
           icon={<DeleteOutlineIcon fontSize="large" />}
+          sx={{ zIndex: 12000 }}
         />
 
         <ToastContainer style={{ zIndex: 99999999 }} position="top-right" autoClose={3000} />
