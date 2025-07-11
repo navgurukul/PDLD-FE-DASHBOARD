@@ -1095,6 +1095,7 @@ export default function UserCreationForm() {
         message={confirmDialog.message}
         confirmText="Confirm"
         cancelText="Cancel"
+        sx={{ zIndex: 12000 }}
       />
       <ToastContainer
         style={{ zIndex: 99999999 }}
