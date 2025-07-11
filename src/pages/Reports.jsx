@@ -36,6 +36,21 @@ const toTitleCase = (str) => {
     .join(' ');
 };
 
+// Utility function to format numbers - remove .0 for whole numbers
+const formatNumber = (value) => {
+  if (value === null || value === undefined || value === "") return "-";
+  const num = parseFloat(value);
+  if (isNaN(num)) return "-";
+  
+  // If it's a whole number, show without decimal
+  if (num % 1 === 0) {
+    return num.toString();
+  }
+  
+  // If it has decimal part, show one decimal place
+  return num.toFixed(1);
+};
+
 // Utility function to check if curriculum note should be shown
 const shouldShowCurriculumNote = (subject, groupTitle) => {
   // Map group titles to class ranges
@@ -498,52 +513,52 @@ const Reports = () => {
                   {school.udiseCode} - {toTitleCase(school.schoolName)}
                 </td>
                 <td
-                  className={parseInt(school.primaryAvg) < 20 ? "low-score" : ""}
+                  className={parseInt(school.primaryAvg) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 1)}
                 >
-                  {school.primaryAvg !== null ? school.primaryAvg : "-"}
+                  {formatNumber(school.primaryAvg)}
                 </td>
                 <td
-                  className={parseInt(school.primaryPass) < 20 ? "low-score" : ""}
+                  className={parseInt(school.primaryPass) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 2)}
                 >
-                  {school.primaryPass !== null ? `${school.primaryPass}%` : "-"}
+                  {school.primaryPass !== null ? `${formatNumber(school.primaryPass)}%` : "-"}
                 </td>
                 <td
-                  className={parseInt(school.upperPrimaryAvg) < 20 ? "low-score" : ""}
+                  className={parseInt(school.upperPrimaryAvg) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 3)}
                 >
-                  {school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : "-"}
+                  {formatNumber(school.upperPrimaryAvg)}
                 </td>
                 <td
-                  className={parseInt(school.upperPrimaryPass) < 20 ? "low-score" : ""}
+                  className={parseInt(school.upperPrimaryPass) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 4)}
                 >
-                  {school.upperPrimaryPass !== null ? `${school.upperPrimaryPass}%` : "-"}
+                  {school.upperPrimaryPass !== null ? `${formatNumber(school.upperPrimaryPass)}%` : "-"}
                 </td>
                 <td
-                  className={parseInt(school.highSchoolAvg) < 20 ? "low-score" : ""}
+                  className={parseInt(school.highSchoolAvg) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 5)}
                 >
-                  {school.highSchoolAvg !== null ? school.highSchoolAvg : "-"}
+                  {formatNumber(school.highSchoolAvg)}
                 </td>
                 <td
-                  className={parseInt(school.highSchoolPass) < 20 ? "low-score" : ""}
+                  className={parseInt(school.highSchoolPass) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 6)}
                 >
-                  {school.highSchoolPass !== null ? `${school.highSchoolPass}%` : "-"}
+                  {school.highSchoolPass !== null ? `${formatNumber(school.highSchoolPass)}%` : "-"}
                 </td>
                 <td
-                  className={parseInt(school.higherSecondaryAvg) < 20 ? "low-score" : ""}
+                  className={parseInt(school.higherSecondaryAvg) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 7)}
                 >
-                  {school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : "-"}
+                  {formatNumber(school.higherSecondaryAvg)}
                 </td>
                 <td
-                  className={parseInt(school.higherSecondaryPass) < 20 ? "low-score" : ""}
+                  className={parseInt(school.higherSecondaryPass) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 8)}
                 >
-                  {school.higherSecondaryPass !== null ? `${school.higherSecondaryPass}%` : "-"}
+                  {school.higherSecondaryPass !== null ? `${formatNumber(school.higherSecondaryPass)}%` : "-"}
                 </td>
               </tr>
             ))}
@@ -557,7 +572,7 @@ const Reports = () => {
   const getTextColor = (value) => {
     if (typeof value === "string" || typeof value === "number") {
       const numValue = parseInt(value, 10);
-      if (!isNaN(numValue) && numValue < 20) {
+      if (!isNaN(numValue) && numValue < 33) {
         return "#FF0000"; // Red color for low scores
       }
     }
@@ -653,13 +668,23 @@ const Reports = () => {
 
       // Fetch data based on selected option
       if (rows === "current") {
-        dataToDownload = transformedData;
+        // Use filteredData instead of transformedData for current page
+        // This ensures we download exactly what user sees on screen
+        dataToDownload = filteredData;
+        
+        // Additional safety check - ensure we don't exceed expected count
+        if (dataToDownload.length !== count) {
+          // Update the toast message to reflect actual count
+          toast.info(`Generating ${format.toUpperCase()} report for ${dataToDownload.length} schools (current page)...`);
+        }
       } else {
+        // For non-current options, fetch from API with proper parameters
         // Fetch more data from API
         let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${
           count === totalRecords ? totalRecords : count
         }`;
 
+        // Important: Include the same filters as current view
         if (selectedBlock) {
           url += `&blockName=${selectedBlock}`;
         }
@@ -670,6 +695,12 @@ const Reports = () => {
         const response = await apiInstance.get(url);
         if (response.data.success) {
           const apiData = response.data.data.schools;
+          
+          // Additional safety check for API response
+          if (apiData.length > count && count !== totalRecords) {
+            // Slice to exact count if API returned more than expected
+            apiData.splice(count);
+          }
           dataToDownload = apiData.map((school) => {
             const primaryData = school.subjectPerformance[0] || {};
             const upperData = school.subjectPerformance[1] || {};
@@ -868,7 +899,7 @@ const Reports = () => {
           }
           
           .low-score {
-            color: #FF0000;
+            color: #F45050;
             font-weight: 600;
           }
           
@@ -988,36 +1019,36 @@ const Reports = () => {
                 .map((school) => {
                   const isLowScore = (value) => {
                     const num = parseInt(value);
-                    return !isNaN(num) && num < 20;
+                    return !isNaN(num) && num < 33;
                   };
 
                   return `
                   <tr>
                     <td class="school-name">${school.udiseCode} - ${toTitleCase(school.schoolName)}</td>
                     <td class="${isLowScore(school.primaryAvg) ? "low-score" : ""}">
-                      ${school.primaryAvg !== null ? school.primaryAvg : "-"}
+                      ${formatNumber(school.primaryAvg)}
                     </td>
                     <td class="${isLowScore(school.primaryPass) ? "low-score" : ""}">
-                      ${school.primaryPass !== null ? school.primaryPass + "%" : "-"}
+                      ${school.primaryPass !== null ? formatNumber(school.primaryPass) + "%" : "-"}
                     </td>
                     <td class="${isLowScore(school.upperPrimaryAvg) ? "low-score" : ""}">
-                      ${school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : "-"}
+                      ${formatNumber(school.upperPrimaryAvg)}
                     </td>
                     <td class="${isLowScore(school.upperPrimaryPass) ? "low-score" : ""}">
-                      ${school.upperPrimaryPass !== null ? school.upperPrimaryPass + "%" : "-"}
+                      ${school.upperPrimaryPass !== null ? formatNumber(school.upperPrimaryPass) + "%" : "-"}
                     </td>
                     <td class="${isLowScore(school.highSchoolAvg) ? "low-score" : ""}">
-                      ${school.highSchoolAvg !== null ? school.highSchoolAvg : "-"}
+                      ${formatNumber(school.highSchoolAvg)}
                     </td>
                     <td class="${isLowScore(school.highSchoolPass) ? "low-score" : ""}">
-                      ${school.highSchoolPass !== null ? school.highSchoolPass + "%" : "-"}
+                      ${school.highSchoolPass !== null ? formatNumber(school.highSchoolPass) + "%" : "-"}
                     </td>
                     <td class="${isLowScore(school.higherSecondaryAvg) ? "low-score" : ""}">
-                      ${school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : "-"}
+                      ${formatNumber(school.higherSecondaryAvg)}
                     </td>
                     <td class="${isLowScore(school.higherSecondaryPass) ? "low-score" : ""}">
                       ${
-                        school.higherSecondaryPass !== null ? school.higherSecondaryPass + "%" : "-"
+                        school.higherSecondaryPass !== null ? formatNumber(school.higherSecondaryPass) + "%" : "-"
                       }
                     </td>
                   </tr>
@@ -1075,14 +1106,14 @@ const Reports = () => {
     data.forEach((school) => {
       const rowData = [
         `${school.udiseCode} - ${toTitleCase(school.schoolName)}`,
-        school.primaryAvg || "-",
-        school.primaryPass ? `${school.primaryPass}%` : "-",
-        school.upperPrimaryAvg || "-",
-        school.upperPrimaryPass ? `${school.upperPrimaryPass}%` : "-",
-        school.highSchoolAvg || "-",
-        school.highSchoolPass ? `${school.highSchoolPass}%` : "-",
-        school.higherSecondaryAvg || "-",
-        school.higherSecondaryPass ? `${school.higherSecondaryPass}%` : "-",
+        formatNumber(school.primaryAvg),
+        school.primaryPass ? `${formatNumber(school.primaryPass)}%` : "-",
+        formatNumber(school.upperPrimaryAvg),
+        school.upperPrimaryPass ? `${formatNumber(school.upperPrimaryPass)}%` : "-",
+        formatNumber(school.highSchoolAvg),
+        school.highSchoolPass ? `${formatNumber(school.highSchoolPass)}%` : "-",
+        formatNumber(school.higherSecondaryAvg),
+        school.higherSecondaryPass ? `${formatNumber(school.higherSecondaryPass)}%` : "-",
       ];
 
       csvContent +=
@@ -1145,9 +1176,17 @@ const Reports = () => {
   // Filter schools by search query and limit to current page's data
   const filteredData = useMemo(() => {
     let data = searchQuery
-      ? transformedData.filter((school) =>
-          school.schoolName.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+      ? transformedData.filter((school) => {
+          const query = searchQuery.toLowerCase().trim();
+          const schoolName = school.schoolName.toLowerCase();
+          const udiseCode = school.udiseCode.toLowerCase();
+          const combinedText = `${udiseCode} - ${schoolName}`.toLowerCase();
+          
+          // Search in school name, UDISE code, or combined display text
+          return schoolName.includes(query) || 
+                 udiseCode.includes(query) || 
+                 combinedText.includes(query);
+        })
       : transformedData;
 
     // Ensure we're only showing pageSize items
@@ -1175,7 +1214,7 @@ const Reports = () => {
             <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">School Performance Report</h5>
           </div>
 
-          <Box sx={{ flexShrink: 0, width: { xs: "100%", md: "auto" } }}>
+          <Box sx={{ flexShrink: 0 }}>
             <Typography
               variant="subtitle1"
               sx={{
@@ -1186,10 +1225,8 @@ const Reports = () => {
                 height: "48px",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
                 whiteSpace: "nowrap",
-                width: { xs: "100%", md: "auto" }
+                minWidth: "fit-content"
               }}
             >
               Academic Year {academicYear}
@@ -1262,7 +1299,7 @@ const Reports = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <div className="flex-1 max-w-sm">
+          <div className="w-full lg:w-[385px]">
             <TextField
               variant="outlined"
               placeholder="Search by name or UDISE"
@@ -1277,8 +1314,10 @@ const Reports = () => {
                   </div>
                 ),
                 style: {
-                  height: "48px",
+                  backgroundColor: "#fff",
                   borderRadius: "8px",
+                  height: "48px",
+                  minWidth: "200px",
                 },
               }}
               sx={{
@@ -1290,6 +1329,7 @@ const Reports = () => {
                   padding: "12px 16px",
                   paddingLeft: "0",
                 },
+                marginBottom: { xs: "8px", md: "0" },
               }}
             />
           </div>
@@ -1644,60 +1684,83 @@ const Reports = () => {
               </div>
 
               {/* Classes in 2 columns, Avg Marks & Pass Rate in one line */}
-              <div className="grid grid-cols-2 gap-y-4 gap-x-12">
-                {selectedClassData.data[0]?.classes?.map((classData, index) => (
-                  <div key={`class-${classData.class}-${index}`}>
-                    <div
-                      className=" text-[#2F4F4F] mb-2 text-base"
-                      style={{ fontWeight: 600, fontFamily: "Work Sans" }}
-                    >
-                      Class {classData.class}
-                    </div>
-                    <div
-                      className="flex items-center gap-6  text-[#597272]"
-                      style={{
-                        fontFamily: "'Work Sans', sans-serif",
-                        fontWeight: 400,
-                        fontSize: "14px",
-                      }}
-                    >
-                      <span>
-                        Avg Marks{" "}
-                        <span
-                          className={
-                            parseInt(classData.avgMarks) < 20
-                              ? "text-red-600 font-medium"
-                              : "font-medium"
-                          }
-                          style={{
-                            fontFamily: "'Work Sans', sans-serif",
-                            fontWeight: 400,
-                            fontSize: "14px",
-                          }}
-                        >
-                          {classData.avgMarks}
-                        </span>
-                      </span>
-                      <span>
-                        Pass Rate(%){" "}
-                        <span
-                          className={
-                            parseFloat(classData.successRate) < 30
-                              ? "text-red-600 font-medium"
-                              : "font-medium text-[#2F4F4F]"
-                          }
-                          style={{
-                            fontFamily: "'Work Sans', sans-serif",
-                            fontWeight: 400,
-                            fontSize: "14px",
-                          }}
-                        >
-                          {classData.successRate}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              <div>
+                {/* Group classes in pairs for 2-column layout */}
+                {(() => {
+                  const classes = selectedClassData.data[0]?.classes || [];
+                  const pairs = [];
+                  for (let i = 0; i < classes.length; i += 2) {
+                    pairs.push(classes.slice(i, i + 2));
+                  }
+                  return pairs.map((pair, pairIndex) => {
+                    const isLastPair = pairIndex === pairs.length - 1;
+                    return (
+                      <div key={`pair-${pairIndex}`}>
+                        <div className="grid grid-cols-2 gap-x-12 py-4">
+                          {pair.map((classData, index) => (
+                            <div key={`class-${classData.class}-${pairIndex}-${index}`}>
+                              <div
+                                className="text-[#2F4F4F] mb-2 text-base"
+                                style={{ fontWeight: 600, fontFamily: "Work Sans" }}
+                              >
+                                Class {classData.class}
+                              </div>
+                              <div
+                                className="flex items-center gap-6 text-[#597272]"
+                                style={{
+                                  fontFamily: "'Work Sans', sans-serif",
+                                  fontWeight: 400,
+                                  fontSize: "14px",
+                                }}
+                              >
+                                <span>
+                                  Avg Marks{" "}
+                                  <span
+                                    style={{
+                                      fontFamily: "'Work Sans', sans-serif",
+                                      fontWeight: parseInt(classData.avgMarks) < 33 ? 600 : 400,
+                                      fontSize: "14px",
+                                      color: parseInt(classData.avgMarks) < 33 ? "#F45050" : "#2F4F4F",
+                                    }}
+                                  >
+                                    {formatNumber(classData.avgMarks)}
+                                  </span>
+                                </span>
+                                <span>
+                                  Pass Rate(%){" "}
+                                  <span
+                                    style={{
+                                      fontFamily: "'Work Sans', sans-serif",
+                                      fontWeight: parseFloat(classData.successRate) < 33 ? 600 : 400,
+                                      fontSize: "14px",
+                                      color: parseFloat(classData.successRate) < 33 ? "#F45050" : "#2F4F4F",
+                                    }}
+                                  >
+                                    {classData.successRate ? 
+                                      `${formatNumber(classData.successRate.toString().replace('%', ''))}%` : 
+                                      formatNumber(classData.successRate)
+                                    }
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Full-width horizontal line under each row except the last */}
+                        {!isLastPair && (
+                          <hr 
+                            style={{
+                              margin: 0,
+                              border: 'none',
+                              borderTop: '1px solid #E0E0E0',
+                              width: '100%'
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
 
               {/* Curriculum Note - Only show when not all classes have the subject */}
