@@ -959,6 +959,7 @@ export default function SchoolList() {
             cancelText="Cancel"
             confirmButtonColor="error"
             icon={<DeleteOutlineIcon fontSize="large" />}
+            sx={{ zIndex: 12000 }}
           />
         </div>
 

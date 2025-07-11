@@ -300,9 +300,31 @@ const StudentAcademics = ({
   // Filter data based on selections
   const filteredRemedialData = useMemo(() => {
     return remedialData.filter(
-      (item) =>
-        (remedialMonth === "All" || item.examDate.includes(remedialMonth)) &&
-        (subject === "All" || item.testName.toLowerCase().includes(subject.toLowerCase()))
+      (item) => {
+        // For month filtering, convert full month name to short form
+        let monthMatch = true;
+        if (remedialMonth !== "All") {
+          const shortMonthMap = {
+            "January": "Jan",
+            "February": "Feb", 
+            "March": "Mar",
+            "April": "Apr",
+            "May": "May",
+            "June": "Jun",
+            "July": "Jul",
+            "August": "Aug",
+            "September": "Sep",
+            "October": "Oct",
+            "November": "Nov",
+            "December": "Dec"
+          };
+          const shortMonth = shortMonthMap[remedialMonth];
+          monthMatch = shortMonth ? item.examDate.includes(shortMonth) : false;
+        }
+
+        return monthMatch && 
+               (subject === "All" || item.testName.toLowerCase().includes(subject.toLowerCase()));
+      }
     );
   }, [remedialData, remedialMonth, subject]);
 

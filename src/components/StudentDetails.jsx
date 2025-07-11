@@ -734,6 +734,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           isProcessing={isDeleting}
           confirmButtonColor="error"
           icon={<DeleteOutlineIcon fontSize="large" />}
+          sx={{ zIndex: 12000 }}
         />
 
         <ToastContainer
