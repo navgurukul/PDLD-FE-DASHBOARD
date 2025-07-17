@@ -1089,6 +1089,34 @@ const Reports = () => {
 
   // Download report as CSV
   const handleDownloadCSV = (data) => {
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Build CSV content with comprehensive information
+    let csvContent = "";
+
+    // Header Information
+    csvContent += `"${selectedSubject} Performance Report"\n`;
+    csvContent += `"Academic Year ${academicYear}"\n`;
+    csvContent += `"Generated on: ${currentDate}"\n`;
+    csvContent += "\n"; // Blank line
+
+    // Filter Information (if any filters are applied)
+    if (selectedBlock || selectedCluster) {
+      csvContent += `"Applied Filters:"\n`;
+      if (selectedBlock) {
+        csvContent += `"Block: ${selectedBlock}"\n`;
+      }
+      if (selectedCluster) {
+        csvContent += `"Cluster: ${selectedCluster}"\n`;
+      }
+      csvContent += "\n"; // Blank line
+    }
+
+    // Table Headers
     const headers = [
       "School Name",
       "Primary (1-5) Avg. Marks",
@@ -1101,11 +1129,12 @@ const Reports = () => {
       "Higher Secondary (11-12) Pass Rate(%)",
     ];
 
-    let csvContent = headers.join(",") + "\n";
+    csvContent += headers.join(",") + "\n";
 
+    // Table Data
     data.forEach((school) => {
       const rowData = [
-        `${school.udiseCode} - ${toTitleCase(school.schoolName)}`,
+        `"${school.udiseCode} - ${toTitleCase(school.schoolName)}"`,
         formatNumber(school.primaryAvg),
         school.primaryPass ? `${formatNumber(school.primaryPass)}%` : "-",
         formatNumber(school.upperPrimaryAvg),
@@ -1119,6 +1148,11 @@ const Reports = () => {
       csvContent +=
         rowData
           .map((cell) => {
+            // Already quoted school names, don't double quote
+            if (cell && cell.toString().startsWith('"')) {
+              return cell;
+            }
+            // Quote cells that contain commas
             if (cell && cell.toString().includes(",")) {
               return `"${cell}"`;
             }
@@ -1126,6 +1160,13 @@ const Reports = () => {
           })
           .join(",") + "\n";
     });
+
+    // Report Summary at the bottom (like PDF)
+    csvContent += "\n"; // Blank line
+    csvContent += `"Report Summary:"\n`;
+    csvContent += `"Total Schools: ${data.length}"\n`;
+    csvContent += `"Subject: ${selectedSubject}"\n`;
+    csvContent += `"Report Type: School Performance Analysis"\n`;
 
     //  Create download link
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });

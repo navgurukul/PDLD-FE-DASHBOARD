@@ -622,7 +622,7 @@ export default function AddStudent({ isEditMode = false }) {
       }
     } catch (error) {
       console.error("Error saving student data:", error);
-      toast.error(error.response?.data?.message || error.message || "Failed to save student data");
+      toast.error(  error.response?.data?.error || error.response?.data?.message || error.message || "Failed to save student data");
     } finally {
       setIsSubmitting(false);
     }

@@ -210,11 +210,12 @@ export default function SchoolDetailView() {
           sx={{
             display: "flex",
             flexDirection: { xs: "column", md: "row" },
-            justifyContent: "space-between",
             alignItems: { xs: "flex-start", md: "center" },
+            justifyContent: "space-between",
             gap: { xs: 2, md: 0 },
             mb: 1,
             mt: { xs: 2, md: 0 },
+            flexWrap: "wrap",
           }}
         >
           <Box
@@ -223,7 +224,6 @@ export default function SchoolDetailView() {
               flexWrap: "wrap",
               alignItems: "center",
               gap: { xs: 1, sm: 2 },
-              mt: { xs: 0, md: 5 },
             }}
           >
             <h5 className="text-lg font-bold text-[#2F4F4F]">
@@ -232,9 +232,11 @@ export default function SchoolDetailView() {
           </Box>
           <Box
             sx={{
-              flexShrink: 0,
-              width: { xs: "100%", md: "auto" },
-              mt: { xs: 0, md: 5 },
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px",
+              alignItems: "center",
+              mt: { xs: 1, md: 0 },
             }}
           >
             <Typography
@@ -258,12 +260,15 @@ export default function SchoolDetailView() {
           </Box>
         </Box>
 
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3, mt: 1 }}>
           <Tabs
             value={tabValue}
             onChange={handleTabChange}
             aria-label="school detail tabs"
+            variant="scrollable"
+            scrollButtons="auto"
             sx={{
+              minHeight: "48px",
               "& .MuiTab-root": {
                 fontFamily: "Work Sans",
                 fontSize: "18px",
@@ -275,6 +280,7 @@ export default function SchoolDetailView() {
                 minWidth: "unset",
                 padding: "12px 0px",
                 marginRight: "24px",
+                minHeight: "48px",
               },
               "& .Mui-selected": {
                 color: "#2F4F4F",
@@ -340,7 +346,7 @@ export default function SchoolDetailView() {
                       </Typography>
                     </Grid>
 
-                    <Grid item xs={6}>
+                    <Grid item xs={12} sm={6}>
                       <Typography
                         variant="subtitle2"
                         color="text.secondary"
@@ -352,22 +358,6 @@ export default function SchoolDetailView() {
                       >
                         UDISE Code
                       </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography
-                        variant="subtitle2"
-                        color="text.secondary"
-                        sx={{
-                          fontFamily: "'Work Sans', sans-serif",
-                          fontWeight: 400,
-                          fontSize: "18px",
-                        }}
-                      >
-                        Created On
-                      </Typography>
-                    </Grid>
-                    {/* UDISE Code & Created On values */}
-                    <Grid item xs={6}>
                       <Typography
                         variant="body1"
                         sx={{
@@ -380,7 +370,18 @@ export default function SchoolDetailView() {
                         {school.udiseCode}
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography
+                        variant="subtitle2"
+                        color="text.secondary"
+                        sx={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: "18px",
+                        }}
+                      >
+                        Created On
+                      </Typography>
                       <Typography
                         variant="body1"
                         sx={{
@@ -417,7 +418,7 @@ export default function SchoolDetailView() {
 
                   <Grid container spacing={2}>
                     {/* Labels row */}
-                    <Grid item xs={6}>
+                    <Grid item xs={12} sm={6}>
                       <Typography
                         variant="subtitle2"
                         color="text.secondary"
@@ -429,22 +430,6 @@ export default function SchoolDetailView() {
                       >
                         Cluster
                       </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography
-                        variant="subtitle2"
-                        color="text.secondary"
-                        sx={{
-                          fontFamily: "'Work Sans', sans-serif",
-                          fontWeight: 400,
-                          fontSize: "18px",
-                        }}
-                      >
-                        Block
-                      </Typography>
-                    </Grid>
-                    {/* Values row */}
-                    <Grid item xs={6}>
                       <Typography
                         variant="body1"
                         sx={{
@@ -457,7 +442,18 @@ export default function SchoolDetailView() {
                         {capitalizeFirstLetter(school.clusterName)}
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography
+                        variant="subtitle2"
+                        color="text.secondary"
+                        sx={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: "18px",
+                        }}
+                      >
+                        Block
+                      </Typography>
                       <Typography
                         variant="body1"
                         sx={{
@@ -506,22 +502,6 @@ export default function SchoolDetailView() {
                       >
                         Cluster Academic Coordinator
                       </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography
-                        variant="subtitle2"
-                        color="text.secondary"
-                        sx={{
-                          fontFamily: "'Work Sans', sans-serif",
-                          fontWeight: 400,
-                          fontSize: "18px",
-                        }}
-                      >
-                        Cluster Principal
-                      </Typography>
-                    </Grid>
-                    {/* Values row */}
-                    <Grid item xs={12} sm={6}>
                       <Typography
                         variant="body1"
                         sx={{
@@ -535,6 +515,17 @@ export default function SchoolDetailView() {
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
+                      <Typography
+                        variant="subtitle2"
+                        color="text.secondary"
+                        sx={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: "18px",
+                        }}
+                      >
+                        Cluster Principal
+                      </Typography>
                       <Typography
                         variant="body1"
                         sx={{

@@ -149,10 +149,128 @@ export default function TestListTable() {
   const [classOpen, setClassOpen] = useState(false);
   const [subjectOpen, setSubjectOpen] = useState(false);
 
+  // API-based dropdown options
+  const [classOptions, setClassOptions] = useState([]);
+  const [subjectOptions, setSubjectOptions] = useState([]);
+  const [classWiseSubjects, setClassWiseSubjects] = useState({});
+
   // Add page size change handler
   const handlePageSizeChange = (event) => {
     setPageSize(event.target.value);
     setCurrentPage(1); // Reset to first page when changing page size
+  };
+
+  // Fetch class-wise subjects from API
+  const fetchClassWiseSubjects = async () => {
+    try {
+      const response = await apiInstance.get("/report/class-wise-subjects");
+      if (response.data && response.data.data) {
+        const data = response.data.data;
+        // Check if data is an array (new format) or object (old format)
+        if (Array.isArray(data)) {
+          // New format: array of objects with class and subjects
+          const subjectsMap = {};
+          const allSubjects = new Set();
+          const classes = [];
+          data.forEach((classData) => {
+            const classNum = classData.class;
+            classes.push(`Class ${classNum}`);
+            const classSubjects = {
+              academicSubjects: classData.subjects || [],
+              vocationalSubjects: classData.vocationalSubjects || []
+            };
+            subjectsMap[classNum] = classSubjects;
+            // Add all subjects to the set
+            if (classSubjects.academicSubjects) {
+              classSubjects.academicSubjects.forEach(subject => allSubjects.add(subject));
+            }
+            if (classSubjects.vocationalSubjects) {
+              classSubjects.vocationalSubjects.forEach(subject => allSubjects.add(subject));
+            }
+          });
+          setClassWiseSubjects(subjectsMap);
+          const sortedClasses = classes.sort((a, b) => {
+            const numA = parseInt(a.replace('Class ', ''));
+            const numB = parseInt(b.replace('Class ', ''));
+            return numA - numB;
+          });
+          const sortedSubjects = Array.from(allSubjects).sort();
+          setClassOptions(sortedClasses);
+          setSubjectOptions(sortedSubjects);
+        } else {
+          // Old format: object with class keys
+          const classKeys = Object.keys(data);
+          const classes = classKeys.map(classKey => {
+            const classNumber = parseInt(classKey);
+            // Check if API uses 0-based (0-11) or 1-based (1-12) indexing
+            if (classNumber >= 0 && classNumber <= 11 && !classKeys.includes('12')) {
+              // 0-based indexing (0-11), convert to 1-12
+              return `Class ${classNumber + 1}`;
+            } else {
+              // 1-based indexing (1-12), use as is
+              return `Class ${classNumber}`;
+            }
+          }).sort((a, b) => {
+            const numA = parseInt(a.replace('Class ', ''));
+            const numB = parseInt(b.replace('Class ', ''));
+            return numA - numB;
+          });
+          const allSubjects = new Set();
+          Object.values(data).forEach(classData => {
+            if (classData.academicSubjects && Array.isArray(classData.academicSubjects)) {
+              classData.academicSubjects.forEach(subject => allSubjects.add(subject));
+            }
+            if (classData.vocationalSubjects && Array.isArray(classData.vocationalSubjects)) {
+              classData.vocationalSubjects.forEach(subject => allSubjects.add(subject));
+            }
+          });
+          setClassWiseSubjects(data);
+          setClassOptions(classes);
+          setSubjectOptions(Array.from(allSubjects).sort());
+        }
+      }
+    } catch (error) {
+      // Fallback to static data if API fails
+      setClassOptions(CLASS_OPTIONS);
+      setSubjectOptions(SUBJECT_OPTIONS);
+    }
+  };
+
+  // Get filtered subject options based on selected classes
+  const getFilteredSubjectOptions = () => {
+    if (selectedClass.length === 0) {
+      return subjectOptions; // Show all subjects if no class selected
+    }
+    const filteredSubjects = new Set();
+    const classKeys = Object.keys(classWiseSubjects);
+    selectedClass.forEach(classOption => {
+      const classNumber = parseInt(classOption.replace("Class ", ""));
+      // Try different key formats
+      let classKey = null;
+      if (classKeys.includes(classNumber.toString())) {
+        // Direct match (1-12)
+        classKey = classNumber.toString();
+      } else if (classKeys.includes((classNumber - 1).toString())) {
+        // 0-based indexing (0-11)
+        classKey = (classNumber - 1).toString();
+      }
+      const classData = classWiseSubjects[classKey];
+      if (classData) {
+        // Handle both old and new format
+        if (classData.academicSubjects && Array.isArray(classData.academicSubjects)) {
+          classData.academicSubjects.forEach(subject => filteredSubjects.add(subject));
+        }
+        if (classData.vocationalSubjects && Array.isArray(classData.vocationalSubjects)) {
+          classData.vocationalSubjects.forEach(subject => filteredSubjects.add(subject));
+        }
+        // Handle subjects array directly (new format)
+        if (classData.subjects && Array.isArray(classData.subjects)) {
+          classData.subjects.forEach(subject => filteredSubjects.add(subject));
+        }
+      }
+    });
+    const result = Array.from(filteredSubjects).sort();
+    return result;
   };
 
   useEffect(() => {
@@ -165,22 +283,21 @@ export default function TestListTable() {
 
   useEffect(() => {
     try {
-      // Changed from userdata to userData with capital D
       const rawData = localStorage.getItem("userData");
-
       if (!rawData) {
-        console.log("No userData found in localStorage");
         setUserRole("");
         return;
       }
-
       const userData = JSON.parse(rawData);
       setUserRole(userData.role || "");
-      console.log(userData.role, "ROLE");
     } catch (error) {
-      console.error("Error parsing user data from localStorage:", error);
       setUserRole("");
     }
+  }, []);
+
+  // Fetch class-wise subjects on component mount
+  useEffect(() => {
+    fetchClassWiseSubjects();
   }, []);
 
   const handleCreateTest = () => {
@@ -201,8 +318,6 @@ export default function TestListTable() {
     try {
       let startDateFormatted;
       let endDateFormatted;
-
-      // If user has selected both dates, use them; otherwise default
       if (startDate && endDate) {
         startDateFormatted = formatDate(startDate);
         endDateFormatted = formatDate(endDate);
@@ -210,11 +325,7 @@ export default function TestListTable() {
         startDateFormatted = "01-02-2020";
         endDateFormatted = "01-02-2026";
       }
-
-      // Build your URL with all applicable filters, including status
-      // Updated to use dynamic pageSize
       let url = `/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
-
       if (selectedClass.length > 0) {
         selectedClass.forEach((c) => {
           url += `&testClass=${encodeURIComponent(c.replace("Class ", ""))}`;
@@ -223,7 +334,11 @@ export default function TestListTable() {
       }
       if (selectedSubject.length > 0) {
         selectedSubject.forEach((s) => {
-          url += `&subject=${encodeURIComponent(s)}`;
+          let apiSubjectName = s;
+          if (s === "Industrial Organization") {
+            apiSubjectName = "Industrial_organization";
+          }
+          url += `&subject=${encodeURIComponent(apiSubjectName)}`;
         });
         url += `&page=1`;
       }
@@ -237,7 +352,7 @@ export default function TestListTable() {
         setTotalRecords(response.data.data.pagination.totalRecords);
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      // Error fetching data, do nothing (no debug log)
     } finally {
       setIsLoading(false);
     }
@@ -250,9 +365,15 @@ export default function TestListTable() {
     }
   }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage, pageSize]);
 
-  // Filter tests based on search query (local filter for "testName")
+  // Normalize function to remove extra spaces and lowercase
+  function normalizeString(str) {
+    return str?.replace(/\s+/g, " ").trim().toLowerCase() || "";
+  }
+
+  // Filter tests based on normalized search query (local filter for "testName")
+  // Filter tests robustly by normalized testName and searchQuery
   const filteredTests = tests?.filter((test) =>
-    test.testName?.toLowerCase().includes(searchQuery.toLowerCase())
+    normalizeString(test.testName).includes(normalizeString(searchQuery))
   );
 
   // State to track sorting
@@ -538,10 +659,10 @@ export default function TestListTable() {
     <ThemeProvider theme={theme}>
       {/* Main container with responsive adjustments */}
       <div className="main-page-wrapper px-3 sm:px-4">
-        <h5 className="text-lg font-bold text-[#2F4F4F]">All Tests</h5>
+        <h5 className="text-lg font-bold text-[#2F4F4F] mt-5">All Tests</h5>
 
         {/* Filters and Action Button - Responsive Row */}
-        <div className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 flex-wrap mb-4">
+        <div className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 flex-wrap mb-4 mt-6">
           {/* Filters Group */}
           <div className="flex flex-wrap gap-2 items-center">
             {/* Search bar */}
@@ -586,9 +707,13 @@ export default function TestListTable() {
                 multiple
                 disableCloseOnSelect
                 id="class-multi-select"
-                options={CLASS_OPTIONS}
+                options={classOptions}
                 value={selectedClass}
-                onChange={(event, newValue) => setSelectedClass(newValue)}
+                onChange={(event, newValue) => {
+                  setSelectedClass(newValue);
+                  // Clear subject selection when class changes
+                  setSelectedSubject([]);
+                }}
                 getOptionLabel={(option) => option}
                 renderOption={(props, option, { selected }) => (
                   <li {...props}>
@@ -654,6 +779,7 @@ export default function TestListTable() {
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedClass([]);
+                          setSelectedSubject([]); // Clear subjects when class is cleared
                           setClassOpen(false);
                         }}
                         style={{
@@ -737,7 +863,7 @@ export default function TestListTable() {
                 multiple
                 disableCloseOnSelect
                 id="subject-multi-select"
-                options={SUBJECT_OPTIONS}
+                options={getFilteredSubjectOptions()}
                 value={selectedSubject}
                 onChange={(event, newValue) => setSelectedSubject(newValue)}
                 getOptionLabel={(option) => option}
