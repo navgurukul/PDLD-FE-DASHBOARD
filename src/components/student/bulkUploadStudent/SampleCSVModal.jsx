@@ -47,16 +47,16 @@ export default function StudentSampleCSVModal({ open, onClose }) {
       "fullName",
       "fatherName",
       "motherName",
-      "dob",
       "class",
       "gender", 
+       "dob",
       "aparId",
       "hostel",
     ];
   };
 
   // Required fields for student data
-  const requiredFields = ["fullName", "fatherName", "motherName", "dob", "class", "gender"];
+  const requiredFields = ["fullName", "fatherName", "motherName", "class", "gender"];
 
   const downloadCSV = () => {
     const headers = getHeaders();
@@ -88,7 +88,7 @@ export default function StudentSampleCSVModal({ open, onClose }) {
   };
 
   return (
-    <Modal open={open} onClose={onClose} aria-labelledby="sample-student-csv-modal-title">
+    <Modal open={open} onClose={onClose} aria-labelledby="sample-student-csv-modal-title" sx={{ zIndex: 20000 }}>
       <Box sx={modalStyle}>
         <Typography
           id="sample-student-csv-modal-title"
