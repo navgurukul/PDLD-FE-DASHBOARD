@@ -36,7 +36,7 @@ const DeleteConfirmationModal = ({
 			onClose={isProcessing ? null : onClose}
 			aria-labelledby="confirmation-modal-title"
 			aria-describedby="confirmation-modal-description"
-			sx={sx} // Add sx prop to Modal
+			sx={sx} //  Add sx prop to Modal
 		>
 			<Box sx={modalStyle}>
 				<Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
