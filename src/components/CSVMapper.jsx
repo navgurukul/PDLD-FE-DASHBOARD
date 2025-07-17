@@ -59,6 +59,7 @@ export default function CSVMapper({
         { id: "udiseCode", label: "UDISE Code", required: true },
         { id: "clusterName", label: "Cluster Name", required: true },
         { id: "blockName", label: "Block Name", required: true },
+        { id: "crcCode", label: "CRC Code", required: true },
         { id: "address", label: "Address", required: false },
         { id: "pincode", label: "Pincode", required: false },
         { id: "district", label: "District", required: false },
@@ -97,7 +98,9 @@ export default function CSVMapper({
         // Try to find a matching system field by normalizing and comparing the names
         const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, "");
         const matchedField = systemFields.find((field) => {
-          const normalizedField = field.label.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const normalizedField = field.label
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "");
           return (
             normalizedField === normalizedHeader ||
             normalizedField.includes(normalizedHeader) ||
@@ -152,7 +155,9 @@ export default function CSVMapper({
 
     const mappedFieldIds = Object.values(mapping).filter(Boolean);
 
-    return requiredFieldIds.every((fieldId) => mappedFieldIds.includes(fieldId));
+    return requiredFieldIds.every((fieldId) =>
+      mappedFieldIds.includes(fieldId)
+    );
   };
 
   // Get missing required fields
@@ -195,7 +200,11 @@ export default function CSVMapper({
     // Check each required field based on mapping
     Object.entries(mapping).forEach(([csvHeader, systemFieldId]) => {
       const field = systemFields.find((f) => f.id === systemFieldId);
-      if (field && field.required && (!rowData[csvHeader] || rowData[csvHeader].trim() === "")) {
+      if (
+        field &&
+        field.required &&
+        (!rowData[csvHeader] || rowData[csvHeader].trim() === "")
+      ) {
         errors[csvHeader] = `${field.label} is required`;
         hasError = true;
       }
@@ -238,8 +247,12 @@ export default function CSVMapper({
             {(() => {
               const requiredFields = systemFields.filter((f) => f.required);
               const mappedFieldIds = Object.values(mapping).filter(Boolean);
-              const mappedRequired = requiredFields.filter((f) => mappedFieldIds.includes(f.id));
-              const missingFields = requiredFields.filter((f) => !mappedFieldIds.includes(f.id));
+              const mappedRequired = requiredFields.filter((f) =>
+                mappedFieldIds.includes(f.id)
+              );
+              const missingFields = requiredFields.filter(
+                (f) => !mappedFieldIds.includes(f.id)
+              );
               return (
                 <>
                   <Typography
@@ -255,14 +268,22 @@ export default function CSVMapper({
                       textOverflow: "ellipsis",
                     }}
                   >
-                    <span style={{ fontWeight: 600 }}>Required Fields Mapped:</span>
+                    <span style={{ fontWeight: 600 }}>
+                      Required Fields Mapped:
+                    </span>
                     <span style={{ fontWeight: 400, margin: "0 4px" }}>
                       {mappedRequired.length} of {requiredFields.length}
                     </span>
                     {missingFields.length > 0 && (
                       <span style={{ fontWeight: 600 }}>
                         . Missing:
-                        <span style={{ fontWeight: 600, marginLeft: 4, color: "#F45050" }}>
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            marginLeft: 4,
+                            color: "#F45050",
+                          }}
+                        >
                           {missingFields.map((f) => f.label).join(", ")}
                         </span>
                       </span>
@@ -289,28 +310,61 @@ export default function CSVMapper({
           }}
         >
           Match your CSV columns to our System Fields. All fields marked with a{" "}
-          <span style={{ color: "#F45050", fontWeight: "bold" }}>*</span> must be mapped. The "Data
-          Preview" column shows the first data entry from your file for that CSV column.
+          <span style={{ color: "#F45050", fontWeight: "bold" }}>*</span> must
+          be mapped. The "Data Preview" column shows the first data entry from
+          your file for that CSV column.
         </Typography>
         {/* Data Preview with full width */}
         <Card variant="outlined" sx={{ borderRadius: 2 }}>
           <CardContent>
             <Box
-              sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
             ></Box>
 
             <TableContainer sx={{ maxHeight: 600 }}>
               <Table stickyHeader size="small">
                 <TableHead>
-                  <TableRow>
+                  <TableRow sx={{ "& th": { borderBottom: "none" } }}>
                     <TableCell align="center">
-                      <b>Your CSV Column Header</b>
+                      <Typography
+                        sx={{
+                          fontWeight: 600,
+                          fontFamily: "Work Sans",
+                          color: "#2F4F4F",
+                          fontSize: "16px",
+                        }}
+                      >
+                        Your CSV Column Header
+                      </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      <b>Map to System Field</b>
+                      <Typography
+                        sx={{
+                          fontWeight: 600,
+                          fontFamily: "Work Sans",
+                          color: "#2F4F4F",
+                          fontSize: "16px",
+                        }}
+                      >
+                        Map to System Field
+                      </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      <b>Data Preview (from your file)</b>
+                      <Typography
+                        sx={{
+                          fontWeight: 600,
+                          fontFamily: "Work Sans",
+                          color: "#2F4F4F",
+                          fontSize: "16px",
+                        }}
+                      >
+                        Data Preview (from your file)
+                      </Typography>
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -319,9 +373,8 @@ export default function CSVMapper({
                     <TableRow
                       key={`preview-header-${header}`}
                       sx={{
-                        borderBottom: "none",
-                        "& > *": { borderBottom: "none" },
-                        height: 56, // gap between rows
+                        height: 56,
+                        "& td": { borderBottom: "none" },
                       }}
                     >
                       {/* 1. CSV Column Header */}
@@ -330,7 +383,7 @@ export default function CSVMapper({
                           variant="body2"
                           fontWeight={400}
                           fontFamily="Work Sans"
-                          fontSize="14px"
+                          fontSize="16px"
                           color="#2F4F4F"
                         >
                           {header}
@@ -341,7 +394,9 @@ export default function CSVMapper({
                         <FormControl fullWidth size="small">
                           <Select
                             value={mapping[header] || ""}
-                            onChange={(e) => handleMappingChange(header, e.target.value)}
+                            onChange={(e) =>
+                              handleMappingChange(header, e.target.value)
+                            }
                             displayEmpty
                             size="small"
                             sx={{
@@ -372,7 +427,8 @@ export default function CSVMapper({
                                   // Show if not already mapped OR is the current value for this header
                                   !Object.entries(mapping).some(
                                     ([otherHeader, mappedId]) =>
-                                      otherHeader !== header && mappedId === field.id
+                                      otherHeader !== header &&
+                                      mappedId === field.id
                                   )
                               )
                               .map((field) => (
@@ -383,7 +439,14 @@ export default function CSVMapper({
                                 >
                                   {field.label}
                                   {field.required && (
-                                    <span style={{ color: "#F45050", marginLeft: 2 }}>*</span>
+                                    <span
+                                      style={{
+                                        color: "#F45050",
+                                        marginLeft: 2,
+                                      }}
+                                    >
+                                      *
+                                    </span>
                                   )}
                                 </MenuItem>
                               ))}
@@ -396,7 +459,7 @@ export default function CSVMapper({
                           fontFamily="Work Sans"
                           fontWeight={400}
                           fontStyle="italic"
-                          fontSize="14px"
+                          fontSize="16px"
                           color="#597272"
                         >
                           {csvData[0]?.[header] || ""}
