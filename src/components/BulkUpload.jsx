@@ -41,7 +41,9 @@ import CSVMapper from "./CSVMapper";
 import SampleCSVModal from "./SampleCSVModal";
 import OutlinedButton from "./button/OutlinedButton";
 import { styled } from "@mui/material/styles";
-import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector";
+import StepConnector, {
+  stepConnectorClasses,
+} from "@mui/material/StepConnector";
 import CheckIcon from "@mui/icons-material/Check";
 import FileDownloadSvg from "../assets/file_download.svg";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
@@ -102,6 +104,7 @@ const DeleteConfirmationModal = ({
       onClose={isProcessing ? null : onClose}
       aria-labelledby="confirmation-modal-title"
       aria-describedby="confirmation-modal-description"
+      sx={{ zIndex: 99999999 }}
     >
       <Box sx={modalStyle}>
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
@@ -115,7 +118,10 @@ const DeleteConfirmationModal = ({
           </Typography>
         </Box>
 
-        <Typography id="confirmation-modal-description" sx={{ mb: 3, color: "#555" }}>
+        <Typography
+          id="confirmation-modal-description"
+          sx={{ mb: 3, color: "#555" }}
+        >
           {message}
           {entityName && <strong>{entityName}</strong>}?
         </Typography>
@@ -168,8 +174,10 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
   // Group errors by reason if available
   const errorTypes = {};
   errorData.forEach((row) => {
-    if (row.reason) {
-      const errorType = row.reason.startsWith("Duplicate") ? "Duplicate" : "Validation";
+    if (row.error) {
+      const errorType = row.error.startsWith("Duplicate")
+        ? "Duplicate"
+        : "Validation";
       errorTypes[errorType] = errorTypes[errorType] || [];
       errorTypes[errorType].push(row);
     } else {
@@ -181,12 +189,18 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
   const errorCategories = Object.keys(errorTypes);
 
   // Filter data based on selected tab
-  const filteredData = tabValue === 0 ? errorData : errorTypes[errorCategories[tabValue - 1]] || [];
+  const filteredData =
+    tabValue === 0
+      ? errorData
+      : errorTypes[errorCategories[tabValue - 1]] || [];
 
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
 
   // Get current page data
-  const currentData = filteredData.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+  const currentData = filteredData.slice(
+    (page - 1) * rowsPerPage,
+    page * rowsPerPage
+  );
 
   const handlePageChange = (event, value) => {
     setPage(value);
@@ -207,7 +221,10 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
       const values = headers.map((header) => {
         // Handle values that contain commas or quotes
         const value = row[header] || "";
-        if (typeof value === "string" && (value.includes(",") || value.includes('"'))) {
+        if (
+          typeof value === "string" &&
+          (value.includes(",") || value.includes('"'))
+        ) {
           return `"${value.replace(/"/g, '""')}"`;
         }
         return value;
@@ -237,15 +254,23 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
       onClose={onClose}
       maxWidth="lg"
       fullWidth
+      sx={{ zIndex: 13010 }}
       PaperProps={{
         sx: {
           borderRadius: 2,
           maxHeight: "90vh",
+          zIndex: 13010,
         },
       }}
     >
       <DialogTitle>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <ErrorOutlineIcon color="error" sx={{ mr: 1 }} />
             <Typography variant="h6" component="span">
@@ -261,8 +286,8 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
       <DialogContent dividers>
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {errorData.length} record(s) could not be processed due to errors. Review and fix these
-            issues.
+            {errorData.length} records could not be processed due to errors.
+            Review and fix these issues.
           </Typography>
 
           {/* Tabs for filtering errors by type */}
@@ -314,6 +339,11 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
                       Cluster Name
                     </Typography>
                   </TableCell>
+                  <TableCell>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      CRC Code
+                    </Typography>
+                  </TableCell>
                   <TableCell width="250">
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                       Error Reason
@@ -330,13 +360,18 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
                       "& td": {
                         borderBottom: "none",
                       },
+                      height: 60,
+                      "& > *": { py: 2 },
                     }}
                   >
-                    <TableCell>{(page - 1) * rowsPerPage + index + 1}</TableCell>
+                    <TableCell>
+                      {(page - 1) * rowsPerPage + index + 1}
+                    </TableCell>
                     <TableCell>{row.schoolName || ""}</TableCell>
                     <TableCell>{row.udiseCode || ""}</TableCell>
                     <TableCell>{row.blockName || ""}</TableCell>
                     <TableCell>{row.clusterName || ""}</TableCell>
+                    <TableCell>{row.crcCode || ""}</TableCell>
                     <TableCell>
                       <Tooltip title={row.reason || "Unknown error"}>
                         <Typography
@@ -367,7 +402,13 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
             </Table>
           </TableContainer>
 
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             {totalPages > 1 && (
               <Pagination
                 count={totalPages}
@@ -379,21 +420,25 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
             )}
 
             <Typography variant="caption" color="text.secondary">
-              Showing {Math.min(filteredData.length, (page - 1) * rowsPerPage + 1)}-
-              {Math.min(filteredData.length, page * rowsPerPage)} of {filteredData.length} errors
+              Showing{" "}
+              {Math.min(filteredData.length, (page - 1) * rowsPerPage + 1)}-
+              {Math.min(filteredData.length, page * rowsPerPage)} of{" "}
+              {filteredData.length} errors
             </Typography>
           </Box>
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ p: 2 }}>
-        <OutlinedButton text={"Close"} onClick={onClose} />
+        <Button onClick={onClose} color="primary">
+          Close
+        </Button>
 
-        <ButtonCustom
+        {/* <ButtonCustom
           text={"Download Errors CSV"}
           imageName={<FileDownloadIcon />}
           onClick={downloadErrorsCSV}
-        />
+        /> */}
       </DialogActions>
     </Dialog>
   );
@@ -491,6 +536,7 @@ export default function BulkUploadSchools() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState(new Set()); // Track which steps are completed
   const [mappingConfig, setMappingConfig] = useState(null);
   const [sampleModalOpen, setSampleModalOpen] = useState(false);
   const [editedCsvData, setEditedCsvData] = useState(null);
@@ -503,7 +549,14 @@ export default function BulkUploadSchools() {
   const [mapping, setMapping] = useState({});
   const [csvData, setCsvData] = useState([]);
 
-  const requiredFields = ["schoolName", "udiseCode", "clusterName", "blockName"];
+  const requiredFields = [
+    "schoolName",
+    "udiseCode",
+    "clusterName",
+    "blockName",
+    "crcCode",
+  ];
+  // Find which required fields are missing in the mapping
   const isConfirmMappingDisabled = !requiredFields.every((field) =>
     Object.values(mapping).includes(field)
   );
@@ -532,7 +585,9 @@ export default function BulkUploadSchools() {
       const reader = new FileReader();
       reader.onload = function (e) {
         const content = e.target.result;
-        const lines = content.split("\n").filter((line) => line.trim().length > 0);
+        const lines = content
+          .split("\n")
+          .filter((line) => line.trim().length > 0);
         // Subtract 1 for the header row
         setTotalUploadCount(Math.max(0, lines.length - 1));
       };
@@ -544,6 +599,8 @@ export default function BulkUploadSchools() {
 
       // Move to column mapping step
       setActiveStep(1);
+      // Mark step 1 (Upload CSV) as completed
+      setCompletedSteps((prev) => new Set([...prev, 0]));
     }
   };
 
@@ -555,6 +612,8 @@ export default function BulkUploadSchools() {
       setTotalUploadCount(editedData.length);
     }
     setActiveStep(2);
+    // Mark step 2 (Map Columns) as completed
+    setCompletedSteps((prev) => new Set([...prev, 1]));
   };
 
   const handleUpload = async () => {
@@ -579,7 +638,10 @@ export default function BulkUploadSchools() {
         Object.values(row)
           .map((val) => {
             // Handle values with commas or quotes
-            if (typeof val === "string" && (val.includes(",") || val.includes('"'))) {
+            if (
+              typeof val === "string" &&
+              (val.includes(",") || val.includes('"'))
+            ) {
               return `"${val.replace(/"/g, '""')}"`;
             }
             return val;
@@ -621,10 +683,13 @@ export default function BulkUploadSchools() {
       // Show success toast based on the actual response structure
       const successCount = response.data?.data?.successCount || 0;
       const totalCount = response.data?.data?.totalCount || totalUploadCount;
-      const existingCount = totalCount - successCount - (response.data?.data?.errorCount || 0);
+      const existingCount =
+        totalCount - successCount - (response.data?.data?.errorCount || 0);
 
       if (successCount > 0) {
-        toast.success(`Upload completed: ${successCount} schools added successfully`);
+        toast.success(
+          `Upload completed: ${successCount} schools added successfully`
+        );
       } else if (existingCount > 0) {
         // toast.info(`All schools already exist in the database`);
         toast.info(`${existingCount} records already exist in the database`);
@@ -632,7 +697,9 @@ export default function BulkUploadSchools() {
         toast.warning(`Upload completed with no new schools added`);
       }
       if ((response.data?.data?.errorCount || 0) > 0) {
-        toast.error(`${response.data.data.errorCount} records failed to upload`);
+        toast.error(
+          `${response.data.data.errorCount} records failed to upload`
+        );
       }
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -651,6 +718,7 @@ export default function BulkUploadSchools() {
             udiseCode: "",
             blockName: "",
             clusterName: "",
+            crcCode: "",
             reason: error.response?.data?.message || "Failed to process upload",
           },
         ]);
@@ -661,6 +729,8 @@ export default function BulkUploadSchools() {
     } finally {
       setIsUploading(false);
       setUploadDateTime(new Date().toISOString());
+      // Mark step 3 (Upload Data) as completed after upload finishes
+      setCompletedSteps((prev) => new Set([...prev, 2]));
     }
   };
 
@@ -677,6 +747,7 @@ export default function BulkUploadSchools() {
       setActiveStep(0);
       setUploadResult(null);
       setErrorData([]);
+      setCompletedSteps(new Set()); // Reset completed steps
 
       // Reset the file input so the same file can be selected again
       if (fileInputRef.current) {
@@ -711,6 +782,7 @@ export default function BulkUploadSchools() {
     setErrorData([]);
     setEditedCsvData(null);
     setTotalUploadCount(0);
+    setCompletedSteps(new Set()); // Reset completed steps
   };
 
   const handleDownloadFailedRecords = () => {
@@ -718,12 +790,22 @@ export default function BulkUploadSchools() {
       toast.error("No failed records to download.");
       return;
     }
-    const headers = ["schoolName", "udiseCode", "blockName", "clusterName", "reason"];
+    const headers = [
+      "schoolName",
+      "udiseCode",
+      "blockName",
+      "clusterName",
+      "crcCode",
+      "reason",
+    ];
     let csvContent = headers.join(",") + "\n";
     errorData.forEach((row) => {
       const values = headers.map((header) => {
         const value = row[header] || "";
-        if (typeof value === "string" && (value.includes(",") || value.includes('"'))) {
+        if (
+          typeof value === "string" &&
+          (value.includes(",") || value.includes('"'))
+        ) {
           return `"${value.replace(/"/g, '""')}"`;
         }
         return value;
@@ -754,9 +836,18 @@ export default function BulkUploadSchools() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ p: 2, px: 2, maxWidth: "60%", margin: "0 auto" }}>
+      <Box
+        sx={{
+          p: 2,
+          px: 2,
+          maxWidth: { xs: "80%", sm: "80%", md: "60%" },
+          margin: "0 auto",
+        }}
+      >
         <div className="flex justify-between">
-          <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Bulk Upload Schools</h5>
+          <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">
+            Bulk Upload Schools
+          </h5>
         </div>
 
         {/* Add stepper to show current stage of the process */}
@@ -769,7 +860,7 @@ export default function BulkUploadSchools() {
             sx={{ width: "100%", mb: 2 }}
           >
             {steps.map((label, index) => (
-              <Step key={label}>
+              <Step key={label} completed={completedSteps.has(index)}>
                 <StepLabel
                   StepIconComponent={CustomStepIcon}
                   sx={{
@@ -831,18 +922,22 @@ export default function BulkUploadSchools() {
                     backgroundColor: "rgba(13, 110, 253, 0.04)",
                   },
                 }}
-                onClick={() => fileInputRef.current && fileInputRef.current.click()} // Make entire box clickable
+                onClick={() =>
+                  fileInputRef.current && fileInputRef.current.click()
+                } // Make entire box clickable
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   e.currentTarget.style.borderColor = "#0d6efd";
-                  e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
+                  e.currentTarget.style.backgroundColor =
+                    "rgba(13, 110, 253, 0.08)";
                 }}
                 onDragEnter={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   e.currentTarget.style.borderColor = "#0d6efd";
-                  e.currentTarget.style.backgroundColor = "rgba(13, 110, 253, 0.08)";
+                  e.currentTarget.style.backgroundColor =
+                    "rgba(13, 110, 253, 0.08)";
                 }}
                 onDragLeave={(e) => {
                   e.preventDefault();
@@ -883,7 +978,14 @@ export default function BulkUploadSchools() {
                   ref={fileInputRef}
                 />
 
-                <Box sx={{ display: "flex", justifyContent: "center", mb: 2, mt: 7 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    mb: 2,
+                    mt: 7,
+                  }}
+                >
                   <Box
                     sx={{
                       width: 80,
@@ -913,8 +1015,11 @@ export default function BulkUploadSchools() {
                   }}
                 >
                   <span style={{ fontWeight: 600 }}>CSV Column Fields:</span>
-                  <span style={{ fontWeight: 400, color: "#666", marginLeft: 4 }}>
-                    The file should contain School Name, UDISE Code, Cluster Name, and Block Name.
+                  <span
+                    style={{ fontWeight: 400, color: "#666", marginLeft: 4 }}
+                  >
+                    The file should contain School Name, UDISE Code, Cluster
+                    Name, Block Name and CRC Code.
                   </span>
                 </Typography>
               </Box>
@@ -1007,7 +1112,8 @@ export default function BulkUploadSchools() {
                     marginLeft: 6,
                   }}
                 >
-                  {file.name} {totalUploadCount > 0 && `(${totalUploadCount} rows)`}
+                  {file.name}{" "}
+                  {totalUploadCount > 0 && `(${totalUploadCount} rows)`}
                 </span>
               </Typography>
               <IconButton
@@ -1037,7 +1143,19 @@ export default function BulkUploadSchools() {
             />
 
             <Box
-              sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}
+              sx={{ 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center", 
+                mt: 2,
+                gap: 2,
+                flexDirection: { xs: "column", sm: "row" },
+                "@media (max-width: 600px)": {
+                  flexDirection: "column",
+                  gap: 2,
+                  justifyContent: "center"
+                }
+              }}
             >
               <Button
                 variant="outlined"
@@ -1049,7 +1167,10 @@ export default function BulkUploadSchools() {
                   textTransform: "none",
                   fontWeight: 600,
                   fontFamily: "Work Sans",
-                  fontSize: "18px",
+                  fontSize: { xs: "14px", sm: "16px", md: "18px" },
+                  minWidth: { xs: "140px", sm: "160px" },
+                  width: { xs: "100%", sm: "auto" },
+                  maxWidth: { xs: "300px", sm: "none" },
                   "&:hover": {
                     backgroundColor: "#2F4F4F",
                     color: "#fff",
@@ -1059,12 +1180,14 @@ export default function BulkUploadSchools() {
               >
                 {`< Back to Upload`}
               </Button>
-              <ButtonCustom
-                text="Proceed >"
-                btnWidth="200"
-                onClick={handleConfirmMapping}
-                disabled={isConfirmMappingDisabled}
-              />
+              <Box>
+                <ButtonCustom
+                  text="Proceed >"
+                  btnWidth="200"
+                  onClick={handleConfirmMapping}
+                  disabled={isConfirmMappingDisabled}
+                />
+              </Box>
             </Box>
           </Box>
         )}
@@ -1104,11 +1227,12 @@ export default function BulkUploadSchools() {
                       fontWeight: 500,
                     }}
                   >
-                    Processed {totalUploadCount} records from <b>{file?.name}</b>
+                    Processed {totalUploadCount} records from{" "}
+                    <b>{file?.name}</b>
                   </Typography>
                 </Box>
 
-                <Card variant="outlined">
+                <Card variant="">
                   <CardContent>
                     <Box
                       sx={{
@@ -1188,12 +1312,12 @@ export default function BulkUploadSchools() {
                       >
                         {/* Custom Warning SVG */}
                         <svg width="40" height="40" viewBox="0 0 40 40">
-                          <circle cx="20" cy="20" r="20" fill="#F45050" />
+                          <polygon points="20,6 36,34 4,34" fill="#F45050" />
                           <text
                             x="20"
-                            y="27"
+                            y="29"
                             textAnchor="middle"
-                            fontSize="28"
+                            fontSize="20"
                             fontWeight="bold"
                             fill="#fff"
                             fontFamily="Arial"
@@ -1287,7 +1411,13 @@ export default function BulkUploadSchools() {
 
                           {/* Center: View all errors */}
                           {errorData.length > 3 && (
-                            <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                            <Box
+                              sx={{
+                                flex: 1,
+                                display: "flex",
+                                justifyContent: "center",
+                              }}
+                            >
                               <Button
                                 variant="outlined"
                                 onClick={handleViewErrorData}
@@ -1301,6 +1431,7 @@ export default function BulkUploadSchools() {
                                   fontWeight: 600,
                                   fontFamily: "Work Sans",
                                   fontSize: "18px",
+                                  whiteSpace: "nowrap",
                                   "&:hover": {
                                     backgroundColor: "#2F4F4F",
                                     color: "#fff",
@@ -1318,10 +1449,18 @@ export default function BulkUploadSchools() {
 
                           {/* Right: Download Failed Records */}
                           {errorData.length > 0 && (
-                            <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+                            <Box
+                              sx={{
+                                flex: 1,
+                                display: "flex",
+                                justifyContent: "flex-end",
+                              }}
+                            >
                               <Button
                                 variant="outlined"
-                                startIcon={<FileDownloadIcon sx={{ color: "inherit" }} />}
+                                startIcon={
+                                  <FileDownloadIcon sx={{ color: "inherit" }} />
+                                }
                                 onClick={handleDownloadFailedRecords}
                                 sx={{
                                   borderRadius: "8px",
@@ -1331,6 +1470,7 @@ export default function BulkUploadSchools() {
                                   fontWeight: 600,
                                   fontFamily: "Work Sans",
                                   fontSize: "18px",
+                                  whiteSpace: "nowrap",
                                   "&:hover": {
                                     backgroundColor: "#2F4F4F",
                                     color: "#fff",
@@ -1398,17 +1538,28 @@ export default function BulkUploadSchools() {
                               {errorData.slice(0, 3).map((error, index) => (
                                 <TableRow
                                   key={`preview-error-${index}`}
-                                  sx={{ "& td": { borderBottom: "none", py: 1.5 } }}
+                                  sx={{
+                                    "& td": { borderBottom: "none", py: 1.5 },
+                                  }}
                                 >
-                                  <TableCell align="center" sx={{ color: "#2F4F4F" }}>
-                                    {error.rowNo}
+                                  <TableCell
+                                    align="center"
+                                    sx={{ color: "#2F4F4F" }}
+                                  >
+                                    {error.rowIndex !== undefined
+                                      ? error.rowIndex
+                                      : error.rowNo !== undefined
+                                      ? error.rowNo
+                                      : ""}
                                   </TableCell>
                                   <TableCell sx={{ color: "#2F4F4F" }}>
                                     {error.schoolName || ""}
                                   </TableCell>
                                   {/* <TableCell>{error.udiseCode || ""}</TableCell> */}
                                   <TableCell>
-                                    <Tooltip title={error.reason || "Unknown error"}>
+                                    <Tooltip
+                                      title={error.reason || "Unknown error"}
+                                    >
                                       <Typography
                                         variant="body2"
                                         color="error"
@@ -1460,12 +1611,21 @@ export default function BulkUploadSchools() {
                           maxWidth: "100%",
                           mx: "auto",
                           mt: 3,
+                          gap: 2,
+                          flexDirection: { xs: "column", sm: "row" },
+                          "@media (max-width: 600px)": {
+                            flexDirection: "column",
+                            gap: 2,
+                            justifyContent: "center",
+                          },
                         }}
                       >
                         <Button
                           variant="outlined"
                           onClick={handleUploadAnotherFile}
-                          startIcon={<FileUploadIcon sx={{ color: "inherit" }} />}
+                          startIcon={
+                            <FileUploadIcon sx={{ color: "inherit" }} />
+                          }
                           sx={{
                             borderRadius: "8px",
                             height: "48px",
@@ -1473,7 +1633,10 @@ export default function BulkUploadSchools() {
                             textTransform: "none",
                             fontWeight: 600,
                             fontFamily: "Work Sans",
-                            fontSize: "18px",
+                            fontSize: { xs: "14px", sm: "16px", md: "18px" },
+                            minWidth: { xs: "180px", sm: "200px" },
+                            width: { xs: "100%", sm: "auto" },
+                            maxWidth: { xs: "300px", sm: "none" },
                             "&:hover": {
                               backgroundColor: "#2F4F4F",
                               color: "#fff",
@@ -1486,7 +1649,18 @@ export default function BulkUploadSchools() {
                         >
                           Upload Another File
                         </Button>
-                        <ButtonCustom text="Go to School List >" onClick={handleDoneUpload} />
+                        <Box
+                          sx={{
+                            width: { xs: "100%", sm: "200px" },
+                            maxWidth: { xs: "300px", sm: "none" },
+                          }}
+                        >
+                          <ButtonCustom
+                            text="Go to School List >"
+                            onClick={handleDoneUpload}
+                            btnWidth={{ xs: "100%", sm: "200" }}
+                          />
+                        </Box>
                       </Box>
                     </Box>
                   </CardContent>
@@ -1501,7 +1675,14 @@ export default function BulkUploadSchools() {
                   mb: 3,
                 }}
               >
-                <Box sx={{ backgroundColor: "#EAEDED", borderRadius: 2, p: 2, mb: 3 }}>
+                <Box
+                  sx={{
+                    backgroundColor: "#EAEDED",
+                    borderRadius: 2,
+                    p: 2,
+                    mb: 3,
+                  }}
+                >
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                     Confirm and Upload
                   </Typography>
@@ -1530,8 +1711,8 @@ export default function BulkUploadSchools() {
                       Summary:{" "}
                       <span style={{ fontWeight: 400 }}>
                         <b>{totalUploadCount}</b> school record
-                        {totalUploadCount !== 1 ? "s" : ""} will be processed based on the mappings
-                        below.
+                        {totalUploadCount !== 1 ? "s" : ""} will be processed
+                        based on the mappings below.
                       </span>
                     </Typography>
                   </Box>
@@ -1540,9 +1721,14 @@ export default function BulkUploadSchools() {
                 <Typography
                   variant="body1"
                   fontWeight="bold"
-                  sx={{ mb: 3, fontFamily: "Work Sans", color: "#2F4F4F", fontSize: "18px" }}
+                  sx={{
+                    mb: 3,
+                    fontFamily: "Work Sans",
+                    color: "#2F4F4F",
+                    fontSize: "18px",
+                  }}
                 >
-                  Column Mapping:
+                  Column Mapping Review
                 </Typography>
 
                 <TableContainer component={Paper} sx={{ mb: 3 }}>
@@ -1555,7 +1741,7 @@ export default function BulkUploadSchools() {
                               fontWeight: 600,
                               fontFamily: "Work Sans",
                               color: "#2F4F4F",
-                              fontSize: "16px",
+                              fontSize: "15px",
                             }}
                           >
                             Your CSV Column
@@ -1567,7 +1753,7 @@ export default function BulkUploadSchools() {
                               fontWeight: 600,
                               fontFamily: "Work Sans",
                               color: "#2F4F4F",
-                              fontSize: "16px",
+                              fontSize: "15px",
                             }}
                           >
                             Mapped to System Field
@@ -1576,78 +1762,115 @@ export default function BulkUploadSchools() {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {Object.entries(mappingConfig).map(([csvColumn, systemField]) => (
-                        <TableRow
-                          key={`mapping-${csvColumn}`}
-                          sx={{
-                            height: 48,
-                            "& td, & th": {
-                              borderBottom: "none",
-                            },
-                          }}
-                        >
-                          <TableCell>
-                            <Typography
+                      {Object.entries(mappingConfig).map(
+                        ([csvColumn, systemField]) => {
+                          const isRequired = [
+                            "schoolName",
+                            "udiseCode",
+                            "blockName",
+                            "clusterName",
+                            "crcCode",
+                          ].includes(systemField);
+                          return (
+                            <TableRow
+                              key={`mapping-${csvColumn}`}
                               sx={{
-                                fontFamily: "Work Sans",
-                                fontWeight: 400, // normal
-                                color: "#2F4F4F",
-                                fontSize: "15px",
+                                height: 48,
+                                "& td, & th": {
+                                  borderBottom: "none",
+                                },
                               }}
                             >
-                              {csvColumn}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography
-                              sx={{
-                                fontFamily: "Work Sans",
-                                fontWeight: 400, // normal
-                                color: "#2F4F4F",
-                                fontSize: "15px",
-                              }}
-                            >
-                              {systemField}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                              <TableCell>
+                                <Typography
+                                  sx={{
+                                    fontFamily: "Work Sans",
+                                    fontWeight: 400, // normal
+                                    color: "#2F4F4F",
+                                    fontSize: "15px",
+                                  }}
+                                >
+                                  {csvColumn}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography
+                                  sx={{
+                                    fontFamily: "Work Sans",
+                                    fontWeight: 400, // normal
+                                    color: "#2F4F4F",
+                                    fontSize: "15px",
+                                  }}
+                                >
+                                  {systemField}
+                                  {isRequired ? (
+                                    <span
+                                      style={{
+                                        color: "#F45050",
+                                        marginLeft: 2,
+                                        fontSize: 15,
+                                      }}
+                                    >
+                                      *
+                                    </span>
+                                  ) : null}
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
+                      )}
                     </TableBody>
                   </Table>
                 </TableContainer>
 
                 <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <Button
-                    variant="outlined"
-                    onClick={handleBackStep}
+                  <Box
                     sx={{
-                      borderRadius: "8px",
-                      height: "48px",
-                      color: "#2F4F4F",
-                      textTransform: "none",
-                      fontWeight: 600,
-                      fontFamily: "Work Sans",
-                      fontSize: "18px",
-                      "&:hover": {
-                        backgroundColor: "#2F4F4F",
-                        color: "#fff",
-                        borderColor: "#2F4F4F",
-                      },
+                      display: "flex",
+                      flexDirection: { xs: "column", sm: "row" },
+                      justifyContent: { xs: "stretch", sm: "space-between" },
+                      alignItems: "center",
+                      gap: 2,
+                      width: "100%",
                     }}
                   >
-                    {`< Back to Mapping`}
-                  </Button>
-
-                  <ButtonCustom
-                    text={isUploading ? "Uploading..." : "Upload Schools "}
-                    btnWidth="200"
-                    onClick={handleUpload}
-                    disabled={isUploading}
-                  />
+                    <Button
+                      variant="outlined"
+                      onClick={handleBackStep}
+                      sx={{
+                        borderRadius: "8px",
+                        height: "48px",
+                        color: "#2F4F4F",
+                        textTransform: "none",
+                        fontWeight: 600,
+                        fontFamily: "Work Sans",
+                        fontSize: "18px",
+                        width: { xs: "100%", sm: "200px" },
+                        minWidth: { xs: "180px", sm: "200px" },
+                        maxWidth: { xs: "300px", sm: "200px" },
+                        "&:hover": {
+                          backgroundColor: "#2F4F4F",
+                          color: "#fff",
+                          borderColor: "#2F4F4F",
+                        },
+                      }}
+                    >
+                      {`< Back to Mapping`}
+                    </Button>
+                    <ButtonCustom
+                      text={isUploading ? "Uploading..." : "Upload Schools "}
+                      btnWidth={{ xs: "100%", sm: "200px" }}
+                      onClick={handleUpload}
+                      disabled={isUploading}
+                    />
+                  </Box>
                 </Box>
 
                 {isUploading && (
-                  <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "center", mt: 3 }}
+                  >
                     <CircularProgress size={24} />
                   </Box>
                 )}
@@ -1682,11 +1905,21 @@ export default function BulkUploadSchools() {
             open={errorDialogOpen}
             onClose={() => setErrorDialogOpen(false)}
             errorData={errorData}
-            headers={["schoolName", "udiseCode", "blockName", "clusterName"]}
+            headers={[
+              "schoolName",
+              "udiseCode",
+              "blockName",
+              "clusterName",
+              "crcCode",
+            ]}
           />
         )}
       </Box>
-      <ToastContainer style={{ zIndex: 99999999 }} position="top-right" autoClose={4000} />
+      <ToastContainer
+        style={{ zIndex: 99999999 }}
+        position="top-right"
+        autoClose={4000}
+      />
     </ThemeProvider>
   );
 }

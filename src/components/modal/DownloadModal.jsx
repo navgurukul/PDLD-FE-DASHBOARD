@@ -73,8 +73,8 @@ const DownloadModal = ({
   return (
     // Modal overlay with rgba background for transparency
     <div
-      className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+      className="fixed inset-0 flex items-center justify-center"
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)", zIndex: 12000 }}
     >
       {/* Modal content */}
       <div className="bg-white rounded-lg shadow-lg w-[540px] max-w-[95vw] p-6">

@@ -7,6 +7,8 @@ const ConfirmationModal = ({
   title,
   changeType,
   message,
+  fromValue,
+  toValue,
 }) => {
   if (!isOpen) return null;
 
@@ -18,11 +20,14 @@ const ConfirmationModal = ({
   return (
     // Modal overlay with rgba background for transparency
     <div
-      className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+      className="fixed inset-0 flex items-center justify-center"
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)", zIndex: 12000 }} // overlay par z-index
     >
       {/* Modal content */}
-      <div className="bg-white rounded-lg shadow-lg w-[540px] max-w-[95vw] p-6">
+      <div
+        className="bg-white rounded-lg shadow-lg w-[540px] max-w-[95vw] p-6"
+        style={{ zIndex: 12001, position: "relative" }} // modal box par z-index
+      >
         {/* Modal header */}
         <h2
           style={{
@@ -36,9 +41,16 @@ const ConfirmationModal = ({
           {title}
         </h2>
 
-        {/* Modal body */}
         <div className="mb-6">
           <p className="text-[#2F4F4F] mb-3" style={{ fontSize: "18px", fontFamily: "Work Sans" }}>
+            {fromValue && toValue && (
+              <>
+                You are changing {changeType?.toLowerCase()} from&nbsp;
+                <span style={{ fontWeight: 600 }}>{fromValue}</span>
+                &nbsp;to&nbsp;
+                <span style={{ fontWeight: 600 }}>{toValue}</span>.{" "}
+              </>
+            )}
             {displayMessage}
           </p>
         </div>

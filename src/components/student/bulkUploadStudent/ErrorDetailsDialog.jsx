@@ -18,266 +18,200 @@ import {
   Box,
   Tabs,
   Tab,
-  TextField,
-  InputAdornment,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import GetAppIcon from "@mui/icons-material/GetApp";
-import SearchIcon from "@mui/icons-material/Search";
-import InfoIcon from "@mui/icons-material/Info";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import Pagination from "@mui/material/Pagination";
 
 const StudentErrorDetailsDialog = ({ open, onClose, errorData }) => {
-  const [activeTab, setActiveTab] = useState(0);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [tabValue, setTabValue] = useState(0);
+  const rowsPerPage = 5;
+  const [page, setPage] = useState(1);
 
-  // Define display headers (what shows in the UI table) - using only API response fields
+  // Table headers
   const displayHeaders = [
     { id: "row", label: "Row No." },
     { id: "fullName", label: "Full Name" },
     { id: "fatherName", label: "Father's Name" },
     { id: "motherName", label: "Mother's Name" },
-    { id: "dob", label: "Date of Birth" },
-    { id: "class", label: "Grade" },
+    // { id: "dob", label: "Date of Birth" },
+    { id: "class", label: "Class" },
     { id: "gender", label: "Gender" },
-    { id: "schoolUdiseCode", label: "School ID" },
-    { id: "aparID", label: "aparID" },
-    { id: "hostel", label: "Hostel" },
+    // { id: "schoolUdiseCode", label: "Apar ID" },
+    // { id: "aparID", label: "aparID" },
+    // { id: "hostel", label: "Hostel" },
     { id: "error", label: "Error" },
   ];
 
-  // Define all fields to include in CSV export - using only API response fields
-  const csvHeaders = [
-    { id: "fullName", label: "Full Name" },
-    { id: "fatherName", label: "Father's Name" },
-    { id: "motherName", label: "Mother's Name" },
-    { id: "dob", label: "Date of Birth" },
-    { id: "class", label: "Grade" },
-    { id: "gender", label: "Gender" },
-    { id: "schoolUdiseCode", label: "School ID" },
-    { id: "aparID", label: "aparID" },
-    { id: "hostel", label: "Hostel" },
-    { id: "error", label: "Error" },
-  ];
-
-  // Filter the error data based on search term
-  const filteredErrors = errorData.filter((error) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (error.name && error.name.toLowerCase().includes(searchLower)) ||
-      (error.aparID && error.aparID.toLowerCase().includes(searchLower)) ||
-      (error.error && error.error.toLowerCase().includes(searchLower))
-    );
+  // Group errors by reason
+  const errorTypes = {};
+  errorData.forEach((row) => {
+    if (row.error) {
+      const errorType = row.error.startsWith("Duplicate") ? "Duplicate" : "Validation";
+      errorTypes[errorType] = errorTypes[errorType] || [];
+      errorTypes[errorType].push(row);
+    } else {
+      errorTypes["General"] = errorTypes["General"] || [];
+      errorTypes["General"].push(row);
+    }
   });
+  const errorCategories = Object.keys(errorTypes);
+
+  // Filter data based on selected tab
+  const filteredData = tabValue === 0 ? errorData : errorTypes[errorCategories[tabValue - 1]] || [];
+
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  const currentData = filteredData.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
   const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
+    setTabValue(newValue);
+    setPage(1);
   };
 
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const downloadErrorsCSV = () => {
-    // Create CSV header row
-    const csvHeader = csvHeaders.map((header) => header.label).join(",");
-
-    // Create CSV rows from filtered data
-    const csvRows = filteredErrors.map((error) => {
-      return csvHeaders
-        .map((header) => {
-          let value = error[header.id] !== undefined ? error[header.id] : "";
-
-          // Handle commas and quotes in CSV properly
-          if (typeof value === "string" && (value.includes(",") || value.includes('"'))) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-          return value;
-        })
-        .join(",");
-    });
-
-    // Combine header and rows
-    const csvContent = [csvHeader, ...csvRows].join("\n");
-
-    // Create blob and download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "student_upload_errors.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handlePageChange = (event, value) => {
+    setPage(value);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">Error Details ({filteredErrors.length} errors)</Typography>
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth sx={{ zIndex: 13010 }}>
+      <DialogTitle sx={{ p: 0 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            px: 3,
+            pt: 3,
+            pb: 2,
+            borderBottom: "1px solid #e0e0e0", // School modal jaise border
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <ErrorOutlineIcon color="error" sx={{ mr: 1 }} />
+            <Typography variant="h6" component="span">
+              Records with Errors
+            </Typography>
+          </Box>
+          <IconButton onClick={onClose} size="small">
             <CloseIcon />
           </IconButton>
         </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ px: 3, pt: 2, pb: 1 }}>
+          {errorData.length} records could not be processed due to errors. Review and fix these
+          issues.
+        </Typography>
       </DialogTitle>
 
-      <Box sx={{ borderBottom: 1, borderColor: "divider", px: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="error view tabs">
-          <Tab label="View Errors" />
-          {/* <Tab label="Raw Data" /> */}
-        </Tabs>
-      </Box>
-
-      <Box sx={{ px: 3, pt: 2, pb: 1 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-          <TextField
-            placeholder="Search..."
-            variant="outlined"
-            size="small"
-            value={searchTerm}
-            onChange={handleSearchChange}
-            sx={{ width: 300 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          {/* <Button
-						variant="outlined"
-						startIcon={<GetAppIcon />}
-						onClick={downloadErrorsCSV}
-						sx={{ borderRadius: "8px", height: "40px" }}
-					>
-						Download Errors as CSV
-					</Button> */}
+      {/* Tabs */}
+      {errorCategories.length > 0 && (
+        <Box sx={{ borderBottom: 1, borderColor: "divider", px: 3 }}>
+          <Tabs value={tabValue} onChange={handleTabChange} aria-label="error view tabs">
+            <Tab label={`All Errors (${errorData.length})`} />
+            {errorCategories.map((category, idx) => (
+              <Tab key={category} label={`${category} (${errorTypes[category].length})`} />
+            ))}
+          </Tabs>
         </Box>
-
-        <Box sx={{ mb: 1 }}>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ display: "flex", alignItems: "center" }}
-          >
-            <InfoIcon fontSize="small" sx={{ mr: 0.5 }} />
-            {searchTerm
-              ? `Showing ${filteredErrors.length} of ${errorData.length} errors`
-              : `Showing all ${errorData.length} errors`}
-          </Typography>
-        </Box>
-      </Box>
+      )}
 
       <DialogContent sx={{ pt: 0 }}>
-        {activeTab === 0 && (
-          <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
-            <Table stickyHeader size="small">
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                  {displayHeaders.map((header) => (
-                    <TableCell
-                      key={header.id}
-                      sx={{ fontWeight: 700, fontFamily: "Work Sans", color: "#2F4F4F" }}
-                    >
-                      {header.label}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredErrors.length > 0 ? (
-                  filteredErrors.map((error, index) => (
-                    <TableRow
-                      key={`error-row-${index}`}
-                      hover
-                      sx={{
-                        "& td, & th": { borderBottom: "none" },
-                      }}
-                    >
-                      {displayHeaders.map((header) => (
-                        <TableCell key={`${index}-${header.id}`} sx={{ py: 2 }}>
-                          {header.id === "class" ? (
-                            error[header.id] ? (
-                              `Class ${error[header.id]}`
-                            ) : (
-                              ""
-                            )
-                          ) : header.id === "error" ? (
-                            <Tooltip title={error[header.id] || ""}>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  maxWidth: 300,
-                                  color: "error.main",
-                                }}
-                              >
-                                {error[header.id] || ""}
-                              </Typography>
-                            </Tooltip>
+        <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
+          <Table stickyHeader size="small">
+            <TableHead>
+              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                {displayHeaders.map((header) => (
+                  <TableCell
+                    key={header.id}
+                    sx={{
+                      fontWeight: 700,
+                      fontFamily: "Work Sans",
+                      color: "#2F4F4F",
+                      backgroundColor: "#f5f5f5 !important",
+                    }}
+                  >
+                    {header.label}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {currentData.length > 0 ? (
+                currentData.map((error, index) => (
+                  <TableRow
+                    key={`error-row-${index}`}
+                    sx={{
+                      backgroundColor: "rgba(244,67,54,0.03)",
+                      "& td, & th": { borderBottom: "none" },
+                    }}
+                  >
+                    {displayHeaders.map((header, colIdx) => (
+                      <TableCell key={`${index}-${header.id}`} sx={{ py: 2 }}>
+                        {header.id === "row" ? (
+                          (page - 1) * rowsPerPage + index + 1
+                        ) : header.id === "class" ? (
+                          error[header.id] ? (
+                            `Class ${error[header.id]}`
                           ) : (
-                            error[header.id] || ""
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={displayHeaders.length} align="center">
-                      No errors found matching your search.
-                    </TableCell>
+                            ""
+                          )
+                        ) : header.id === "error" ? (
+                          <Tooltip title={error[header.id] || ""}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                maxWidth: 300,
+                                color: "error.main",
+                              }}
+                            >
+                              {error[header.id] || ""}
+                            </Typography>
+                          </Tooltip>
+                        ) : (
+                          error[header.id] || ""
+                        )}
+                      </TableCell>
+                    ))}
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-
-        {activeTab === 1 && (
-          <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
-            <Table stickyHeader size="small">
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                  {csvHeaders.map((header) => (
-                    <TableCell key={header.id} sx={{ fontWeight: "bold" }}>
-                      {header.label}
-                    </TableCell>
-                  ))}
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={displayHeaders.length} align="center">
+                    No errors found.
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredErrors.length > 0 ? (
-                  filteredErrors.map((error, index) => (
-                    <TableRow key={`raw-error-row-${index}`} hover>
-                      {csvHeaders.map((header) => (
-                        <TableCell key={`raw-${index}-${header.id}`}>
-                          {header.id === "class"
-                            ? error[header.id]
-                              ? `Class ${error[header.id]}`
-                              : ""
-                            : error[header.id] || ""}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={csvHeaders.length} align="center">
-                      No errors found matching your search.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </DialogContent>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mt: 2,
+            // borderBottom: "1px solid #e0e0e0",
+          }}
+        >
+          {totalPages > 1 && (
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              color="primary"
+              size="small"
+            />
+          )}
 
+          <Typography variant="caption" color="text.secondary">
+            Showing {Math.min(filteredData.length, (page - 1) * rowsPerPage + 1)}-
+            {Math.min(filteredData.length, page * rowsPerPage)} of {filteredData.length} errors
+          </Typography>
+        </Box>
+      </DialogContent>
+      <Box sx={{ borderTop: "1px solid #e0e0e0", mt: 2, mb: 0 }} />
       <DialogActions>
         <Button onClick={onClose} color="primary">
           Close

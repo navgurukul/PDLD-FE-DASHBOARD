@@ -59,7 +59,7 @@ const ModalSummary = ({
   const totalTests = allClassTests.reduce((sum, classObj) => sum + classObj.tests.length, 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+   <div className="fixed inset-0 flex items-center justify-center" style={{ zIndex: 12000 }}>
       {/* Overlay */}
       <div
         style={{
@@ -68,8 +68,7 @@ const ModalSummary = ({
           left: 0,
           width: "100vw",
           height: "100vh",
-          backgroundColor: "rgba(0, 0, 0, 0.3)",
-          backdropFilter: "blur(8px)",
+         backgroundColor: "rgba(0, 0, 0, 0.5)",
           WebkitBackdropFilter: "blur(8px)",
           zIndex: 50,
         }}
@@ -171,8 +170,9 @@ const ModalSummary = ({
                         <div
                           style={{
                             fontFamily: "'Work Sans', sans-serif",
-                            fontWeight: 600,
-                            fontSize: "15px",
+                            fontWeight: 400,
+                            fontStyle: "normal",
+                            fontSize: "18px",
                             color: "#2F4F4F",
                             marginBottom: "4px",
                           }}

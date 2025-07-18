@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Button,
   TextField,
@@ -24,6 +24,54 @@ import apiInstance from "../../api"; // Updated import path
 import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
+import { SUBJECTS_BY_GRADE } from "../data/testData"; // Import testData for curriculum mapping
+
+// Utility function to convert text to title case
+const toTitleCase = (str) => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// Utility function to format numbers - remove .0 for whole numbers
+const formatNumber = (value) => {
+  if (value === null || value === undefined || value === "") return "-";
+  const num = parseFloat(value);
+  if (isNaN(num)) return "-";
+  
+  // If it's a whole number, show without decimal
+  if (num % 1 === 0) {
+    return num.toString();
+  }
+  
+  // If it has decimal part, show one decimal place
+  return num.toFixed(1);
+};
+
+// Utility function to check if curriculum note should be shown
+const shouldShowCurriculumNote = (subject, groupTitle) => {
+  // Map group titles to class ranges
+  const groupClassMapping = {
+    "Primary (1-5)": [1, 2, 3, 4, 5],
+    "Upper Primary (6-8)": [6, 7, 8],
+    "High School (9-10)": [9, 10],
+    "Higher Secondary (11-12)": [11, 12]
+  };
+
+  const classesInGroup = groupClassMapping[groupTitle];
+  if (!classesInGroup) return false;
+
+  // Check how many classes in this group have this subject
+  const classesWithSubject = classesInGroup.filter(classNum => 
+    SUBJECTS_BY_GRADE[classNum] && SUBJECTS_BY_GRADE[classNum].includes(subject)
+  );
+
+  // Show note only if subject is present in SOME but not ALL classes of the group
+  return classesWithSubject.length > 0 && classesWithSubject.length < classesInGroup.length;
+};
 
 const theme = createTheme({
   typography: {
@@ -144,18 +192,121 @@ const Reports = () => {
   const [selectedCluster, setSelectedCluster] = useState("");
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [selectedClassData, setSelectedClassData] = useState(null);
+  const [academicYear, setAcademicYear] = useState("2024-25");
+  const [subjects, setSubjects] = useState([]); // Dynamic subjects from API
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
+  const subjectsFetched = useRef(false); // Track if subjects have been fetched
 
   // State for available blocks and clusters
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [availableClusters, setAvailableClusters] = useState([]);
-
+  
   // Changed from fixed pageSize to state
   const [pageSize, setPageSize] = useState(15);
+
+  // Curriculum mapping for subjects
+  // Dynamic function to get expected classes for a subject in a group using testData.js
+  const getExpectedClassesForSubject = (subject, groupTitle) => {
+    const groupClassMapping = {
+      "Primary (1-5)": [1, 2, 3, 4, 5],
+      "Upper Primary (6-8)": [6, 7, 8],
+      "High School (9-10)": [9, 10],
+      "Higher Secondary (11-12)": [11, 12]
+    };
+
+    const classesInGroup = groupClassMapping[groupTitle];
+    if (!classesInGroup) return [];
+
+    // Filter classes that have this subject according to testData.js
+    return classesInGroup.filter(classNum => 
+      SUBJECTS_BY_GRADE[classNum] && SUBJECTS_BY_GRADE[classNum].includes(subject)
+    );
+  };
+
+  // Helper function to check curriculum availability
+  const checkCurriculumAvailability = (subject, groupTitle, classesInData) => {
+    const expectedClasses = getExpectedClassesForSubject(subject, groupTitle);
+    const actualClasses = classesInData.map(c => c.class);
+    
+    // Check if ALL classes that should have this subject are represented in the data
+    // If expected classes list is empty, it means subject is not taught in this group at all
+    if (expectedClasses.length === 0) {
+      return {
+        allClassesHaveSubject: false,
+        expectedClasses,
+        actualClasses,
+        reason: "Subject not taught in this group"
+      };
+    }
+    
+    // Check if subject is available in all classes of the group
+    const groupClassMapping = {
+      "Primary (1-5)": [1, 2, 3, 4, 5],
+      "Upper Primary (6-8)": [6, 7, 8],
+      "High School (9-10)": [9, 10],
+      "Higher Secondary (11-12)": [11, 12]
+    };
+    
+    const allClassesInGroup = groupClassMapping[groupTitle] || [];
+    const allClassesHaveSubject = expectedClasses.length === allClassesInGroup.length;
+    
+    return {
+      allClassesHaveSubject,
+      expectedClasses,
+      actualClasses,
+      totalClassesInGroup: allClassesInGroup.length
+    };
+  };
 
   // Add page size change handler
   const handlePageSizeChange = (event) => {
     setPageSize(event.target.value);
     setCurrentPage(1); // Reset to first page when changing page size
+  };
+
+  // Fetch unique subjects from API
+  const fetchSubjects = async () => {
+    // Prevent multiple calls
+    if (subjectsFetched.current) return;
+    
+    try {
+      setIsLoadingSubjects(true);
+      subjectsFetched.current = true; // Mark as fetching
+      
+      const response = await apiInstance.get('/report/unique-subjects');
+    
+      if (response.data.success && response.data.data && Array.isArray(response.data.data)) {
+        const fetchedSubjects = response.data.data;
+        setSubjects(fetchedSubjects);
+        
+        // Set default selected subject if current selection is not in the list
+        if (fetchedSubjects.length > 0) {
+          if (!fetchedSubjects.includes(selectedSubject)) {
+            setSelectedSubject(fetchedSubjects[0]);
+          }
+        }
+      } else {
+        // Fallback to hardcoded subjects if API fails
+        console.warn('Failed to fetch subjects from API, using fallback');
+        const fallbackSubjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
+        setSubjects(fallbackSubjects);
+        if (!fallbackSubjects.includes(selectedSubject)) {
+          setSelectedSubject(fallbackSubjects[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+      // Fallback to hardcoded subjects if API fails
+      const fallbackSubjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
+      setSubjects(fallbackSubjects);
+      if (!fallbackSubjects.includes(selectedSubject)) {
+        setSelectedSubject(fallbackSubjects[0]);
+      }
+      // Only show toast once and only if we haven't shown it before
+      toast.error('Failed to load subjects, using default list');
+    } finally {
+      setIsLoadingSubjects(false);
+    }
   };
 
   // Extract unique blocks and clusters from the API response
@@ -171,6 +322,11 @@ const Reports = () => {
     setAvailableBlocks(Array.from(blocks).sort());
     setAvailableClusters(Array.from(clusters).sort());
   };
+
+  // Fetch subjects on component mount
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   // Fetch schools data from API
   useEffect(() => {
@@ -196,11 +352,11 @@ const Reports = () => {
       const response = await apiInstance.get(url);
 
       if (response.data.success) {
-        const { schools, pagination } = response.data.data;
+        const { schools, pagination, academicYear } = response.data.data;
         setReportData(schools);
         setTotalRecords(pagination.totalSchools);
         setTotalPages(pagination.totalPages);
-
+        if (academicYear) setAcademicYear(academicYear);
         // Extract blocks and clusters if not already done
         if (availableBlocks.length === 0 || availableClusters.length === 0) {
           extractBlocksAndClusters(schools);
@@ -218,24 +374,27 @@ const Reports = () => {
 
   // Fetch all blocks and clusters for dropdowns (separate API call)
   useEffect(() => {
-    const fetchAllSchoolsForDropdowns = async () => {
-      try {
-        // This could be a separate API endpoint that returns all blocks and clusters
-        // For now, we'll just use the same endpoint with a larger page size
-        const response = await apiInstance.get(
-          `/report/subject-performance/${selectedSubject}?page=1&pageSize=100`
-        );
+    // Only fetch if we have a selected subject and subjects are loaded
+    if (selectedSubject && !isLoadingSubjects) {
+      const fetchAllSchoolsForDropdowns = async () => {
+        try {
+          // This could be a separate API endpoint that returns all blocks and clusters
+          // For now, we'll just use the same endpoint with a larger page size
+          const response = await apiInstance.get(
+            `/report/subject-performance/${selectedSubject}?page=1&pageSize=100`
+          );
 
-        if (response.data.success) {
-          extractBlocksAndClusters(response.data.data.schools);
+          if (response.data.success) {
+            extractBlocksAndClusters(response.data.data.schools);
+          }
+        } catch (error) {
+          console.error("Error fetching dropdown data:", error);
         }
-      } catch (error) {
-        console.error("Error fetching dropdown data:", error);
-      }
-    };
+      };
 
-    fetchAllSchoolsForDropdowns();
-  }, []);
+      fetchAllSchoolsForDropdowns();
+    }
+  }, [selectedSubject, isLoadingSubjects]); // Add proper dependencies
 
   // Custom Table Component
   const CustomTable = ({ data }) => {
@@ -350,54 +509,56 @@ const Reports = () => {
           <tbody>
             {data.map((school, index) => (
               <tr key={index}>
-                <td style={{ maxWidth: "300px", wordWrap: "break-word" }}>{school.schoolName}</td>
+                <td style={{ maxWidth: "300px", wordWrap: "break-word" }}>
+                  {school.udiseCode} - {toTitleCase(school.schoolName)}
+                </td>
                 <td
-                  className={parseInt(school.primaryAvg) < 20 ? "low-score" : ""}
+                  className={parseInt(school.primaryAvg) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 1)}
                 >
-                  {school.primaryAvg !== null ? school.primaryAvg : "-"}
+                  {formatNumber(school.primaryAvg)}
                 </td>
                 <td
-                  className={parseInt(school.primaryPass) < 20 ? "low-score" : ""}
+                  className={parseInt(school.primaryPass) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 2)}
                 >
-                  {school.primaryPass !== null ? `${school.primaryPass}%` : "-"}
+                  {school.primaryPass !== null ? `${formatNumber(school.primaryPass)}%` : "-"}
                 </td>
                 <td
-                  className={parseInt(school.upperPrimaryAvg) < 20 ? "low-score" : ""}
+                  className={parseInt(school.upperPrimaryAvg) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 3)}
                 >
-                  {school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : "-"}
+                  {formatNumber(school.upperPrimaryAvg)}
                 </td>
                 <td
-                  className={parseInt(school.upperPrimaryPass) < 20 ? "low-score" : ""}
+                  className={parseInt(school.upperPrimaryPass) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 4)}
                 >
-                  {school.upperPrimaryPass !== null ? `${school.upperPrimaryPass}%` : "-"}
+                  {school.upperPrimaryPass !== null ? `${formatNumber(school.upperPrimaryPass)}%` : "-"}
                 </td>
                 <td
-                  className={parseInt(school.highSchoolAvg) < 20 ? "low-score" : ""}
+                  className={parseInt(school.highSchoolAvg) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 5)}
                 >
-                  {school.highSchoolAvg !== null ? school.highSchoolAvg : "-"}
+                  {formatNumber(school.highSchoolAvg)}
                 </td>
                 <td
-                  className={parseInt(school.highSchoolPass) < 20 ? "low-score" : ""}
+                  className={parseInt(school.highSchoolPass) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 6)}
                 >
-                  {school.highSchoolPass !== null ? `${school.highSchoolPass}%` : "-"}
+                  {school.highSchoolPass !== null ? `${formatNumber(school.highSchoolPass)}%` : "-"}
                 </td>
                 <td
-                  className={parseInt(school.higherSecondaryAvg) < 20 ? "low-score" : ""}
+                  className={parseInt(school.higherSecondaryAvg) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 7)}
                 >
-                  {school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : "-"}
+                  {formatNumber(school.higherSecondaryAvg)}
                 </td>
                 <td
-                  className={parseInt(school.higherSecondaryPass) < 20 ? "low-score" : ""}
+                  className={parseInt(school.higherSecondaryPass) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 8)}
                 >
-                  {school.higherSecondaryPass !== null ? `${school.higherSecondaryPass}%` : "-"}
+                  {school.higherSecondaryPass !== null ? `${formatNumber(school.higherSecondaryPass)}%` : "-"}
                 </td>
               </tr>
             ))}
@@ -411,7 +572,7 @@ const Reports = () => {
   const getTextColor = (value) => {
     if (typeof value === "string" || typeof value === "number") {
       const numValue = parseInt(value, 10);
-      if (!isNaN(numValue) && numValue < 20) {
+      if (!isNaN(numValue) && numValue < 33) {
         return "#FF0000"; // Red color for low scores
       }
     }
@@ -452,13 +613,17 @@ const Reports = () => {
 
       // Only open modal if there are classes for this level
       if (levelData && levelData.classes && levelData.classes.length > 0) {
+        // Use the utility function to check if curriculum note should be shown
+        const showNote = shouldShowCurriculumNote(selectedSubject, groupTitle);
+        
         setSelectedClassData({
-          school: school.schoolName,
+          school: toTitleCase(school.schoolName),
           udiseCode: school.udiseCode,
           id: school.id,
           subject: selectedSubject,
-          data: [levelData], // Only include the selected level data
+          data: [levelData],
           groupTitle: groupTitle,
+          showCurriculumNote: showNote
         });
 
         setClassModalOpen(true);
@@ -503,13 +668,23 @@ const Reports = () => {
 
       // Fetch data based on selected option
       if (rows === "current") {
-        dataToDownload = transformedData;
+        // Use filteredData instead of transformedData for current page
+        // This ensures we download exactly what user sees on screen
+        dataToDownload = filteredData;
+        
+        // Additional safety check - ensure we don't exceed expected count
+        if (dataToDownload.length !== count) {
+          // Update the toast message to reflect actual count
+          toast.info(`Generating ${format.toUpperCase()} report for ${dataToDownload.length} schools (current page)...`);
+        }
       } else {
+        // For non-current options, fetch from API with proper parameters
         // Fetch more data from API
         let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${
           count === totalRecords ? totalRecords : count
         }`;
 
+        // Important: Include the same filters as current view
         if (selectedBlock) {
           url += `&blockName=${selectedBlock}`;
         }
@@ -520,6 +695,12 @@ const Reports = () => {
         const response = await apiInstance.get(url);
         if (response.data.success) {
           const apiData = response.data.data.schools;
+          
+          // Additional safety check for API response
+          if (apiData.length > count && count !== totalRecords) {
+            // Slice to exact count if API returned more than expected
+            apiData.splice(count);
+          }
           dataToDownload = apiData.map((school) => {
             const primaryData = school.subjectPerformance[0] || {};
             const upperData = school.subjectPerformance[1] || {};
@@ -527,7 +708,8 @@ const Reports = () => {
             const higherData = school.subjectPerformance[3] || {};
 
             return {
-              schoolName: school.schoolName,
+              schoolName: toTitleCase(school.schoolName),
+              udiseCode: school.udiseCode,
               primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
               primaryPass: primaryData.primaryPass !== undefined ? primaryData.primaryPass : null,
               upperPrimaryAvg:
@@ -717,7 +899,7 @@ const Reports = () => {
           }
           
           .low-score {
-            color: #FF0000;
+            color: #F45050;
             font-weight: 600;
           }
           
@@ -768,18 +950,18 @@ const Reports = () => {
               page-break-inside: avoid;
               page-break-after: auto;
             }
-thead tr.group-row {
-  height: 72px;
-}
+            thead tr.group-row {
+            height: 72px;
+            }
 
-thead tr.sub-row,
-tbody tr {
-  height: 60px;
-}
+            thead tr.sub-row,
+            tbody tr {
+            height: 60px;
+            }
 
-th, td {
-  vertical-align: middle;
-}
+            th, td {
+            vertical-align: middle;
+            }
 
           }
         </style>
@@ -788,7 +970,7 @@ th, td {
         <div class="container">
           <div class="header">
             <h1>${selectedSubject} Performance Report</h1>
-            <div class="subtitle">Academic Year 2024-25</div>
+           <div class="subtitle">Academic Year ${academicYear}</div>
             <div class="date">Generated on: ${currentDate}</div>
           </div>
           
@@ -837,36 +1019,36 @@ th, td {
                 .map((school) => {
                   const isLowScore = (value) => {
                     const num = parseInt(value);
-                    return !isNaN(num) && num < 20;
+                    return !isNaN(num) && num < 33;
                   };
 
                   return `
                   <tr>
-                    <td class="school-name">${school.schoolName}</td>
+                    <td class="school-name">${school.udiseCode} - ${toTitleCase(school.schoolName)}</td>
                     <td class="${isLowScore(school.primaryAvg) ? "low-score" : ""}">
-                      ${school.primaryAvg !== null ? school.primaryAvg : "-"}
+                      ${formatNumber(school.primaryAvg)}
                     </td>
                     <td class="${isLowScore(school.primaryPass) ? "low-score" : ""}">
-                      ${school.primaryPass !== null ? school.primaryPass + "%" : "-"}
+                      ${school.primaryPass !== null ? formatNumber(school.primaryPass) + "%" : "-"}
                     </td>
                     <td class="${isLowScore(school.upperPrimaryAvg) ? "low-score" : ""}">
-                      ${school.upperPrimaryAvg !== null ? school.upperPrimaryAvg : "-"}
+                      ${formatNumber(school.upperPrimaryAvg)}
                     </td>
                     <td class="${isLowScore(school.upperPrimaryPass) ? "low-score" : ""}">
-                      ${school.upperPrimaryPass !== null ? school.upperPrimaryPass + "%" : "-"}
+                      ${school.upperPrimaryPass !== null ? formatNumber(school.upperPrimaryPass) + "%" : "-"}
                     </td>
                     <td class="${isLowScore(school.highSchoolAvg) ? "low-score" : ""}">
-                      ${school.highSchoolAvg !== null ? school.highSchoolAvg : "-"}
+                      ${formatNumber(school.highSchoolAvg)}
                     </td>
                     <td class="${isLowScore(school.highSchoolPass) ? "low-score" : ""}">
-                      ${school.highSchoolPass !== null ? school.highSchoolPass + "%" : "-"}
+                      ${school.highSchoolPass !== null ? formatNumber(school.highSchoolPass) + "%" : "-"}
                     </td>
                     <td class="${isLowScore(school.higherSecondaryAvg) ? "low-score" : ""}">
-                      ${school.higherSecondaryAvg !== null ? school.higherSecondaryAvg : "-"}
+                      ${formatNumber(school.higherSecondaryAvg)}
                     </td>
                     <td class="${isLowScore(school.higherSecondaryPass) ? "low-score" : ""}">
                       ${
-                        school.higherSecondaryPass !== null ? school.higherSecondaryPass + "%" : "-"
+                        school.higherSecondaryPass !== null ? formatNumber(school.higherSecondaryPass) + "%" : "-"
                       }
                     </td>
                   </tr>
@@ -885,7 +1067,7 @@ th, td {
           
           <div class="footer">
             <p>This report is generated automatically from the School Performance System</p>
-            <p>© 2024-25 Academic Performance Tracking System</p>
+            <p>© ${academicYear} Academic Performance Tracking System</p>
           </div>
         </div>
       </body>
@@ -907,6 +1089,34 @@ th, td {
 
   // Download report as CSV
   const handleDownloadCSV = (data) => {
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Build CSV content with comprehensive information
+    let csvContent = "";
+
+    // Header Information
+    csvContent += `"${selectedSubject} Performance Report"\n`;
+    csvContent += `"Academic Year ${academicYear}"\n`;
+    csvContent += `"Generated on: ${currentDate}"\n`;
+    csvContent += "\n"; // Blank line
+
+    // Filter Information (if any filters are applied)
+    if (selectedBlock || selectedCluster) {
+      csvContent += `"Applied Filters:"\n`;
+      if (selectedBlock) {
+        csvContent += `"Block: ${selectedBlock}"\n`;
+      }
+      if (selectedCluster) {
+        csvContent += `"Cluster: ${selectedCluster}"\n`;
+      }
+      csvContent += "\n"; // Blank line
+    }
+
+    // Table Headers
     const headers = [
       "School Name",
       "Primary (1-5) Avg. Marks",
@@ -919,24 +1129,30 @@ th, td {
       "Higher Secondary (11-12) Pass Rate(%)",
     ];
 
-    let csvContent = headers.join(",") + "\n";
+    csvContent += headers.join(",") + "\n";
 
+    // Table Data
     data.forEach((school) => {
       const rowData = [
-        school.schoolName,
-        school.primaryAvg || "-",
-        school.primaryPass ? `${school.primaryPass}%` : "-",
-        school.upperPrimaryAvg || "-",
-        school.upperPrimaryPass ? `${school.upperPrimaryPass}%` : "-",
-        school.highSchoolAvg || "-",
-        school.highSchoolPass ? `${school.highSchoolPass}%` : "-",
-        school.higherSecondaryAvg || "-",
-        school.higherSecondaryPass ? `${school.higherSecondaryPass}%` : "-",
+        `"${school.udiseCode} - ${toTitleCase(school.schoolName)}"`,
+        formatNumber(school.primaryAvg),
+        school.primaryPass ? `${formatNumber(school.primaryPass)}%` : "-",
+        formatNumber(school.upperPrimaryAvg),
+        school.upperPrimaryPass ? `${formatNumber(school.upperPrimaryPass)}%` : "-",
+        formatNumber(school.highSchoolAvg),
+        school.highSchoolPass ? `${formatNumber(school.highSchoolPass)}%` : "-",
+        formatNumber(school.higherSecondaryAvg),
+        school.higherSecondaryPass ? `${formatNumber(school.higherSecondaryPass)}%` : "-",
       ];
 
       csvContent +=
         rowData
           .map((cell) => {
+            // Already quoted school names, don't double quote
+            if (cell && cell.toString().startsWith('"')) {
+              return cell;
+            }
+            // Quote cells that contain commas
             if (cell && cell.toString().includes(",")) {
               return `"${cell}"`;
             }
@@ -945,7 +1161,14 @@ th, td {
           .join(",") + "\n";
     });
 
-    // Create download link
+    // Report Summary at the bottom (like PDF)
+    csvContent += "\n"; // Blank line
+    csvContent += `"Report Summary:"\n`;
+    csvContent += `"Total Schools: ${data.length}"\n`;
+    csvContent += `"Subject: ${selectedSubject}"\n`;
+    csvContent += `"Report Type: School Performance Analysis"\n`;
+
+    //  Create download link
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -974,7 +1197,8 @@ th, td {
     const higherData = school.subjectPerformance[3] || {};
 
     return {
-      schoolName: school.schoolName,
+      schoolName: toTitleCase(school.schoolName),
+      udiseCode: school.udiseCode,
       id: school.id,
       primaryAvg: primaryData.primaryAvg !== undefined ? primaryData.primaryAvg : null,
       primaryPass: primaryData.primaryPass !== undefined ? primaryData.primaryPass : null,
@@ -990,15 +1214,20 @@ th, td {
     };
   });
 
-  // Available subjects
-  const subjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
-
   // Filter schools by search query and limit to current page's data
   const filteredData = useMemo(() => {
     let data = searchQuery
-      ? transformedData.filter((school) =>
-          school.schoolName.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+      ? transformedData.filter((school) => {
+          const query = searchQuery.toLowerCase().trim();
+          const schoolName = school.schoolName.toLowerCase();
+          const udiseCode = school.udiseCode.toLowerCase();
+          const combinedText = `${udiseCode} - ${schoolName}`.toLowerCase();
+          
+          // Search in school name, UDISE code, or combined display text
+          return schoolName.includes(query) || 
+                 udiseCode.includes(query) || 
+                 combinedText.includes(query);
+        })
       : transformedData;
 
     // Ensure we're only showing pageSize items
@@ -1012,12 +1241,21 @@ th, td {
   return (
     <ThemeProvider theme={theme}>
       <div className="main-page-wrapper mt-6">
-        <div className="flex justify-between items-center">
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", md: "center" },
+            gap: { xs: 2, md: 0 },
+            mb: 4
+          }}
+        >
           <div>
             <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">School Performance Report</h5>
           </div>
 
-          <div className="bg-gray-300 rounded">
+          <Box sx={{ flexShrink: 0 }}>
             <Typography
               variant="subtitle1"
               sx={{
@@ -1028,12 +1266,14 @@ th, td {
                 height: "48px",
                 display: "flex",
                 alignItems: "center",
+                whiteSpace: "nowrap",
+                minWidth: "fit-content"
               }}
             >
-              Academic Year {"2024-25"}
+              Academic Year {academicYear}
             </Typography>
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
@@ -1044,6 +1284,26 @@ th, td {
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
                   displayEmpty
+                  disabled={isLoadingSubjects || subjects.length === 0}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300, // Maximum height for dropdown
+                        overflow: 'auto', // Enable scrolling
+                        borderRadius: "8px",
+                        boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.15)",
+                      }
+                    },
+                    anchorOrigin: {
+                      vertical: "bottom",
+                      horizontal: "left",
+                    },
+                    transformOrigin: {
+                      vertical: "top",
+                      horizontal: "left",
+                    },
+                    getContentAnchorEl: null, // Prevents automatic positioning
+                  }}
                   sx={{
                     height: "48px",
                     borderRadius: "8px",
@@ -1062,11 +1322,17 @@ th, td {
                     },
                   }}
                 >
-                  {subjects.map((subject) => (
-                    <MenuItem key={subject} value={subject}>
-                      {subject}
-                    </MenuItem>
-                  ))}
+                  {isLoadingSubjects ? (
+                    <MenuItem disabled>Loading subjects...</MenuItem>
+                  ) : subjects.length === 0 ? (
+                    <MenuItem disabled>No subjects available</MenuItem>
+                  ) : (
+                    subjects.map((subject) => (
+                      <MenuItem key={subject} value={subject}>
+                        {subject}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             </div>
@@ -1074,7 +1340,7 @@ th, td {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <div className="flex-1 max-w-sm">
+          <div className="w-full lg:w-[385px]">
             <TextField
               variant="outlined"
               placeholder="Search by name or UDISE"
@@ -1089,8 +1355,10 @@ th, td {
                   </div>
                 ),
                 style: {
-                  height: "48px",
+                  backgroundColor: "#fff",
                   borderRadius: "8px",
+                  height: "48px",
+                  minWidth: "200px",
                 },
               }}
               sx={{
@@ -1102,6 +1370,7 @@ th, td {
                   padding: "12px 16px",
                   paddingLeft: "0",
                 },
+                marginBottom: { xs: "8px", md: "0" },
               }}
             />
           </div>
@@ -1119,6 +1388,25 @@ th, td {
                     .split(" ")
                     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                     .join(" ");
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300, // Maximum height for dropdown
+                      overflow: 'auto', // Enable scrolling
+                      borderRadius: "8px",
+                      boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.15)",
+                    }
+                  },
+                  anchorOrigin: {
+                    vertical: "bottom",
+                    horizontal: "left",
+                  },
+                  transformOrigin: {
+                    vertical: "top",
+                    horizontal: "left",
+                  },
+                  getContentAnchorEl: null, // Prevents automatic positioning
                 }}
                 sx={{
                   height: "48px",
@@ -1163,6 +1451,25 @@ th, td {
                     .split(" ")
                     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                     .join(" ");
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300, // Maximum height for dropdown
+                      overflow: 'auto', // Enable scrolling
+                      borderRadius: "8px",
+                      boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.15)",
+                    }
+                  },
+                  anchorOrigin: {
+                    vertical: "bottom",
+                    horizontal: "left",
+                  },
+                  transformOrigin: {
+                    vertical: "top",
+                    horizontal: "left",
+                  },
+                  getContentAnchorEl: null, // Prevents automatic positioning
                 }}
                 sx={{
                   height: "48px",
@@ -1376,6 +1683,7 @@ th, td {
               boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
             },
           }}
+          sx={{ zIndex: 12000 }}
         >
           {selectedClassData && (
             <div className="flex flex-col w-full">
@@ -1417,64 +1725,110 @@ th, td {
               </div>
 
               {/* Classes in 2 columns, Avg Marks & Pass Rate in one line */}
-              <div className="grid grid-cols-2 gap-y-4 gap-x-12">
-                {selectedClassData.data[0]?.classes?.map((classData, index) => (
-                  <div key={`class-${classData.class}-${index}`}>
-                    <div
-                      className=" text-[#2F4F4F] mb-2 text-base"
-                      style={{ fontWeight: 600, fontFamily: "Work Sans" }}
-                    >
-                      Class {classData.class}
-                    </div>
-                    <div
-                      className="flex items-center gap-6  text-[#597272]"
-                      style={{
-                        fontFamily: "'Work Sans', sans-serif",
-                        fontWeight: 400,
-                        fontSize: "14px",
-                      }}
-                    >
-                      <span>
-                        Avg Marks{" "}
-                        <span
-                          className={
-                            parseInt(classData.avgMarks) < 20
-                              ? "text-red-600 font-medium"
-                              : "font-medium"
-                          }
-                          style={{
-                            fontFamily: "'Work Sans', sans-serif",
-                            fontWeight: 400,
-                            fontSize: "14px",
-                          }}
-                        >
-                          {classData.avgMarks}
-                        </span>
-                      </span>
-                      <span>
-                        Pass Rate(%){" "}
-                        <span
-                          className={
-                            parseFloat(classData.successRate) < 30
-                              ? "text-red-600 font-medium"
-                              : "font-medium text-[#2F4F4F]"
-                          }
-                          style={{
-                            fontFamily: "'Work Sans', sans-serif",
-                            fontWeight: 400,
-                            fontSize: "14px",
-                          }}
-                        >
-                          {classData.successRate}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              <div>
+                {/* Group classes in pairs for 2-column layout */}
+                {(() => {
+                  const classes = selectedClassData.data[0]?.classes || [];
+                  const pairs = [];
+                  for (let i = 0; i < classes.length; i += 2) {
+                    pairs.push(classes.slice(i, i + 2));
+                  }
+                  return pairs.map((pair, pairIndex) => {
+                    const isLastPair = pairIndex === pairs.length - 1;
+                    return (
+                      <div key={`pair-${pairIndex}`}>
+                        <div className="grid grid-cols-2 gap-x-12 py-4">
+                          {pair.map((classData, index) => (
+                            <div key={`class-${classData.class}-${pairIndex}-${index}`}>
+                              <div
+                                className="text-[#2F4F4F] mb-2 text-base"
+                                style={{ fontWeight: 600, fontFamily: "Work Sans" }}
+                              >
+                                Class {classData.class}
+                              </div>
+                              <div
+                                className="flex items-center gap-6 text-[#597272]"
+                                style={{
+                                  fontFamily: "'Work Sans', sans-serif",
+                                  fontWeight: 400,
+                                  fontSize: "14px",
+                                }}
+                              >
+                                <span>
+                                  Avg Marks{" "}
+                                  <span
+                                    style={{
+                                      fontFamily: "'Work Sans', sans-serif",
+                                      fontWeight: parseInt(classData.avgMarks) < 33 ? 600 : 400,
+                                      fontSize: "14px",
+                                      color: parseInt(classData.avgMarks) < 33 ? "#F45050" : "#2F4F4F",
+                                    }}
+                                  >
+                                    {formatNumber(classData.avgMarks)}
+                                  </span>
+                                </span>
+                                <span>
+                                  Pass Rate(%){" "}
+                                  <span
+                                    style={{
+                                      fontFamily: "'Work Sans', sans-serif",
+                                      fontWeight: parseFloat(classData.successRate) < 33 ? 600 : 400,
+                                      fontSize: "14px",
+                                      color: parseFloat(classData.successRate) < 33 ? "#F45050" : "#2F4F4F",
+                                    }}
+                                  >
+                                    {classData.successRate ? 
+                                      `${formatNumber(classData.successRate.toString().replace('%', ''))}%` : 
+                                      formatNumber(classData.successRate)
+                                    }
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Full-width horizontal line under each row except the last */}
+                        {!isLastPair && (
+                          <hr 
+                            style={{
+                              margin: 0,
+                              border: 'none',
+                              borderTop: '1px solid #E0E0E0',
+                              width: '100%'
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
+
+              {/* Curriculum Note - Only show when not all classes have the subject */}
+              {selectedClassData.showCurriculumNote && (
+                <div 
+                  className="mt-5"
+                  style={{
+                   
+                  }}
+                >
+                  <div 
+                    className="text-[#2F4F4F]"
+                    style={{
+                      fontFamily: "'Work Sans', sans-serif",
+                      fontWeight: 400,
+                      fontSize: "12px",
+                    }}
+                  >
+                    <strong>Note:</strong> This report includes only those classes where this subject is part of the curriculum.
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </Dialog>
+
+
 
         {/* Download Modal */}
         <DownloadModal

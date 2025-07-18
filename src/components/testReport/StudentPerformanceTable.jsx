@@ -17,6 +17,7 @@ import ButtonCustom from "../ButtonCustom";
 import { useNavigate } from "react-router-dom";
 import DownloadModal from "../modal/DownloadModal";
 import { Search } from "lucide-react";
+import { toast } from "react-toastify";
 
 const theme = createTheme({
   typography: {
@@ -118,6 +119,8 @@ const StudentPerformanceTable = ({
   maxScore,
   passThreshold,
   subject,
+  schoolName,
+  testName,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -358,19 +361,65 @@ const StudentPerformanceTable = ({
 
   // Download logic
   const handleDownloadCSV = (data) => {
-    const headers = isRemedialTest
-      ? ["Student Name", "Grade Level", "Status"]
-      : ["Student Name", "Score", "Result", "Change from Class Avg.(80)"];
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
 
-    const csvRows = [
-      headers,
-      ...data.map((student) =>
-        isRemedialTest
-          ? [student.name, student.grade || student.originalScore, student.result]
-          : [student.name, student.score, student.result, student.vsClassAvg]
-      ),
-    ];
-    const csvContent = csvRows.map((row) => row.join(",")).join("\n");
+    // Headers according to test type (same as UI columns)
+    const headers = isRemedialTest
+      ? ["Student Name", "Grade"]
+      : ["Student Name", "Marks", "Status"];
+
+    // Create CSV content with school name at top
+    const csvLines = [];
+    
+    // Add school name and report info if available
+    if (schoolName) {
+      csvLines.push(`Student Performance Report`);
+      csvLines.push(``); // Empty line
+      
+      // Report Information in single line format
+      let reportInfo = `Report Information: School: ${schoolName}`;
+      if (testName) {
+        reportInfo += `, Test: ${testName}`;
+      }
+      if (subject) {
+        reportInfo += `, Subject: ${subject}`;
+      }
+      if (maxScore) {
+        reportInfo += `, Maximum Marks: ${maxScore}`;
+      }
+      reportInfo += `, Generated on: ${currentDate}`;
+      csvLines.push(reportInfo);
+      csvLines.push(""); // Empty line
+    }
+    
+    // Add headers
+    csvLines.push(headers.join(","));
+    
+    // Add data rows
+    data.forEach((student) => {
+      if (isRemedialTest) {
+        // For remedial test - show formatted grade name
+        const gradeDisplay = student.isAbsent ? "Absent" : formatGradeName(student.grade || student.originalScore);
+        csvLines.push([
+          student.name,
+          gradeDisplay
+        ].join(","));
+      } else {
+        // For syllabus test - show marks exactly like UI
+        const marksDisplay = student.isAbsent ? "Absent" : student.originalScore;
+        csvLines.push([
+          student.name,
+          marksDisplay,
+          student.result
+        ].join(","));
+      }
+    });
+
+    const csvContent = csvLines.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -378,6 +427,9 @@ const StudentPerformanceTable = ({
     a.download = "student_performance_report.csv";
     a.click();
     URL.revokeObjectURL(url);
+    
+    // Show success message
+    toast.success("CSV report downloaded successfully!");
   };
 
   const handleDownloadPDF = (data) => {
@@ -388,56 +440,45 @@ const StudentPerformanceTable = ({
       day: "numeric",
     });
 
-    // Generate HTML table rows
+    // Generate HTML table rows according to test type
     const tableRows = data
       .map((student) => {
         if (isRemedialTest) {
+          // For remedial test - show formatted grade name
+          const gradeDisplay = student.isAbsent ? "Absent" : formatGradeName(student.grade || student.originalScore);
           return `
             <tr>
               <td style="padding:6px;border:1px solid #ddd;text-align:left;">${student.name}</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${
-                student.grade || student.originalScore
-              }</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${
-                student.result
-              }</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${gradeDisplay}</td>
             </tr>
           `;
         } else {
+          // For syllabus test - show marks exactly like UI
+          const marksDisplay = student.isAbsent ? "Absent" : student.originalScore;
           return `
             <tr>
               <td style="padding:6px;border:1px solid #ddd;text-align:left;">${student.name}</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.score}</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${
-                student.result
-              }</td>
-              <td style="padding:6px;border:1px solid #ddd;text-align:center;color:${
-                student.vsClassAvg === "0.0"
-                  ? "#c62828"
-                  : student.vsClassAvg.startsWith("+")
-                  ? "#2e7d32"
-                  : "#c62828"
-              };">${student.vsClassAvg}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${marksDisplay}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${student.result}</td>
             </tr>
           `;
         }
       })
       .join("");
 
+    // Header row according to test type (same as UI columns)
     const headerRow = isRemedialTest
       ? `
         <tr>
           <th style="text-align:left;">Student Name</th>
-          <th>Grade Level</th>
-          <th>Status</th>
+          <th style="text-align:center;">Grade</th>
         </tr>
       `
       : `
         <tr>
           <th style="text-align:left;">Student Name</th>
-          <th>Score</th>
-          <th>Result</th>
-          <th>Change from Class Avg.(80)</th>
+          <th style="text-align:center;">Marks</th>
+          <th style="text-align:center;">Status</th>
         </tr>
       `;
 
@@ -453,7 +494,28 @@ const StudentPerformanceTable = ({
         body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
         .header { text-align: center; margin-bottom: 20px; }
         .header h1 { color: #2F4F4F; font-size: 22px; margin-bottom: 8px; }
+        .header .school-name { color: #2F4F4F; font-size: 16px; font-weight: 600; margin-bottom: 5px; }
         .header .date { color: #666; font-size: 12px; }
+        .report-info { 
+          background-color: #f8f9fa;
+          padding: 12px;
+          margin-bottom: 20px;
+          border-radius: 6px;
+          border: 1px solid #e0e0e0;
+        }
+        .report-info h3 { 
+          color: #2F4F4F;
+          font-size: 14px;
+          margin-bottom: 8px;
+        }
+        .info-item {
+          display: inline-block;
+          color: #666;
+          font-size: 12px;
+        }
+        .info-item strong {
+          color: #2F4F4F;
+        }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
         th { background: #2F4F4F; color: #fff; padding: 8px 6px; border: 1px solid #2F4F4F; }
         td { padding: 6px; border: 1px solid #ddd; }
@@ -464,7 +526,13 @@ const StudentPerformanceTable = ({
     <body>
       <div class="header">
         <h1>Student Performance Report</h1>
-        <div class="date">Generated on: ${currentDate}</div>
+      </div>
+      
+      <div class="report-info">
+        <h3>Report Information</h3>
+        <div class="info-item">
+          ${schoolName ? `<strong>School:</strong> ${schoolName}, ` : ''}${testName ? `<strong>Test:</strong> ${testName}, ` : ''}${subject ? `<strong>Subject:</strong> ${subject}, ` : ''}${maxScore ? `<strong>Maximum Marks:</strong> ${maxScore}, ` : ''}<strong>Generated on:</strong> ${currentDate}
+        </div>
       </div>
       <table>
         <thead>
@@ -484,6 +552,8 @@ const StudentPerformanceTable = ({
     printWindow.onload = function () {
       setTimeout(() => {
         printWindow.print();
+        // Show success message after print dialog opens
+        toast.success("PDF report generated successfully!");
       }, 250);
     };
   };
@@ -515,16 +585,10 @@ const StudentPerformanceTable = ({
 
             return {
               name: student.studentName || student.name,
-              score: isRemedialTest
-                ? isAbsent
-                  ? "Absent"
-                  : formatGradeName(student.grade)
-                : isAbsent
-                ? "Absent"
-                : `${student.score}/${maxScore || 100}`,
               result: resultStatus,
-              vsClassAvg: vsClassAvgDisplay,
               grade: student.grade,
+              isAbsent: isAbsent,
+              originalScore: student.score,
             };
           })
         : paginatedTableData;
@@ -659,38 +723,38 @@ const StudentPerformanceTable = ({
               },
             },
           },
-          {
-            name: "vsClassAvg",
-            label: "Change from Class Avg.(80)",
-            options: {
-              filter: false,
-              sort: true,
-              sortThirdClickReset: true,
-              setCellHeaderProps: () => ({
-                style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
-              }),
-              setCellProps: () => ({
-                style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
-              }),
-              customBodyRenderLite: (dataIndex) => {
-                const student = paginatedTableData[dataIndex];
-                if (student.isAbsent) {
-                  return <span style={{ color: "#949494" }}>-</span>;
-                }
+          // {
+          //   name: "vsClassAvg",
+          //   label: "Change from Class Avg.(80)",
+          //   options: {
+          //     filter: false,
+          //     sort: true,
+          //     sortThirdClickReset: true,
+          //     setCellHeaderProps: () => ({
+          //       style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
+          //     }),
+          //     setCellProps: () => ({
+          //       style: { textAlign: "center", width: 90, minWidth: 70, maxWidth: 100 },
+          //     }),
+          //     customBodyRenderLite: (dataIndex) => {
+          //       const student = paginatedTableData[dataIndex];
+          //       if (student.isAbsent) {
+          //         return <span style={{ color: "#949494" }}>-</span>;
+          //       }
 
-                let value = student.vsClassAvg;
-                if (typeof value === "string" && value.startsWith("+")) {
-                  value = value.slice(1);
-                }
+          //       let value = student.vsClassAvg;
+          //       if (typeof value === "string" && value.startsWith("+")) {
+          //         value = value.slice(1);
+          //       }
 
-                const num = Number(value);
-                const display =
-                  !isNaN(num) && Number.isFinite(num) ? (Number.isInteger(num) ? num : num) : value;
+          //       const num = Number(value);
+          //       const display =
+          //         !isNaN(num) && Number.isFinite(num) ? (Number.isInteger(num) ? num : num) : value;
 
-                return <span style={{ color: "#2F4F4F" }}>{display}</span>;
-              },
-            },
-          },
+          //       return <span style={{ color: "#2F4F4F" }}>{display}</span>;
+          //     },
+          //   },
+          // },
           {
             name: "result",
             label: "Status",
@@ -891,11 +955,12 @@ const StudentPerformanceTable = ({
             color: "#2F4F4F",
           }}
         >
-          {isRemedialTest
+          {/* {isRemedialTest
             ? ""
             : `Maximum Marks: ${maxScore || 100} (Pass Percentage ≥ ${Math.round(
                 ((passThreshold || 35) / (maxScore || 100)) * 100
-              )}%)`}
+              )}%)`} */}
+          {isRemedialTest ? "" : `Maximum Marks: ${maxScore || 100}`}
         </div>
         {/* Data Table */}
         <div
@@ -971,6 +1036,9 @@ StudentPerformanceTable.propTypes = {
   onViewProfile: PropTypes.func,
   onExport: PropTypes.func,
   testType: PropTypes.string,
+  subject: PropTypes.string,
+  schoolName: PropTypes.string,
+  testName: PropTypes.string,
 };
 
 StudentPerformanceTable.defaultProps = {

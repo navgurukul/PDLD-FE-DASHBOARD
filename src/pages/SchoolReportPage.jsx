@@ -20,7 +20,7 @@ const THEME_COLOR = "#2F4F4F";
 const SECONDARY_COLOR = "#FFEBEB";
 
 // Define pass threshold percentage (35% of max score)
-const PASS_PERCENTAGE = 35;
+const PASS_PERCENTAGE = 33;
 
 // Define colors for remedial test grade levels
 const REMEDIAL_GRADE_COLORS = [
@@ -180,7 +180,7 @@ const SchoolReportPage = () => {
         if (response.data?.success && response.data?.data) {
           const apiData = response.data.data;
 
-          // Calculate pass threshold (35% of max score)
+          // Calculate pass threshold (33% of max score)
           const threshold = Math.round((PASS_PERCENTAGE / 100) * apiData.maxScore);
           setPassThreshold(threshold);
 
@@ -479,6 +479,8 @@ const SchoolReportPage = () => {
       onExport={handleExportStudentData}
       testType={testData?.testType}
       subject={testData?.subject}
+      schoolName={schoolName}
+      testName={testName}
     />
   );
 

@@ -17,7 +17,12 @@ import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
 import { toast, ToastContainer } from "react-toastify";
 import ButtonCustom from "../components/ButtonCustom";
-import { addSymbolBtn, EditPencilIcon, trash, DocScanner } from "../utils/imagePath";
+import {
+  addSymbolBtn,
+  EditPencilIcon,
+  trash,
+  DocScanner,
+} from "../utils/imagePath";
 import apiInstance from "../../api";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AssessmentIcon from "@mui/icons-material/Assessment";
@@ -182,7 +187,9 @@ const StudentDetails = ({ schoolId, schoolName }) => {
         setAllStudents(students);
 
         // Set available classes sorted numerically
-        const sortedClasses = Array.from(classSet).sort((a, b) => Number(a) - Number(b));
+        const sortedClasses = Array.from(classSet).sort(
+          (a, b) => Number(a) - Number(b)
+        );
         setAvailableClasses(sortedClasses);
       } else {
         console.error("API response format unexpected:", result);
@@ -247,7 +254,8 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
     try {
       // Try multiple possible ID property names
-      const studentId = studentToDelete.id || studentToDelete._id || studentToDelete.studentId;
+      const studentId =
+        studentToDelete.id || studentToDelete._id || studentToDelete.studentId;
 
       console.log("Student ID being used:", studentId);
 
@@ -261,11 +269,16 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       const response = await apiInstance.delete(`/student/delete/${studentId}`);
 
       if (response.data && response.data.success) {
-        toast.success(`Student ${studentToDelete.fullName} has been deleted successfully!`);
+        toast.success(
+          `Student ${studentToDelete.fullName} has been deleted successfully!`
+        );
         // Refresh data instead of just updating local state
         fetchStudents();
       } else {
-        toast.error(response.data?.message || "Failed to delete student. Please try again.");
+        toast.error(
+          response.data?.message ||
+            "Failed to delete student. Please try again."
+        );
       }
     } catch (error) {
       console.error("Error deleting student:", error);
@@ -281,10 +294,12 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     // First filter by search query
     const matchesSearch =
       student?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (student?.aparId && student.aparId.toLowerCase().includes(searchQuery.toLowerCase()));
+      (student?.aparId &&
+        student.aparId.toLowerCase().includes(searchQuery.toLowerCase()));
 
     // Then filter by class if a class is selected
-    const matchesClass = selectedClass === "" || student.class?.toString() === selectedClass;
+    const matchesClass =
+      selectedClass === "" || student.class?.toString() === selectedClass;
 
     return matchesSearch && matchesClass;
   });
@@ -448,7 +463,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
         setCellHeaderProps: () => ({
           style: {
-           textAlign: "center",
+            textAlign: "center",
           },
         }),
         customBodyRenderLite: (dataIndex) => {
@@ -456,7 +471,9 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           const studentId = tableData[dataIndex][7]; // Updated index
 
           return (
-            <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
+            <div
+              style={{ display: "flex", justifyContent: "center", gap: "8px" }}
+            >
               <Button
                 variant="text"
                 size="small"
@@ -469,7 +486,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                 onClick={() => handleEditStudent(studentId, student)}
                 title="Edit Student"
               >
-                <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
+                <img
+                  src={EditPencilIcon}
+                  alt="Edit"
+                  style={{ width: "20px", height: "20px" }}
+                />
               </Button>
 
               <Button
@@ -484,7 +505,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                 onClick={() => openDeleteModal(student)}
                 title="Delete Student"
               >
-                <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} />
+                <img
+                  src={trash}
+                  alt="Delete"
+                  style={{ width: "20px", height: "20px" }}
+                />
               </Button>
             </div>
           );
@@ -545,79 +570,73 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       <Box>
         <div className="flex justify-between items-center mb-2">
           <Typography variant="h6" className="text-xl font-bold">
-            <span>Total Student Count ({schoolInfo.totalStudentsInSchool})</span>
+            <span>
+              Total Student Count ({schoolInfo.totalStudentsInSchool})
+            </span>
           </Typography>
         </div>
 
-        <div
-          className="flex flex-wrap
-			 justify-between   sm:flex-row mb-2 
-			 "
-        >
-          <div className="flex gap-2">
-            {/* Search Field */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          {/* Search Field - Responsive like Reports page */}
+          <div className="flex-1 max-w-sm">
             <TextField
               placeholder="Search students..."
+              size="small"
               fullWidth
               variant="outlined"
               value={searchQuery}
               onChange={handleSearchChange}
               InputProps={{
                 startAdornment: (
-                  <Box sx={{ mr: 1, color: "grey.500" }}>
-                    <SearchIcon />
-                  </Box>
+                  <div className="pr-2">
+                    <SearchIcon size={18} className="text-gray-500" />
+                  </div>
                 ),
-                sx: {
-                  borderRadius: "8px",
+                style: {
                   height: "48px",
-                  backgroundColor: "#fff",
-                  minWidth: "250px",
-                  width: "360px",
+                  borderRadius: "8px",
                 },
               }}
-            />
-
-            {/* Class Dropdown */}
-            <FormControl
               sx={{
-                minWidth: 150,
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "8px",
                   height: "48px",
                 },
+                "& .MuiOutlinedInput-input": {
+                  padding: "12px 16px",
+                  paddingLeft: "0",
+                },
               }}
-            >
+            />
+          </div>
+
+          {/* Class Dropdown */}
+          <div style={{ width: "auto" }}>
+            <FormControl size="small" sx={{ minWidth: 0 }}>
               <Select
                 value={selectedClass}
                 onChange={handleClassChange}
                 displayEmpty
                 renderValue={(value) =>
-                  value === "" ? (
-                    <span
-                      style={{
-                        fontFamily: "'Work Sans', sans-serif",
-                        fontWeight: 400,
-                        fontSize: "14px",
-                        color: "#2F4F4F",
-                      }}
-                    >
-                      All Classes
-                    </span>
-                  ) : (
-                    `Class ${value}`
-                  )
+                  value === "" ? "All Classes" : `Class ${value}`
                 }
                 sx={{
-                  fontFamily: "'Work Sans', sans-serif",
-                  fontWeight: 600,
+                  height: "48px",
+                  borderRadius: "8px",
+                  minWidth: 0,
+                  width: "auto",
+                  fontFamily: "Work Sans",
                   fontSize: "14px",
-                  color: "#2F4F4F",
+                  "& .MuiSelect-select": {
+                    minWidth: 0,
+                    width: "auto",
+                    display: "inline-block",
+                    padding: "12px 16px",
+                    paddingRight: "32px",
+                  },
                 }}
               >
-                <MenuItem value="">
-                  <em>All Classes</em>
-                </MenuItem>
+                <MenuItem value="">All Classes</MenuItem>
                 {availableClasses.map((classNum) => (
                   <MenuItem key={classNum} value={classNum.toString()}>
                     Class {classNum}
@@ -627,10 +646,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
             </FormControl>
           </div>
 
-          <div className="flex gap-2 xl:mt-0 mt-5 ">
+          {/* Buttons - Right aligned with consistent height */}
+          <div className="ml-auto flex gap-2">
             <ButtonCustom
               imageName={addSymbolBtn}
-              text={"Add Student"}
+              text="Add Student"
               onClick={handleAddStudent}
             />
             <Button
@@ -641,11 +661,12 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                 borderRadius: "8px",
                 textTransform: "none",
                 fontSize: "18px",
+                height: "48px", // Same as ButtonCustom (h-12)
+                padding: "8px 16px", // Adjust padding to match
                 "&:hover": {
                   borderColor: "#1E3535",
                   backgroundColor: "rgba(47, 79, 79, 0.1)",
                 },
-                width: { xs: "100%", sm: "auto" },
               }}
               onClick={handleBulkUploadStudent}
             >
@@ -669,7 +690,11 @@ const StudentDetails = ({ schoolId, schoolName }) => {
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
-            <MUIDataTable data={tableData} columns={columns} options={options} />
+            <MUIDataTable
+              data={tableData}
+              columns={columns}
+              options={options}
+            />
           </div>
         )}
 
@@ -690,7 +715,9 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                 ? `No students found in Class ${selectedClass}.`
                 : "No students found."}
             </Typography>
-            <Typography variant="body1">Click "Add Student" to register a new student.</Typography>
+            <Typography variant="body1">
+              Click "Add Student" to register a new student.
+            </Typography>
           </Box>
         )}
 
@@ -707,6 +734,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           isProcessing={isDeleting}
           confirmButtonColor="error"
           icon={<DeleteOutlineIcon fontSize="large" />}
+          sx={{ zIndex: 12000 }}
         />
 
         <ToastContainer

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Button,
   Box,
@@ -65,6 +65,7 @@ export default function BulkUploadStudents() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState(new Set()); // Track which steps are completed
   const [mappingConfig, setMappingConfig] = useState(null);
   const [sampleModalOpen, setSampleModalOpen] = useState(false);
   const [editedCsvData, setEditedCsvData] = useState(null);
@@ -117,6 +118,8 @@ export default function BulkUploadStudents() {
 
       // Move to column mapping step
       setActiveStep(1);
+      // Mark step 1 (Upload CSV) as completed
+      setCompletedSteps(prev => new Set([...prev, 0]));
     }
   };
 
@@ -128,6 +131,8 @@ export default function BulkUploadStudents() {
       setTotalUploadCount(editedData.length);
     }
     setActiveStep(2);
+    // Mark step 2 (Map Columns) as completed
+    setCompletedSteps(prev => new Set([...prev, 1]));
   };
 
   const handleUpload = async () => {
@@ -213,17 +218,21 @@ export default function BulkUploadStudents() {
       // Show success toast based on the actual response structure
       const successCount = responseData?.data?.successCount || 0;
       const totalCount = responseData?.data?.totalCount || totalUploadCount;
-      const existingCount = totalCount - successCount - (responseData?.data?.errorCount || 0);
+      const errorCount = responseData?.data?.errorCount || 0;
+      const existingCount = totalCount - successCount - errorCount;
 
       if (successCount > 0) {
         toast.success(`Upload completed: ${successCount} students added successfully`);
       } else if (existingCount > 0) {
         toast.info(`${existingCount} students already exist in the database`);
       }
-      if ((response.data?.data?.errorCount || 0) > 0) {
-        toast.error(`${response.data.data.errorCount} records failed to upload`);
-      } else {
+
+      // Consistent logic: if all records fail, show both warning and error toasts
+      if (errorCount === totalCount && totalCount > 0) {
         toast.warning(`Upload completed with no new students added`);
+        toast.error(`${errorCount} records failed to upload`);
+      } else if (errorCount > 0) {
+        toast.error(`${errorCount} records failed to upload`);
       }
     } catch (error) {
       // Axios error handling
@@ -244,6 +253,8 @@ export default function BulkUploadStudents() {
       setUploadResult(error.response?.data || { error: "Upload failed" });
     } finally {
       setIsUploading(false);
+      // Mark step 3 (Upload Data) as completed after upload finishes
+      setCompletedSteps(prev => new Set([...prev, 2]));
     }
   };
 
@@ -320,17 +331,11 @@ export default function BulkUploadStudents() {
 
   // Add this function to your BulkUploadStudents component
   const downloadErrorsCSV = () => {
-    // Define headers for the CSV (removing schoolUdiseCode)
+    // Define headers for the CSV (only Row No., Student Name, Error Reason)
     const csvHeaders = [
-      { id: "name", label: "fullName" },
-      { id: "fatherName", label: "fatherName" },
-      { id: "motherName", label: "motherName" },
-      { id: "dob", label: "dob" },
-      { id: "gender", label: "gender" },
-      { id: "class", label: "class" },
-      { id: "aparID", label: "aparID" },
-      { id: "hostel", label: "hostel" },
-      { id: "error", label: "Error" },
+      { id: "row", label: "Row No." },
+      { id: "fullName", label: "Student Name" },
+      { id: "error", label: "Error Reason" },
     ];
 
     // Rest of the function remains the same...
@@ -370,20 +375,21 @@ export default function BulkUploadStudents() {
     setActiveStep(0);
     setFile(null);
     setMappingConfig(null);
-    setUploadResult(null);
-    setErrorData([]);
-    setEditedCsvData(null);
-    setTotalUploadCount(0);
+    setUploadResult(null);      setErrorData([]);
+      setEditedCsvData(null);
+      setTotalUploadCount(0);
+      setCompletedSteps(new Set()); // Reset completed steps
+      setCompletedSteps(new Set()); // Reset completed steps
   };
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ p: 2, px: 2, maxWidth: "60%", margin: "0 auto" }}>
+      <Box sx={{ p: 2, px: 2, maxWidth: { xs: "80%", sm: "80%", md: "60%" }, margin: "0 auto" }}>
         <div className="flex justify-between">
           <h5 className="text-lg font-bold text-[#2F4F4F] mb-8">Bulk Upload Students</h5>
         </div>
 
         {/* Add stepper to show current stage of the process */}
-        <StudentUploadStepper activeStep={activeStep} />
+        <StudentUploadStepper activeStep={activeStep} completedSteps={completedSteps} />
 
         {activeStep === 0 && (
           <>
@@ -487,7 +493,7 @@ export default function BulkUploadStudents() {
                 >
                   <span style={{ fontWeight: 600 }}>CSV Column Fields:</span>
                   <span style={{ fontWeight: 400, color: "#666", marginLeft: 4 }}>
-                    The file should contain School Name, UDISE Code, Cluster Name, and Block Name.
+                    The file should contain Student Name, Father Name, Mother Name, Class and Gender.
                   </span>
                 </Typography>
               </Box>
@@ -676,7 +682,7 @@ export default function BulkUploadStudents() {
                 </Box>
 
                 <Card
-                  variant="outlined"
+                  variant=""
                   sx={{
                     mb: 3,
                   }}
@@ -759,14 +765,14 @@ export default function BulkUploadStudents() {
                             gap: 2,
                           }}
                         >
-                          {/* Custom Warning SVG */}
+                          {/* Custom Warning SVG - Triangle */}
                           <svg width="40" height="40" viewBox="0 0 40 40">
-                            <circle cx="20" cy="20" r="20" fill="#F45050" />
+                            <polygon points="20,6 36,34 4,34" fill="#F45050" />
                             <text
                               x="20"
-                              y="27"
+                              y="29"
                               textAnchor="middle"
-                              fontSize="28"
+                              fontSize="20"
                               fontWeight="bold"
                               fill="#fff"
                               fontFamily="Arial"
@@ -845,6 +851,7 @@ export default function BulkUploadStudents() {
                                   fontWeight: 600,
                                   fontFamily: "Work Sans",
                                   fontSize: "18px",
+                                  whiteSpace: "nowrap",
                                   "&:hover": {
                                     backgroundColor: "#2F4F4F",
                                     color: "#fff",
@@ -873,6 +880,7 @@ export default function BulkUploadStudents() {
                                 fontWeight: 600,
                                 fontFamily: "Work Sans",
                                 fontSize: "18px",
+                                whiteSpace: "nowrap",
                                 "&:hover": {
                                   backgroundColor: "#2F4F4F",
                                   color: "#fff",
@@ -895,109 +903,34 @@ export default function BulkUploadStudents() {
                         >
                           <Table size="small">
                             <TableHead>
-                              <TableRow sx={{ height: 56 }}>
-                                <TableCell align="right">
+                              <TableRow>
+                                <TableCell align="center" sx={{ py: 2 }}>
                                   <Typography
                                     sx={{
                                       fontWeight: 600,
                                       fontFamily: "Work Sans",
-                                      fontSize: "14px",
                                       color: "#2F4F4F",
                                     }}
                                   >
-                                    Row No.
+                                    Row No
                                   </Typography>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell width="40%" sx={{ py: 2 }}>
                                   <Typography
                                     sx={{
                                       fontWeight: 600,
                                       fontFamily: "Work Sans",
-                                      fontSize: "14px",
                                       color: "#2F4F4F",
                                     }}
                                   >
-                                    Name
+                                    Student Name
                                   </Typography>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell width="40%" sx={{ py: 2 }}>
                                   <Typography
                                     sx={{
                                       fontWeight: 600,
                                       fontFamily: "Work Sans",
-                                      fontSize: "14px",
-                                      color: "#2F4F4F",
-                                    }}
-                                  >
-                                    Apar ID
-                                  </Typography>
-                                </TableCell>
-                                <TableCell>
-                                  <Typography
-                                    sx={{
-                                      fontWeight: 600,
-                                      fontFamily: "Work Sans",
-                                      fontSize: "14px",
-                                      color: "#2F4F4F",
-                                    }}
-                                  >
-                                    Class
-                                  </Typography>
-                                </TableCell>
-                                <TableCell>
-                                  <Typography
-                                    sx={{
-                                      fontWeight: 600,
-                                      fontFamily: "Work Sans",
-                                      fontSize: "14px",
-                                      color: "#2F4F4F",
-                                    }}
-                                  >
-                                    Father Name
-                                  </Typography>
-                                </TableCell>
-                                <TableCell>
-                                  <Typography
-                                    sx={{
-                                      fontWeight: 600,
-                                      fontFamily: "Work Sans",
-                                      fontSize: "14px",
-                                      color: "#2F4F4F",
-                                    }}
-                                  >
-                                    Mother Name
-                                  </Typography>
-                                </TableCell>
-                                <TableCell>
-                                  <Typography
-                                    sx={{
-                                      fontWeight: 600,
-                                      fontFamily: "Work Sans",
-                                      fontSize: "14px",
-                                      color: "#2F4F4F",
-                                    }}
-                                  >
-                                    Gender
-                                  </Typography>
-                                </TableCell>
-                                <TableCell>
-                                  <Typography
-                                    sx={{
-                                      fontWeight: 600,
-                                      fontFamily: "Work Sans",
-                                      fontSize: "14px",
-                                      color: "#2F4F4F",
-                                    }}
-                                  >
-                                    Hostel
-                                  </Typography>
-                                </TableCell>
-                                <TableCell>
-                                  <Typography
-                                    sx={{
-                                      fontWeight: 600,
-                                      fontFamily: "Work Sans",
-                                      fontSize: "14px",
                                       color: "#2F4F4F",
                                     }}
                                   >
@@ -1010,33 +943,17 @@ export default function BulkUploadStudents() {
                               {errorData.slice(0, 3).map((error, index) => (
                                 <TableRow
                                   key={`preview-error-${index}`}
-                                  sx={{
-                                    height: 56,
-                                    "& td, & th": { borderBottom: "none" },
-                                  }}
+                                  sx={{ "& td": { borderBottom: "none", py: 1.5 } }}
                                 >
-                                  <TableCell align="right">{error.row || ""}</TableCell>{" "}
-                                  {/* Row No. */}
+                                  <TableCell align="center" sx={{ color: "#2F4F4F" }}>
+                                    {error.row !== undefined
+                                      ? error.row
+                                      : error.rowNo !== undefined
+                                      ? error.rowNo
+                                      : ""}
+                                  </TableCell>
                                   <TableCell sx={{ color: "#2F4F4F" }}>
                                     {error.fullName || ""}
-                                  </TableCell>
-                                  <TableCell sx={{ color: "#2F4F4F" }}>
-                                    {error.aparID || ""}
-                                  </TableCell>
-                                  <TableCell sx={{ color: "#2F4F4F" }}>
-                                    {error.class ? `Class ${error.class}` : ""}
-                                  </TableCell>
-                                  <TableCell sx={{ color: "#2F4F4F" }}>
-                                    {error.fatherName || ""}
-                                  </TableCell>
-                                  <TableCell sx={{ color: "#2F4F4F" }}>
-                                    {error.motherName || ""}
-                                  </TableCell>
-                                  <TableCell sx={{ color: "#2F4F4F" }}>
-                                    {error.gender || ""}
-                                  </TableCell>
-                                  <TableCell sx={{ color: "#2F4F4F" }}>
-                                    {error.hostel || ""}
                                   </TableCell>
                                   <TableCell>
                                     <Tooltip title={error.error || "Unknown error"}>
@@ -1047,7 +964,7 @@ export default function BulkUploadStudents() {
                                           whiteSpace: "nowrap",
                                           overflow: "hidden",
                                           textOverflow: "ellipsis",
-                                          maxWidth: 150,
+                                          maxWidth: 200,
                                         }}
                                       >
                                         {error.error || "Unknown error"}
@@ -1118,7 +1035,7 @@ export default function BulkUploadStudents() {
                           Upload Another File
                         </Button>
 
-                        <ButtonCustom text="Go to Student List" onClick={handleDoneUpload} />
+                        <ButtonCustom text="Go to Student List >" onClick={handleDoneUpload} />
                       </Box>
                     </Box>
                   </CardContent>
@@ -1174,7 +1091,7 @@ export default function BulkUploadStudents() {
                   fontWeight="bold"
                   sx={{ mb: 3, fontFamily: "Work Sans", color: "#2F4F4F", fontSize: "18px" }}
                 >
-                  Column Mapping:
+                  Column Mapping Review
                 </Typography>
 
                 <TableContainer component={Paper} sx={{ mb: 3 }}>
@@ -1208,42 +1125,46 @@ export default function BulkUploadStudents() {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {Object.entries(mappingConfig).map(([csvColumn, systemField]) => (
-                        <TableRow
-                          key={`mapping-${csvColumn}`}
-                          sx={{
-                            height: 48,
-                            "& td, & th": {
-                              borderBottom: "none",
-                            },
-                          }}
-                        >
-                          <TableCell>
-                            <Typography
-                              sx={{
-                                fontFamily: "Work Sans",
-                                fontWeight: 400, // normal
-                                color: "#2F4F4F",
-                                fontSize: "15px",
-                              }}
-                            >
-                              {csvColumn}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography
-                              sx={{
-                                fontFamily: "Work Sans",
-                                fontWeight: 400, // normal
-                                color: "#2F4F4F",
-                                fontSize: "15px",
-                              }}
-                            >
-                              {systemField}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {Object.entries(mappingConfig).map(([csvColumn, systemField]) => {
+  const isRequired = ["fullName", "fatherName", "motherName", "class", "gender"].includes(systemField);
+  return (
+    <TableRow
+      key={`mapping-${csvColumn}`}
+      sx={{
+        height: 48,
+        "& td, & th": {
+          borderBottom: "none",
+        },
+      }}
+    >
+      <TableCell>
+        <Typography
+          sx={{
+            fontFamily: "Work Sans",
+            fontWeight: 400, // normal
+            color: "#2F4F4F",
+            fontSize: "15px",
+          }}
+        >
+          {csvColumn}
+        </Typography>
+      </TableCell>
+      <TableCell>
+        <Typography
+          sx={{
+            fontFamily: "Work Sans",
+            fontWeight: 400, // normal
+            color: "#2F4F4F",
+            fontSize: "15px",
+          }}
+        >
+          {systemField}
+          {isRequired ? <span style={{ color: "#F45050", marginLeft: 2 }}>*</span> : null}
+        </Typography>
+      </TableCell>
+    </TableRow>
+  );
+})}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -1299,6 +1220,7 @@ export default function BulkUploadStudents() {
           isProcessing={isDeleting}
           confirmText="Remove"
           cancelText="Cancel"
+          sx={{ zIndex: 20000 }}
         />
 
         <StudentSampleCSVModal open={sampleModalOpen} onClose={() => setSampleModalOpen(false)} />

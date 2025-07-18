@@ -100,65 +100,17 @@ const theme = createTheme({
   },
 });
 
-export default function SchoolReport() {
+export default function SchoolReport({ schoolName }) {
   const [reports, setReports] = useState([]);
+  const [academicYear, setAcademicYear] = useState(null);
   const [selectedClass, setSelectedClass] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [availableClasses, setAvailableClasses] = useState([]);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false); // Add download modal state
-  const [schoolInfo, setSchoolInfo] = useState(null); // Add school info state
   const navigate = useNavigate();
 
   // Extract school ID from URL
   const { schoolId } = useParams();
-
-  // Function to fetch school info
-  const fetchSchoolInfo = async () => {
-    try {
-      const result = await api.get(`/school/${schoolId}`);
-      if (result.data && result.data.success) {
-        setSchoolInfo(result.data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching school info:", error);
-    }
-  };
-
-  // Function to fetch all classes for the school
-  const fetchAvailableClasses = async () => {
-    try {
-      // Get all available classes from the API data
-      const result = await api.get(`/report/classes/${schoolId}`);
-
-      if (result.data && result.data.success) {
-        // Extract unique class values and format for dropdown
-        const classes = result.data.data || [];
-        const uniqueClasses = [...new Set(classes.map((item) => item.testClass))];
-
-        // Format classes for dropdown
-        const formattedClasses = uniqueClasses
-          .filter((cls) => cls) // Filter out any null/undefined values
-          .sort((a, b) => parseInt(a) - parseInt(b)) // Sort numerically
-          .map((cls) => ({
-            value: cls,
-            label: `Class ${cls}`,
-          }));
-
-        setAvailableClasses(formattedClasses);
-
-        // Set first class as default if available
-        if (formattedClasses.length > 0 && !selectedClass) {
-          setSelectedClass(parseInt(formattedClasses[0].value, 10));
-        }
-      } else {
-        console.error("API Error:", result.data?.error);
-        setAvailableClasses([]);
-      }
-    } catch (error) {
-      console.error("Error fetching classes:", error);
-      setAvailableClasses([]);
-    }
-  };
 
   // Function to fetch report data from API
   const fetchReportData = async (classNumber) => {
@@ -197,20 +149,20 @@ export default function SchoolReport() {
     }
   };
 
-  // Fetch available classes and school info when component mounts
-  useEffect(() => {
-    if (schoolId) {
-      fetchAvailableClasses();
-      fetchSchoolInfo();
-    }
-  }, [schoolId]);
-
   // Re-fetch data when selected class changes or when schoolId changes
   useEffect(() => {
     if (schoolId) {
       fetchReportData(selectedClass);
     }
   }, [selectedClass, schoolId]);
+
+  // Get academic year from localStorage
+  useEffect(() => {
+    const storedAcademicYear = localStorage.getItem("currentAcademicYear");
+    if (storedAcademicYear) {
+      setAcademicYear(storedAcademicYear);
+    }
+  }, []);
 
   // Handle class change
   const handleClassChange = (e) => {
@@ -270,14 +222,14 @@ export default function SchoolReport() {
 
   // Download report as CSV
   const handleDownloadCSV = (data) => {
-    const headers = ["Name of Exam", "Total Students", "Max Marks", ...allSubjects];
+    const headers = ["Name of Exam", /* "Total Students", */ "Max Marks", ...allSubjects];
 
     let csvContent = headers.join(",") + "\n";
 
     data.forEach((report) => {
       const rowData = [
         report.examName,
-        report.totalStudents,
+        // report.totalStudents,
         report.maxMarks,
         ...allSubjects.map((subject) => report[subject]),
       ];
@@ -300,7 +252,7 @@ export default function SchoolReport() {
     link.href = url;
     link.setAttribute(
       "download",
-      `Class_${selectedClass}_Report_${schoolInfo?.schoolName || "School"}_${
+      `Class_${selectedClass}_Report_${schoolName || "School"}_${
         new Date().toISOString().split("T")[0]
       }.csv`
     );
@@ -333,7 +285,7 @@ export default function SchoolReport() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Class ${selectedClass} Test Report - ${schoolInfo?.schoolName || "School"}</title>
+        <title>Class ${selectedClass} Test Report - ${schoolName || "School"}</title>
         <style>
           @media print {
             @page {
@@ -532,7 +484,8 @@ export default function SchoolReport() {
         <div class="container">
           <div class="header">
             <h1>Class ${selectedClass} Test Report</h1>
-            <div class="subtitle">${schoolInfo?.schoolName || "School Report"}</div>
+            <div class="subtitle">${schoolName || "School Report"}
+${schoolName || "N/A"}</div>
             <div class="date">Generated on: ${currentDate}</div>
           </div>
           
@@ -540,14 +493,14 @@ export default function SchoolReport() {
             <h3>Report Information:</h3>
             <div class="info-item"><strong>Class:</strong> ${selectedClass}</div>
             <div class="info-item"><strong>Total Tests:</strong> ${totalTests}</div>
-            <div class="info-item"><strong>School:</strong> ${schoolInfo?.schoolName || "N/A"}</div>
+            <div class="info-item"><strong>School:</strong>${schoolName || "N/A"}</div>
           </div>
           
           <table>
             <thead>
               <tr>
                 <th class="exam-header">Name of Exam</th>
-                <th>Total Students</th>
+                <!-- <th>Total Students</th> -->
                 <th>Max Marks</th>
                 ${allSubjects.map((subject) => `<th>${subject}</th>`).join("")}
               </tr>
@@ -564,7 +517,7 @@ export default function SchoolReport() {
                   return `
                   <tr>
                     <td class="exam-name">${report.examName}</td>
-                    <td>${report.totalStudents}</td>
+                    <!-- <td>${report.totalStudents}</td> -->
                     <td>${report.maxMarks}</td>
                     ${allSubjects
                       .map((subject) => {
@@ -594,7 +547,7 @@ export default function SchoolReport() {
           
           <div class="footer">
             <p>This report is generated automatically from the School Performance System</p>
-            <p>© 2024-25 Academic Performance Tracking System</p>
+            <p>© ${academicYear || "2024-25"} Academic Performance Tracking System</p>
           </div>
         </div>
       </body>
@@ -755,15 +708,31 @@ export default function SchoolReport() {
                   },
                 }}
               >
-                {availableClasses.length > 0 ? (
+                {/* {availableClasses.length > 0 ? (
                   availableClasses.map((classOption) => (
                     <MenuItem key={classOption.value} value={parseInt(classOption.value, 10)}>
                       {classOption.label}
                     </MenuItem>
                   ))
                 ) : (
-                  <MenuItem value={1}>Class 1</MenuItem>
-                )}
+                  <>
+                    <MenuItem value={1}>Class 1</MenuItem>
+                    <MenuItem value={2}>Class 2</MenuItem>
+                  </>
+                )} */}
+
+                <MenuItem value={1}>Class 1</MenuItem>
+                <MenuItem value={2}>Class 2</MenuItem>
+                <MenuItem value={3}>Class 3</MenuItem>
+                <MenuItem value={4}>Class 4</MenuItem>
+                <MenuItem value={5}>Class 5</MenuItem>
+                <MenuItem value={5}>Class 6</MenuItem>
+                <MenuItem value={5}>Class 7</MenuItem>
+                <MenuItem value={5}>Class 8</MenuItem>
+                <MenuItem value={5}>Class 9</MenuItem>
+                <MenuItem value={5}>Class 10</MenuItem>
+                <MenuItem value={5}>Class 11</MenuItem>
+                <MenuItem value={5}>Class 12</MenuItem>
               </Select>
             </FormControl>
           </div>
@@ -779,9 +748,8 @@ export default function SchoolReport() {
 
         {/* Note text */}
         <div style={styles.noteText}>
-          <span className="font-bold">Note:</span> These marks represent the subject-wise average
-          score of the class, calculated as: (Total Marks Obtained in the Subject ÷ Number of
-          Students Appeared)
+          <span style={{ fontFamily: "'Work Sans', sans-serif", fontWeight: 600, fontSize: "14px", color:"#2F4F4F" }}>Note:</span>
+          <span style={{ fontFamily: "'Work Sans', sans-serif", fontWeight: 400, fontSize: "14px",color:"#2F4F4F" }}> These marks represent the subject-wise average score of the class, calculated as: (Total Marks Obtained in the Subject ÷ Number of Students Appeared)</span>
         </div>
 
         {/* Download Modal */}

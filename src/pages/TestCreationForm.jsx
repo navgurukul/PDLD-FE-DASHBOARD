@@ -1,20 +1,14 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CLASS_GROUPS, SUBJECTS_BY_GRADE } from "./../data/testData";
 import { ChevronDown, Trash2 } from "lucide-react";
 import ButtonCustom from "../components/ButtonCustom";
 import ModalSummary from "../components/SummaryModal";
+import ConfirmationModal from "../components/modal/ConfirmationModal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiInstance from "../../api";
-
-import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import ConfirmationModal from "../components/modal/ConfirmationModal";
-
-import Autocomplete from "@mui/material/Autocomplete";
-import TextField from "@mui/material/TextField";
-import Paper from "@mui/material/Paper";
+import { Autocomplete, TextField, Paper } from "@mui/material";
 
 const TestCreationForm = () => {
   const location = useLocation();
@@ -50,8 +44,58 @@ const TestCreationForm = () => {
   // Add state to track original test dates for edit mode
   const [originalTestDates, setOriginalTestDates] = useState({});
 
+  // Add new states for API-driven subjects
+  const [classWiseSubjects, setClassWiseSubjects] = useState({});
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
+  const [subjectsError, setSubjectsError] = useState(null);
+
   const handleTestSeriesMonthChange = (e) => {
     setTestSeriesMonth(e.target.value);
+  };
+
+  // Fetch class-wise subjects from API
+  const fetchClassWiseSubjects = async () => {
+    try {
+      setIsLoadingSubjects(true);
+      setSubjectsError(null);
+      
+      const response = await apiInstance.get('/report/class-wise-subjects');
+      
+      if (response.data.success && response.data.data) {
+        // Transform API response to our format
+        const subjectsMap = {};
+        response.data.data.forEach((classData) => {
+          subjectsMap[classData.class] = {
+            subjects: classData.subjects || [],
+            VOCATIONAL: classData.vocationalSubjects || [],
+            remedialSubjects: classData.remedialSubjects || []
+          };
+        });
+        
+        setClassWiseSubjects(subjectsMap);
+      } else {
+        throw new Error("Invalid API response");
+      }
+    } catch (error) {
+      console.error("Error fetching class-wise subjects:", error);
+      setSubjectsError(error.message);
+      
+      // Fallback to hardcoded subjects from testData.js
+      const fallbackSubjects = {};
+      Object.keys(SUBJECTS_BY_GRADE).forEach(classNum => {
+        fallbackSubjects[classNum] = {
+          subjects: SUBJECTS_BY_GRADE[classNum] || [],
+          VOCATIONAL: [],
+          remedialSubjects: getRemedialSubjects(classNum)
+        };
+      });
+      
+      setClassWiseSubjects(fallbackSubjects);
+      
+      toast.error("Failed to load subjects from server, using default subjects");
+    } finally {
+      setIsLoadingSubjects(false);
+    }
   };
 
   // Helper function to check if a class group should be enabled for remedial
@@ -68,6 +112,40 @@ const TestCreationForm = () => {
       return ["Hindi", "English", "Mathematics"];
     }
     return [];
+  };
+
+  // New helper function to get subjects for a class from API data
+  const getSubjectsForClass = (classNum) => {
+    // For remedial tests, use API remedial subjects
+    if (formData.testType === "remedial") {
+      const classData = classWiseSubjects[classNum];
+      if (classData && classData.remedialSubjects) {
+        return {
+          academic: classData.remedialSubjects,
+          vocational: []
+        };
+      }
+      // Fallback to hardcoded remedial subjects if API data not available
+      return {
+        academic: getRemedialSubjects(classNum),
+        vocational: []
+      };
+    }
+
+    // For syllabus tests, use API data
+    const classData = classWiseSubjects[classNum];
+    if (!classData) {
+      // Fallback to hardcoded data if API data not available
+      return {
+        academic: SUBJECTS_BY_GRADE[classNum] || [],
+        vocational: []
+      };
+    }
+
+    return {
+      academic: classData.subjects || [],
+      vocational: classData.VOCATIONAL || []
+    };
   };
 
   // Improve the date formatting function to handle API date format
@@ -151,6 +229,11 @@ const TestCreationForm = () => {
       populateFormWithTestData(testData);
     }
   }, [isEditMode, testData]);
+
+  // Fetch subjects on component mount
+  useEffect(() => {
+    fetchClassWiseSubjects();
+  }, []);
 
   // Toggle class selection within the active group
   const toggleClassSelection = (className) => {
@@ -464,18 +547,11 @@ const TestCreationForm = () => {
             month = testSeriesMonth;
           }
 
-          // TestTag display (Syllabus, Remedial, etc.)
-          const testTagDisplay =
-            formData.testTag === "Half_Yearly"
-              ? "Half Yearly"
-              : formData.testTag === "Pre_Board"
-              ? "Pre Boards"
-              : formData.testTag
-              ? formData.testTag
-              : "";
+          // Test Type display
+          const testTypeDisplay = formData.testType === "syllabus" ? "Syllabus" : "Remedial";
 
-          // Test Name format
-          let testName = `${displaySubject}_${testTagDisplay}_Class ${grade}`;
+          // Test Name format: subject_testType_class_month (without testTag)
+          let testName = `${displaySubject}_${testTypeDisplay}_Class ${grade}`;
           if (month) testName += `_${month}`;
 
           testNames[key] = testName;
@@ -1279,7 +1355,16 @@ const TestCreationForm = () => {
                     required
                   />
                   <div className="mt-1">
-                    <span className="text-sm text-[#483D8B]-700">Max Score upper limit is 100</span>
+                    <div
+                      style={{
+                        fontFamily: "'Work Sans', sans-serif",
+                        fontWeight: 400,
+                        color: "#483D8B",
+                        fontSize: "14px",
+                      }}
+                    >
+                      Max Score upper limit is 100
+                    </div>
                   </div>
                 </div>
               )}
@@ -1309,45 +1394,73 @@ const TestCreationForm = () => {
                           !editMode &&
                           handleSubjectRowChange(className, row.id, "subject", e.target.value)
                         }
-                        disabled={editMode}
+                        disabled={editMode || isLoadingSubjects}
                         required
                       >
-                        <option value="">Select Subject...</option>
-                        {(() => {
-                          const classNum = className.includes("Class ")
-                            ? parseInt(className.replace("Class ", ""))
-                            : parseInt(className);
+                        {isLoadingSubjects ? (
+                          <option value="">Loading subjects...</option>
+                        ) : (
+                          <>
+                            <option value="">Select Subject...</option>
+                            {(() => {
+                              const classNum = className.includes("Class ")
+                                ? parseInt(className.replace("Class ", ""))
+                                : parseInt(className);
 
-                          // Get subjects based on test type
-                          let subjectsForClass;
-                          if (formData.testType === "remedial") {
-                            subjectsForClass = getRemedialSubjects(classNum);
-                          } else {
-                            // Get all subjects for this class from SUBJECTS_BY_GRADE
-                            subjectsForClass = SUBJECTS_BY_GRADE[classNum] || [];
-                          }
+                              // Get subjects for this class (academic and vocational)
+                              const { academic, vocational } = getSubjectsForClass(classNum);
 
-                          // Get already selected subjects in this class (EXCLUDING the current row)
-                          const classSubjectRows = subjectRows[className] || [];
-                          const selectedSubjects = classSubjectRows
-                            .filter((otherRow) => otherRow.id !== row.id && otherRow.subject)
-                            .map((otherRow) => otherRow.subject);
+                              // Get already selected subjects in this class (EXCLUDING the current row)
+                              const classSubjectRows = subjectRows[className] || [];
+                              const selectedSubjects = classSubjectRows
+                                .filter((otherRow) => otherRow.id !== row.id && otherRow.subject)
+                                .map((otherRow) => otherRow.subject);
 
-                          // Filter out already selected subjects
-                          const availableSubjects = subjectsForClass.filter(
-                            (subject) =>
-                              !selectedSubjects.includes(subject.toLowerCase().replace(/\s+/g, "_"))
-                          );
+                              // Filter out already selected subjects from both academic and vocational
+                              const availableAcademic = academic.filter(
+                                (subject) =>
+                                  !selectedSubjects.includes(subject.toLowerCase().replace(/\s+/g, "_"))
+                              );
 
-                          return availableSubjects.map((subject) => (
-                            <option
-                              key={subject}
-                              value={subject.toLowerCase().replace(/\s+/g, "_")}
-                            >
-                              {subject}
-                            </option>
-                          ));
-                        })()}
+                              const availableVocational = vocational.filter(
+                                (subject) =>
+                                  !selectedSubjects.includes(subject.toLowerCase().replace(/\s+/g, "_"))
+                              );
+
+                              return (
+                                <>
+                                  {/* Academic Subjects Group */}
+                                  {availableAcademic.length > 0 && (
+                                    <optgroup label="Academic Subjects">
+                                      {availableAcademic.map((subject) => (
+                                        <option
+                                          key={subject}
+                                          value={subject.toLowerCase().replace(/\s+/g, "_")}
+                                        >
+                                          {subject}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+
+                                  {/* Vocational Subjects Group */}
+                                  {availableVocational.length > 0 && (
+                                    <optgroup label="Vocational Subjects">
+                                      {availableVocational.map((subject) => (
+                                        <option
+                                          key={subject}
+                                          value={subject.toLowerCase().replace(/\s+/g, "_")}
+                                        >
+                                          {subject}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </>
+                        )}
                       </select>
                     </div>
                     {/* Test Date - EDITABLE EVEN IN EDIT MODE */}
@@ -1408,14 +1521,9 @@ const TestCreationForm = () => {
                     ? parseInt(className.replace("Class ", ""))
                     : parseInt(className);
 
-                  // Get subjects based on test type
-                  let subjectsForClass;
-                  if (formData.testType === "remedial") {
-                    subjectsForClass = getRemedialSubjects(classNum);
-                  } else {
-                    // Get all subjects for this class from SUBJECTS_BY_GRADE
-                    subjectsForClass = SUBJECTS_BY_GRADE[classNum] || [];
-                  }
+                  // Get subjects for this class (academic and vocational)
+                  const { academic, vocational } = getSubjectsForClass(classNum);
+                  const allSubjectsForClass = [...academic, ...vocational];
 
                   // Get already selected subjects in this class
                   const classSubjectRows = subjectRows[className] || [];
@@ -1427,7 +1535,7 @@ const TestCreationForm = () => {
                   const hasEmptySubjectRow = classSubjectRows.some((row) => !row.subject);
 
                   // Filter out already selected subjects
-                  const availableSubjects = subjectsForClass.filter(
+                  const availableSubjects = allSubjectsForClass.filter(
                     (subject) =>
                       !selectedSubjects.includes(subject.toLowerCase().replace(/\s+/g, "_"))
                   );

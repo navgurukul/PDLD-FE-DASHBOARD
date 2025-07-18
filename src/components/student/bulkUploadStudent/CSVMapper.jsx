@@ -386,7 +386,7 @@ export default function StudentCSVMapper({ file, mapping, setMapping, csvData, s
                       sx={{
                         fontFamily: "Work Sans",
                         fontWeight: 400,
-                        fontSize: "15px",
+                        fontSize: "16px",
                         color: "#2F4F4F",
                       }}
                     >
@@ -453,7 +453,7 @@ export default function StudentCSVMapper({ file, mapping, setMapping, csvData, s
                         fontFamily: "Work Sans",
                         fontWeight: 400,
                         fontStyle: "italic",
-                        fontSize: "15px",
+                        fontSize: "16px",
                         color: "#597272",
                       }}
                     >

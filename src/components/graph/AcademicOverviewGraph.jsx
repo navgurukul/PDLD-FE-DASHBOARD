@@ -27,16 +27,17 @@ const CustomTooltip = ({ active, payload, label }) => {
         bgcolor: "#fff",
       }}
     >
-      <Typography
-        variant="subtitle1"
-        sx={{
-          color: "#DCB900",
-          fontWeight: "bold",
-          mb: 1.5,
+      <div
+        style={{
+          fontFamily: "'Work Sans', sans-serif",
+          fontWeight: 600,
+          fontSize: "14px",
+          color: "#CCAC00",
+          marginBottom: 12,
         }}
       >
         {currentData.fullMonthLabel ? currentData.fullMonthLabel.toUpperCase() : ""}
-      </Typography>
+      </div>
 
       <Box sx={{ mb: 1 }}>
         <Typography variant="body2" sx={{ display: "flex", justifyContent: "space-between" }}>
@@ -143,7 +144,7 @@ const SubjectTooltip = ({ active, payload, label }) => {
           fontWeight: 600,
           fontSize: "14px",
           color: "#CCAC00",
-          marginBottom: 8,
+          marginBottom: 12,
         }}
       >
         {currentData.fullMonthLabel ? currentData.fullMonthLabel.toUpperCase() : ""}

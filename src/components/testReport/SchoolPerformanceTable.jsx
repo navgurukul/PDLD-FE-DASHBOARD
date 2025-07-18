@@ -31,7 +31,14 @@ import FolderEmptyImg from "../../assets/Folder Empty 1.svg";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DownloadModal from "../../components/modal/DownloadModal";
+import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { Search } from "lucide-react";
+
+// Utility function to convert school names to Title Case
+const toTitleCase = (str) => {
+  if (!str || typeof str !== 'string') return str;
+  return str.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+};
 
 // Create MUI theme to match TestListTable
 const theme = createTheme({
@@ -110,7 +117,7 @@ const theme = createTheme({
             color: "white",
           },
           "&:hover": {
-            backgroundColor: "#A3BFBF ", // Hover color
+            backgroundColor: "#A3BFBF", // Hover color
           },
         },
       },
@@ -120,10 +127,12 @@ const theme = createTheme({
 
 const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   const navigate = useNavigate();
+  
   // State for API data
   const [schools, setSchools] = useState([]);
   const [totalSchools, setTotalSchools] = useState(0);
   const [schoolsSubmitted, setSchoolsSubmitted] = useState(0);
+  const [pendingSchools, setPendingSchools] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -161,25 +170,45 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   const currentTestId = getTestIdFromUrl();
 
-  const fetchData = async () => {
+  const [maxScore, setMaxScore] = useState(null);
+  const [requiredMarksToPass, setRequiredMarksToPass] = useState(null);
+
+  const fetchData = async (page = 1, size = pageSize) => {
     setLoading(true);
     try {
-      const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`);
-
+      const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
+        params: {
+          page: page,
+          pageSize: size
+        }
+      });
       if (response.data && response.data.success) {
-        const { schools: apiSchools, totalSubmittedSchools, pagination } = response.data.data;
+        const { 
+          schools: apiSchools, 
+          totalSubmittedSchools, 
+          totalpendingSchools,
+          totalEligibleSchools,
+          pagination, 
+          maxScore 
+        } = response.data.data;
+
+        // Get requiredMarksToPass from first school (assuming all same)
+        const requiredMarks = apiSchools.length > 0 ? apiSchools[0].requiredMarksToPass : null;
+        setMaxScore(maxScore);
+        setRequiredMarksToPass(requiredMarks);
 
         // Transform API data to match the component's expected format
         const formattedSchools = apiSchools.map((school) => ({
           id: school.id,
-          name: school.schoolName,
-          schoolName: school.schoolName,
+          name: toTitleCase(school.schoolName),
+          schoolName: toTitleCase(school.schoolName),
           blockName: school.blockName,
           clusterName: school.clusterName,
           udiseCode: school.udiseCode,
           passRate: school.successRate, // Map successRate to passRate
-          submitted: true, // All schools in the response are submitted
+          submitted: school.status === "submitted",
           totalStudents: school.totalStudents,
+          totalStudentsInClass: school.totalStudentsInClass, // For pending schools
           presentStudents: school.presentStudents,
           absentStudents: school.absentStudents,
           averageScore: school.averageScore,
@@ -187,7 +216,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
         setSchools(formattedSchools);
         setSchoolsSubmitted(totalSubmittedSchools);
-        setTotalSchools(response.data.data.totalEligibleSchools || totalSubmittedSchools);
+        setPendingSchools(totalpendingSchools);
+        setTotalSchools(totalEligibleSchools || (totalSubmittedSchools + totalpendingSchools));
       } else {
         setError("Failed to load data");
       }
@@ -200,13 +230,13 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [currentTestId]);
+    fetchData(currentPage, pageSize);
+  }, [currentTestId, currentPage, pageSize]);
 
   // Filter schools based on search query and status
   const filteredSchools = useMemo(() => {
     return schools.filter((school) => {
-      const schoolName = (school.name || school.schoolName || "").toLowerCase();
+      const schoolName = toTitleCase(school.name || school.schoolName || "").toLowerCase();
       const matchesSearch = schoolName.includes(searchQuery.toLowerCase());
       const matchesStatus =
         !statusFilter ||
@@ -246,6 +276,26 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   };
 
   const handleDownloadCSV = (data) => {
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    
+    // Create CSV content with test information header (matching StudentPerformanceTable format)
+    const csvLines = [];
+    csvLines.push(`School Performance Report`);
+    csvLines.push(``); // Empty line
+    
+    // Report Information in single line format
+    let reportInfo = `Report Information: Test: ${testNameVal}`;
+    if (maxScore) {
+      reportInfo += `, Maximum Marks: ${maxScore}`;
+    }
+    reportInfo += `, Records in Report: ${data.length}, Generated on: ${currentDate}`;
+    csvLines.push(reportInfo);
+    csvLines.push(""); // Empty line before table data
+    
     const headers = [
       "School Name",
       "Status",
@@ -255,26 +305,28 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       "Average Score",
       "Pass Percentage",
     ];
-    let csvContent = headers.join(",") + "\n";
+    csvLines.push(headers.join(","));
+    
     data.forEach((row) => {
-      csvContent +=
-        [
-          row.name,
-          row.status,
-          row.totalStudents,
-          row.presentStudents,
-          row.absentStudents,
-          row.averageScore,
-          row.passRate,
-        ].join(",") + "\n";
+      csvLines.push([
+        toTitleCase(row.name),
+        row.status,
+        row.totalStudents,
+        row.presentStudents,
+        row.absentStudents,
+        row.averageScore,
+        row.passRate,
+      ].join(","));
     });
+    
+    const csvContent = csvLines.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute(
       "download",
-      `School_Performance_Report_${new Date().toISOString().split("T")[0]}.csv`
+      `${testNameVal}_School_Performance_Report_${new Date().toISOString().split("T")[0]}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -287,51 +339,95 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   const handleDownloadPDF = (data) => {
     const printWindow = window.open("", "_blank");
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    
     const htmlContent = `
+    <!DOCTYPE html>
     <html>
-      <head>
-        <title>School Performance Report</title>
-        <style>
-          body { font-family: Arial, sans-serif; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
-          th { background: #2F4F4F; color: #fff; }
-          td:first-child, th:first-child { text-align: left; }
-        </style>
-      </head>
-      <body>
-        <h2>School Performance Report</h2>
-        <table>
-          <thead>
+    <head>
+      <title>School Performance Report - ${testNameVal}</title>
+      <style>
+        @media print {
+          @page { size: A4 landscape; margin: 15mm; }
+        }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { color: #2F4F4F; font-size: 22px; margin-bottom: 8px; }
+        .header .school-name { color: #2F4F4F; font-size: 16px; font-weight: 600; margin-bottom: 5px; }
+        .header .date { color: #666; font-size: 12px; }
+        .report-info { 
+          background-color: #f8f9fa;
+          padding: 12px;
+          margin-bottom: 20px;
+          border-radius: 6px;
+          border: 1px solid #e0e0e0;
+        }
+        .report-info h3 { 
+          color: #2F4F4F;
+          font-size: 14px;
+          margin-bottom: 8px;
+        }
+        .info-item {
+          display: inline-block;
+          color: #666;
+          font-size: 12px;
+        }
+        .info-item strong {
+          color: #2F4F4F;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th { background: #2F4F4F; color: #fff; padding: 8px 6px; border: 1px solid #2F4F4F; }
+        td { padding: 6px; border: 1px solid #ddd; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        tr:hover { background: #e8f5f9; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>School Performance Report</h1>
+      </div>
+      
+      <div class="report-info">
+        <h3>Report Information</h3>
+        <div class="info-item">
+          <strong>Test:</strong> ${testNameVal}${maxScore ? `, <strong>Maximum Marks:</strong> ${maxScore}` : ''}, <strong>Records in Report:</strong> ${data.length}, <strong>Generated on:</strong> ${currentDate}
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left;">School Name</th>
+            <th style="text-align:center;">Status</th>
+            <th style="text-align:center;">No. Of Students</th>
+            <th style="text-align:center;">Students Present</th>
+            <th style="text-align:center;">Student Absent</th>
+            <th style="text-align:center;">Average Score</th>
+            <th style="text-align:center;">Pass Percentage</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data
+            .map(
+              (row) => `
             <tr>
-              <th>School Name</th>
-              <th>Status</th>
-              <th>No. Of Students</th>
-              <th>Students Present</th>
-              <th>Student Absent</th>
-              <th>Average Score</th>
-              <th>Pass Percentage</th>
+              <td style="text-align:left">${toTitleCase(row.name)}</td>
+              <td style="text-align:center">${row.status}</td>
+              <td style="text-align:center">${row.totalStudents}</td>
+              <td style="text-align:center">${row.presentStudents}</td>
+              <td style="text-align:center">${row.absentStudents}</td>
+              <td style="text-align:center">${row.averageScore}</td>
+              <td style="text-align:center">${row.passRate}</td>
             </tr>
-          </thead>
-          <tbody>
-            ${data
-              .map(
-                (row) => `
-              <tr>
-                <td style="text-align:left">${row.name}</td>
-                <td style="text-align:left">${row.status}</td>
-                <td>${row.totalStudents}</td>
-                <td>${row.presentStudents}</td>
-                <td>${row.absentStudents}</td>
-                <td>${row.averageScore}</td>
-                <td>${row.passRate}</td>
-              </tr>
-            `
-              )
-              .join("")}
-          </tbody>
-        </table>
-      </body>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </body>
     </html>
   `;
     printWindow.document.write(htmlContent);
@@ -371,44 +467,39 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   }, [filteredSchools, sortConfig]);
 
   // Format table data for MUIDataTable
-  const tableData = sortedSchools.map((school) => ({
-    id: school.id,
-    name: school.name || school.schoolName || "-",
-    status: school.submitted ? "Submitted" : "Pending",
-    totalStudents:
-      school.totalStudents === 0 ? "0" : school.totalStudents != null ? school.totalStudents : "-",
-    presentStudents:
-      school.presentStudents === 0
-        ? "0"
-        : school.presentStudents != null
-        ? school.presentStudents
-        : "-",
-    absentStudents:
-      school.absentStudents === 0
-        ? "0"
-        : school.absentStudents != null
-        ? school.absentStudents
-        : "-",
-    averageScore:
-      school.averageScore === 0 ? "0" : school.averageScore != null ? school.averageScore : "-",
-    passRate:
-      school.passRate === 0
-        ? "0%"
-        : school.passRate != null
-        ? `${school.passRate}%`
-        : school.successRate === 0
-        ? "0%"
-        : school.successRate != null
-        ? `${school.successRate}%`
-        : "-",
-    submitted: school.submitted,
-  }));
-
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    return tableData.slice(start, end);
-  }, [tableData, currentPage, pageSize]);
+  const tableData = sortedSchools.map((school) => {
+    const isPending = !school.submitted;
+    
+    return {
+      id: school.id,
+      name: toTitleCase(school.name || school.schoolName) || "-",
+      status: school.submitted ? "Submitted" : "Pending",
+      totalStudents: isPending 
+        ? (school.totalStudentsInClass != null ? school.totalStudentsInClass : "-")
+        : (school.totalStudents === 0 ? "0" : school.totalStudents != null ? school.totalStudents : "-"),
+      presentStudents: isPending 
+        ? "-"
+        : (school.presentStudents === 0 ? "0" : school.presentStudents != null ? school.presentStudents : "-"),
+      absentStudents: isPending 
+        ? "-"
+        : (school.absentStudents === 0 ? "0" : school.absentStudents != null ? school.absentStudents : "-"),
+      averageScore: isPending 
+        ? "-"
+        : (school.averageScore === 0 ? "0" : school.averageScore != null ? school.averageScore : "-"),
+      passRate: isPending 
+        ? "-"
+        : (school.passRate === 0
+          ? "0%"
+          : school.passRate != null
+          ? `${school.passRate}%`
+          : school.successRate === 0
+          ? "0%"
+          : school.successRate != null
+          ? `${school.successRate}%`
+          : "-"),
+      submitted: school.submitted,
+    };
+  });
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -462,8 +553,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             <div
               className="inline-block px-2 py-1 rounded-full text-xs"
               style={{
-                backgroundColor: status === "Submitted" ? "#e8f5e9" : "#fff8e1",
-                color: status === "Submitted" ? "#2e7d32" : "#f57c00",
+                backgroundColor: status === "Submitted" ? "#e8f5e9" : "#FDDCDC",
+                color: status === "Submitted" ? "#2e7d32" : "#F45050",
                 fontWeight: 400,
                 fontFamily: "Work Sans",
                 fontSize: "12px",
@@ -639,8 +730,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     rowsPerPageOptions: [10, 15, 20, 50, 100],
     pagination: false,
     elevation: 0,
-    tableBodyMaxHeight: "calc(100vh - 300px)",
-    fixedHeader: true,
     setTableProps: () => ({
       style: {
         borderCollapse: "collapse",
@@ -653,17 +742,12 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     }),
   };
 
-  // Calculate pending schools
-  const pendingSchools = totalSchools - schoolsSubmitted;
+  // Calculate submission rate
   const submissionRate = totalSchools > 0 ? Math.round((schoolsSubmitted / totalSchools) * 100) : 0;
 
   // Show loading indicator while fetching data
   if (loading) {
-    return (
-      <div className="flex justify-center items-center p-10" style={{ minHeight: "300px" }}>
-        <CircularProgress size={60} thickness={4} sx={{ color: "#2F4F4F" }} />
-      </div>
-    );
+    return <SpinnerPageOverlay isLoading={true} />;
   }
 
   // Show error message if data fetch failed
@@ -695,11 +779,14 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   const handlePageChange = (event, page) => {
     setCurrentPage(page);
+    // Data will be fetched automatically via useEffect when currentPage changes
   };
 
   const handlePageSizeChange = (event) => {
-    setPageSize(event.target.value);
-    setCurrentPage(1);
+    const newPageSize = event.target.value;
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+    // Data will be fetched automatically via useEffect when pageSize changes
   };
 
   return (
@@ -820,7 +907,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   <InputLabel
                     id="status-select-label"
                     sx={{
-                      color: "#2F4F4F", fontFamily:"Work Sans", fontSize: "14px", fontWeight: 400,
+                      color: "#2F4F4F",
+                      fontFamily: "Work Sans",
+                      fontSize: "14px",
+                      fontWeight: 400,
                       transform: "translate(14px, 14px) scale(1)",
                       "&.Mui-focused, &.MuiFormLabel-filled": {
                         transform: "translate(14px, -9px) scale(0.75)",
@@ -905,7 +995,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           </div>
         )}
 
-        {schools.length > 0 && (
+        {schools.length > 0 && !isRemedialTest && (
           <div
             style={{
               borderRadius: "8px",
@@ -917,16 +1007,15 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               fontFamily: "Work Sans",
             }}
           >
-            Maximum Marks: 100 (Pass Percentage ≥ 33%)
+             Maximum Marks: {maxScore} 
           </div>
         )}
-
         {/* Data Table, Border, Pagination: Only when submissions exist */}
         {schools.length > 0 ? (
           <>
             <div className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto">
               <MUIDataTable
-                data={paginatedData}
+                data={tableData}
                 columns={columns}
                 options={{
                   ...options,
@@ -948,7 +1037,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               <div style={{ width: "180px" }}></div>
               <div style={{ display: "flex", justifyContent: "center" }}>
                 <Pagination
-                  count={Math.ceil(tableData.length / pageSize)}
+                  count={Math.ceil(totalSchools / pageSize)}
                   page={currentPage}
                   onChange={handlePageChange}
                   showFirstButton
@@ -1066,7 +1155,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         totalRecords={tableData.length} // Or total count if you have it
         subject={"School Performance"}
       />
-      {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
+      {isLoading && !loading && <SpinnerPageOverlay isLoading={isLoading} />}
       <ToastContainer
         style={{ zIndex: 99999999 }}
         position="top-right"

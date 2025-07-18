@@ -500,7 +500,6 @@ export default function UserCreationForm() {
         selectedBlock.clusters.map((c) => c.name)
       );
 
-       
       const clusters = selectedBlock.clusters.map((cluster) => ({
         id: cluster.name,
         name: cluster.name,
@@ -511,7 +510,7 @@ export default function UserCreationForm() {
 
       setAvailableClusters(clusters);
     } else {
-             blocksData.forEach((block, index) => {
+      blocksData.forEach((block, index) => {
         console.log(`  ${index + 1}. "${block.blockName}" (${block.clusters.length} clusters)`);
       });
       setAvailableClusters([]);
@@ -1096,6 +1095,7 @@ export default function UserCreationForm() {
         message={confirmDialog.message}
         confirmText="Confirm"
         cancelText="Cancel"
+        sx={{ zIndex: 12000 }}
       />
       <ToastContainer
         style={{ zIndex: 99999999 }}
