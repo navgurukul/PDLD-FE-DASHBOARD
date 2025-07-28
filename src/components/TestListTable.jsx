@@ -330,7 +330,6 @@ export default function TestListTable() {
         selectedClass.forEach((c) => {
           url += `&testClass=${encodeURIComponent(c.replace("Class ", ""))}`;
         });
-        url += `&page=1`;
       }
       if (selectedSubject.length > 0) {
         selectedSubject.forEach((s) => {
@@ -340,12 +339,11 @@ export default function TestListTable() {
           }
           url += `&subject=${encodeURIComponent(apiSubjectName)}`;
         });
-        url += `&page=1`;
       }
       if (selectedStatus) {
         url += `&testStatus=${selectedStatus}`;
-        url += `&page=1`;
       }
+      url += `&page=${currentPage}`;
       const response = await apiInstance.get(url);
       if (response.data && response.data.data) {
         setTests(response.data.data.data);
