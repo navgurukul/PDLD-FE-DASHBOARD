@@ -94,7 +94,7 @@ export default function UserCreationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEntities, setSelectedEntities] = useState({
     blocks: [],
-    clusters: [],
+    clusters: "",
     schools: [],
   });
 
@@ -173,18 +173,16 @@ export default function UserCreationForm() {
 
   // Calculate total schools for selected clusters or blocks
   const calculateTotalSchools = () => {
-    // If clusters are selected, calculate based on clusters
-    if (selectedEntities.clusters.length > 0 && blocksData.length > 0) {
+    // If cluster is selected, calculate based on cluster
+    if (selectedEntities.clusters && blocksData.length > 0) {
       let totalSchools = 0;
       const selectedBlock = blocksData.find((block) => block.blockName === formData.block);
 
       if (selectedBlock) {
-        selectedEntities.clusters.forEach((clusterName) => {
-          const cluster = selectedBlock.clusters.find((c) => c.name === clusterName);
-          if (cluster) {
-            totalSchools += cluster.totalSchool;
-          }
-        });
+        const cluster = selectedBlock.clusters.find((c) => c.name === selectedEntities.clusters);
+        if (cluster) {
+          totalSchools = cluster.totalSchool;
+        }
       }
 
       setTotalSchoolsSelected(totalSchools);
@@ -274,8 +272,8 @@ export default function UserCreationForm() {
     }
 
     // Validate cluster selection for roles that require it
-    if (hierarchyFields.showCluster && selectedEntities.clusters.length === 0) {
-      toast.error("Please select at least one cluster");
+    if (hierarchyFields.showCluster && !selectedEntities.clusters) {
+      toast.error("Please select a cluster");
       return false;
     }
 
@@ -290,7 +288,7 @@ export default function UserCreationForm() {
     // Reset selections when role changes
     setSelectedEntities({
       blocks: [],
-      clusters: [],
+      clusters: "",
       schools: [],
     });
 
@@ -334,20 +332,13 @@ export default function UserCreationForm() {
   };
 
   const handleClusterChange = (event) => {
-    // For multiselect, event.target.value will be an array
-    const selectedClusters = event.target.value;
+    // For single select, event.target.value will be a string
+    const selectedCluster = event.target.value;
 
     setSelectedEntities({
       ...selectedEntities,
-      clusters: selectedClusters,
+      clusters: selectedCluster,
       schools: [],
-    });
-  };
-
-  const handleRemoveCluster = (clusterName) => {
-    setSelectedEntities({
-      ...selectedEntities,
-      clusters: selectedEntities.clusters.filter((name) => name !== clusterName),
     });
   };
 
@@ -408,7 +399,7 @@ export default function UserCreationForm() {
           role: mapRoleToAPIFormat(formData.role),
 
           assignedBlocks: formData.block ? [formData.block] : [],
-          assignedClusters: selectedEntities.clusters,
+          assignedClusters: selectedEntities.clusters ? [selectedEntities.clusters] : [],
           schoolsMapped: totalSchoolsSelected,
         };
 
@@ -432,7 +423,7 @@ export default function UserCreationForm() {
           role: mapRoleToAPIFormat(formData.role),
 
           assignedBlocks: formData.block ? [formData.block] : [],
-          assignedClusters: selectedEntities.clusters,
+          assignedClusters: selectedEntities.clusters ? [selectedEntities.clusters] : [],
           schoolsMapped: totalSchoolsSelected,
         };
 
@@ -552,7 +543,8 @@ export default function UserCreationForm() {
     // Set selected entities
     setSelectedEntities({
       blocks: blockList,
-      clusters: user.assignedClusters || [],
+      clusters:
+        user.assignedClusters && user.assignedClusters.length > 0 ? user.assignedClusters[0] : "",
       schools: [],
     });
 
@@ -569,21 +561,21 @@ export default function UserCreationForm() {
     const selectedBlockName = event.target.value; // This should be exact blockName
     const previousBlock = formData.block;
 
-    // Check if we have selected clusters that will be lost
-    if (isEditMode && selectedEntities.clusters.length > 0 && previousBlock !== selectedBlockName) {
+    // Check if we have selected cluster that will be lost
+    if (isEditMode && selectedEntities.clusters && previousBlock !== selectedBlockName) {
       setConfirmDialog({
         open: true,
         title: "Change Block?",
-        message: `Changing the block from "${previousBlock}" to "${selectedBlockName}" will reset your cluster selections. Are you sure you want to proceed`,
+        message: `Changing the block from "${previousBlock}" to "${selectedBlockName}" will reset your cluster selection. Are you sure you want to proceed`,
         confirmAction: () => {
           setFormData({ ...formData, block: selectedBlockName });
           setSelectedEntities({
             ...selectedEntities,
-            clusters: [],
+            clusters: "",
             schools: [],
           });
           loadAvailableClusters(selectedBlockName);
-          toast.info("Block changed. Cluster selections have been reset.");
+          toast.info("Block changed. Cluster selection has been reset.");
         },
       });
     } else {
@@ -591,7 +583,7 @@ export default function UserCreationForm() {
       setFormData({ ...formData, block: selectedBlockName });
       setSelectedEntities({
         ...selectedEntities,
-        clusters: [],
+        clusters: "",
         schools: [],
       });
       loadAvailableClusters(selectedBlockName);
@@ -646,38 +638,35 @@ export default function UserCreationForm() {
         return;
       }
 
-      // Only restore if we have clusters to restore and they belong to the current block
+      // Only restore if we have cluster to restore and it belongs to the current block
       if (userData.assignedClusters && userData.assignedClusters.length > 0) {
-        // Filter to only include clusters that exist in the current availableClusters
-        const validClusters = userData.assignedClusters.filter((clusterName) =>
-          availableClusters.some((cluster) => cluster.name === clusterName)
+        // Take the first assigned cluster (since we only support single selection now)
+        const originalCluster = userData.assignedClusters[0];
+
+        // Check if the original cluster exists in the current availableClusters
+        const isValidCluster = availableClusters.some(
+          (cluster) => cluster.name === originalCluster
         );
 
-        if (validClusters.length === 0) {
-          toast.warning("None of the original clusters are available in the current block");
+        if (!isValidCluster) {
+          toast.warning("The original cluster is not available in the current block");
           return;
         }
 
-        if (validClusters.length < userData.assignedClusters.length) {
-          toast.info(
-            `Restored ${validClusters.length} of ${userData.assignedClusters.length} original clusters`
-          );
-        } else {
-          toast.success("Original clusters restored");
-        }
+        toast.success("Original cluster restored");
 
         setSelectedEntities({
           ...selectedEntities,
-          clusters: validClusters,
+          clusters: originalCluster,
         });
       } else {
-        toast.info("No previous clusters to restore");
+        toast.info("No previous cluster to restore");
       }
     } else {
       // For non-edit mode, simply clear the selection
       setSelectedEntities({
         ...selectedEntities,
-        clusters: [],
+        clusters: "",
       });
     }
   };
@@ -886,7 +875,7 @@ export default function UserCreationForm() {
                   )}
                 </div>
                 <FormControl fullWidth required>
-                  <InputLabel>Select Clusters in {formData.block}</InputLabel>
+                  <InputLabel>Select Cluster in {formData.block}</InputLabel>
                   <Select
                     sx={{
                       minHeight: "40px", // Changed from fixed height to minHeight
@@ -895,49 +884,13 @@ export default function UserCreationForm() {
                         display: "flex",
                         alignItems: "flex-start", // Changed to flex-start for better alignment
                         paddingTop: "8px", // Add some top padding
-                        paddingBottom: "8px", // Add some bottom padding
+                        paddingBottom: "1px", // Add some bottom padding
                       },
                     }}
-                    multiple
                     value={selectedEntities.clusters}
                     onChange={handleClusterChange}
-                    label={`Select Clusters in ${formData.block}`}
-                    renderValue={(selected) => (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: 0.5,
-                          maxWidth: "100%", // Ensure it doesn't overflow
-                        }}
-                      >
-                        {selected && selected.length > 0 ? (
-                          selected.map((clusterName) => (
-                            <Chip
-                              key={clusterName}
-                              label={capitalizeFirstLetter(clusterName || "")}
-                              onDelete={() => handleRemoveCluster(clusterName)}
-                              onMouseDown={(event) => {
-                                event.stopPropagation();
-                              }}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                              }}
-                              size="small"
-                              sx={{
-                                m: 0.25, // Reduced margin
-                                fontSize: "0.75rem", // Smaller font size
-                                height: "24px", // Fixed height for chips
-                              }}
-                            />
-                          ))
-                        ) : (
-                          <Typography variant="body2" color="textSecondary">
-                            No clusters selected
-                          </Typography>
-                        )}
-                      </Box>
-                    )}
+                    label={`Select Cluster in ${formData.block}`}
+                    renderValue={(selected) => selected || "Select a cluster"}
                     MenuProps={{
                       PaperProps: {
                         style: {
@@ -974,17 +927,6 @@ export default function UserCreationForm() {
                                 cursor: "not-allowed",
                               }}
                             >
-                              <input
-                                type="checkbox"
-                                checked={selectedEntities.clusters.includes(cluster.id)}
-                                disabled={true}
-                                readOnly
-                                style={{
-                                  marginRight: "10px",
-                                  accentColor: "#2F4F4F",
-                                  opacity: 0.5,
-                                }}
-                              />
                               {capitalizeFirstLetter(cluster.name)}
                               <Typography
                                 variant="caption"
@@ -1009,15 +951,6 @@ export default function UserCreationForm() {
                             alignItems: "center",
                           }}
                         >
-                          <input
-                            type="checkbox"
-                            checked={selectedEntities.clusters.includes(cluster.id)}
-                            readOnly
-                            style={{
-                              marginRight: "10px",
-                              accentColor: "#2F4F4F",
-                            }}
-                          />
                           {capitalizeFirstLetter(cluster.name)}
                         </MenuItem>
                       );
@@ -1028,7 +961,7 @@ export default function UserCreationForm() {
             </>
           )}
 
-          {(formData.block || selectedEntities.clusters.length > 0) && (
+          {(formData.block || selectedEntities.clusters) && (
             <div className="mb-6 mt-6 p-4 bg-gray-50 rounded-lg border border-gray-300 rounded-lg">
               <Typography variant="subtitle1" className="mb-4 font-semibold">
                 Summary of Selected Entities
@@ -1043,13 +976,13 @@ export default function UserCreationForm() {
                     1 Block ({formData.block})
                   </Typography>
                 )}
-                {selectedEntities.clusters.length > 0 && (
+                {selectedEntities.clusters && (
                   <Typography
                     variant="body2"
                     className="
 									bg-gray-200 mx-4! px-2 py-1 rounded-[50px]"
                   >
-                    {selectedEntities.clusters.length} Clusters
+                    1 Cluster ({selectedEntities.clusters})
                   </Typography>
                 )}
                 {totalSchoolsSelected > 0 && (
