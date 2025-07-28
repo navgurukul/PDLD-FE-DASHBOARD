@@ -82,7 +82,7 @@ const TestCreationForm = () => {
       
       // Fallback to hardcoded subjects from testData.js
       const fallbackSubjects = {};
-      Object.keys(SUBJECTS_BY_GRADE).forEach(classNum => {
+      Object.keys(SUBJECTS_BY_GRADE).forEach((classNum) => {
         fallbackSubjects[classNum] = {
           subjects: SUBJECTS_BY_GRADE[classNum] || [],
           VOCATIONAL: [],
@@ -100,32 +100,22 @@ const TestCreationForm = () => {
 
   // Helper function to check if a class group should be enabled for remedial
   const isGroupEnabledForRemedial = (group) => {
-    // For remedial, only enable groups that contain classes 1-3 or 4-5
-    const allowedClasses = [1, 2, 3, 4, 5];
-    return group.classes.some((classNum) => allowedClasses.includes(classNum));
+    // Allow remedial tests for all class groups
+    // const allowedClasses = [1, 2, 3, 4, 5];
+    // return group.classes.some((classNum) => allowedClasses.includes(classNum));
+    return true;
   };
 
   // Helper function to get remedial subjects based on class
   const getRemedialSubjects = (classNum) => {
-    // For remedial tests, all classes (1-5) have only 3 subjects
-    if (classNum >= 1 && classNum <= 5) {
-      return ["Hindi", "English", "Mathematics"];
-    }
-    return [];
+    // For remedial tests, all classes should have only 3 subjects
+    return ["Hindi", "English", "Mathematics"];
   };
 
   // New helper function to get subjects for a class from API data
   const getSubjectsForClass = (classNum) => {
-    // For remedial tests, use API remedial subjects
+    // For remedial tests, always use hardcoded subjects for all classes
     if (formData.testType === "remedial") {
-      const classData = classWiseSubjects[classNum];
-      if (classData && classData.remedialSubjects) {
-        return {
-          academic: classData.remedialSubjects,
-          vocational: []
-        };
-      }
-      // Fallback to hardcoded remedial subjects if API data not available
       return {
         academic: getRemedialSubjects(classNum),
         vocational: []
