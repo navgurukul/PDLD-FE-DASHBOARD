@@ -111,7 +111,7 @@ const theme = createTheme({
 
 const steps = ["Upload CSV", "Map Columns", "Upload Data"];
 
-const StudentUploadStepper = ({ activeStep }) => {
+const StudentUploadStepper = ({ activeStep, completedSteps = new Set() }) => {
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ display: "flex", justifyContent: "center" }}>
@@ -119,40 +119,43 @@ const StudentUploadStepper = ({ activeStep }) => {
           activeStep={activeStep}
           alternativeLabel
           connector={<CustomConnector />}
-          sx={{ width: "80%", mb: 4 }}
+          sx={{ width: "100%", mb: 4 }}
         >
-          {steps.map((label, index) => (
-            <Step key={label}>
-              <StepLabel
-                StepIconComponent={CustomStepIcon}
-                sx={{
-                  ".MuiStepLabel-label": {
-                    mt: 1.5,
-                    fontWeight: 600,
-                    fontFamily: "Work Sans",
-                    fontSize: "16px",
-                    textAlign: "center",
-                    width: "max-content",
-                    mx: "auto",
-                    color:
-                      activeStep === index ? "#2F4F4F" : activeStep > index ? "#2F4F4F" : "#829595",
-                  },
-                }}
-              >
-                <span
-                  style={{
-                    color:
-                      activeStep === index ? "#2F4F4F" : activeStep > index ? "#2F4F4F" : "#829595",
-                    fontWeight: 600,
-                    fontFamily: "Work Sans",
-                    fontSize: "14px",
+          {steps.map((label, index) => {
+            const isCompleted = completedSteps.has(index) || activeStep > index;
+            return (
+              <Step key={label} completed={isCompleted}>
+                <StepLabel
+                  StepIconComponent={CustomStepIcon}
+                  sx={{
+                    ".MuiStepLabel-label": {
+                      mt: 1.5,
+                      fontWeight: 600,
+                      fontFamily: "Work Sans",
+                      fontSize: "16px",
+                      textAlign: "center",
+                      width: "max-content",
+                      mx: "auto",
+                      color:
+                        activeStep === index ? "#2F4F4F" : isCompleted ? "#2F4F4F" : "#829595",
+                    },
                   }}
                 >
-                  {label}
-                </span>
-              </StepLabel>
-            </Step>
-          ))}
+                  <span
+                    style={{
+                      color:
+                        activeStep === index ? "#2F4F4F" : isCompleted ? "#2F4F4F" : "#829595",
+                      fontWeight: 600,
+                      fontFamily: "Work Sans",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {label}
+                  </span>
+                </StepLabel>
+              </Step>
+            );
+          })}
         </Stepper>
       </Box>
     </ThemeProvider>

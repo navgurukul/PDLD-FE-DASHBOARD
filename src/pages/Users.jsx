@@ -604,28 +604,40 @@ export default function Users() {
         <div className="flex justify-between items-center mb-1">
           <h5 className="text-lg font-bold text-[#2F4F4F]">All Users</h5>
         </div>
-        <div className="flex justify-between mb-2">
-          <div className="flex flex-wrap gap-2">
-            <TextField
-              variant="outlined"
-              placeholder="Search by Name or Role..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <div className="pr-2">
-                    <Search size={18} className="text-gray-500" />
-                  </div>
-                ),
-                style: {
-                  backgroundColor: "#fff",
-                  borderRadius: "8px",
-                  width: "380px",
-                  height: "48px",
-                },
-              }}
-              sx={{ marginBottom: "10px" }}
-            />
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-2">
+          <div className="flex flex-wrap gap-2 flex-1">
+            <div className="w-full lg:w-[360px]">
+              <TextField
+                variant="outlined"
+                placeholder="Search by Name or Role..."
+                size="small"
+                fullWidth
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <div className="pr-2">
+                      <Search size={18} className="text-gray-500" />
+                    </div>
+                  ),
+                  style: {
+                    backgroundColor: "#fff",
+                    borderRadius: "8px",
+                    height: "48px",
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "8px",
+                    height: "48px",
+                  },
+                  "& .MuiOutlinedInput-input": {
+                    padding: "12px 16px",
+                    paddingLeft: "0",
+                  },
+                }}
+              />
+            </div>
 
             {/* Role Dropdown with Shortform */}
             <FormControl
@@ -801,7 +813,9 @@ export default function Users() {
               </Tooltip>
             )}
           </div>
-          <ButtonCustom imageName={addSymbolBtn} text="Create User" onClick={handleCreateUser} />
+          <div className="flex justify-end lg:justify-start mt-2 lg:mt-0">
+            <ButtonCustom imageName={addSymbolBtn} text="Create User" onClick={handleCreateUser} />
+          </div>
         </div>
 
         <div className="rounded-lg overflow-hidden border border-gray-200">
@@ -916,6 +930,7 @@ export default function Users() {
           cancelText="Cancel"
           confirmButtonColor="error"
           icon={<DeleteOutlineIcon fontSize="large" />}
+          sx={{ zIndex: 12000 }}
         />
 
         <ToastContainer style={{ zIndex: 99999999 }} position="top-right" autoClose={3000} />

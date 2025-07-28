@@ -25,6 +25,7 @@ const SCHOOL_SAMPLE_DATA = [
     udiseCode: "12345678901",
     clusterName: "Central Cluster",
     blockName: "South Block",
+    crcCode: "1234567890",
     Address: "123 Education St",
     Pincode: "110001",
     District: "Central",
@@ -35,6 +36,7 @@ const SCHOOL_SAMPLE_DATA = [
     udiseCode: "12345678902",
     clusterName: "North Cluster",
     blockName: "North Block",
+    crcCode: "0987654321",
     Address: "456 Learning Ave",
     Pincode: "110002",
     District: "North",
@@ -44,7 +46,7 @@ const SCHOOL_SAMPLE_DATA = [
 
 export default function SampleCSVModal({ open, onClose, entityType = "school" }) {
   const [activeTab, setActiveTab] = useState(0);
-  const requiredFields = ["schoolName", "udiseCode", "clusterName", "blockName"];
+  const requiredFields = ["schoolName", "udiseCode", "clusterName", "blockName", "crcCode"];
   const modalStyle = {
     position: "absolute",
     top: "50%",
@@ -73,6 +75,7 @@ export default function SampleCSVModal({ open, onClose, entityType = "school" })
     "udiseCode",
     "clusterName",
     "blockName",
+    "crcCode",
     "Address",
     "Pincode",
     "District",
@@ -109,7 +112,7 @@ export default function SampleCSVModal({ open, onClose, entityType = "school" })
   };
 
   return (
-    <Modal open={open} onClose={onClose} aria-labelledby="sample-csv-modal-title">
+    <Modal open={open} onClose={onClose} aria-labelledby="sample-csv-modal-title" sx={{ zIndex: 20000 }}>
       <Box sx={modalStyle}>
         <Typography
           id="sample-csv-modal-title"

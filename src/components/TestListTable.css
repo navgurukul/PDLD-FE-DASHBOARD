@@ -160,7 +160,7 @@
 .react-datepicker__day--in-selecting-range.react-datepicker__day--today {
   background: #E0E0E0 !important;
   color: #2F4F4F !important;
-  border-radius: 0 !important;
+  border-radius: 8px !important;
   font-weight: 600;
 }
 

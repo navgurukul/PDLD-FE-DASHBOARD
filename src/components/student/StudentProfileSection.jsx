@@ -382,14 +382,14 @@ const StudentProfileView = () => {
 
     if (includeRemedial) {
       if (csvContent && !csvContent.endsWith("\n\n")) csvContent += "\n\n";
-      const remedialHeaders = ["Test Name", "Subject", "Exam Date", "Grade"];
+      const remedialHeaders = ["Test Name", "Exam Date", "Grade"];
       csvContent += "REMEDIAL RECOMMENDATIONS\n";
       csvContent += remedialHeaders.join(",") + "\n";
       
       academicData.remedial.forEach((item) => {
         const rowData = [
           item.testName || "N/A",
-          item.subject || "N/A",
+          // item.subject || "N/A", Remove subject column 
           item.examDate || "N/A",
           item.grade || "N/A"
         ];

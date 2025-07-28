@@ -622,7 +622,7 @@ export default function AddStudent({ isEditMode = false }) {
       }
     } catch (error) {
       console.error("Error saving student data:", error);
-      toast.error(error.response?.data?.message || error.message || "Failed to save student data");
+      toast.error(  error.response?.data?.error || error.response?.data?.message || error.message || "Failed to save student data");
     } finally {
       setIsSubmitting(false);
     }
@@ -647,19 +647,18 @@ export default function AddStudent({ isEditMode = false }) {
   return (
     <ThemeProvider theme={theme}>
       {isLoading && <SpinnerPageOverlay />}
-      <div className="p-6 mx-auto w-[800px]">
-        <div className="ml-5">
-          <h5 className="text-lg font-bold text-[#2F4F4F]">
-            {isEditMode ? "Edit Student" : "Add New Student"}
-          </h5>
-          <Typography variant="body1" className="text-gray-600 mb-2">
-            {isEditMode
-              ? "Update student information and details"
-              : "Enter student details to add them to the school"}
-          </Typography>
-        </div>
+      <Box sx={{ py: 3, px: 1, maxWidth: "800px", margin: "0 auto" }}>
+        <h5 className="text-lg font-bold text-[#2F4F4F]">
+          {isEditMode ? "Edit Student" : "Add New Student"}
+        </h5>
+        <Typography variant="body1" sx={{ color: "#666", mb: 1 }}>
+          {isEditMode
+            ? "Update student information and details"
+            : "Enter student details to add them to the school"}
+        </Typography>
 
-        <Paper elevation={0} className="max-w-3xl mx-auto p-6 rounded-lg">
+        <Box sx={{ py: 2 }}>
+          <Paper elevation={0} sx={{ p: 0, borderRadius: "8px" }}>
           <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               {/* Student Name */}
@@ -676,7 +675,14 @@ export default function AddStudent({ isEditMode = false }) {
                   helperText={errors.name}
                   sx={{
                     "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
                       height: "48px",
+                    },
+                    "& .MuiInputLabel-root": {
+                      fontSize: "16px",
+                    },
+                    "& .MuiInputBase-input": {
+                      fontSize: "16px",
                     },
                   }}
                 />
@@ -694,11 +700,16 @@ export default function AddStudent({ isEditMode = false }) {
                     label="Class"
                     onChange={handleInputChange}
                     sx={{
+                      borderRadius: "8px",
                       height: "48px",
                       "& .MuiSelect-select": {
                         height: "48px",
                         display: "flex",
                         alignItems: "center",
+                        fontSize: "16px",
+                      },
+                      "& .MuiInputLabel-root": {
+                        fontSize: "16px",
                       },
                     }}
                   >
@@ -725,7 +736,14 @@ export default function AddStudent({ isEditMode = false }) {
                   helperText={errors.fatherName}
                   sx={{
                     "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
                       height: "48px",
+                    },
+                    "& .MuiInputLabel-root": {
+                      fontSize: "16px",
+                    },
+                    "& .MuiInputBase-input": {
+                      fontSize: "16px",
                     },
                   }}
                 />
@@ -745,7 +763,14 @@ export default function AddStudent({ isEditMode = false }) {
                   helperText={errors.motherName}
                   sx={{
                     "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
                       height: "48px",
+                    },
+                    "& .MuiInputLabel-root": {
+                      fontSize: "16px",
+                    },
+                    "& .MuiInputBase-input": {
+                      fontSize: "16px",
                     },
                   }}
                 />
@@ -818,7 +843,14 @@ export default function AddStudent({ isEditMode = false }) {
                   helperText={errors.dateOfBirth || "Optional"}
                   sx={{
                     "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
                       height: "48px",
+                    },
+                    "& .MuiInputLabel-root": {
+                      fontSize: "16px",
+                    },
+                    "& .MuiInputBase-input": {
+                      fontSize: "16px",
                     },
                   }}
                 />
@@ -836,7 +868,14 @@ export default function AddStudent({ isEditMode = false }) {
                   variant="outlined"
                   sx={{
                     "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
                       height: "48px",
+                    },
+                    "& .MuiInputLabel-root": {
+                      fontSize: "16px",
+                    },
+                    "& .MuiInputBase-input": {
+                      fontSize: "16px",
                     },
                   }}
                 />
@@ -861,7 +900,14 @@ export default function AddStudent({ isEditMode = false }) {
                   }}
                   sx={{
                     "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
                       height: "48px",
+                    },
+                    "& .MuiInputLabel-root": {
+                      fontSize: "16px",
+                    },
+                    "& .MuiInputBase-input": {
+                      fontSize: "16px",
                     },
                   }}
                 />
@@ -879,13 +925,19 @@ export default function AddStudent({ isEditMode = false }) {
                   variant="outlined"
                   sx={{
                     "& .MuiOutlinedInput-root": {
+                      borderRadius: "8px",
                       height: "48px",
+                    },
+                    "& .MuiInputLabel-root": {
+                      fontSize: "16px",
+                    },
+                    "& .MuiInputBase-input": {
+                      fontSize: "16px",
                     },
                   }}
                 />
               </Grid>
 
-              {/* Stream - Only for Classes 11-12 */}
               {/* Stream - Only for Classes 11-12 */}
               {isHigherClass && (
                 <Grid item xs={12} md={12}>
@@ -899,11 +951,16 @@ export default function AddStudent({ isEditMode = false }) {
                       label="Stream *"
                       onChange={handleInputChange}
                       sx={{
+                        borderRadius: "8px",
                         height: "48px",
                         "& .MuiSelect-select": {
                           height: "48px",
                           display: "flex",
                           alignItems: "center",
+                          fontSize: "16px",
+                        },
+                        "& .MuiInputLabel-root": {
+                          fontSize: "16px",
                         },
                       }}
                     >
@@ -935,11 +992,16 @@ export default function AddStudent({ isEditMode = false }) {
                       input={<OutlinedInput label="Optional Subjects" />}
                       renderValue={(selected) => selected.join(", ")}
                       sx={{
+                        borderRadius: "8px",
                         height: "48px",
                         "& .MuiSelect-select": {
                           height: "48px",
                           display: "flex",
                           alignItems: "center",
+                          fontSize: "16px",
+                        },
+                        "& .MuiInputLabel-root": {
+                          fontSize: "16px",
                         },
                       }}
                     >
@@ -969,11 +1031,16 @@ export default function AddStudent({ isEditMode = false }) {
                       input={<OutlinedInput label="Optional Subjects" />}
                       renderValue={(selected) => selected.join(", ")}
                       sx={{
+                        borderRadius: "8px",
                         height: "48px",
                         "& .MuiSelect-select": {
                           height: "48px",
                           display: "flex",
                           alignItems: "center",
+                          fontSize: "16px",
+                        },
+                        "& .MuiInputLabel-root": {
+                          fontSize: "16px",
                         },
                       }}
                     >
@@ -990,24 +1057,25 @@ export default function AddStudent({ isEditMode = false }) {
               )}
             </Grid>
 
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-              <ButtonCustom
-                text={
-                  isSubmitting
-                    ? isEditMode
-                      ? "Updating..."
-                      : "Adding..."
-                    : isEditMode
-                    ? "Update Student"
-                    : "Add Student"
-                }
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-              />
-            </Box>
           </form>
         </Paper>
-      </div>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "65px" }}>
+          <ButtonCustom
+            text={
+              isSubmitting
+                ? isEditMode
+                  ? "Updating..."
+                  : "Adding..."
+                : isEditMode
+                ? "Update Student"
+                : "Add Student"
+            }
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          />
+        </div>
+        </Box>
+      </Box>
 
       {showConfirmModal && (
         <ConfirmationModal

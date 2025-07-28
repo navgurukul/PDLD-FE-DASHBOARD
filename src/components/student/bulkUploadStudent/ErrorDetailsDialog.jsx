@@ -34,12 +34,12 @@ const StudentErrorDetailsDialog = ({ open, onClose, errorData }) => {
     { id: "fullName", label: "Full Name" },
     { id: "fatherName", label: "Father's Name" },
     { id: "motherName", label: "Mother's Name" },
-    { id: "dob", label: "Date of Birth" },
-    { id: "class", label: "Grade" },
+    // { id: "dob", label: "Date of Birth" },
+    { id: "class", label: "Class" },
     { id: "gender", label: "Gender" },
-    { id: "schoolUdiseCode", label: "School ID" },
-    { id: "aparID", label: "aparID" },
-    { id: "hostel", label: "Hostel" },
+    // { id: "schoolUdiseCode", label: "Apar ID" },
+    // { id: "aparID", label: "aparID" },
+    // { id: "hostel", label: "Hostel" },
     { id: "error", label: "Error" },
   ];
 
