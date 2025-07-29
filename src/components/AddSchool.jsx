@@ -26,6 +26,7 @@ export default function AddSchool({ onClose, onSave }) {
     udiseCode: "",
     clusterName: "",
     blockName: "",
+    crcCode: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -41,6 +42,7 @@ export default function AddSchool({ onClose, onSave }) {
     udiseCode: false,
     clusterName: false,
     blockName: false,
+    crcCode: false,
   });
 
   // Fetch blocks and clusters data on component mount
@@ -119,6 +121,7 @@ export default function AddSchool({ onClose, onSave }) {
           udiseCode: schoolData.udiseCode || "",
           clusterName: schoolData.clusterName || "",
           blockName: schoolData.blockName || "",
+          crcCode: schoolData.crcCode || "",
         });
         setBlockInput(schoolData.blockName || "");
         setClusterInput(schoolData.clusterName || "");
@@ -135,6 +138,7 @@ export default function AddSchool({ onClose, onSave }) {
                 udiseCode: schoolData.udiseCode || "",
                 clusterName: schoolData.clusterName || "",
                 blockName: schoolData.blockName || "",
+                crcCode: schoolData.crcCode || "",
               });
               setBlockInput(schoolData.blockName || "");
               setClusterInput(schoolData.clusterName || "");
@@ -418,6 +422,7 @@ export default function AddSchool({ onClose, onSave }) {
         !hasMinimumLength(formData.clusterName) ||
         !startsWithAlphabet(formData.clusterName) ||
         !isValidName(formData.clusterName),
+        crcCode: !formData.crcCode.trim(),
     };
 
     // Specific error messages for block name
@@ -459,6 +464,18 @@ export default function AddSchool({ onClose, onSave }) {
       return false;
     }
 
+    // CRC code validation (10 digits, numeric only)
+    if (formData.crcCode.trim().length !== 10) {
+      newErrors.crcCode = true;
+      toast.error("CRC Code must be exactly 10 digits");
+      return false;
+    }
+    if (!/^\d+$/.test(formData.crcCode.trim())) {
+      newErrors.crcCode = true;
+      toast.error("CRC Code can only contain numbers");
+      return false;
+    }
+
     setErrors(newErrors);
     return !Object.values(newErrors).some((error) => error);
   };
@@ -474,6 +491,7 @@ export default function AddSchool({ onClose, onSave }) {
           udiseCode: formData.udiseCode,
           blockName: formData.blockName,
           clusterName: formData.clusterName,
+          crcCode: formData.crcCode,
         };
 
         let response;
@@ -540,7 +558,7 @@ export default function AddSchool({ onClose, onSave }) {
           // The request was made and the server responded with a status code
           // that falls out of the range of 2xx
           const errorMessage =
-            error.response.data?.message ||
+            error.response.data?.error ||
             (schoolId
               ? "Failed to update school. Please try again."
               : "Failed to create school. Please try again.");
@@ -877,6 +895,50 @@ export default function AddSchool({ onClose, onSave }) {
                 </li>
               )}
             />
+          </Box>
+
+          <Box>
+            <TextField
+              fullWidth
+              label="CRC Code"
+              name="crcCode"
+              value={formData.crcCode}
+              onChange={(e) => {
+                // Only allow numbers and limit to 10 digits
+                const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                handleChange({ target: { name: 'crcCode', value } });
+              }}
+              placeholder="Enter 10-digit CRC code"
+              error={errors.crcCode}
+              disabled={!!schoolId}
+              inputProps={{
+                maxLength: 10,
+                pattern: "[0-9]*",
+                inputMode: "numeric"
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  height: "48px",
+                },
+                "& .MuiInputLabel-root": {
+                  fontSize: "16px",
+                },
+                "& .MuiInputBase-input": {
+                  fontSize: "16px",
+                },
+              }}
+            />
+            {errors.crcCode && (
+              <FormHelperText error>
+                {formData.crcCode.trim() === "" 
+                  ? "CRC code is required" 
+                  : formData.crcCode.trim().length !== 10 
+                    ? "CRC code must be exactly 10 digits" 
+                    : "CRC code can only contain numbers"
+                }
+              </FormHelperText>
+            )}
           </Box>
         </Box>
         <div style={{ display: "flex", justifyContent: "center", marginTop: "65px" }}>
