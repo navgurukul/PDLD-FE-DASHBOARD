@@ -241,13 +241,15 @@ export default function SchoolList() {
 
   // Filter schools based on all criteria
   const filteredSchools = schools.filter((school) => {
-    // Search query filter
+    // Search query filter (including student count in search)
     const matchesSearch =
       searchQuery === "" ||
       school.schoolName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school.udiseCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school.blockName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.clusterName?.toLowerCase().includes(searchQuery.toLowerCase());
+      school.clusterName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      school.crcCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (school.totalStudentsInSchool && school.totalStudentsInSchool.toString().includes(searchQuery));
 
     // Cluster filter
     const matchesCluster = selectedCluster === "" || school.clusterName === selectedCluster;
@@ -332,8 +334,12 @@ export default function SchoolList() {
     udiseCode: school.udiseCode,
     cluster: capitalizeFirstLetter(school.clusterName),
     block: capitalizeFirstLetter(school.blockName),
+    // crcCode: school.crcCode || "-",
+    studentsEnrolled:
+    school.totalStudents === undefined || school.totalStudents === null
+    ? "-"
+    : school.totalStudents, // Show '-' if value missing, else show actual value (including 0)
     username: generateUsername(school.schoolName), // Generate username from school name
-    password: school.passwordHash, // Keep password as is
     actions: "Actions",
     schoolObj: school, // Pass the entire school object for the delete modal
   }));
@@ -376,7 +382,7 @@ export default function SchoolList() {
         }),
         customBodyRender: (value, tableMeta) => {
           const schoolId = tableMeta.rowData[0]; // Get the ID from the first column
-          const schoolObj = tableMeta.rowData[6]; // Get the full school object
+          const schoolObj = tableMeta.rowData[6]; // Get the full school object (updated index after adding student count column)
 
           return (
             <div
@@ -404,28 +410,10 @@ export default function SchoolList() {
     {
       name: "udiseCode",
       label: "UDISE Code",
-      options: { filter: false, sort: true },
-    },
-    {
-      name: "block",
-      label: "Block",
-      options: { filter: false, sort: true },
-    },
-    {
-      name: "cluster",
-      label: "Cluster",
-      options: { filter: false, sort: true },
-    },
-    {
-      name: "password",
-      label: "Password",
-      options: {
-        filter: false,
+      options: { 
+        filter: false, 
         sort: true,
-        customBodyRender: (value, tableMeta) => {
-          // Get the UDISE code from the same row
-          const udiseCode = tableMeta.rowData[2]; // Index 2 is the udiseCode column
-
+        customBodyRender: (value) => {
           return (
             <div
               style={{
@@ -441,14 +429,43 @@ export default function SchoolList() {
                 size="small"
                 sx={{ minWidth: "30px", marginRight: "14px" }}
                 onClick={() =>
-                  handleCopy(`UDISE: ${udiseCode}, Password: ${value}`, "UDISE and Password")
+                  handleCopy(`UDISE: ${value} (use as password)`, "UDISE Code")
                 }
               >
                 <ContentCopyIcon style={{ fontSize: "18px", color: "#2F4F4F" }} />
               </Button>
             </div>
           );
-        },
+        }
+      },
+    },
+    {
+      name: "block",
+      label: "Block",
+      options: { filter: false, sort: true },
+    },
+    {
+      name: "cluster",
+      label: "Cluster",
+      options: { filter: false, sort: true },
+    },
+    {
+      name: "studentsEnrolled",
+      label: "Students Enrolled",
+      options: { 
+        filter: false, 
+        sort: true,
+        customBodyRender: (value) => {
+          return (
+            <div style={{
+              textAlign: "center",
+              color: "#2F4F4F",
+              fontWeight: "400"
+            }}>
+              {value || 0}
+            </div>
+          );
+        }
       },
     },
     {
@@ -488,7 +505,7 @@ export default function SchoolList() {
         },
         customBodyRender: (value, tableMeta) => {
           const schoolId = tableMeta.rowData[0];
-          const schoolObj = tableMeta.rowData[6]; // Index of schoolObj in the rowData array
+          const schoolObj = tableMeta.rowData[6]; // Index of schoolObj in the rowData array (updated after adding student count column)
 
           return (
             <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
@@ -548,19 +565,19 @@ export default function SchoolList() {
 
               {/* View Report Button */}
               {/* <Button
-								variant="text"
-								size="small"
-								sx={{
-									color: "#4caf50",
-									"&:hover": { backgroundColor: "transparent" },
-									padding: "2px",
-									minWidth: "unset",
-								}}
-								onClick={() => handleSchoolReport(schoolId, schoolObj)}
-								title="View Report"
-							>
-								<img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
-							</Button> */}
+                variant="text"
+                size="small"
+                sx={{
+                  color: "#4caf50",
+                  "&:hover": { backgroundColor: "transparent" },
+                  padding: "2px",
+                  minWidth: "unset",
+                }}
+                onClick={() => handleSchoolReport(schoolId, schoolObj)}
+                title="View Report"
+              >
+                <img src={DocScanner} alt="View Report" style={{ width: "20px", height: "20px" }} />
+              </Button> */}
             </div>
           );
         },
