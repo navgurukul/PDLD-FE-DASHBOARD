@@ -336,9 +336,9 @@ export default function SchoolList() {
     block: capitalizeFirstLetter(school.blockName),
     // crcCode: school.crcCode || "-",
     studentsEnrolled:
-      school.totalEnrolledStudents === undefined || school.totalEnrolledStudents === null
-        ? "-"
-        : school.totalEnrolledStudents, // Show '-' if value missing, else show actual value (including 0)
+    school.totalStudents === undefined || school.totalStudents === null
+    ? "-"
+    : school.totalStudents, // Show '-' if value missing, else show actual value (including 0)
     username: generateUsername(school.schoolName), // Generate username from school name
     actions: "Actions",
     schoolObj: school, // Pass the entire school object for the delete modal
