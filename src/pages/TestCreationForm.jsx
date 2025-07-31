@@ -907,11 +907,21 @@ const TestCreationForm = () => {
                       onChange={handleFormChange}
                     >
                       <option value="">Select Test Tag</option>
-                      <option value="Monthly">Monthly</option>
-                      <option value="Quarterly">Quarterly</option>
-                      <option value="Half_Yearly">Half Yearly</option>
-                      <option value="Pre_Board">Pre Boards</option>
-                      <option value="Annual">Annual</option>
+                      {formData.testType === "syllabus" ? (
+                        <>
+                          <option value="Monthly">Monthly</option>
+                          <option value="Quarterly">Quarterly</option>
+                          <option value="Half_Yearly">Half Yearly</option>
+                          <option value="Pre_Board">Pre Boards</option>
+                          <option value="Annual">Annual</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="Baseline">Baseline</option>
+                          <option value="Midline">Midline</option>
+                          <option value="Endline">Endline</option>
+                        </>
+                      )}
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                       <svg
