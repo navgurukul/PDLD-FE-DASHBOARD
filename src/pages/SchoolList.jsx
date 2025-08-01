@@ -245,10 +245,9 @@ export default function SchoolList() {
     const matchesSearch =
       searchQuery === "" ||
       school.schoolName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.udiseCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(school.udiseCode || "").includes(searchQuery) ||
       school.blockName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school.clusterName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.crcCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (school.totalStudentsInSchool && school.totalStudentsInSchool.toString().includes(searchQuery));
 
     // Cluster filter
