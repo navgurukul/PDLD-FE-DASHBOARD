@@ -245,7 +245,7 @@ export default function SchoolList() {
     const matchesSearch =
       searchQuery === "" ||
       school.schoolName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(school.udiseCode || "").includes(searchQuery) ||
+      school.udiseCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school.blockName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school.clusterName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (school.totalStudentsInSchool && school.totalStudentsInSchool.toString().includes(searchQuery));
