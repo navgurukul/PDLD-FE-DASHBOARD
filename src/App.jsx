@@ -27,6 +27,7 @@ import TestReportPage from "./pages/TestReportPage";
 import SchoolReportPage from "./pages/SchoolReportPage";
 import StudentProfileView from "./components/student/StudentProfileSection";
 import SchoolPerformanceTable from "./components/testReport/SchoolPerformanceTable";
+import QRLogin from "./pages/QRLogin";
 export const AuthContext = createContext(null);
 
 function App() {
@@ -87,6 +88,11 @@ function App() {
 					<Route 
 						path="/privacy-policy" 
 						element={<LegalTerms />} 
+					/>
+					{/* QR Login redirect route */}
+					<Route 
+						path="/qr-login" 
+						element={<QRLogin />} 
 					/>
 
 
