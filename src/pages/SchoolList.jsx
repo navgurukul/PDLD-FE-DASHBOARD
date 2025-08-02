@@ -248,6 +248,7 @@ export default function SchoolList() {
       school.udiseCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school.blockName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school.clusterName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      school.crcCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (school.totalStudentsInSchool && school.totalStudentsInSchool.toString().includes(searchQuery));
 
     // Cluster filter

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import QRCode from "react-qr-code";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
 import {
@@ -12,14 +11,9 @@ import {
   Tooltip,
   IconButton,
   Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Pagination,
-  PaginationItem,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import apiInstance from "../../api";
@@ -28,9 +22,7 @@ import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import QrCode2Icon from "@mui/icons-material/QrCode2";
 import { Search } from "lucide-react";
-
 const theme = createTheme({
   typography: {
     fontFamily: "'Karla', sans-serif",
@@ -133,9 +125,6 @@ export default function Users() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [qrUser, setQrUser] = useState(null);
 
   // Add page size change handler
   const handlePageSizeChange = (event) => {
@@ -533,20 +522,6 @@ export default function Users() {
 
           return (
             <div className="flex gap-2 justify-center">
-              <Button
-                variant="text"
-                size="small"
-                sx={{
-                  color: "#2F4F4F",
-                  "&:hover": { backgroundColor: "transparent" },
-                  padding: "2px",
-                  minWidth: "unset",
-                }}
-                onClick={() => openQrModal(user)}
-                title="Generate QR and Share"
-              >
-                <QrCode2Icon fontSize="small" />
-              </Button>
               <button
                 className="p-1 hover:bg-gray-100 rounded"
                 onClick={() =>
@@ -621,23 +596,6 @@ export default function Users() {
 
   const handleBlockChange = (e) => {
     setSelectedBlock(e.target.value);
-  };
-
-  const openQrModal = (user) => {
-    setQrUser(user);
-    setQrModalOpen(true);
-  };
-
-  const closeQrModal = () => {
-    setQrModalOpen(false);
-    setQrUser(null);
-  };
-
-  const handleShareWhatsapp = () => {
-    if (!qrUser) return;
-    const qrData = JSON.stringify({ username: qrUser.username, userId: qrUser.userId || qrUser.id });
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent('User QR: ' + qrData)}`;
-    window.open(whatsappUrl, '_blank');
   };
 
   return (
@@ -976,34 +934,6 @@ export default function Users() {
         />
 
         <ToastContainer style={{ zIndex: 99999999 }} position="top-right" autoClose={3000} />
-
-        {/* QR Code Modal */}
-        <Dialog open={qrModalOpen} onClose={closeQrModal} maxWidth="xs" fullWidth>
-          <DialogTitle>QR Code for User</DialogTitle>
-          <DialogContent style={{ textAlign: "center" }}>
-            {qrUser && (
-              <>
-                <QRCode
-                  value={JSON.stringify({ username: qrUser.username, userId: qrUser.userId || qrUser.id })}
-                  size={200}
-                  level="H"
-                  includeMargin={true}
-                />
-                <Typography variant="subtitle1" sx={{ mt: 2 }}>
-                  {qrUser.name} ({qrUser.username})
-                </Typography>
-              </>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleShareWhatsapp} color="success" variant="contained">
-              Send to WhatsApp
-            </Button>
-            <Button onClick={closeQrModal} color="primary" variant="outlined">
-              Close
-            </Button>
-          </DialogActions>
-        </Dialog>
       </div>
       {isLoading && <SpinnerPageOverlay />}
     </ThemeProvider>
