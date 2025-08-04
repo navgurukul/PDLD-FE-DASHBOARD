@@ -56,7 +56,7 @@ const theme = createTheme({
     MuiSelect: {
       styleOverrides: {
         icon: {
-          color: "#2F4F4F", // Dropdown arrow icon color
+          color: "#2F4F4F", //  Dropdown arrow icon color
         },
       },
     },
@@ -133,17 +133,44 @@ export default function SchoolList() {
   const [clusters, setClusters] = useState([]);
   const [blocks, setBlocks] = useState([]);
 
-  // Fetch schools from API
+  // Fetch schools from API (uses /schools/search for searchQuery, /school/all otherwise)
   const fetchSchools = async () => {
     setIsLoading(true);
     try {
-      const response = await apiInstance.get(
-        `/school/all?page=${currentPage}&pageSize=${pageSize}`
-      );
+      let url;
+
+      // Determine which API to call based on filters and search query
+      if (searchQuery.trim() !== "" || selectedBlock || selectedCluster) {
+        url = `/schools/search?page=${currentPage}&pageSize=${pageSize}`;
+
+        // Add search query if present
+        if (searchQuery.trim() !== "") {
+          url += `&query=${encodeURIComponent(searchQuery)}`;
+        }
+
+        // Add block and cluster filters if selected
+        if (selectedBlock) {
+          url += `&block=${encodeURIComponent(selectedBlock)}`;
+        }
+        if (selectedCluster) {
+          url += `&cluster=${encodeURIComponent(selectedCluster)}`;
+        }
+      } else {
+        // Default listing API
+        url = `/school/all?page=${currentPage}&pageSize=${pageSize}`;
+      }
+
+      const response = await apiInstance.get(url);
+
       if (response.data.success) {
-        setSchools(response.data.data.schools);
-        setPagination(response.data.data.pagination);
-        // Capture academic year from API response
+        const schoolsArr = response.data.data.schools || [];
+        setSchools(schoolsArr);
+        setPagination(response.data.data.pagination || {
+          currentPage: 1,
+          pageSize: pageSize,
+          totalSchools: schoolsArr.length,
+          totalPages: 1,
+        });
         if (response.data.data.academicYear) {
           setAcademicYear(response.data.data.academicYear);
         }
@@ -163,10 +190,10 @@ export default function SchoolList() {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  // Load schools on component mount and when page changes
+  // Load schools on component mount and when page/search changes
   useEffect(() => {
     fetchSchools();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, searchQuery, selectedBlock, selectedCluster]);
 
   // Add this in your SchoolList component, in the useEffect section
   useEffect(() => {
@@ -239,24 +266,13 @@ export default function SchoolList() {
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
   };
 
-  // Filter schools based on all criteria
+  // Filter schools based on cluster/block only (search handled by backend)
   const filteredSchools = schools.filter((school) => {
-    // Search query filter (including student count in search)
-    const matchesSearch =
-      searchQuery === "" ||
-      school.schoolName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.udiseCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.blockName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.clusterName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (school.totalStudentsInSchool && school.totalStudentsInSchool.toString().includes(searchQuery));
-
     // Cluster filter
     const matchesCluster = selectedCluster === "" || school.clusterName === selectedCluster;
-
     // Block filter
     const matchesBlock = selectedBlock === "" || school.blockName === selectedBlock;
-
-    return matchesSearch && matchesCluster && matchesBlock;
+    return matchesCluster && matchesBlock;
   });
 
   // Debug: Log the response data and filtered results
@@ -641,81 +657,6 @@ export default function SchoolList() {
                       }}
                     />
 
-                    {/* Cluster Dropdown */}
-                    <FormControl
-                      sx={{
-                        height: "48px",
-                        display: "flex",
-                        width: "auto",
-                        minWidth: "100px",
-                        marginBottom: { xs: "8px", md: "0" },
-                      }}
-                    >
-                      <InputLabel
-                        id="cluster-select-label"
-                        sx={{
-                          color: "#2F4F4F",
-                          fontFamily: "'Work Sans'",
-                          fontWeight: 400,
-                          fontSize: "14px",
-                          transform: "translate(14px, 14px) scale(1)",
-                          "&.Mui-focused, &.MuiFormLabel-filled": {
-                            transform: "translate(14px, -9px) scale(0.75)",
-                          },
-                        }}
-                      >
-                        Cluster
-                      </InputLabel>
-                      <Select
-                        labelId="cluster-select-label"
-                        id="cluster-select"
-                        value={selectedCluster}
-                        label="Cluster"
-                        onChange={(e) => setSelectedCluster(e.target.value)}
-                        sx={{
-                          height: "100%",
-                          borderRadius: "8px",
-                          backgroundColor: "#fff",
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderRadius: "8px",
-                          },
-                          "& .MuiSelect-select": {
-                            paddingTop: "12px",
-                            paddingBottom: "12px",
-                            display: "flex",
-                            alignItems: "center",
-                            color: "#2F4F4F",
-                            fontWeight: "600",
-                          },
-                        }}
-                        MenuProps={{
-                          PaperProps: {
-                            sx: {
-                              maxHeight: 200,
-                              overflowY: "auto",
-                              "&::-webkit-scrollbar": {
-                                width: "5px",
-                              },
-                              "&::-webkit-scrollbar-thumb": {
-                                backgroundColor: "#B0B0B0",
-                                borderRadius: "5px",
-                              },
-                              "&::-webkit-scrollbar-track": {
-                                backgroundColor: "#F0F0F0",
-                              },
-                            },
-                          },
-                        }}
-                      >
-                        <MenuItem value="">All Clusters</MenuItem>
-                        {clusters.map((cluster) => (
-                          <MenuItem key={cluster} value={cluster}>
-                            {capitalizeFirstLetter(cluster)}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-
                     {/* Block Dropdown */}
                     <FormControl
                       sx={{
@@ -786,6 +727,81 @@ export default function SchoolList() {
                         {blocks.map((block) => (
                           <MenuItem key={block} value={block}>
                             {capitalizeFirstLetter(block)}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    {/* Cluster Dropdown */}
+                    <FormControl
+                      sx={{
+                        height: "48px",
+                        display: "flex",
+                        width: "auto",
+                        minWidth: "100px",
+                        marginBottom: { xs: "8px", md: "0" },
+                      }}
+                    >
+                      <InputLabel
+                        id="cluster-select-label"
+                        sx={{
+                          color: "#2F4F4F",
+                          fontFamily: "'Work Sans'",
+                          fontWeight: 400,
+                          fontSize: "14px",
+                          transform: "translate(14px, 14px) scale(1)",
+                          "&.Mui-focused, &.MuiFormLabel-filled": {
+                            transform: "translate(14px, -9px) scale(0.75)",
+                          },
+                        }}
+                      >
+                        Cluster
+                      </InputLabel>
+                      <Select
+                        labelId="cluster-select-label"
+                        id="cluster-select"
+                        value={selectedCluster}
+                        label="Cluster"
+                        onChange={(e) => setSelectedCluster(e.target.value)}
+                        sx={{
+                          height: "100%",
+                          borderRadius: "8px",
+                          backgroundColor: "#fff",
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderRadius: "8px",
+                          },
+                          "& .MuiSelect-select": {
+                            paddingTop: "12px",
+                            paddingBottom: "12px",
+                            display: "flex",
+                            alignItems: "center",
+                            color: "#2F4F4F",
+                            fontWeight: "600",
+                          },
+                        }}
+                        MenuProps={{
+                          PaperProps: {
+                            sx: {
+                              maxHeight: 200,
+                              overflowY: "auto",
+                              "&::-webkit-scrollbar": {
+                                width: "5px",
+                              },
+                              "&::-webkit-scrollbar-thumb": {
+                                backgroundColor: "#B0B0B0",
+                                borderRadius: "5px",
+                              },
+                              "&::-webkit-scrollbar-track": {
+                                backgroundColor: "#F0F0F0",
+                              },
+                            },
+                          },
+                        }}
+                      >
+                        <MenuItem value="">All Clusters</MenuItem>
+                        {clusters.map((cluster) => (
+                          <MenuItem key={cluster} value={cluster}>
+                            {capitalizeFirstLetter(cluster)}
                           </MenuItem>
                         ))}
                       </Select>
