@@ -61,9 +61,9 @@ const Header = () => {
         />
       </Link>
       <div className="flex items-center">
-        <button>
+        {/* <button>
           <img src={notificationsIcon} alt="notifications" style={{ marginRight: "16px" }} />
-        </button>
+        </button> */}
         <div className="relative" ref={dropdownRef}>
           <div
             className="flex items-center cursor-pointer"
