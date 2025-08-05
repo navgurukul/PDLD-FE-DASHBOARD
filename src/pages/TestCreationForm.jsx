@@ -9,6 +9,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiInstance from "../../api";
 import { Autocomplete, TextField, Paper } from "@mui/material";
+import axios from 'axios';
 
 const TestCreationForm = () => {
   const location = useLocation();
@@ -49,6 +50,9 @@ const TestCreationForm = () => {
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
   const [subjectsError, setSubjectsError] = useState(null);
 
+  // Test tags state
+  const [testTags, setTestTags] = useState({ remedial: [], syllabus: [] });
+
   const handleTestSeriesMonthChange = (e) => {
     setTestSeriesMonth(e.target.value);
   };
@@ -58,41 +62,54 @@ const TestCreationForm = () => {
     try {
       setIsLoadingSubjects(true);
       setSubjectsError(null);
-      
+
       const response = await apiInstance.get('/report/class-wise-subjects');
-      
+
       if (response.data.success && response.data.data) {
         // Transform API response to our format
         const subjectsMap = {};
+        let remedialTestTag = [];
+        let syllabusTestTag = [];
+
         response.data.data.forEach((classData) => {
-          subjectsMap[classData.class] = {
-            subjects: classData.subjects || [],
-            VOCATIONAL: classData.vocationalSubjects || [],
-            remedialSubjects: classData.remedialSubjects || []
-          };
+          if (classData.remedialTestTag) {
+            remedialTestTag = classData.remedialTestTag;
+          }
+          if (classData.SyllabusTestTag) {
+            syllabusTestTag = classData.SyllabusTestTag;
+          }
+
+          if (classData.class) {
+            subjectsMap[classData.class] = {
+              subjects: classData.subjects || [],
+              VOCATIONAL: classData.vocationalSubjects || [],
+              remedialSubjects: classData.remedialSubjects || [],
+            };
+          }
         });
-        
+
         setClassWiseSubjects(subjectsMap);
+        setTestTags({ remedial: remedialTestTag, syllabus: syllabusTestTag });
       } else {
-        throw new Error("Invalid API response");
+        throw new Error('Invalid API response');
       }
     } catch (error) {
-      console.error("Error fetching class-wise subjects:", error);
+      console.error('Error fetching class-wise subjects:', error);
       setSubjectsError(error.message);
-      
+
       // Fallback to hardcoded subjects from testData.js
       const fallbackSubjects = {};
       Object.keys(SUBJECTS_BY_GRADE).forEach((classNum) => {
         fallbackSubjects[classNum] = {
           subjects: SUBJECTS_BY_GRADE[classNum] || [],
           VOCATIONAL: [],
-          remedialSubjects: getRemedialSubjects(classNum)
+          remedialSubjects: getRemedialSubjects(classNum),
         };
       });
-      
+
       setClassWiseSubjects(fallbackSubjects);
-      
-      toast.error("Failed to load subjects from server, using default subjects");
+
+      toast.error('Failed to load subjects from server, using default subjects');
     } finally {
       setIsLoadingSubjects(false);
     }
@@ -220,7 +237,7 @@ const TestCreationForm = () => {
     }
   }, [isEditMode, testData]);
 
-  // Fetch subjects on component mount
+  // Fetch subjects and test tags on component mount
   useEffect(() => {
     fetchClassWiseSubjects();
   }, []);
@@ -907,20 +924,14 @@ const TestCreationForm = () => {
                       onChange={handleFormChange}
                     >
                       <option value="">Select Test Tag</option>
-                      {formData.testType === "syllabus" ? (
-                        <>
-                          <option value="Monthly">Monthly</option>
-                          <option value="Quarterly">Quarterly</option>
-                          <option value="Half_Yearly">Half Yearly</option>
-                          <option value="Pre_Board">Pre Boards</option>
-                          <option value="Annual">Annual</option>
-                        </>
+                      {formData.testType === 'syllabus' ? (
+                        testTags.syllabus.map((tag) => (
+                          <option key={tag} value={tag}>{tag}</option>
+                        ))
                       ) : (
-                        <>
-                          <option value="Baseline">Baseline</option>
-                          <option value="Midline">Midline</option>
-                          <option value="Endline">Endline</option>
-                        </>
+                        testTags.remedial.map((tag) => (
+                          <option key={tag} value={tag}>{tag}</option>
+                        ))
                       )}
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
