@@ -66,7 +66,7 @@ const TestCreationForm = () => {
       const response = await apiInstance.get('/report/class-wise-subjects');
 
       if (response.data.success && response.data.data) {
-        // Transform API response to our format
+        //  Transform API response to our format
         const subjectsMap = {};
         let remedialTestTag = [];
         let syllabusTestTag = [];
