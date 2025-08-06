@@ -206,7 +206,7 @@ export default function SchoolList() {
     }
   }, [location]);
 
-  // Add a new function to fetch global blocks and clusters
+  //  Add a new function to fetch global blocks and clusters
   const fetchGlobalBlocksAndClusters = async () => {
     try {
       const response = await apiInstance.get("/user/dropdown-data");
