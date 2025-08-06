@@ -536,7 +536,7 @@ export default function Users() {
 
           return (
             <div className="flex gap-2 justify-center">
-              <Button
+              {/* <Button
                 variant="text"
                 size="small"
                 sx={{
@@ -549,7 +549,7 @@ export default function Users() {
                 title="Generate QR and Share"
               >
                 <QrCode2Icon fontSize="small" />
-              </Button>
+              </Button> */}
               <button
                 className="p-1 hover:bg-gray-100 rounded"
                 onClick={() =>
