@@ -183,47 +183,63 @@ export default function AddSchool({ onClose, onSave }) {
 
   // Handle creating a new block
   const handleCreateNewBlock = (newBlockName) => {
-    // Trimming to ensure clean data
     const trimmedBlockName = newBlockName.trim();
+
+    // Check if the block name already exists (case-insensitive)
+    const isDuplicate = blocksData.some(
+      (block) => block.blockName.toLowerCase() === trimmedBlockName.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      toast.error(`Block "${trimmedBlockName}" already exists!`);
+      return; // Prevent duplicate addition
+    }
+
     if (trimmedBlockName) {
-      setFormData({
-        ...formData,
+      setFormData((prevFormData) => ({
+        ...prevFormData,
         blockName: trimmedBlockName,
         clusterName: "", // Reset cluster when block changes
-      });
+      }));
       setBlockInput(trimmedBlockName);
       setClusterInput("");
 
-      // Show success toast when a new block is created
       toast.success(`New block "${trimmedBlockName}" added successfully!`);
 
-      // Clear error
-      setErrors({
-        ...errors,
+      setErrors((prevErrors) => ({
+        ...prevErrors,
         blockName: false,
-      });
+      }));
     }
   };
 
   // Handle creating a new cluster
   const handleCreateNewCluster = (newClusterName) => {
-    // Trimming to ensure clean data
     const trimmedClusterName = newClusterName.trim();
+
+    // Check if the cluster name already exists (case-insensitive)
+    const isDuplicate = allClusters.some(
+      (cluster) => cluster.name.toLowerCase() === trimmedClusterName.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      toast.error(`Cluster "${trimmedClusterName}" already exists!`);
+      return; // Prevent duplicate addition
+    }
+
     if (trimmedClusterName) {
-      setFormData({
-        ...formData,
+      setFormData((prevFormData) => ({
+        ...prevFormData,
         clusterName: trimmedClusterName,
-      });
+      }));
       setClusterInput(trimmedClusterName);
 
-      // Show success toast when a new cluster is created
       toast.success(`New cluster "${trimmedClusterName}" added successfully!`);
 
-      // Clear error
-      setErrors({
-        ...errors,
+      setErrors((prevErrors) => ({
+        ...prevErrors,
         clusterName: false,
-      });
+      }));
     }
   };
 
@@ -608,7 +624,7 @@ export default function AddSchool({ onClose, onSave }) {
       return options;
     }
 
-    // Check for any partial matches (case-insensitive) using the clean input
+    // Check for any partial matches (case-insensitive) using the cleanInput
     const partialMatches = options.filter((option) =>
       option.blockName.toLowerCase().includes(cleanInputValue)
     );
@@ -698,6 +714,55 @@ export default function AddSchool({ onClose, onSave }) {
     return option.name || "";
   };
 
+  // Real-time duplicate validation for block input
+  const handleBlockInputChange = (event, newInputValue) => {
+    const cleanValue = newInputValue.trim();
+
+    // Check if the user is typing (not selecting from dropdown)
+    if (event && event.type === "change") {
+      // Check for duplicate block name in real-time
+      const isDuplicate = blocksData.some(
+        (block) => block.blockName.toLowerCase() === cleanValue.toLowerCase()
+      );
+
+      if (isDuplicate) {
+        toast.error(`Block "${cleanValue}" already exists!`);
+        return; // Prevent further processing
+      }
+    }
+
+    setBlockInput(cleanValue);
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      blockName: cleanValue,
+      clusterName: "", // Reset cluster when block changes
+    }));
+  };
+
+  // Real-time duplicate validation for cluster input
+  const handleClusterInputChange = (event, newInputValue) => {
+    const cleanValue = newInputValue.trim();
+
+    // Check if the user is typing (not selecting from dropdown)
+    if (event && event.type === "change") {
+      // Check for duplicate cluster name in real-time
+      const isDuplicate = allClusters.some(
+        (cluster) => cluster.name.toLowerCase() === cleanValue.toLowerCase()
+      );
+
+      if (isDuplicate) {
+        toast.error(`Cluster "${cleanValue}" already exists!`);
+        return; // Prevent further processing
+      }
+    }
+
+    setClusterInput(cleanValue);
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      clusterName: cleanValue,
+    }));
+  };
+
   return (
     <Box sx={{ py: 3, px: 1, maxWidth: "700px", margin: "0 auto" }}>
       <h5 className="text-lg font-bold text-[#2F4F4F]">
@@ -775,19 +840,7 @@ export default function AddSchool({ onClose, onSave }) {
               getOptionLabel={getBlockOptionLabel} // Use the fixed function
               value={formData.blockName || null}
               inputValue={blockInput}
-              onInputChange={(event, newInputValue) => {
-                // Clean any "Create new:" prefix from input
-                const cleanValue = newInputValue.replace(/^create new:\s*/i, "").trim();
-                setBlockInput(cleanValue);
-
-                if (!event) {
-                  setFormData({
-                    ...formData,
-                    blockName: cleanValue,
-                    clusterName: "",
-                  });
-                }
-              }}
+              onInputChange={handleBlockInputChange} // Use the new handler
               onChange={handleBlockChange}
               renderInput={(params) => (
                 <TextField
@@ -841,18 +894,7 @@ export default function AddSchool({ onClose, onSave }) {
               getOptionLabel={getClusterOptionLabel} // Use the fixed function
               value={formData.clusterName || null}
               inputValue={clusterInput}
-              onInputChange={(event, newInputValue) => {
-                // Clean any "Create new:" prefix from input
-                const cleanValue = newInputValue.replace(/^create new:\s*/i, "").trim();
-                setClusterInput(cleanValue);
-
-                if (!event) {
-                  setFormData({
-                    ...formData,
-                    clusterName: cleanValue,
-                  });
-                }
-              }}
+              onInputChange={handleClusterInputChange} // Use the new handler
               onChange={handleClusterChange}
               renderInput={(params) => (
                 <TextField
