@@ -222,18 +222,27 @@ export default function SchoolReport({ schoolName }) {
 
   // Download report as CSV
   const handleDownloadCSV = (data) => {
-    const headers = ["Name of Exam", /* "Total Students", */ "Max Marks", ...allSubjects];
+    // Define headers for the CSV
+    const headers = ["Name of Exam", "Total Students", "Max Marks", ...allSubjects];
 
-    let csvContent = headers.join(",") + "\n";
+    // Add extra information as a header section
+    let csvContent = `School:,${schoolName || "N/A"}\n`;
+    csvContent += `Class:,${selectedClass}\n`;
+    csvContent += `Total Tests:,${data.length}\n\n`;
 
+    // Add table headers
+    csvContent += headers.join(",") + "\n";
+
+    // Add rows for each report
     data.forEach((report) => {
       const rowData = [
-        report.examName,
-        // report.totalStudents,
-        report.maxMarks,
-        ...allSubjects.map((subject) => report[subject]),
+        report.examName, // Name of the exam
+        report.totalStudents, // Total students
+        report.maxMarks, // Maximum marks
+        ...allSubjects.map((subject) => report[subject] || "-"), // Subject averages
       ];
 
+      // Escape commas in data and join the row
       csvContent +=
         rowData
           .map((cell) => {
@@ -245,17 +254,19 @@ export default function SchoolReport({ schoolName }) {
           .join(",") + "\n";
     });
 
-    // Create download link
+    // Create a Blob for the CSV content
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
+
+    // Create a download link
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute(
       "download",
-      `Class_${selectedClass}_Report_${schoolName || "School"}_${
-        new Date().toISOString().split("T")[0]
-      }.csv`
+      `Class_${selectedClass}_Report_${schoolName || "School"}_$${new Date().toISOString().split("T")[0]}.csv`
     );
+
+    // Trigger the download
     document.body.appendChild(link);
     link.click();
 
