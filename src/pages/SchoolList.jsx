@@ -206,22 +206,36 @@ export default function SchoolList() {
     }
   }, [location]);
 
-  // Extract unique clusters and blocks for filter dropdowns
-  useEffect(() => {
-    if (schools.length > 0) {
-      // Extract unique clusters
-      const uniqueClusters = [...new Set(schools.map((school) => school.clusterName))]
-        .filter(Boolean)
-        .sort();
-      setClusters(uniqueClusters);
+  //  Add a new function to fetch global blocks and clusters
+  const fetchGlobalBlocksAndClusters = async () => {
+    try {
+      const response = await apiInstance.get("/user/dropdown-data");
+      if (response.data && response.data.success) {
+        const blocksData = response.data.data;
 
-      // Extract unique blocks
-      const uniqueBlocks = [...new Set(schools.map((school) => school.blockName))]
-        .filter(Boolean)
-        .sort();
-      setBlocks(uniqueBlocks);
+        // Extract unique blocks
+        const uniqueBlocks = blocksData.map((block) => block.blockName).filter(Boolean).sort();
+        setBlocks(uniqueBlocks);
+
+        // Extract unique clusters
+        const allClusterNames = blocksData.flatMap((block) =>
+          block.clusters.map((cluster) => cluster.name)
+        );
+        const uniqueClusters = [...new Set(allClusterNames)].filter(Boolean).sort();
+        setClusters(uniqueClusters);
+      } else {
+        console.error("Failed to fetch blocks and clusters:", response.data?.message);
+      }
+    } catch (error) {
+      console.error("Error fetching blocks and clusters:", error);
+      toast.error("Failed to load blocks and clusters data");
     }
-  }, [schools]);
+  };
+
+  // Call the function on component mount
+  useEffect(() => {
+    fetchGlobalBlocksAndClusters();
+  }, []);
 
   const handleAddSchool = () => {
     navigate("/schools/add-school");
