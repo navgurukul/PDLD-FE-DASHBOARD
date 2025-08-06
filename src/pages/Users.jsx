@@ -11,9 +11,16 @@ import {
   Tooltip,
   IconButton,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Pagination,
+  PaginationItem,
+  Modal,
+  Box,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import apiInstance from "../../api";
@@ -125,6 +132,10 @@ export default function Users() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrUser, setQrUser] = useState(null);
+  const [qrCodeRef, setQrCodeRef] = useState(null);
 
   // Add page size change handler
   const handlePageSizeChange = (event) => {
@@ -522,6 +533,20 @@ export default function Users() {
 
           return (
             <div className="flex gap-2 justify-center">
+              {/* <Button
+                variant="text"
+                size="small"
+                sx={{
+                  color: "#2F4F4F",
+                  "&:hover": { backgroundColor: "transparent" },
+                  padding: "2px",
+                  minWidth: "unset",
+                }}
+                onClick={() => openQrModal(user)}
+                title="Generate QR and Share"
+              >
+                <QrCode2Icon fontSize="small" />
+              </Button> */}
               <button
                 className="p-1 hover:bg-gray-100 rounded"
                 onClick={() =>
@@ -596,6 +621,151 @@ export default function Users() {
 
   const handleBlockChange = (e) => {
     setSelectedBlock(e.target.value);
+  };
+
+  const openQrModal = (user) => {
+    setQrUser(user);
+    setQrModalOpen(true);
+  };
+
+  const closeQrModal = () => {
+    setQrModalOpen(false);
+    setQrUser(null);
+    setQrCodeRef(null);
+  };
+
+  // Function to convert QR code to blob and download
+  const downloadQRCode = () => {
+    if (!qrCodeRef || !qrUser) return;
+
+    const svg = qrCodeRef.querySelector('svg');
+    if (!svg) return;
+
+    // Convert SVG to canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const data = new XMLSerializer().serializeToString(svg);
+    const DOMURL = window.URL || window.webkitURL || window;
+
+    const img = new Image();
+    const svgBlob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' });
+    const url = DOMURL.createObjectURL(svgBlob);
+
+    img.onload = function () {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      DOMURL.revokeObjectURL(url);
+
+      // Download the image
+      canvas.toBlob(function (blob) {
+        const link = document.createElement('a');
+        link.download = `${qrUser.name}_QR_Code.png`;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+      });
+    };
+
+    img.src = url;
+  };
+
+  // Function to share QR code image via WhatsApp
+  const handleShareWhatsapp = () => {
+    if (!qrCodeRef || !qrUser) return;
+
+    const svg = qrCodeRef.querySelector('svg');
+    if (!svg) return;
+
+    // Convert SVG to canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const data = new XMLSerializer().serializeToString(svg);
+    const DOMURL = window.URL || window.webkitURL || window;
+
+    const img = new Image();
+    const svgBlob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' });
+    const url = DOMURL.createObjectURL(svgBlob);
+
+    img.onload = function () {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      DOMURL.revokeObjectURL(url);
+
+      // Convert canvas to blob
+      canvas.toBlob(function (blob) {
+        const fileName = `${qrUser.name}_QR_Code.png`;
+        
+        // Try to use Web Share API with file
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], fileName, { type: 'image/png' });
+          
+          // Check if files can be shared
+          if (navigator.canShare({ files: [file] })) {
+            navigator.share({
+              title: `QR Code for ${qrUser.name}`,
+              text: `QR Code for user: ${qrUser.name} (${qrUser.username})`,
+              files: [file]
+            }).catch((error) => {
+              console.log('Error sharing via Web Share API:', error);
+              // Fallback to download
+              fallbackDownload(blob, fileName);
+            });
+            return;
+          }
+        }
+        
+        // If Web Share API is not available or doesn't support files, try WhatsApp Web
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const base64Data = e.target.result;
+          
+          // Try to copy image to clipboard and open WhatsApp
+          if (navigator.clipboard && navigator.clipboard.write) {
+            const clipboardItem = new ClipboardItem({
+              'image/png': blob
+            });
+            
+            navigator.clipboard.write([clipboardItem]).then(() => {
+              // Show success message
+              toast.success('QR Code copied to clipboard! You can now paste it in WhatsApp.');
+              
+              // Open WhatsApp Web
+              const message = `QR Code for user: ${qrUser.name} (${qrUser.username})`;
+              const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+              window.open(whatsappUrl, '_blank');
+            }).catch(() => {
+              // If clipboard fails, just download the file
+              fallbackDownload(blob, fileName);
+            });
+          } else {
+            // Fallback: just download the file and open WhatsApp
+            fallbackDownload(blob, fileName);
+          }
+        };
+        reader.readAsDataURL(blob);
+      }, 'image/png');
+    };
+
+    img.src = url;
+  };
+
+  // Fallback function to download file and open WhatsApp
+  const fallbackDownload = (blob, fileName) => {
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+    
+    // Show message to user
+    toast.info('QR Code downloaded! You can now share it manually on WhatsApp.');
+    
+    // Open WhatsApp
+    const message = `QR Code for user: ${qrUser.name} (${qrUser.username})`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   return (
@@ -934,6 +1104,103 @@ export default function Users() {
         />
 
         <ToastContainer style={{ zIndex: 99999999 }} position="top-right" autoClose={3000} />
+
+        {/* QR Code Modal */}
+        <Modal
+          open={qrModalOpen}
+          onClose={closeQrModal}
+          aria-labelledby="qr-modal-title"
+          aria-describedby="qr-modal-description"
+          sx={{ zIndex: 12000 }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 450,
+              maxWidth: "90%",
+              bgcolor: "background.paper",
+              boxShadow: 24,
+              borderRadius: 2,
+              p: 4,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <Typography
+                id="qr-modal-title"
+                variant="h6"
+                component="h2"
+                sx={{ fontWeight: "bold", color: "#2F4F4F" }}
+              >
+                QR Code for User
+              </Typography>
+            </Box>
+
+            <Box sx={{ textAlign: "center", mb: 3 }}>
+              {qrUser && (
+                <>
+                  <div ref={setQrCodeRef}>
+                    <QRCode
+                      value={JSON.stringify({ username: qrUser.username, userId: qrUser.userId || qrUser.id })}
+                      size={200}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  </div>
+                  <Typography variant="subtitle1" sx={{ mt: 2, color: "#555" }}>
+                    {qrUser.name} ({qrUser.username})
+                  </Typography>
+                </>
+              )}
+            </Box>
+
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+              <ButtonCustom
+                text="Download"
+                onClick={downloadQRCode}
+                customStyle={{
+                  backgroundColor: "#2F4F4F",
+                  color: "white",
+                  "&:hover": {
+                    backgroundColor: "#1e3333",
+                  },
+                }}
+              />
+
+              <ButtonCustom
+                text="Share on WhatsApp"
+                onClick={handleShareWhatsapp}
+                customStyle={{
+                  backgroundColor: "#25D366",
+                  color: "white",
+                  "&:hover": {
+                    backgroundColor: "#1DA851",
+                  },
+                }}
+              />
+              <Button
+                variant="outlined"
+                onClick={closeQrModal}
+                sx={{
+                  borderRadius: "8px",
+                  borderColor: "#ccc",
+                  color: "#555",
+                  textTransform: "none",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  "&:hover": {
+                    borderColor: "#999",
+                    bgcolor: "#f5f5f5",
+                  },
+                }}
+              >
+                Close
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
       </div>
       {isLoading && <SpinnerPageOverlay />}
     </ThemeProvider>

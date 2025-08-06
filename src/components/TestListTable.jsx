@@ -312,10 +312,23 @@ export default function TestListTable() {
     return `${day}-${month}-${year}`; // e.g. "01-02-2020"
   }
 
-  // Fetch data from API
+  // Fetch data from API (switches to /tests/search for test name search)
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      // If searchQuery is present, use /tests/search (global, paginated search)
+      if (searchQuery && searchQuery.trim() !== "") {
+        // Only test name search, ignore other filters for now (can be combined if backend supports)
+        let url = `/tests/search?page=${currentPage}&pageSize=${pageSize}&query=${encodeURIComponent(searchQuery)}`;
+        const response = await apiInstance.get(url);
+        if (response.data && response.data.data) {
+          setTests(response.data.data.tests); // Corrected to access 'tests' instead of 'data.data'
+          setTotalRecords(response.data.data.pagination.totalCount); // Corrected to access 'pagination.totalCount'
+        }
+        return;
+      }
+
+      // Otherwise, use /test/filter for all other filters
       let startDateFormatted;
       let endDateFormatted;
       if (startDate && endDate) {
@@ -356,23 +369,15 @@ export default function TestListTable() {
     }
   };
 
-  // Re-fetch data whenever any filter changes
+  // Re-fetch data whenever any filter or search changes
   useEffect(() => {
-    if ((startDate && endDate) || (!startDate && !endDate)) {
+    if ((startDate && endDate) || (!startDate && !endDate) || (searchQuery && searchQuery.trim() !== "")) {
       fetchData();
     }
-  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage, pageSize]);
+  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage, pageSize, searchQuery]);
 
-  // Normalize function to remove extra spaces and lowercase
-  function normalizeString(str) {
-    return str?.replace(/\s+/g, " ").trim().toLowerCase() || "";
-  }
-
-  // Filter tests based on normalized search query (local filter for "testName")
-  // Filter tests robustly by normalized testName and searchQuery
-  const filteredTests = tests?.filter((test) =>
-    normalizeString(test.testName).includes(normalizeString(searchQuery))
-  );
+  // Remove local filtering: tests are already filtered by backend
+  const filteredTests = tests;
 
   // State to track sorting
   const [sortConfig, setSortConfig] = useState({
