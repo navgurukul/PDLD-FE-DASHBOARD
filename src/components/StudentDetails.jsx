@@ -434,7 +434,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       },
     },
     {
-      name: "Student PEN", // Changed from "Aadhar ID" to "Student PEN"
+      name: "Apar ID", // Changed from "Student PEN" to "Apar ID"
       options: {
         filter: false,
         sort: true,
