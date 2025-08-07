@@ -1009,7 +1009,8 @@ const StudentPerformanceTable = ({
           isOpen={showDownloadModal}
           onClose={() => setShowDownloadModal(false)}
           onConfirm={handleDownloadConfirm}
-          totalRows={sortedStudents.length}
+          currentPageCount={paginatedTableData.length}
+          totalRecords={sortedStudents.length}
           defaultRows="all"
           formats={["csv", "pdf"]}
         />
