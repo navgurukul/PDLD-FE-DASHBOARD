@@ -719,31 +719,15 @@ ${schoolName || "N/A"}</div>
                   },
                 }}
               >
-                {/* {availableClasses.length > 0 ? (
-                  availableClasses.map((classOption) => (
-                    <MenuItem key={classOption.value} value={parseInt(classOption.value, 10)}>
-                      {classOption.label}
-                    </MenuItem>
-                  ))
-                ) : (
-                  <>
-                    <MenuItem value={1}>Class 1</MenuItem>
-                    <MenuItem value={2}>Class 2</MenuItem>
-                  </>
-                )} */}
-
-                <MenuItem value={1}>Class 1</MenuItem>
-                <MenuItem value={2}>Class 2</MenuItem>
-                <MenuItem value={3}>Class 3</MenuItem>
-                <MenuItem value={4}>Class 4</MenuItem>
-                <MenuItem value={5}>Class 5</MenuItem>
-                <MenuItem value={5}>Class 6</MenuItem>
-                <MenuItem value={5}>Class 7</MenuItem>
-                <MenuItem value={5}>Class 8</MenuItem>
-                <MenuItem value={5}>Class 9</MenuItem>
-                <MenuItem value={5}>Class 10</MenuItem>
-                <MenuItem value={5}>Class 11</MenuItem>
-                <MenuItem value={5}>Class 12</MenuItem>
+                {availableClasses.length > 0
+                  ? availableClasses.map((classOption) => (
+                      <MenuItem key={classOption.value} value={parseInt(classOption.value, 10)}>
+                        {classOption.label}
+                      </MenuItem>
+                    ))
+                  : Array.from({ length: 12 }, (_, i) => (
+                      <MenuItem key={i + 1} value={i + 1}>{`Class ${i + 1}`}</MenuItem>
+                    ))}
               </Select>
             </FormControl>
           </div>
