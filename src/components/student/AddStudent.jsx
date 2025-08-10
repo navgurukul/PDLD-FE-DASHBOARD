@@ -859,7 +859,8 @@ export default function AddStudent({ isEditMode = false }) {
               {/* Student PEN */}
               <Grid item xs={12} md={6}>
                 <TextField
-                  label="Student PEN (Optional)"
+                  // label="Student PEN (Optional)"
+                  label="Apar ID (Optional)"
                   name="uniqueId"
                   value={formData.uniqueId}
                   onChange={handleInputChange}
