@@ -737,13 +737,13 @@ ${schoolName || "N/A"}</div>
                 <MenuItem value={3}>Class 3</MenuItem>
                 <MenuItem value={4}>Class 4</MenuItem>
                 <MenuItem value={5}>Class 5</MenuItem>
-                <MenuItem value={5}>Class 6</MenuItem>
-                <MenuItem value={5}>Class 7</MenuItem>
-                <MenuItem value={5}>Class 8</MenuItem>
-                <MenuItem value={5}>Class 9</MenuItem>
-                <MenuItem value={5}>Class 10</MenuItem>
-                <MenuItem value={5}>Class 11</MenuItem>
-                <MenuItem value={5}>Class 12</MenuItem>
+                <MenuItem value={6}>Class 6</MenuItem>
+                <MenuItem value={7}>Class 7</MenuItem>
+                <MenuItem value={8}>Class 8</MenuItem>
+                <MenuItem value={9}>Class 9</MenuItem>
+                <MenuItem value={10}>Class 10</MenuItem>
+                <MenuItem value={11}>Class 11</MenuItem>
+                <MenuItem value={12}>Class 12</MenuItem>
               </Select>
             </FormControl>
           </div>
