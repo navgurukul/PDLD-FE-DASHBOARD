@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useDebounce } from "../customHook/useDebounce";
 import MUIDataTable from "mui-datatables";
 import { Button, TextField, CircularProgress } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -112,7 +113,9 @@ export default function SchoolList() {
   const [schools, setSchools] = useState([]);
   const [academicYear, setAcademicYear] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -135,17 +138,25 @@ export default function SchoolList() {
 
   // Fetch schools from API (uses /schools/search for searchQuery, /school/all otherwise)
   const fetchSchools = async () => {
-    setIsLoading(true);
+    const isSearching = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
+    
+    // Use different loading states for search vs other operations
+    if (isSearching) {
+      setIsSearchLoading(true);
+    } else {
+      setIsLoading(true);
+    }
+    
     try {
       let url;
 
       // Determine which API to call based on filters and search query
-      if (searchQuery.trim() !== "" || selectedBlock || selectedCluster) {
+      if (debouncedSearchQuery.trim() !== "" || selectedBlock || selectedCluster) {
         url = `/schools/search?page=${currentPage}&pageSize=${pageSize}`;
 
         // Add search query if present
-        if (searchQuery.trim() !== "") {
-          url += `&query=${encodeURIComponent(searchQuery)}`;
+        if (debouncedSearchQuery.trim() !== "") {
+          url += `&query=${encodeURIComponent(debouncedSearchQuery)}`;
         }
 
         // Add block and cluster filters if selected
@@ -182,6 +193,7 @@ export default function SchoolList() {
       toast.error(error.response?.data?.message || "Error fetching schools");
     } finally {
       setIsLoading(false);
+      setIsSearchLoading(false);
     }
   };
 
@@ -193,7 +205,7 @@ export default function SchoolList() {
   // Load schools on component mount and when page/search changes
   useEffect(() => {
     fetchSchools();
-  }, [currentPage, pageSize, searchQuery, selectedBlock, selectedCluster]);
+  }, [currentPage, pageSize, debouncedSearchQuery, selectedBlock, selectedCluster]);
 
   // Add this in your SchoolList component, in the useEffect section
   useEffect(() => {
@@ -654,7 +666,11 @@ export default function SchoolList() {
                       InputProps={{
                         startAdornment: (
                           <div className="pr-2">
-                            <Search size={18} className="text-gray-500" />
+                            {isSearchLoading ? (
+                              <CircularProgress size={18} sx={{ color: "#2F4F4F" }} />
+                            ) : (
+                              <Search size={18} className="text-gray-500" />
+                            )}
                           </div>
                         ),
                         style: {
@@ -1010,7 +1026,8 @@ export default function SchoolList() {
         </div>
 
         {/* Overlay Loader */}
-        {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
+        {/* Only show full-page spinner for non-search operations */}
+        {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}
       </div>
     </ThemeProvider>
   );
