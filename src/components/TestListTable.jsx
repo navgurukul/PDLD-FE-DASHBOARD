@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useDebounce } from "../customHook/useDebounce";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, DocScanner } from "../utils/imagePath";
 import { Button, TextField, MenuItem, CircularProgress, Typography, Select } from "@mui/material";
@@ -129,6 +130,7 @@ export default function TestListTable() {
   const [dateRange, setDateRange] = useState([null, null]);
   const [startDate, endDate] = dateRange;
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [userRole, setUserRole] = useState("");
 
   // Track dropdown selections
@@ -312,14 +314,25 @@ export default function TestListTable() {
     return `${day}-${month}-${year}`; // e.g. "01-02-2020"
   }
 
+  // Debounced searchQuery for API calls
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
+
   // Fetch data from API (switches to /tests/search for test name search)
   const fetchData = async () => {
-    setIsLoading(true);
+    const isSearching = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
+    
+    // Use different loading states for search vs other operations
+    if (isSearching) {
+      setIsSearchLoading(true);
+    } else {
+      setIsLoading(true);
+    }
+    
     try {
-      // If searchQuery is present, use /tests/search (global, paginated search)
-      if (searchQuery && searchQuery.trim() !== "") {
+      // If debouncedSearchQuery is present, use /tests/search (global, paginated search)
+      if (isSearching) {
         // Only test name search, ignore other filters for now (can be combined if backend supports)
-        let url = `/tests/search?page=${currentPage}&pageSize=${pageSize}&query=${encodeURIComponent(searchQuery)}`;
+        let url = `/tests/search?page=${currentPage}&pageSize=${pageSize}&query=${encodeURIComponent(debouncedSearchQuery)}`;
         const response = await apiInstance.get(url);
         if (response.data && response.data.data) {
           setTests(response.data.data.tests); // Corrected to access 'tests' instead of 'data.data'
@@ -366,15 +379,16 @@ export default function TestListTable() {
       // Error fetching data, do nothing (no debug log)
     } finally {
       setIsLoading(false);
+      setIsSearchLoading(false);
     }
   };
 
-  // Re-fetch data whenever any filter or search changes
+  // Re-fetch data whenever any filter or search changes (debounced for search)
   useEffect(() => {
-    if ((startDate && endDate) || (!startDate && !endDate) || (searchQuery && searchQuery.trim() !== "")) {
+    if ((startDate && endDate) || (!startDate && !endDate) || (debouncedSearchQuery && debouncedSearchQuery.trim() !== "")) {
       fetchData();
     }
-  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage, pageSize, searchQuery]);
+  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage, pageSize, debouncedSearchQuery]);
 
   // Remove local filtering: tests are already filtered by backend
   const filteredTests = tests;
@@ -680,7 +694,11 @@ export default function TestListTable() {
                 InputProps={{
                   startAdornment: (
                     <div className="pr-2">
-                      <Search size={18} className="text-gray-500" />
+                      {isSearchLoading ? (
+                        <CircularProgress size={18} sx={{ color: "#2F4F4F" }} />
+                      ) : (
+                        <Search size={18} className="text-gray-500" />
+                      )}
                     </div>
                   ),
                   style: {
@@ -1215,7 +1233,8 @@ export default function TestListTable() {
           closeOnClick
           style={{ zIndex: 99999999 }}
         />
-        {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
+        {/* Only show full-page spinner for non-search operations */}
+        {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}
       </div>
     </ThemeProvider>
   );
