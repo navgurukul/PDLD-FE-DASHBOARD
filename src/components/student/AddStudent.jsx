@@ -563,7 +563,7 @@ export default function AddStudent({ isEditMode = false }) {
 
     try {
       const formattedDate = formData.dateOfBirth
-        ? `${format(new Date(formData.dateOfBirth), "d-MM-yyyy")}`
+        ? `${format(new Date(formData.dateOfBirth), "dd-MM-yyyy")}`
         : "";
 
       const studentDataPayload = {
