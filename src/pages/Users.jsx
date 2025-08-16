@@ -1138,7 +1138,7 @@ export default function Users() {
           </div>
         </div>
 
-        {/* Delete Confirmation Modal */}
+        {/*  Delete Confirmation Modal */}
         <GenericConfirmationModal
           open={deleteModalOpen}
           onClose={closeDeleteModal}
