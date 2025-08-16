@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useDebounce } from "../customHook/useDebounce";
+import QRCode from "react-qr-code";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, trash } from "../utils/imagePath";
 import {
@@ -19,6 +21,7 @@ import {
   PaginationItem,
   Modal,
   Box,
+  CircularProgress,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -29,7 +32,9 @@ import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import QrCode2Icon from "@mui/icons-material/QrCode2";
 import { Search } from "lucide-react";
+
 const theme = createTheme({
   typography: {
     fontFamily: "'Karla', sans-serif",
@@ -117,12 +122,19 @@ export default function Users() {
   const [totalRecords, setTotalRecords] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [availableRoles, setAvailableRoles] = useState([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [selectedBlock, setSelectedBlock] = useState("");
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageSize: 15,
+    totalUsers: 0,
+    totalPages: 1,
+  });
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -161,62 +173,54 @@ export default function Users() {
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
   };
 
-  // Extract unique roles from users
+  // Fetch global blocks and roles data for filters
+  const fetchGlobalBlocksAndRoles = async () => {
+    try {
+      const response = await apiInstance.get("/user/dropdown-data");
+      if (response.data && response.data.success) {
+        const blocksData = response.data.data;
+
+        // Extract unique blocks
+        const uniqueBlocks = blocksData.map((block) => block.blockName).filter(Boolean).sort();
+        setAvailableBlocks(uniqueBlocks);
+
+        // You can also set available roles here if the API provides them
+        // For now, keeping the existing role extraction logic
+      } else {
+        console.error("Failed to fetch blocks and roles:", response.data?.message);
+      }
+    } catch (error) {
+      console.error("Error fetching blocks and roles:", error);
+      toast.error("Failed to load blocks and roles data");
+    }
+  };
+
+  // Extract unique roles from users (keeping existing logic for backward compatibility)
   useEffect(() => {
     if (users.length > 0) {
       const roles = [...new Set(users.map((user) => user.role))].filter(Boolean);
       setAvailableRoles(roles);
 
-      // Extract unique blocks from users
-      const blocks = new Set();
-      users.forEach((user) => {
-        // Check both assignedBlock and assignedBlocks
-        const blocksList = user.assignedBlocks || user.assignedBlock;
-        if (blocksList && Array.isArray(blocksList)) {
-          blocksList.forEach((block) => {
-            if (block) blocks.add(capitalizeFirstLetter(block));
-          });
-        }
-      });
-      setAvailableBlocks([...blocks].sort());
+      // If blocks weren't loaded from global API, extract from users as fallback
+      if (availableBlocks.length === 0) {
+        const blocks = new Set();
+        users.forEach((user) => {
+          const blocksList = user.assignedBlocks || user.assignedBlock;
+          if (blocksList && Array.isArray(blocksList)) {
+            blocksList.forEach((block) => {
+              if (block) blocks.add(capitalizeFirstLetter(block));
+            });
+          }
+        });
+        setAvailableBlocks([...blocks].sort());
+      }
     }
-  }, [users]);
+  }, [users, availableBlocks.length]);
 
-  // Filter users based on search query, selected role and selected block
+  // Call the function on component mount
   useEffect(() => {
-    let filtered = users;
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const lowercaseQuery = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (user) =>
-          user.name?.toLowerCase().includes(lowercaseQuery) ||
-          formatRoleName(user.role)?.toLowerCase().includes(lowercaseQuery)
-      );
-    }
-
-    // Apply role filter
-    if (selectedRole) {
-      filtered = filtered.filter((user) => user.role === selectedRole);
-    }
-
-    // Apply block filter
-    if (selectedBlock) {
-      filtered = filtered.filter(
-        (user) =>
-          user.role === "DISTRICT_OFFICER" ||
-          user.role === "district_officer" ||
-          ((user.assignedBlocks || user.assignedBlock) &&
-            Array.isArray(user.assignedBlocks || user.assignedBlock) &&
-            (user.assignedBlocks || user.assignedBlock).some(
-              (block) => block?.toLowerCase() === selectedBlock.toLowerCase()
-            ))
-      );
-    }
-
-    setFilteredUsers(filtered);
-  }, [searchQuery, selectedRole, selectedBlock, users]);
+    fetchGlobalBlocksAndRoles();
+  }, []);
 
   const handleCreateUser = () => {
     navigate("/users/userCreationForm");
@@ -251,11 +255,42 @@ export default function Users() {
     return roleShortFormMap[role] || role.replace(/_/g, " ");
   };
 
+  // Updated fetchData function with global search implementation
   const fetchData = async () => {
+    const isSearching = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
+    
+    // Use different loading states for search vs other operations
+    if (isSearching) {
+      setIsSearchLoading(true);
+    } else {
+      setIsLoading(true);
+    }
+
     try {
-      setIsLoading(true); // Show loader when fetching data
-      // Updated to use dynamic pageSize
-      const response = await apiInstance.get(`/users?page=${currentPage}&pageSize=${pageSize}`);
+      let url;
+
+      // Determine which API to call based on filters and search query
+      if (debouncedSearchQuery.trim() !== "" || selectedRole || selectedBlock) {
+        url = `/users/search?page=${currentPage}&pageSize=${pageSize}`;
+
+        // Add search query if present
+        if (debouncedSearchQuery.trim() !== "") {
+          url += `&query=${encodeURIComponent(debouncedSearchQuery)}`;
+        }
+
+        // Add role and block filters if selected
+        if (selectedRole) {
+          url += `&role=${encodeURIComponent(selectedRole)}`;
+        }
+        if (selectedBlock) {
+          url += `&block=${encodeURIComponent(selectedBlock)}`;
+        }
+      } else {
+        // Default listing API
+        url = `/users?page=${currentPage}&pageSize=${pageSize}`;
+      }
+
+      const response = await apiInstance.get(url);
 
       if (response.data?.success && response.data?.data) {
         // Extract users array from response
@@ -264,19 +299,29 @@ export default function Users() {
 
         // Extract pagination info
         const paginationData = response.data.data.pagination || {};
+        setPagination(paginationData || {
+          currentPage: 1,
+          pageSize: pageSize,
+          totalUsers: usersData.length,
+          totalPages: 1,
+        });
         setTotalRecords(paginationData.totalUsers || usersData.length);
+      } else {
+        toast.error("Failed to fetch users");
       }
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast.error("Failed to load users. Please try again.");
+      toast.error(error.response?.data?.message || "Error fetching users");
     } finally {
       setIsLoading(false);
+      setIsSearchLoading(false);
     }
   };
 
+  // Updated useEffect to use the new fetchData function
   useEffect(() => {
     fetchData();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, debouncedSearchQuery, selectedRole, selectedBlock]);
 
   // Open delete confirmation modal
   const openDeleteModal = (user) => {
@@ -365,7 +410,7 @@ export default function Users() {
 
   const isAnyFilterActive = !!searchQuery.trim() || !!selectedRole || !!selectedBlock;
 
-  const tableData = filteredUsers.map((user) => ({
+  const tableData = users.map((user) => ({
     id: user.userId || user.id,
     name: user.name || "N/A",
     username: user.username || "N/A",
@@ -453,7 +498,7 @@ export default function Users() {
         sort: true,
         customBodyRender: (value, tableMeta) => {
           const userIndex = tableMeta.rowIndex;
-          const user = filteredUsers[userIndex];
+          const user = users[userIndex];
 
           return (
             <div
@@ -529,7 +574,7 @@ export default function Users() {
         customBodyRender: (value, tableMeta) => {
           const userId = tableMeta.rowData[0];
           const userIndex = tableMeta.rowIndex;
-          const user = filteredUsers[userIndex];
+          const user = users[userIndex];
 
           return (
             <div className="flex gap-2 justify-center">
@@ -617,10 +662,12 @@ export default function Users() {
 
   const handleRoleChange = (e) => {
     setSelectedRole(e.target.value);
+    setCurrentPage(1); // Reset to first page when changing filter
   };
 
   const handleBlockChange = (e) => {
     setSelectedBlock(e.target.value);
+    setCurrentPage(1); // Reset to first page when changing filter
   };
 
   const openQrModal = (user) => {
@@ -787,7 +834,11 @@ export default function Users() {
                 InputProps={{
                   startAdornment: (
                     <div className="pr-2">
-                      <Search size={18} className="text-gray-500" />
+                      {isSearchLoading ? (
+                        <CircularProgress size={18} sx={{ color: "#2F4F4F" }} />
+                      ) : (
+                        <Search size={18} className="text-gray-500" />
+                      )}
                     </div>
                   ),
                   style: {
@@ -951,7 +1002,7 @@ export default function Users() {
                 <MenuItem value="">All Blocks</MenuItem>
                 {availableBlocks.map((block) => (
                   <MenuItem key={block} value={block}>
-                    {block}
+                    {capitalizeFirstLetter(block)}
                   </MenuItem>
                 ))}
               </Select>
@@ -1009,7 +1060,7 @@ export default function Users() {
           {/* Centered pagination */}
           <div style={{ display: "flex", justifyContent: "center" }}>
             <Pagination
-              count={Math.ceil(totalRecords / pageSize)}
+              count={pagination.totalPages}
               page={currentPage}
               onChange={handlePageChange}
               showFirstButton
@@ -1087,7 +1138,7 @@ export default function Users() {
           </div>
         </div>
 
-        {/* Delete Confirmation Modal */}
+        {/*  Delete Confirmation Modal */}
         <GenericConfirmationModal
           open={deleteModalOpen}
           onClose={closeDeleteModal}
@@ -1202,7 +1253,8 @@ export default function Users() {
           </Box>
         </Modal>
       </div>
-      {isLoading && <SpinnerPageOverlay />}
+      {/* Only show full-page spinner for non-search operations */}
+      {isLoading && !isSearchLoading && <SpinnerPageOverlay />}
     </ThemeProvider>
   );
 }
