@@ -41,7 +41,8 @@ const DownloadModal = ({
 
   const getRowDisplayText = () => {
     const recordType = tableType === "aggregate" || tableType === "subjectwise" ? 
-      (tableType === "aggregate" ? "records" : "subject records") : "records";
+      (tableType === "aggregate" ? "records" : "subject records") : 
+      (tableType === "enrollment" ? "enrollment records" : "records");
     switch (selectedRows) {
       case "current":
         return `Current page (${currentPageCount} ${recordType})`;
@@ -65,6 +66,8 @@ const DownloadModal = ({
         return "Aggregate Performance Data";
       case "subjectwise":
         return "Subject-wise Performance Data";
+      case "enrollment":
+        return "Student Enrollment Data";
       default:
         return "Academic Performance Data";
     }
@@ -83,8 +86,8 @@ const DownloadModal = ({
           Download {subject} Report
         </h3>
         
-        {/* Table type indicator - only show for aggregate and subjectwise */}
-        {(tableType === "aggregate" || tableType === "subjectwise") && (
+        {/* Table type indicator - only show for aggregate, subjectwise, and enrollment */}
+        {(tableType === "aggregate" || tableType === "subjectwise" || tableType === "enrollment") && (
           <div className="flex items-center space-x-2 mb-4 p-3 bg-blue-50 rounded-md border border-blue-200">
             {getTableTypeIcon()}
             <div>
@@ -145,7 +148,7 @@ const DownloadModal = ({
                   className="text-[#2F4F4F] focus:ring-[#2F4F4F] accent-[#2F4F4F]"
                 />
                 <span className="text-[#2F4F4F]">
-                  Current page ({currentPageCount} {tableType === "aggregate" || tableType === "subjectwise" ? (tableType === "aggregate" ? "records" : "subject records") : "records"})
+                  Current page ({currentPageCount} {tableType === "aggregate" || tableType === "subjectwise" ? (tableType === "aggregate" ? "records" : "subject records") : (tableType === "enrollment" ? "enrollment records" : "records")})
                 </span>
               </label>
               <label className="flex items-center space-x-3 cursor-pointer">
@@ -158,7 +161,7 @@ const DownloadModal = ({
                   className="text-[#2F4F4F] focus:ring-[#2F4F4F] accent-[#2F4F4F]"
                 />
                 <span className="text-[#2F4F4F]">
-                  All {tableType === "aggregate" || tableType === "subjectwise" ? (tableType === "aggregate" ? "records" : "subject records") : "records"} ({totalRecords} total)
+                  All {tableType === "aggregate" || tableType === "subjectwise" ? (tableType === "aggregate" ? "records" : "subject records") : (tableType === "enrollment" ? "enrollment records" : "records")} ({totalRecords} total)
                 </span>
               </label>
             </div>
@@ -168,7 +171,7 @@ const DownloadModal = ({
           <div className="bg-gray-50 p-3 rounded-md">
             <p className="text-sm text-[#2F4F4F]">
               <strong>Download Summary:</strong> {selectedFormat.toUpperCase()} format with{" "}
-              {getRowDisplayText()}{tableType === "aggregate" || tableType === "subjectwise" ? ` from ${getTableTypeDisplayName()}` : ""}
+              {getRowDisplayText()}{tableType === "aggregate" || tableType === "subjectwise" || tableType === "enrollment" ? ` from ${getTableTypeDisplayName()}` : ""}
             </p>
           </div>
         </div>
