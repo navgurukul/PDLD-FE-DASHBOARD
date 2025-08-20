@@ -11,6 +11,7 @@ import { Search } from "lucide-react";
 import "../components/TestListTable.css"; // Import the CSS for consistent table styles
 import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
+import DownloadModal from "../components/modal/DownloadModal";
 import apiInstance from "../../api";
 
 const theme = createTheme({
@@ -68,6 +69,7 @@ export default function EnrollmentReport() {
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false); // Add download modal state
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageSize: 15,
@@ -132,8 +134,6 @@ export default function EnrollmentReport() {
           reportType,
           academicYear
         });
-        
-
         
         // Update pagination with server response
         setPagination(prev => ({
@@ -289,40 +289,529 @@ export default function EnrollmentReport() {
     }));
   };
 
-  // Handle download report
-  const handleDownloadReport = async () => {
+  // Handle opening download modal
+  const handleDownloadClick = () => {
+    setDownloadModalOpen(true);
+  };
+
+  // Handle download confirmation from modal
+  const handleDownloadConfirm = async (downloadOptions) => {
+    const { format, rows, count } = downloadOptions;
+
     try {
-      const params = new URLSearchParams({
-        level: selectedGrouping,
-        mode: "download",
-        sortBy: "totalStudents"
-      });
+      setIsLoading(true);
+      toast.info(`Generating ${format.toUpperCase()} report for ${count} records...`);
 
-      // Add filters if they exist
-      if (selectedBlock) params.append("block", selectedBlock);
-      if (selectedCluster) params.append("cluster", selectedCluster);
-      if (debouncedSearchQuery) params.append("query", debouncedSearchQuery);
+      let dataToDownload = [];
 
-      const response = await apiInstance.get(`/report/enrollment?${params.toString()}`, {
-        responseType: 'blob'
-      });
+      // Fetch data based on selected option
+      if (rows === "current") {
+        // Use current page data (processedData)
+        dataToDownload = processedData;
+        
+        // Additional safety check - ensure we don't exceed expected count
+        if (dataToDownload.length !== count) {
+          // Update the toast message to reflect actual count
+          toast.info(`Generating ${format.toUpperCase()} report for ${dataToDownload.length} records (current page)...`);
+        }
+      } else {
+        // For "all" option, fetch all data from API
+        const params = new URLSearchParams({
+          level: selectedGrouping,
+          page: 1,
+          pageSize: count === pagination.totalItems ? pagination.totalItems : count,
+          sortBy: "totalStudents"
+        });
 
-      // Create download link
-      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `enrollment-report-${selectedGrouping}-${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-      
-      toast.success("Report downloaded successfully!");
+        // Important: Include the same filters as current view
+        if (selectedBlock) params.append("block", selectedBlock);
+        if (selectedCluster) params.append("cluster", selectedCluster);
+        if (debouncedSearchQuery) params.append("query", debouncedSearchQuery);
+
+        const response = await apiInstance.get(`/report/enrollment?${params.toString()}`);
+        
+        if (response.data.success) {
+          const responseData = response.data.data;
+          const { enrollmentData } = responseData.data;
+          
+          // Additional safety check for API response
+          let apiData = enrollmentData || [];
+          if (apiData.length > count && count !== pagination.totalItems) {
+            // Slice to exact count if API returned more than expected
+            apiData = apiData.slice(0, count);
+          }
+          
+          // Process the data the same way as processedData
+          dataToDownload = apiData.map(item => {
+            let recalculatedTotal = 0;
+            if (selectedClassGroup === "all") {
+              recalculatedTotal = item.totalStudents;
+            } else if (selectedClassGroup === "primary") {
+              for (let i = 1; i <= 8; i++) {
+                recalculatedTotal += item[`class${i}`] || 0;
+              }
+            } else if (selectedClassGroup === "secondary") {
+              for (let i = 9; i <= 12; i++) {
+                recalculatedTotal += item[`class${i}`] || 0;
+              }
+            }
+            
+            return {
+              ...item,
+              totalStudents: recalculatedTotal
+            };
+          });
+        } else {
+          throw new Error("Failed to fetch extended data");
+        }
+      }
+
+      if (format === "csv") {
+        handleDownloadCSV(dataToDownload);
+      } else {
+        handleDownloadPDF(dataToDownload);
+      }
     } catch (error) {
       console.error("Error downloading report:", error);
-      toast.error("Failed to download report. Please try again.");
+      toast.error("An error occurred while generating the report");
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  // Helper function to format class group label
+  const getClassGroupLabel = () => {
+    switch (selectedClassGroup) {
+      case "primary": return "Classes 1-8";
+      case "secondary": return "Classes 9-12";
+      default: return "Classes 1-12";
+    }
+  };
+
+  // Helper function to format grouping label
+  const getGroupingLabel = () => {
+    switch (selectedGrouping) {
+      case "block": return "Block Level";
+      case "cluster": return "Cluster Level";
+      default: return "School Level";
+    }
+  };
+
+  // Download report as PDF
+  const handleDownloadPDF = (data) => {
+    // Create a new window for printing
+    const printWindow = window.open("", "_blank");
+
+    // Calculate statistics for the report
+    const totalRecords = data.length;
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Generate column headers based on current settings
+    const getColumns = () => {
+      let cols = [
+        { key: "block", label: "Block" }
+      ];
+      
+      if (selectedGrouping !== "block") {
+        cols.push({ key: "cluster", label: "Cluster" });
+      }
+      
+      if (selectedGrouping === "school") {
+        cols.push(
+          { key: "schoolName", label: "School Name" },
+          { key: "udiseCode", label: "UDISE Code" }
+        );
+      }
+      
+      cols.push({ key: "totalStudents", label: "Total Students" });
+      
+      // Add class columns based on class group
+      if (selectedClassGroup === "all" || selectedClassGroup === "primary") {
+        for (let i = 1; i <= 8; i++) {
+          cols.push({ key: `class${i}`, label: `Class ${i}` });
+        }
+      }
+      
+      if (selectedClassGroup === "all" || selectedClassGroup === "secondary") {
+        for (let i = 9; i <= 12; i++) {
+          cols.push({ key: `class${i}`, label: `Class ${i}` });
+        }
+      }
+      
+      return cols;
+    };
+
+    const columnHeaders = getColumns();
+
+    // Generate HTML content for the PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Enrollment Report</title>
+        <style>
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 15mm;
+            }
+          }
+          
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.9;
+            color: #333;
+            background: white;
+            font-size: 11px;
+          }
+          
+          .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #2F4F4F;
+          }
+          
+          .header h1 {
+            color: #2F4F4F;
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 600;
+          }
+          
+          .header .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+          }
+          
+          .header .date {
+            color: #666;
+            font-size: 12px;
+          }
+          
+          .filter-info {
+            background-color: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+          }
+          
+          .filter-info h3 {
+            color: #2F4F4F;
+            font-size: 14px;
+            margin-bottom: 8px;
+          }
+          
+          .filter-info .filter-item {
+            display: inline-block;
+            margin-right: 20px;
+            color: #666;
+            font-size: 12px;
+          }
+          
+          .filter-info .filter-item strong {
+            color: #2F4F4F;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+            font-size: 10px;
+          }
+          
+          thead {
+            background-color: #2F4F4F;
+            color: white;
+          }
+          
+          th {
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 11px;
+            border: 1px solid #2F4F4F;
+          }
+          
+          th.text-left {
+            text-align: left;
+            padding-left: 10px;
+          }
+          
+          td {
+            padding: 6px;
+            border: 1px solid #ddd;
+            text-align: center;
+            font-size: 10px;
+          }
+          
+          td.text-left {
+            text-align: left;
+            padding-left: 10px;
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          
+          tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+          }
+          
+          tbody tr:hover {
+            background-color: #e8f5f9;
+          }
+          
+          .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+          }
+          
+          .summary h3 {
+            color: #2F4F4F;
+            font-size: 14px;
+            margin-bottom: 10px;
+          }
+          
+          .summary-item {
+            display: inline-block;
+            margin-right: 30px;
+            margin-bottom: 5px;
+            font-size: 12px;
+          }
+          
+          .summary-item strong {
+            color: #2F4F4F;
+          }
+          
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+          }
+          
+          @media print {
+            .no-print {
+              display: none;
+            }
+            
+            table {
+              page-break-inside: auto;
+            }
+            
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Student Enrollment Analytics</h1>
+            <div class="subtitle">Academic Year ${metadata.academicYear || new Date().getFullYear()}</div>
+            <div class="date">Generated on: ${currentDate}</div>
+          </div>
+          
+          <div class="filter-info">
+            <h3>Report Configuration:</h3>
+            <div class="filter-item"><strong>Grouping Level:</strong> ${getGroupingLabel()}</div>
+            <div class="filter-item"><strong>Class Group:</strong> ${getClassGroupLabel()}</div>
+            ${selectedBlock ? `<div class="filter-item"><strong>Block:</strong> ${selectedBlock}</div>` : ""}
+            ${selectedCluster ? `<div class="filter-item"><strong>Cluster:</strong> ${selectedCluster}</div>` : ""}
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                ${columnHeaders.map(col => 
+                  `<th class="${col.key === 'schoolName' ? 'text-left' : ''}">${col.label}</th>`
+                ).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(record => `
+                <tr>
+                  ${columnHeaders.map(col => {
+                    const value = record[col.key];
+                    const displayValue = value !== undefined && value !== null ? value : "-";
+                    return `<td class="${col.key === 'schoolName' ? 'text-left' : ''}">${displayValue}</td>`;
+                  }).join("")}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+          
+          <div class="summary">
+            <h3>Report Summary</h3>
+            <div class="summary-item"><strong>Total Records:</strong> ${totalRecords}</div>
+            <div class="summary-item"><strong>Grouping Level:</strong> ${getGroupingLabel()}</div>
+            <div class="summary-item"><strong>Class Group:</strong> ${getClassGroupLabel()}</div>
+            <div class="summary-item"><strong>Report Type:</strong> Student Enrollment Analytics</div>
+          </div>
+          
+          <div class="footer">
+            <p>This report is generated automatically from the Student Enrollment System</p>
+            <p>© ${metadata.academicYear || new Date().getFullYear()} Academic Performance Tracking System</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Write the content to the new window
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+
+    // Wait for content to load, then trigger print
+    printWindow.onload = function () {
+      setTimeout(() => {
+        printWindow.print();
+        toast.success(`PDF report ready with ${data.length} records`);
+      }, 250);
+    };
+  };
+
+  // Download report as CSV
+  const handleDownloadCSV = (data) => {
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Generate column headers based on current settings
+    const getColumns = () => {
+      let cols = [
+        { key: "block", label: "Block" }
+      ];
+      
+      if (selectedGrouping !== "block") {
+        cols.push({ key: "cluster", label: "Cluster" });
+      }
+      
+      if (selectedGrouping === "school") {
+        cols.push(
+          { key: "schoolName", label: "School Name" },
+          { key: "udiseCode", label: "UDISE Code" }
+        );
+      }
+      
+      cols.push({ key: "totalStudents", label: "Total Students" });
+      
+      // Add class columns based on class group
+      if (selectedClassGroup === "all" || selectedClassGroup === "primary") {
+        for (let i = 1; i <= 8; i++) {
+          cols.push({ key: `class${i}`, label: `Class ${i}` });
+        }
+      }
+      
+      if (selectedClassGroup === "all" || selectedClassGroup === "secondary") {
+        for (let i = 9; i <= 12; i++) {
+          cols.push({ key: `class${i}`, label: `Class ${i}` });
+        }
+      }
+      
+      return cols;
+    };
+
+    const columnHeaders = getColumns();
+
+    // Build CSV content with comprehensive information
+    let csvContent = "";
+
+    // Header Information
+    csvContent += `"Student Enrollment Analytics"\n`;
+    csvContent += `"Academic Year ${metadata.academicYear || new Date().getFullYear()}"\n`;
+    csvContent += `"Generated on: ${currentDate}"\n`;
+    csvContent += "\n"; // Blank line
+
+    // Filter Information
+    csvContent += `"Report Configuration:"\n`;
+    csvContent += `"Grouping Level: ${getGroupingLabel()}"\n`;
+    csvContent += `"Class Group: ${getClassGroupLabel()}"\n`;
+    if (selectedBlock) {
+      csvContent += `"Block: ${selectedBlock}"\n`;
+    }
+    if (selectedCluster) {
+      csvContent += `"Cluster: ${selectedCluster}"\n`;
+    }
+    csvContent += "\n"; // Blank line
+
+    // Table Headers
+    const headers = columnHeaders.map(col => col.label);
+    csvContent += headers.join(",") + "\n";
+
+    // Table Data
+    data.forEach((record) => {
+      const rowData = columnHeaders.map(col => {
+        const value = record[col.key];
+        let displayValue = value !== undefined && value !== null ? value.toString() : "-";
+        
+        // Quote values that contain commas
+        if (displayValue.includes(",")) {
+          displayValue = `"${displayValue}"`;
+        }
+        
+        return displayValue;
+      });
+
+      csvContent += rowData.join(",") + "\n";
+    });
+
+    // Report Summary at the bottom
+    csvContent += "\n"; // Blank line
+    csvContent += `"Report Summary:"\n`;
+    csvContent += `"Total Records: ${data.length}"\n`;
+    csvContent += `"Grouping Level: ${getGroupingLabel()}"\n`;
+    csvContent += `"Class Group: ${getClassGroupLabel()}"\n`;
+    csvContent += `"Report Type: Student Enrollment Analytics"\n`;
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `Enrollment_Report_${selectedGrouping}_${selectedClassGroup}_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success(`CSV report downloaded with ${data.length} records`);
+    }, 100);
   };
 
   // Since data is already paginated from API, we use it directly
@@ -343,7 +832,7 @@ export default function EnrollmentReport() {
                 </p>
               )}
             </div>
-            {processedData.length > 0 && (
+            {/* {processedData.length > 0 && (
               <div className="text-right">
                 <p className="text-sm font-semibold text-[#2F4F4F]">
                   Total Records: {pagination.totalItems || processedData.length}
@@ -352,7 +841,7 @@ export default function EnrollmentReport() {
                   Showing {processedData.length} of {pagination.totalItems || processedData.length}
                 </p>
               </div>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -627,9 +1116,9 @@ export default function EnrollmentReport() {
 
                   <div className="ml-auto">
                     <ButtonCustom
-                      onClick={() => handleDownloadReport()}
+                      onClick={handleDownloadClick}
                       text="Download Report"
-                      disabled={isLoading}
+                      disabled={isLoading || processedData.length === 0}
                       style={{
                         height: "48px",
                         borderRadius: "8px",
@@ -725,6 +1214,17 @@ export default function EnrollmentReport() {
             style={{ zIndex: 99999999 }}
           />
         </div>
+
+        {/* Download Modal */}
+        <DownloadModal
+          isOpen={downloadModalOpen}
+          onClose={() => setDownloadModalOpen(false)}
+          onConfirm={handleDownloadConfirm}
+          currentPageCount={processedData.length}
+          totalRecords={pagination.totalItems}
+          subject="Data Analysis"        // ✅ Generic like SchoolPerformance
+          tableType="report"  
+        />
 
         {/* Page level loading overlay - only for non-search operations */}
         {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}
