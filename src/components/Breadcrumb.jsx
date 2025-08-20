@@ -23,6 +23,8 @@ const Breadcrumb = () => {
     users: "Users",
     userCreationForm: "Add User",
     reports: "Reports",
+    SchoolPerformanceReports: "School Performance Reports",
+    EnrollmentReports: "Enrollment Reports",
     allTest: "Tests", // made changes
     testCreationForm: "Create Test",
     edit: "Edit Test", // made changes

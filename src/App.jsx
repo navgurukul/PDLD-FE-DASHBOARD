@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 import { useState, useEffect } from "react";
 import Layout from "./layout/index";
 import Users from "./pages/Users";
-import Reports from "./pages/Reports";
+import Reportcards from "./pages/Reportcards";
 import HelpAndSupport from "./pages/HelpAndSupport";
 import TestCreationForm from "./pages/TestCreationForm";
 import TableList from "./pages/TableList";
@@ -18,6 +18,8 @@ import AddStudent from "./components/student/AddStudent";
 import StudentReportPage from "./components/student/StudentReportPage";
 import SchoolPerformance from "./components/school/SchoolPerformance";
 import LegalTerms from "./pages/LegalTerm";
+import EnrollmentReports from "./pages/EnrollmentReports";
+import SchoolPerformanceReports from "./pages/SchoolPerformanceReports";
 
 // Auth context to manage authentication state
 import { createContext } from "react";
@@ -113,7 +115,7 @@ function App() {
 						<Route path="/users" element={<Users />} />
 						<Route path="/users/userCreationForm" element={<UserCreationForm isEditMode={false} />} />
 						<Route path="/users/update-user/:userId" element={<UserCreationForm isEditMode={true} />} />
-						<Route path="/reports" element={<Reports />} />
+						<Route path="/reports" element={<Reportcards />} />
 						<Route path="/schools" element={<Schools />} />
 						<Route path="/allTest/schoolSubmission/:testId" element={<TestReportPage />} />
 						<Route
@@ -153,6 +155,8 @@ function App() {
 							path="/schools/schoolDetail/:schoolId/student-profile/:studentId"
 							element={<StudentProfileView />}
 						/>
+						<Route path="/reports/EnrollmentReports" element={<EnrollmentReports />} />
+						<Route path="/reports/SchoolPerformanceReports" element={<SchoolPerformanceReports />} />
 
 						{/* Fallback Route */}
 						<Route path="*" element={<PageNotFound />} />
