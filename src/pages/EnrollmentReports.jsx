@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDebounce } from "../customHook/useDebounce";
 import MUIDataTable from "mui-datatables";
 import { Button, TextField, CircularProgress, FormControl, InputLabel, MenuItem, Select, Tooltip, Typography } from "@mui/material";
@@ -10,6 +10,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { Search } from "lucide-react";
 import "../components/TestListTable.css"; // Import the CSS for consistent table styles
 import ButtonCustom from "../components/ButtonCustom";
+import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
+import apiInstance from "../../api";
 
 const theme = createTheme({
   typography: {
@@ -65,18 +67,20 @@ export default function EnrollmentReport() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageSize: 15,
-    totalItems: data.length,
-    totalPages: Math.ceil(data.length / 15),
+    totalItems: 0,
+    totalPages: 1,
   });
   const [selectedBlock, setSelectedBlock] = useState("");
   const [selectedCluster, setSelectedCluster] = useState("");
   const [selectedGrouping, setSelectedGrouping] = useState("school"); // New grouping state
   const [selectedClassGroup, setSelectedClassGroup] = useState("all"); // New class group state
-  const [blocks, setBlocks] = useState(["Geedam", "Katekalyan", "Kuakonda"]);
-  const [clusters, setClusters] = useState(["Aalnar", "Bacheli", "Fulnar", "Hiroli", "Karli"]);
+  const [blocks, setBlocks] = useState([]);
+  const [clusters, setClusters] = useState([]);
+  const [metadata, setMetadata] = useState({});
   const [groupingOptions] = useState([
     { value: "block", label: "Block Level" },
     { value: "cluster", label: "Block + Cluster Level" },
@@ -89,223 +93,151 @@ export default function EnrollmentReport() {
   ]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Fetch dummy data
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Realistic school names for different areas
-        const schoolNames = [
-          "Government Primary School Aalnar",
-          "Kendriya Vidyalaya Bacheli",
-          "Saraswati Shishu Mandir Geedam",
-          "Government High School Fulnar",
-          "Jawahar Navodaya Vidyalaya Hiroli",
-          "Government Girls School Karli",
-          "St. Mary's Convent School Katekalyan",
-          "Government Middle School Kuakonda",
-          "Bal Bharati Public School Geedam",
-          "Government Tribal School Aalnar",
-          "DAV Public School Bacheli",
-          "Government Secondary School Fulnar",
-          "Little Angels School Hiroli",
-          "Government Primary School Karli",
-          "Christ Church School Katekalyan",
-          "Government Higher Secondary School Kuakonda",
-          "Maharishi Vidya Mandir Geedam",
-          "Government Primary School Bacheli",
-          "Holy Cross School Aalnar",
-          "Government Middle School Fulnar",
-          "Vidya Bharti School Hiroli",
-          "Government Girls High School Karli",
-          "Delhi Public School Katekalyan",
-          "Government Tribal High School Kuakonda",
-          "Ramakrishna Mission School Geedam",
-          "Government Primary School Bacheli North",
-          "Sharda Vidyalaya Aalnar",
-          "Government High School Fulnar East",
-          "Modern Public School Hiroli",
-          "Government Secondary School Karli",
-          "Cambridge School Katekalyan",
-          "Government Tribal Middle School Kuakonda",
-          "Vivekananda Kendra Vidyalaya Geedam",
-          "Government Girls Primary School Bacheli",
-          "Sunrise Public School Aalnar",
-          "Government Higher Secondary School Fulnar",
-          "Army Public School Hiroli",
-          "Government High School Karli West",
-          "Mount Carmel School Katekalyan",
-          "Government Ashram School Kuakonda",
-          "Bharatiya Vidya Bhavan Geedam",
-          "Government Primary School Bacheli South",
-          "Green Valley School Aalnar",
-          "Government Middle School Fulnar West",
-          "Railway Higher Secondary School Hiroli",
-          "Government Tribal Primary School Karli",
-          "St. Joseph's School Katekalyan",
-          "Government Secondary School Kuakonda East",
-          "Kendriya Vidyalaya Geedam No. 2",
-          "Government High School Bacheli Central"
-        ];
-
-        const realBlocks = ["Geedam", "Katekalyan", "Kuakonda"];
-        const realClusters = ["Aalnar", "Bacheli", "Fulnar", "Hiroli", "Karli"];
-
-        const dummyData = Array.from({ length: 50 }, (_, index) => {
-          const classes = {};
-          let totalStudents = 0;
-          for (let i = 1; i <= 12; i++) {
-            const students = Math.floor(Math.random() * 100);
-            classes[`class${i}`] = students;
-            totalStudents += students;
-          }
-          return {
-            block: realBlocks[index % realBlocks.length],
-            cluster: realClusters[index % realClusters.length],
-            schoolName: schoolNames[index] || `Government School ${index + 1}`,
-            totalStudents,
-            ...classes,
-          };
-        });
-        setData(dummyData);
-      } catch (error) {
-        toast.error("Failed to fetch data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [debouncedSearchQuery, pagination.currentPage, pagination.pageSize]);
-
-  useEffect(() => {
-    // Recalculate totalPages whenever data or grouping changes
-    const currentData = getGroupedData();
-    setPagination((prev) => ({
-      ...prev,
-      totalItems: currentData.length,
-      totalPages: Math.ceil(currentData.length / prev.pageSize),
-      currentPage: 1, // Reset to first page when data changes
-    }));
-  }, [data, selectedGrouping, selectedClassGroup, selectedBlock, selectedCluster, searchQuery]);
-
-  const filteredData = data.filter(
-    (item) =>
-      (selectedBlock === "" || item.block === selectedBlock) &&
-      (selectedCluster === "" || item.cluster === selectedCluster) &&
-      (searchQuery === "" || 
-        item.block.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.cluster.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.schoolName.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-  );
-
-  // Group data based on selected grouping level
-  const getGroupedData = () => {
-    let groupedData = [];
-    
-    if (selectedGrouping === "block") {
-      // Group by Block only
-      const blockGroups = {};
-      filteredData.forEach(item => {
-        if (!blockGroups[item.block]) {
-          blockGroups[item.block] = {
-            block: item.block,
-            cluster: "All Clusters",
-            schoolName: `${item.block} (Total)`,
-            totalStudents: 0,
-            ...Array.from({length: 12}, (_, i) => ({[`class${i+1}`]: 0})).reduce((acc, curr) => ({...acc, ...curr}), {})
-          };
-        }
-        
-        // Calculate total based on class group selection
-        let itemTotal = 0;
-        if (selectedClassGroup === "all") {
-          itemTotal = item.totalStudents;
-        } else if (selectedClassGroup === "primary") {
-          for (let i = 1; i <= 8; i++) {
-            itemTotal += item[`class${i}`];
-          }
-        } else if (selectedClassGroup === "secondary") {
-          for (let i = 9; i <= 12; i++) {
-            itemTotal += item[`class${i}`];
-          }
-        }
-        
-        blockGroups[item.block].totalStudents += itemTotal;
-        for (let i = 1; i <= 12; i++) {
-          blockGroups[item.block][`class${i}`] += item[`class${i}`];
-        }
-      });
-      groupedData = Object.values(blockGroups);
-      
-    } else if (selectedGrouping === "cluster") {
-      // Group by Block + Cluster
-      const clusterGroups = {};
-      filteredData.forEach(item => {
-        const key = `${item.block}_${item.cluster}`;
-        if (!clusterGroups[key]) {
-          clusterGroups[key] = {
-            block: item.block,
-            cluster: item.cluster,
-            schoolName: `${item.block} - ${item.cluster} (Total)`,
-            totalStudents: 0,
-            ...Array.from({length: 12}, (_, i) => ({[`class${i+1}`]: 0})).reduce((acc, curr) => ({...acc, ...curr}), {})
-          };
-        }
-        
-        // Calculate total based on class group selection
-        let itemTotal = 0;
-        if (selectedClassGroup === "all") {
-          itemTotal = item.totalStudents;
-        } else if (selectedClassGroup === "primary") {
-          for (let i = 1; i <= 8; i++) {
-            itemTotal += item[`class${i}`];
-          }
-        } else if (selectedClassGroup === "secondary") {
-          for (let i = 9; i <= 12; i++) {
-            itemTotal += item[`class${i}`];
-          }
-        }
-        
-        clusterGroups[key].totalStudents += itemTotal;
-        for (let i = 1; i <= 12; i++) {
-          clusterGroups[key][`class${i}`] += item[`class${i}`];
-        }
-      });
-      groupedData = Object.values(clusterGroups);
-      
+  // Fetch enrollment data from API
+  const fetchEnrollmentData = async () => {
+    // Set appropriate loading state based on search
+    if (debouncedSearchQuery) {
+      setIsSearchLoading(true);
     } else {
-      // School level (Block + Cluster + School) - recalculate totals based on class group
-      groupedData = filteredData.map(item => {
-        let recalculatedTotal = 0;
-        if (selectedClassGroup === "all") {
-          recalculatedTotal = item.totalStudents;
-        } else if (selectedClassGroup === "primary") {
-          for (let i = 1; i <= 8; i++) {
-            recalculatedTotal += item[`class${i}`];
-          }
-        } else if (selectedClassGroup === "secondary") {
-          for (let i = 9; i <= 12; i++) {
-            recalculatedTotal += item[`class${i}`];
-          }
-        }
-        
-        return {
-          ...item,
-          totalStudents: recalculatedTotal
-        };
-      });
+      setIsLoading(true);
     }
     
-    return groupedData;
+    try {
+      const params = new URLSearchParams({
+        level: selectedGrouping,
+        page: pagination.currentPage.toString(),
+        pageSize: pagination.pageSize.toString(),
+        sortBy: "totalStudents"
+      });
+
+      // Add filters if they exist
+      if (selectedBlock) params.append("block", selectedBlock);
+      if (selectedCluster) params.append("cluster", selectedCluster);
+      if (debouncedSearchQuery) params.append("query", debouncedSearchQuery);
+
+      const response = await apiInstance.get(`/report/enrollment?${params.toString()}`);
+      
+      console.log("Full API Response:", response); // Debug log
+      console.log("Response Data:", response.data); // Debug log
+      
+      if (response.data.success) {
+        const responseData = response.data.data;
+        const { enrollmentData, reportType, academicYear } = responseData.data;
+        const responseMetadata = response.data.data.metadata;
+      
+        // Store raw data from API (processing will be done by useMemo)
+        setData(enrollmentData || []);
+        setMetadata({ 
+          ...(responseMetadata || {}),
+          reportType,
+          academicYear
+        });
+        
+
+        
+        // Update pagination with server response
+        setPagination(prev => ({
+          ...prev,
+          totalItems: responseMetadata?.totalRecords || (enrollmentData || []).length,
+          totalPages: responseMetadata?.totalPages || Math.ceil((responseMetadata?.totalRecords || (enrollmentData || []).length) / prev.pageSize),
+        }));
+
+        // Extract unique blocks and clusters for filter options
+        const uniqueBlocks = [...new Set((enrollmentData || []).map(item => item?.block).filter(Boolean))].sort();
+        const uniqueClusters = [...new Set((enrollmentData || []).map(item => item?.cluster).filter(Boolean))].sort();
+        
+        if (blocks.length === 0) setBlocks(uniqueBlocks);
+        if (clusters.length === 0) setClusters(uniqueClusters);
+        
+      } else {
+        toast.error(response.data.message || "Failed to fetch enrollment data");
+        setData([]);
+        setMetadata({});
+      }
+    } catch (error) {
+      console.error("Error fetching enrollment data:", error);
+      toast.error("Failed to fetch enrollment data. Please try again.");
+      setData([]);
+      setMetadata({});
+    } finally {
+      setIsLoading(false);
+      setIsSearchLoading(false);
+    }
   };
 
-  const processedData = getGroupedData();
+  // Fetch blocks and clusters for filter dropdowns
+  const fetchFilterOptions = async () => {
+    try {
+      // Fetch all data at school level to get unique blocks and clusters
+      const response = await apiInstance.get(`/report/enrollment?level=school&pageSize=10`);
+      
+      if (response.data.success) {
+        const { enrollmentData } = response.data.data.data;
+        const uniqueBlocks = [...new Set((enrollmentData || []).map(item => item.block))].sort();
+        const uniqueClusters = [...new Set((enrollmentData || []).map(item => item.cluster))].sort();
+        
+        setBlocks(uniqueBlocks);
+        setClusters(uniqueClusters);
+      }
+    } catch (error) {
+      console.error("Error fetching filter options:", error);
+    }
+  };
+
+  useEffect(() => {
+    // Fetch filter options on component mount
+    if (blocks.length === 0) {
+      fetchFilterOptions();
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEnrollmentData();
+  }, [
+    debouncedSearchQuery, 
+    pagination.currentPage, 
+    pagination.pageSize, 
+    selectedBlock, 
+    selectedCluster, 
+    selectedGrouping
+  ]);
+
+  useEffect(() => {
+    // Reset to first page when filters or class group changes
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
+  }, [selectedClassGroup, selectedBlock, selectedCluster, searchQuery, selectedGrouping]);
+
+  // Since API handles grouping by level, we just need to filter by class group
+  const processedData = useMemo(() => {
+    const processed = data.map(item => {
+      let recalculatedTotal = 0;
+      if (selectedClassGroup === "all") {
+        recalculatedTotal = item.totalStudents;
+      } else if (selectedClassGroup === "primary") {
+        for (let i = 1; i <= 8; i++) {
+          recalculatedTotal += item[`class${i}`] || 0;
+        }
+      } else if (selectedClassGroup === "secondary") {
+        for (let i = 9; i <= 12; i++) {
+          recalculatedTotal += item[`class${i}`] || 0;
+        }
+      }
+      
+      return {
+        ...item,
+        totalStudents: recalculatedTotal
+      };
+    });
+    return processed;
+  }, [data, selectedClassGroup]);
 
   const columns = [
     { name: "block", label: "Block" },
     ...(selectedGrouping !== "block" ? [{ name: "cluster", label: "Cluster" }] : []),
-    ...(selectedGrouping === "school" ? [{ name: "schoolName", label: "School Name" }] : []),
+    ...(selectedGrouping === "school" ? [
+      { name: "schoolName", label: "School Name" },
+      { name: "udiseCode", label: "UDISE Code" }
+    ] : []),
     { name: "totalStudents", label: "Total Students" },
     ...(selectedClassGroup === "all" || selectedClassGroup === "primary" 
       ? Array.from({ length: 8 }, (_, i) => ({
@@ -353,24 +285,75 @@ export default function EnrollmentReport() {
     setPagination((prev) => ({
       ...prev,
       pageSize: newPageSize,
-      totalPages: Math.ceil(processedData.length / newPageSize),
       currentPage: 1, // Reset to first page
     }));
   };
 
-  const paginatedData = processedData.slice(
-    (pagination.currentPage - 1) * pagination.pageSize,
-    pagination.currentPage * pagination.pageSize
-  );
+  // Handle download report
+  const handleDownloadReport = async () => {
+    try {
+      const params = new URLSearchParams({
+        level: selectedGrouping,
+        mode: "download",
+        sortBy: "totalStudents"
+      });
+
+      // Add filters if they exist
+      if (selectedBlock) params.append("block", selectedBlock);
+      if (selectedCluster) params.append("cluster", selectedCluster);
+      if (debouncedSearchQuery) params.append("query", debouncedSearchQuery);
+
+      const response = await apiInstance.get(`/report/enrollment?${params.toString()}`, {
+        responseType: 'blob'
+      });
+
+      // Create download link
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `enrollment-report-${selectedGrouping}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast.success("Report downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      toast.error("Failed to download report. Please try again.");
+    }
+  };
+
+  // Since data is already paginated from API, we use it directly
 
   return (
     <ThemeProvider theme={theme}>
       <div className="main-page-wrapper px-3 sm:px-4" style={{ position: "relative" }}>
         <div className="header-container mb-1">
-          <h5 className="text-lg font-bold text-[#2F4F4F]">Student Enrollment Analytics</h5>
-          <p className="text-sm text-gray-600 mt-1">
-            Comprehensive enrollment data with flexible grouping by Block, Cluster, and School levels for Classes 1-8 and 9-12
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h5 className="text-lg font-bold text-[#2F4F4F]">Student Enrollment Analytics</h5>
+              <p className="text-sm text-gray-600 mt-1">
+                Comprehensive enrollment data with flexible grouping by Block, Cluster, and School levels for Classes 1-8 and 9-12
+              </p>
+              {metadata.academicYear && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Academic Year: {metadata.academicYear} | Report Type: {metadata.reportType || selectedGrouping}
+                </p>
+              )}
+            </div>
+            {processedData.length > 0 && (
+              <div className="text-right">
+                <p className="text-sm font-semibold text-[#2F4F4F]">
+                  Total Records: {pagination.totalItems || processedData.length}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Showing {processedData.length} of {pagination.totalItems || processedData.length}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="school-list-container mt-1 bg-white rounded-lg">
@@ -388,7 +371,7 @@ export default function EnrollmentReport() {
                       InputProps={{
                         startAdornment: (
                           <div className="pr-2">
-                            {isLoading ? (
+                            {isSearchLoading ? (
                               <CircularProgress size={18} sx={{ color: "#2F4F4F" }} />
                             ) : (
                               <Search size={18} className="text-gray-500" />
@@ -644,8 +627,9 @@ export default function EnrollmentReport() {
 
                   <div className="ml-auto">
                     <ButtonCustom
-                      onClick={() => toast.info("Download Report functionality coming soon!")}
+                      onClick={() => handleDownloadReport()}
                       text="Download Report"
+                      disabled={isLoading}
                       style={{
                         height: "48px",
                         borderRadius: "8px",
@@ -666,7 +650,7 @@ export default function EnrollmentReport() {
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
-            <MUIDataTable data={paginatedData} columns={columns} options={options} />
+            <MUIDataTable data={processedData} columns={columns} options={options} />
           </div>
 
           <div
@@ -741,6 +725,9 @@ export default function EnrollmentReport() {
             style={{ zIndex: 99999999 }}
           />
         </div>
+
+        {/* Page level loading overlay - only for non-search operations */}
+        {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}
       </div>
     </ThemeProvider>
   );
