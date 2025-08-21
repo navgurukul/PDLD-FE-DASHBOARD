@@ -1142,26 +1142,59 @@ export default function EnrollmentReport() {
             <MUIDataTable data={processedData} columns={columns} options={options} />
           </div>
 
+          {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: "space-between", // This spreads items to the edges
               width: "100%",
               margin: "20px 0",
               padding: "0 24px",
             }}
           >
+            {/* Empty div for left spacing to help with centering */}
             <div style={{ width: "180px" }}></div>
+
+            {/* Centered pagination */}
             <div style={{ display: "flex", justifyContent: "center" }}>
               <Pagination
-                count={pagination.totalPages}
+                count={pagination.totalPages || 1}
                 page={pagination.currentPage}
                 onChange={handlePageChange}
                 showFirstButton
                 showLastButton
+                size="medium"
+                renderItem={(item) => {
+                  const isNextPage = item.type === "page" && item.page === pagination.currentPage + 1;
+                  const isCurrentPage = item.type === "page" && item.page === pagination.currentPage;
+
+                  return (
+                    <PaginationItem
+                      {...item}
+                      sx={{
+                        margin: "0 2px",
+                        ...(isNextPage && {
+                          border: "1px solid #2F4F4F !important",
+                          borderRadius: "9999px !important",
+                          color: "#2F4F4F !important",
+                          backgroundColor: "white !important",
+                        }),
+                        ...(isCurrentPage && {
+                          backgroundColor: "#2F4F4F !important",
+                          color: "white !important",
+                        }),
+                        "&:hover": {
+                          backgroundColor: "#A3BFBF !important",
+                        },
+                      }}
+                    />
+                  );
+                }}
               />
             </div>
+            
+            {/* Right-aligned compact rows selector */}
             <div
               style={{
                 display: "flex",
@@ -1194,6 +1227,15 @@ export default function EnrollmentReport() {
                     fontWeight: "600",
                     py: 0,
                     pl: 1,
+                  },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    elevation: 2,
+                    sx: {
+                      borderRadius: "8px",
+                      mt: 0.5,
+                    },
                   },
                 }}
               >
