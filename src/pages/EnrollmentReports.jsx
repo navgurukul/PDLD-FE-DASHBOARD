@@ -902,7 +902,7 @@ export default function EnrollmentReport() {
                           },
                         }}
                       >
-                        Grouping
+                        Level
                       </InputLabel>
                       <Select
                         value={selectedGrouping}
