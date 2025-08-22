@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useDebounce } from "../customHook/useDebounce";
 import {
   Button,
   TextField,
@@ -11,6 +12,7 @@ import {
   Box,
   Typography,
   Select,
+  CircularProgress,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, InputLabel } from "@mui/material";
@@ -179,10 +181,12 @@ const Reports = () => {
 
   // State management
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState("English");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -331,12 +335,22 @@ const Reports = () => {
   // Fetch schools data from API
   useEffect(() => {
     fetchSchoolsData();
-  }, [currentPage, selectedSubject, selectedBlock, selectedCluster, pageSize]);
+  }, [currentPage, selectedSubject, selectedBlock, selectedCluster, pageSize, debouncedSearchQuery]);
+
+  useEffect(() => {
+    // Reset to first page when search query changes
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const fetchSchoolsData = async () => {
-    try {
+    // Set appropriate loading state based on search
+    if (debouncedSearchQuery) {
+      setIsSearchLoading(true);
+    } else {
       setIsLoading(true);
-
+    }
+    
+    try {
       // Updated to use dynamic pageSize
       let url = `/report/subject-performance/${selectedSubject}?page=${currentPage}&pageSize=${pageSize}`;
 
@@ -347,6 +361,11 @@ const Reports = () => {
 
       if (selectedCluster) {
         url += `&clusterName=${selectedCluster}`;
+      }
+
+      // Add search query parameter
+      if (debouncedSearchQuery) {
+        url += `&query=${encodeURIComponent(debouncedSearchQuery)}`;
       }
 
       const response = await apiInstance.get(url);
@@ -369,6 +388,7 @@ const Reports = () => {
       toast.error("An error occurred while fetching the report data");
     } finally {
       setIsLoading(false);
+      setIsSearchLoading(false);
     }
   };
 
@@ -690,6 +710,9 @@ const Reports = () => {
         }
         if (selectedCluster) {
           url += `&clusterName=${selectedCluster}`;
+        }
+        if (debouncedSearchQuery) {
+          url += `&query=${encodeURIComponent(debouncedSearchQuery)}`;
         }
 
         const response = await apiInstance.get(url);
@@ -1214,21 +1237,9 @@ const Reports = () => {
     };
   });
 
-  // Filter schools by search query and limit to current page's data
+  // Since search is now handled by the API, we use transformedData directly
   const filteredData = useMemo(() => {
-    let data = searchQuery
-      ? transformedData.filter((school) => {
-          const query = searchQuery.toLowerCase().trim();
-          const schoolName = school.schoolName.toLowerCase();
-          const udiseCode = school.udiseCode.toLowerCase();
-          const combinedText = `${udiseCode} - ${schoolName}`.toLowerCase();
-          
-          // Search in school name, UDISE code, or combined display text
-          return schoolName.includes(query) || 
-                 udiseCode.includes(query) || 
-                 combinedText.includes(query);
-        })
-      : transformedData;
+    let data = transformedData;
 
     // Ensure we're only showing pageSize items
     if (data.length > pageSize) {
@@ -1236,7 +1247,7 @@ const Reports = () => {
     }
 
     return data;
-  }, [transformedData, searchQuery, pageSize]);
+  }, [transformedData, pageSize]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -1351,7 +1362,11 @@ const Reports = () => {
               InputProps={{
                 startAdornment: (
                   <div className="pr-2">
-                    <Search size={18} className="text-gray-500" />
+                    {isSearchLoading ? (
+                      <CircularProgress size={18} sx={{ color: "#2F4F4F" }} />
+                    ) : (
+                      <Search size={18} className="text-gray-500" />
+                    )}
                   </div>
                 ),
                 style: {
@@ -1840,8 +1855,8 @@ const Reports = () => {
           subject={selectedSubject}
         />
 
-        {/* Loading Indicator */}
-        {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
+        {/* Loading Indicator - only for non-search operations */}
+        {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}
 
         <ToastContainer
           position="top-right"

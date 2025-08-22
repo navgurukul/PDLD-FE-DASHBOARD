@@ -141,13 +141,6 @@ export default function EnrollmentReport() {
           totalItems: responseMetadata?.totalRecords || (enrollmentData || []).length,
           totalPages: responseMetadata?.totalPages || Math.ceil((responseMetadata?.totalRecords || (enrollmentData || []).length) / prev.pageSize),
         }));
-
-        // Extract unique blocks and clusters for filter options
-        const uniqueBlocks = [...new Set((enrollmentData || []).map(item => item?.block).filter(Boolean))].sort();
-        const uniqueClusters = [...new Set((enrollmentData || []).map(item => item?.cluster).filter(Boolean))].sort();
-        
-        if (blocks.length === 0) setBlocks(uniqueBlocks);
-        if (clusters.length === 0) setClusters(uniqueClusters);
         
       } else {
         toast.error(response.data.message || "Failed to fetch enrollment data");
@@ -165,30 +158,35 @@ export default function EnrollmentReport() {
     }
   };
 
-  // Fetch blocks and clusters for filter dropdowns
-  const fetchFilterOptions = async () => {
+  // Fetch blocks and clusters for filter dropdowns using the same approach as SchoolList.jsx
+  const fetchGlobalBlocksAndClusters = async () => {
     try {
-      // Fetch all data at school level to get unique blocks and clusters
-      const response = await apiInstance.get(`/report/enrollment?level=school&pageSize=10`);
-      
-      if (response.data.success) {
-        const { enrollmentData } = response.data.data.data;
-        const uniqueBlocks = [...new Set((enrollmentData || []).map(item => item.block))].sort();
-        const uniqueClusters = [...new Set((enrollmentData || []).map(item => item.cluster))].sort();
-        
+      const response = await apiInstance.get("/user/dropdown-data");
+      if (response.data && response.data.success) {
+        const blocksData = response.data.data;
+
+        // Extract unique blocks
+        const uniqueBlocks = blocksData.map((block) => block.blockName).filter(Boolean).sort();
         setBlocks(uniqueBlocks);
+
+        // Extract unique clusters
+        const allClusterNames = blocksData.flatMap((block) =>
+          block.clusters.map((cluster) => cluster.name)
+        );
+        const uniqueClusters = [...new Set(allClusterNames)].filter(Boolean).sort();
         setClusters(uniqueClusters);
+      } else {
+        console.error("Failed to fetch blocks and clusters:", response.data?.message);
       }
     } catch (error) {
-      console.error("Error fetching filter options:", error);
+      console.error("Error fetching blocks and clusters:", error);
+      toast.error("Failed to load blocks and clusters data");
     }
   };
 
   useEffect(() => {
-    // Fetch filter options on component mount
-    if (blocks.length === 0) {
-      fetchFilterOptions();
-    }
+    // Fetch global blocks and clusters on component mount
+    fetchGlobalBlocksAndClusters();
   }, []);
 
   useEffect(() => {
@@ -206,6 +204,13 @@ export default function EnrollmentReport() {
     // Reset to first page when filters or class group changes
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   }, [selectedClassGroup, selectedBlock, selectedCluster, searchQuery, selectedGrouping]);
+
+  useEffect(() => {
+    // Clear cluster filter when level changes to "block"
+    if (selectedGrouping === "block" && selectedCluster !== "") {
+      setSelectedCluster("");
+    }
+  }, [selectedGrouping]);
 
   // Since API handles grouping by level, we just need to filter by class group
   const processedData = useMemo(() => {
@@ -319,9 +324,15 @@ export default function EnrollmentReport() {
         const params = new URLSearchParams({
           level: selectedGrouping,
           page: 1,
-          pageSize: count === pagination.totalItems ? pagination.totalItems : count,
           sortBy: "totalStudents"
         });
+
+        // For all records, use mode=download instead of large pageSize
+        if (count === pagination.totalItems) {
+          params.append("mode", "download");
+        } else {
+          params.append("pageSize", Math.min(count, 100).toString()); // Cap pageSize at 100
+        }
 
         // Important: Include the same filters as current view
         if (selectedBlock) params.append("block", selectedBlock);
@@ -336,8 +347,9 @@ export default function EnrollmentReport() {
           
           // Additional safety check for API response
           let apiData = enrollmentData || [];
-          if (apiData.length > count && count !== pagination.totalItems) {
-            // Slice to exact count if API returned more than expected
+          
+          // Only slice if we're not downloading all records and got more than expected
+          if (count !== pagination.totalItems && apiData.length > count) {
             apiData = apiData.slice(0, count);
           }
           
@@ -1035,57 +1047,60 @@ export default function EnrollmentReport() {
                       </Select>
                     </FormControl>
 
-                    <FormControl
-                      sx={{
-                        height: "48px",
-                        display: "flex",
-                        width: "auto",
-                        minWidth: "100px",
-                        marginBottom: { xs: "8px", md: "0" },
-                      }}
-                    >
-                      <InputLabel
+                    {/* Only show Cluster dropdown when level is not "block" */}
+                    {selectedGrouping !== "block" && (
+                      <FormControl
                         sx={{
-                          color: "#2F4F4F",
-                          fontFamily: "'Work Sans'",
-                          fontWeight: 400,
-                          fontSize: "14px",
-                          transform: "translate(14px, 14px) scale(1)",
-                          "&.Mui-focused, &.MuiFormLabel-filled": {
-                            transform: "translate(14px, -9px) scale(0.75)",
-                          },
+                          height: "48px",
+                          display: "flex",
+                          width: "auto",
+                          minWidth: "100px",
+                          marginBottom: { xs: "8px", md: "0" },
                         }}
                       >
-                        Cluster
-                      </InputLabel>
-                      <Select
-                        value={selectedCluster}
-                        onChange={(e) => setSelectedCluster(e.target.value)}
-                        sx={{
-                          height: "100%",
-                          borderRadius: "8px",
-                          backgroundColor: "#fff",
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderRadius: "8px",
-                          },
-                          "& .MuiSelect-select": {
-                            paddingTop: "12px",
-                            paddingBottom: "12px",
-                            display: "flex",
-                            alignItems: "center",
+                        <InputLabel
+                          sx={{
                             color: "#2F4F4F",
-                            fontWeight: "600",
-                          },
-                        }}
-                      >
-                        <MenuItem value="">All Clusters</MenuItem>
-                        {clusters.map((cluster) => (
-                          <MenuItem key={cluster} value={cluster}>
-                            {cluster}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                            fontFamily: "'Work Sans'",
+                            fontWeight: 400,
+                            fontSize: "14px",
+                            transform: "translate(14px, 14px) scale(1)",
+                            "&.Mui-focused, &.MuiFormLabel-filled": {
+                              transform: "translate(14px, -9px) scale(0.75)",
+                            },
+                          }}
+                        >
+                          Cluster
+                        </InputLabel>
+                        <Select
+                          value={selectedCluster}
+                          onChange={(e) => setSelectedCluster(e.target.value)}
+                          sx={{
+                            height: "100%",
+                            borderRadius: "8px",
+                            backgroundColor: "#fff",
+                            "& .MuiOutlinedInput-notchedOutline": {
+                              borderRadius: "8px",
+                            },
+                            "& .MuiSelect-select": {
+                              paddingTop: "12px",
+                              paddingBottom: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              color: "#2F4F4F",
+                              fontWeight: "600",
+                            },
+                          }}
+                        >
+                          <MenuItem value="">All Clusters</MenuItem>
+                          {clusters.map((cluster) => (
+                            <MenuItem key={cluster} value={cluster}>
+                              {cluster}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
 
                     {/* Clear Filters Button */}
                     {isAnyFilterActive && (
@@ -1142,26 +1157,59 @@ export default function EnrollmentReport() {
             <MUIDataTable data={processedData} columns={columns} options={options} />
           </div>
 
+          {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: "space-between", // This spreads items to the edges
               width: "100%",
               margin: "20px 0",
               padding: "0 24px",
             }}
           >
+            {/* Empty div for left spacing to help with centering */}
             <div style={{ width: "180px" }}></div>
+
+            {/* Centered pagination */}
             <div style={{ display: "flex", justifyContent: "center" }}>
               <Pagination
-                count={pagination.totalPages}
+                count={pagination.totalPages || 1}
                 page={pagination.currentPage}
                 onChange={handlePageChange}
                 showFirstButton
                 showLastButton
+                size="medium"
+                renderItem={(item) => {
+                  const isNextPage = item.type === "page" && item.page === pagination.currentPage + 1;
+                  const isCurrentPage = item.type === "page" && item.page === pagination.currentPage;
+
+                  return (
+                    <PaginationItem
+                      {...item}
+                      sx={{
+                        margin: "0 2px",
+                        ...(isNextPage && {
+                          border: "1px solid #2F4F4F !important",
+                          borderRadius: "9999px !important",
+                          color: "#2F4F4F !important",
+                          backgroundColor: "white !important",
+                        }),
+                        ...(isCurrentPage && {
+                          backgroundColor: "#2F4F4F !important",
+                          color: "white !important",
+                        }),
+                        "&:hover": {
+                          backgroundColor: "#A3BFBF !important",
+                        },
+                      }}
+                    />
+                  );
+                }}
               />
             </div>
+            
+            {/* Right-aligned compact rows selector */}
             <div
               style={{
                 display: "flex",
@@ -1194,6 +1242,15 @@ export default function EnrollmentReport() {
                     fontWeight: "600",
                     py: 0,
                     pl: 1,
+                  },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    elevation: 2,
+                    sx: {
+                      borderRadius: "8px",
+                      mt: 0.5,
+                    },
                   },
                 }}
               >
