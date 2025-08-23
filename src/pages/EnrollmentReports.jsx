@@ -95,6 +95,20 @@ export default function EnrollmentReport() {
   ]);
   const navigate = useNavigate();
 
+  // Helper function to get dynamic search placeholder based on selected grouping level
+  const getSearchPlaceholder = () => {
+    switch (selectedGrouping) {
+      case "block":
+        return "Search by Block Name..";
+      case "cluster": 
+        return "Search by Block, Cluster Name..";
+      case "school":
+        return "Search by Block, Cluster, School Name..";
+      default:
+        return "Search..";
+    }
+  };
+
   // Fetch enrollment data from API
   const fetchEnrollmentData = async () => {
     // Set appropriate loading state based on search
@@ -865,7 +879,7 @@ export default function EnrollmentReport() {
                   <div className="flex flex-wrap gap-2">
                     <TextField
                       variant="outlined"
-                      placeholder="Search by Block, Cluster, School Name.."
+                      placeholder={getSearchPlaceholder()}
                       size="small"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
