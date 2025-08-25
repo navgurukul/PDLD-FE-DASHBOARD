@@ -126,34 +126,55 @@ export default function EnrollmentReport() {
         sortBy: "totalStudents"
       });
 
-      // Add filters if they exist
+      // Smart parameter handling - detect search intent and use appropriate parameter
+      if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+        const searchLower = debouncedSearchQuery.toLowerCase().trim();
+        
+        // Check if search matches any block (case-insensitive, partial match)
+        const matchingBlock = blocks.find(block => 
+          block.toLowerCase().includes(searchLower)
+        );
+        
+        // Check if search matches any cluster (case-insensitive, partial match)
+        const matchingCluster = clusters.find(cluster => 
+          cluster.toLowerCase().includes(searchLower)
+        );
+        
+        // Use specific parameter based on what was found
+        if (matchingBlock) {
+          params.append("block", matchingBlock);
+        } else if (matchingCluster) {
+          params.append("cluster", matchingCluster);
+        } else {
+          params.append("query", debouncedSearchQuery);
+        }
+      }
+
+      // Add dropdown-selected filters (these work independently of search)
       if (selectedBlock) params.append("block", selectedBlock);
       if (selectedCluster) params.append("cluster", selectedCluster);
-      if (debouncedSearchQuery) params.append("query", debouncedSearchQuery);
 
       const response = await apiInstance.get(`/report/enrollment?${params.toString()}`);
       
-      console.log("Full API Response:", response); // Debug log
-      console.log("Response Data:", response.data); // Debug log
-      
       if (response.data.success) {
         const responseData = response.data.data;
-        const { enrollmentData, reportType, academicYear } = responseData.data;
-        const responseMetadata = response.data.data.metadata;
+        const { enrollmentData, reportType, academicYear, pagination: responsePagination, lastUpdatedOn } = responseData;
+        const responseMetadata = responseData.metadata;
       
         // Store raw data from API (processing will be done by useMemo)
         setData(enrollmentData || []);
         setMetadata({ 
           ...(responseMetadata || {}),
           reportType,
-          academicYear
+          academicYear,
+          lastUpdatedOn
         });
         
         // Update pagination with server response
         setPagination(prev => ({
           ...prev,
-          totalItems: responseMetadata?.totalRecords || (enrollmentData || []).length,
-          totalPages: responseMetadata?.totalPages || Math.ceil((responseMetadata?.totalRecords || (enrollmentData || []).length) / prev.pageSize),
+          totalItems: responsePagination?.totalItems || responseMetadata?.totalRecords || (enrollmentData || []).length,
+          totalPages: responsePagination?.totalPages || responseMetadata?.totalPages || Math.ceil((responseMetadata?.totalRecords || (enrollmentData || []).length) / prev.pageSize),
         }));
         
       } else {
@@ -348,16 +369,39 @@ export default function EnrollmentReport() {
           params.append("pageSize", Math.min(count, 100).toString()); // Cap pageSize at 100
         }
 
-        // Important: Include the same filters as current view
+        // Important: Include the same filters as current view using smart parameter detection
+        if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+          const searchLower = debouncedSearchQuery.toLowerCase().trim();
+          
+          // Check if search matches any block (case-insensitive, partial match)
+          const matchingBlock = blocks.find(block => 
+            block.toLowerCase().includes(searchLower)
+          );
+          
+          // Check if search matches any cluster (case-insensitive, partial match) 
+          const matchingCluster = clusters.find(cluster => 
+            cluster.toLowerCase().includes(searchLower)
+          );
+          
+          // Use specific parameter based on what was found
+          if (matchingBlock) {
+            params.append("block", matchingBlock);
+          } else if (matchingCluster) {
+            params.append("cluster", matchingCluster);
+          } else {
+            params.append("query", debouncedSearchQuery);
+          }
+        }
+        
+        // Add dropdown-selected filters
         if (selectedBlock) params.append("block", selectedBlock);
         if (selectedCluster) params.append("cluster", selectedCluster);
-        if (debouncedSearchQuery) params.append("query", debouncedSearchQuery);
 
         const response = await apiInstance.get(`/report/enrollment?${params.toString()}`);
         
         if (response.data.success) {
           const responseData = response.data.data;
-          const { enrollmentData } = responseData.data;
+          const { enrollmentData } = responseData;
           
           // Additional safety check for API response
           let apiData = enrollmentData || [];
@@ -664,6 +708,14 @@ export default function EnrollmentReport() {
             <h1>Student Enrollment Analytics</h1>
             <div class="subtitle">Academic Year ${metadata.academicYear || new Date().getFullYear()}</div>
             <div class="date">Generated on: ${currentDate}</div>
+            ${metadata.lastUpdatedOn ? `<div class="date">Last Updated: ${new Date(metadata.lastUpdatedOn).toLocaleString('en-IN', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: 'Asia/Kolkata'
+            })}</div>` : ''}
           </div>
           
           <div class="filter-info">
@@ -701,6 +753,14 @@ export default function EnrollmentReport() {
             <div class="summary-item"><strong>Grouping Level:</strong> ${getGroupingLabel()}</div>
             <div class="summary-item"><strong>Class Group:</strong> ${getClassGroupLabel()}</div>
             <div class="summary-item"><strong>Report Type:</strong> Student Enrollment Analytics</div>
+            ${metadata.lastUpdatedOn ? `<div class="summary-item"><strong>Last Updated:</strong> ${new Date(metadata.lastUpdatedOn).toLocaleString('en-IN', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: 'Asia/Kolkata'
+            })}</div>` : ''}
           </div>
           
           <div class="footer">
@@ -777,6 +837,16 @@ export default function EnrollmentReport() {
     csvContent += `"Student Enrollment Analytics"\n`;
     csvContent += `"Academic Year ${metadata.academicYear || new Date().getFullYear()}"\n`;
     csvContent += `"Generated on: ${currentDate}"\n`;
+    if (metadata.lastUpdatedOn) {
+      csvContent += `"Last Updated: ${new Date(metadata.lastUpdatedOn).toLocaleString('en-IN', {
+        year: 'numeric',
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })}"\n`;
+    }
     csvContent += "\n"; // Blank line
 
     // Filter Information
@@ -855,6 +925,18 @@ export default function EnrollmentReport() {
               {metadata.academicYear && (
                 <p className="text-xs text-gray-500 mt-1">
                   Academic Year: {metadata.academicYear} | Report Type: {metadata.reportType || selectedGrouping}
+                  {metadata.lastUpdatedOn && (
+                    <span className="ml-2">
+                      | Last Updated: {new Date(metadata.lastUpdatedOn).toLocaleString('en-IN', {
+                        year: 'numeric',
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </span>
+                  )}
                 </p>
               )}
             </div>
