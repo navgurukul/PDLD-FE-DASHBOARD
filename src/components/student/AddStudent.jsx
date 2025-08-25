@@ -69,7 +69,7 @@ const theme = createTheme({
 
 // Define stream options
 const streamOptions = [
-  { value: "MATHS", label: "MATHS" },
+  { value: "Mathematics", label: "MATHEMATICS" },
   { value: "BIO", label: "BIO" },
   { value: "COMMERCE", label: "COMMERCE" },
   { value: "ARTS", label: "ARTS" },
