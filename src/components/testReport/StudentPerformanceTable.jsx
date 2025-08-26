@@ -136,9 +136,31 @@ const StudentPerformanceTable = ({
   // Check if this is a remedial test
   const isRemedialTest = testType && testType.toLowerCase().includes("remedial");
   const gradeLabelsBySubject = {
-    english: ["BEGINNER", "LETTERS", "WORDS", "SENTENCES", "STORIES"],
-    hindi: ["BEGINNER", "LETTERS", "WORDS", "SENTENCES", "STORIES"],
-    mathematics: ["BEGINNER", "SINGLE_DIGIT", "DOUBLE_DIGIT", "MULTIPLICATION", "DIVISION"],
+    // Mathematics grades
+    mathematics: [
+      "प्रारंभिक",
+      "अंक पहचान", 
+      "संख्या पहचान",
+      "घटाव",
+      "भाग"
+    ],
+    
+    // English grades
+    english: [
+      "CAPITAL_LETTER",
+      "SMALL_LETTER", 
+      "WORD",
+      "SENTENCE"
+    ],
+    
+    // Hindi grades
+    hindi: [
+      "प्रारंभिक",
+      "अक्षर",
+      "शब्द", 
+      "अनुच्छेद",
+      "कहानी"
+    ]
   };
   const normalizedSubject = subject?.trim().toLowerCase() || "";
 
