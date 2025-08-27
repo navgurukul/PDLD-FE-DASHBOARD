@@ -172,18 +172,30 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   // Determine if this is a remedial test early
   const isRemedialTest = testNameVal?.toLowerCase().includes("remedial");
+  
+  // Determine if this is a syllabus test
+  const isSyllabusTest = testNameVal?.toLowerCase().includes("syllabus");
 
   const [maxScore, setMaxScore] = useState(null);
   const [requiredMarksToPass, setRequiredMarksToPass] = useState(null);
   const [gradeDistributionData, setGradeDistributionData] = useState({});
   const [testSubject, setTestSubject] = useState(null);
 
-  // Grade level definitions based on subject
+  // Grade level definitions based on subject for remedial tests
   const GRADE_LEVELS = {
     mathematics: ['Beginner(प्रारंभिक)', 'Number Recognition (अंक पहचान)', 'Number Identification (संख्या पहचान)', 'Subtraction (घटाव)', 'Division (भाग)'],
     english: ['Capital Letter (बड़े अक्षर)', 'Small Letter (छोटे अक्षर)', 'Word (शब्द)', 'Sentence (वाक्य)'],
     hindi: ['Beginner (प्रारंभिक)', 'Letter (अक्षर)', 'Word (शब्द)', 'Paragraph (अनुच्छेद)', 'Story (कहानी)']
   };
+
+  // Syllabus grade columns for syllabus tests - single line labels for better UI
+  const SYLLABUS_GRADE_COLUMNS = [
+    { key: 'gradeA', label: 'A (81-100%)' },
+    { key: 'gradeB', label: 'B (61-80%)' },
+    { key: 'gradeC', label: 'C (41-60%)' },
+    { key: 'gradeD', label: 'D (33-40%)' },
+    { key: 'gradeE', label: 'E (0-32%)' }
+  ];
 
   // Function to detect test subject from test name or subject parameter
   const detectTestSubject = (testName, apiSubject) => {
@@ -254,7 +266,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           presentStudents: school.presentStudents,
           absentStudents: school.absentStudents,
           averageScore: school.averageScore,
-          gradeDistribution: mockGradeData[school.id] || {}
+          overallGrade: school.overallGrade,
+          gradeDistribution: mockGradeData[school.id] || {},
+          gradeCounts: school.gradeCounts || {}, // Add gradeCounts from API for remedial tests
+          scoreCounts: school.scoreCounts || {} // Add scoreCounts from API for syllabus tests
         }));
 
         setSchools(formattedSchools);
@@ -358,6 +373,15 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         "Total Students",
         "Overall Grade"
       ];
+    } else if (isSyllabusTest) {
+      headers = [
+        ...baseHeaders,
+        ...SYLLABUS_GRADE_COLUMNS.map(col => col.label),
+        "Students Present",
+        "Students Absent",
+        "Total Students",
+        "Overall Grade"
+      ];
     } else {
       headers = [
         ...baseHeaders,
@@ -383,10 +407,20 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       let rowData = [];
       if (isRemedialTest) {
         const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
-        const gradeValues = gradeLevels.map(level => row[level] || 0);
+        const gradeValues = gradeLevels.map(level => row[level] || "-");
         rowData = [
           ...baseRowData,
           ...gradeValues,
+          row.presentStudents,
+          row.absentStudents,
+          row.totalStudents,
+          row.overallGrade
+        ];
+      } else if (isSyllabusTest) {
+        const syllabusValues = SYLLABUS_GRADE_COLUMNS.map(col => row[col.key] || "-");
+        rowData = [
+          ...baseRowData,
+          ...syllabusValues,
           row.presentStudents,
           row.absentStudents,
           row.totalStudents,
@@ -457,6 +491,15 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         { key: "totalStudents", label: "Total Students", align: "center" },
         { key: "overallGrade", label: "Overall Grade", align: "center" }
       ];
+    } else if (isSyllabusTest) {
+      tableHeaders = [
+        ...baseHeaders,
+        ...SYLLABUS_GRADE_COLUMNS.map(col => ({ key: col.key, label: col.label, align: "center" })),
+        { key: "presentStudents", label: "Students Present", align: "center" },
+        { key: "absentStudents", label: "Students Absent", align: "center" },
+        { key: "totalStudents", label: "Total Students", align: "center" },
+        { key: "overallGrade", label: "Overall Grade", align: "center" }
+      ];
     } else {
       tableHeaders = [
         ...baseHeaders,
@@ -493,7 +536,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       <title>School Performance Report - ${testNameVal}</title>
       <style>
         @media print {
-          @page { size: A4 ${isRemedialTest ? 'landscape' : 'portrait'}; margin: 15mm; }
+          @page { size: A4 ${isRemedialTest || isSyllabusTest ? 'landscape' : 'portrait'}; margin: 15mm; }
         }
         body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
         .header { text-align: center; margin-bottom: 20px; }
@@ -520,7 +563,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         .info-item strong {
           color: #2F4F4F;
         }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; font-size: ${isRemedialTest ? '10px' : '12px'}; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; font-size: ${isRemedialTest || isSyllabusTest ? '10px' : '12px'}; }
         th { background: #2F4F4F; color: #fff; padding: 8px 6px; border: 1px solid #2F4F4F; }
         td { padding: 6px; border: 1px solid #ddd; }
         tr:nth-child(even) { background: #f8f9fa; }
@@ -624,6 +667,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       });
       
       return dominantLevel;
+    } else if (isSyllabusTest) {
+      // For syllabus tests, use the overallGrade field for the Overall Grade column
+      return school.overallGrade || "-";
     } else {
       // For regular tests, grade based on pass percentage
       const passRate = parseFloat(school.passRate) || parseFloat(school.successRate) || 0;
@@ -677,8 +723,40 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     if (isRemedialTest) {
       const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
       gradeLevels.forEach(level => {
-        // Show "-" since API doesn't provide grade distribution data yet
-        baseData[level] = "-";
+        // Extract the Hindi part from the grade level label
+        const hindiMatch = level.match(/\((.*)\)/);
+        const hindiLabel = hindiMatch ? hindiMatch[1] : level;
+        
+        // Use gradeCounts from backend if available, otherwise show "-"
+        const gradeCounts = school.gradeCounts || {};
+        baseData[level] = isPending ? "-" : (gradeCounts[hindiLabel] !== undefined ? gradeCounts[hindiLabel] : "-");
+      });
+    }
+
+    // Add syllabus grade columns for syllabus tests
+    if (isSyllabusTest) {
+      const scoreCounts = school.scoreCounts || {};
+      
+      SYLLABUS_GRADE_COLUMNS.forEach(col => {
+        if (col.key === 'gradeA') {
+          // Grade A (81-100)%
+          baseData[col.key] = isPending ? "-" : (scoreCounts["81_100"] !== undefined ? scoreCounts["81_100"] : "-");
+        } else if (col.key === 'gradeB') {
+          // Grade B (61-80)%
+          baseData[col.key] = isPending ? "-" : (scoreCounts["61_80"] !== undefined ? scoreCounts["61_80"] : "-");
+        } else if (col.key === 'gradeC') {
+          // Grade C (41-60)%
+          baseData[col.key] = isPending ? "-" : (scoreCounts["41_60"] !== undefined ? scoreCounts["41_60"] : "-");
+        } else if (col.key === 'gradeD') {
+          // Grade D (21-40)% - Note: backend uses "33_40" for this range
+          baseData[col.key] = isPending ? "-" : (scoreCounts["33_40"] !== undefined ? scoreCounts["33_40"] : "-");
+        } else if (col.key === 'gradeE') {
+          // Grade E (0-32)%
+          baseData[col.key] = isPending ? "-" : (scoreCounts["0_32"] !== undefined ? scoreCounts["0_32"] : "-");
+        } else {
+          // Fallback for any other columns
+          baseData[col.key] = "-";
+        }
       });
     }
 
@@ -806,6 +884,39 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           },
         }))
       : []),
+    // Syllabus grade columns for syllabus tests
+    ...(isSyllabusTest 
+      ? SYLLABUS_GRADE_COLUMNS.map(col => ({
+          name: col.key,
+          label: col.label,
+          options: {
+            filter: false,
+            sort: true,
+            sortThirdClickReset: true,
+            setCellProps: () => ({
+              className: "center-align-cell",
+            }),
+            customHeadLabelRender: (columnMeta) => (
+              <span
+                style={{
+                  color: "#2F4F4F",
+                  fontFamily: "'Work Sans'",
+                  fontWeight: 600,
+                  fontSize: "11px",
+                  fontStyle: "normal",
+                  textTransform: "none",
+                  display: "block",
+                  textAlign: "center",
+                  whiteSpace: "nowrap",
+                  padding: "4px 2px"
+                }}
+              >
+                {columnMeta.label}
+              </span>
+            ),
+          },
+        }))
+      : []),
     {
       name: "presentStudents",
       label: "Students Present",
@@ -843,7 +954,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       },
     },
     // Average Score and Pass Rate only for regular tests
-    ...(isRemedialTest 
+    ...(isRemedialTest || isSyllabusTest
       ? []
       : [
           {
@@ -1068,7 +1179,18 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         {`
     .center-align-cell {
       text-align: center !important;
-     
+    }
+    
+    /* Better styling for syllabus grade column headers */
+    .MuiTableHead-root .MuiTableCell-head {
+      padding: 8px 6px !important;
+      vertical-align: middle !important;
+    }
+    
+    /* Ensure proper spacing for grade columns */
+    .MuiTableCell-head {
+      min-width: 75px !important;
+      text-align: center !important;
     }
   `}
       </style>
@@ -1268,7 +1390,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           </div>
         )}
 
-        {schools.length > 0 && !isRemedialTest && (
+        {schools.length > 0 && !isRemedialTest && !isSyllabusTest && (
           <div
             style={{
               borderRadius: "8px",
@@ -1419,23 +1541,24 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             </Button>
           </div>
         )}
+        
+        <DownloadModal
+          isOpen={downloadModalOpen}
+          onClose={() => setDownloadModalOpen(false)}
+          onConfirm={handleDownloadConfirm}
+          currentPageCount={tableData.length}
+          totalRecords={tableData.length} // Or total count if you have it
+          subject={"School Performance"}
+        />
+        {isLoading && !loading && <SpinnerPageOverlay isLoading={isLoading} />}
+        <ToastContainer
+          style={{ zIndex: 99999999 }}
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          closeOnClick
+        />
       </div>
-      <DownloadModal
-        isOpen={downloadModalOpen}
-        onClose={() => setDownloadModalOpen(false)}
-        onConfirm={handleDownloadConfirm}
-        currentPageCount={tableData.length}
-        totalRecords={tableData.length} // Or total count if you have it
-        subject={"School Performance"}
-      />
-      {isLoading && !loading && <SpinnerPageOverlay isLoading={isLoading} />}
-      <ToastContainer
-        style={{ zIndex: 99999999 }}
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        closeOnClick
-      />
     </ThemeProvider>
   );
 };
