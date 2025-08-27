@@ -170,8 +170,43 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   const currentTestId = getTestIdFromUrl();
 
+  // Determine if this is a remedial test early
+  const isRemedialTest = testNameVal?.toLowerCase().includes("remedial");
+
   const [maxScore, setMaxScore] = useState(null);
   const [requiredMarksToPass, setRequiredMarksToPass] = useState(null);
+  const [gradeDistributionData, setGradeDistributionData] = useState({});
+  const [testSubject, setTestSubject] = useState(null);
+
+  // Grade level definitions based on subject
+  const GRADE_LEVELS = {
+    mathematics: ['Beginner(प्रारंभिक)', 'Number Recognition (अंक पहचान)', 'Number Identification (संख्या पहचान)', 'Subtraction (घटाव)', 'Division (भाग)'],
+    english: ['Capital Letter (बड़े अक्षर)', 'Small Letter (छोटे अक्षर)', 'Word (शब्द)', 'Sentence (वाक्य)'],
+    hindi: ['Beginner (प्रारंभिक)', 'Letter (अक्षर)', 'Word (शब्द)', 'Paragraph (अनुच्छेद)', 'Story (कहानी)']
+  };
+
+  // Function to detect test subject from test name or subject parameter
+  const detectTestSubject = (testName, apiSubject) => {
+    const subject = apiSubject || testName || '';
+    const lowerSubject = subject.toLowerCase();
+    
+    if (lowerSubject.includes('math') || lowerSubject.includes('गणित') || lowerSubject.includes('mathematics')) {
+      return 'mathematics';
+    } else if (lowerSubject.includes('english') || lowerSubject.includes('अंग्रेजी')) {
+      return 'english';
+    } else if (lowerSubject.includes('hindi') || lowerSubject.includes('हिंदी')) {
+      return 'hindi';
+    }
+    // Default fallback
+    return 'mathematics';
+  };
+
+  // Function to get grade levels based on test subject
+  const getGradeLevelsForSubject = (subject) => {
+    if (!subject) return [];
+    const detectedSubject = detectTestSubject(testNameVal, subject);
+    return GRADE_LEVELS[detectedSubject] || GRADE_LEVELS.mathematics;
+  };
 
   const fetchData = async (page = 1, size = pageSize) => {
     setLoading(true);
@@ -189,14 +224,21 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           totalpendingSchools,
           totalEligibleSchools,
           pagination, 
-          maxScore 
+          maxScore,
+          testSubject
         } = response.data.data;
 
         // Get requiredMarksToPass from first school (assuming all same)
         const requiredMarks = apiSchools.length > 0 ? apiSchools[0].requiredMarksToPass : null;
         setMaxScore(maxScore);
         setRequiredMarksToPass(requiredMarks);
+        setTestSubject(testSubject);
 
+        // For remedial tests, check if API provides grade distribution data
+        let mockGradeData = {};
+        // Note: Currently the API doesn't provide grade distribution data for remedial tests
+        // So we don't generate mock data to avoid showing incorrect information
+        
         // Transform API data to match the component's expected format
         const formattedSchools = apiSchools.map((school) => ({
           id: school.id,
@@ -212,6 +254,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           presentStudents: school.presentStudents,
           absentStudents: school.absentStudents,
           averageScore: school.averageScore,
+          gradeDistribution: mockGradeData[school.id] || {}
         }));
 
         setSchools(formattedSchools);
@@ -296,27 +339,72 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     csvLines.push(reportInfo);
     csvLines.push(""); // Empty line before table data
     
-    const headers = [
+    // Build headers based on test type
+    const baseHeaders = [
       "School Name",
       "Status",
-      "No. Of Students",
-      "Students Present",
-      "Student Absent",
-      "Average Score",
-      "Pass Percentage",
+      "Block",
+      "Cluster",
     ];
+
+    let headers = [];
+    if (isRemedialTest) {
+      const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
+      headers = [
+        ...baseHeaders,
+        ...gradeLevels,
+        "Students Present",
+        "Students Absent",
+        "Total Students",
+        "Overall Grade"
+      ];
+    } else {
+      headers = [
+        ...baseHeaders,
+        "Students Present", 
+        "Students Absent",
+        "Total Students",
+        "Average Score",
+        "Pass Percentage",
+        "Overall Grade"
+      ];
+    }
+    
     csvLines.push(headers.join(","));
     
     data.forEach((row) => {
-      csvLines.push([
+      const baseRowData = [
         toTitleCase(row.name),
         row.status,
-        row.totalStudents,
-        row.presentStudents,
-        row.absentStudents,
-        row.averageScore,
-        row.passRate,
-      ].join(","));
+        row.blockName || "-",
+        row.clusterName || "-",
+      ];
+
+      let rowData = [];
+      if (isRemedialTest) {
+        const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
+        const gradeValues = gradeLevels.map(level => row[level] || 0);
+        rowData = [
+          ...baseRowData,
+          ...gradeValues,
+          row.presentStudents,
+          row.absentStudents,
+          row.totalStudents,
+          row.overallGrade
+        ];
+      } else {
+        rowData = [
+          ...baseRowData,
+          row.presentStudents,
+          row.absentStudents,
+          row.totalStudents,
+          row.averageScore,
+          row.passRate,
+          row.overallGrade
+        ];
+      }
+      
+      csvLines.push(rowData.join(","));
     });
     
     const csvContent = csvLines.join("\n");
@@ -344,6 +432,59 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       month: "long",
       day: "numeric",
     });
+
+    // Build table headers based on test type
+    const baseHeaders = [
+      { key: "name", label: "School Name", align: "left" },
+      { key: "status", label: "Status", align: "center" },
+      { key: "blockName", label: "Block", align: "center" },
+      { key: "clusterName", label: "Cluster", align: "center" },
+    ];
+
+    let tableHeaders = [];
+    if (isRemedialTest) {
+      const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
+      const gradeHeaders = gradeLevels.map(level => ({
+        key: level,
+        label: level,
+        align: "center"
+      }));
+      tableHeaders = [
+        ...baseHeaders,
+        ...gradeHeaders,
+        { key: "presentStudents", label: "Students Present", align: "center" },
+        { key: "absentStudents", label: "Students Absent", align: "center" },
+        { key: "totalStudents", label: "Total Students", align: "center" },
+        { key: "overallGrade", label: "Overall Grade", align: "center" }
+      ];
+    } else {
+      tableHeaders = [
+        ...baseHeaders,
+        { key: "presentStudents", label: "Students Present", align: "center" },
+        { key: "absentStudents", label: "Students Absent", align: "center" },
+        { key: "totalStudents", label: "Total Students", align: "center" },
+        { key: "averageScore", label: "Average Score", align: "center" },
+        { key: "passRate", label: "Pass Percentage", align: "center" },
+        { key: "overallGrade", label: "Overall Grade", align: "center" }
+      ];
+    }
+
+    const headerRow = tableHeaders.map(header => 
+      `<th style="text-align:${header.align};">${header.label}</th>`
+    ).join("");
+
+    const dataRows = data.map(row => {
+      const cells = tableHeaders.map(header => {
+        let cellValue = row[header.key];
+        if (header.key === "name") {
+          cellValue = toTitleCase(cellValue);
+        } else if ((header.key === "blockName" || header.key === "clusterName") && !cellValue) {
+          cellValue = "-";
+        }
+        return `<td style="text-align:${header.align}">${cellValue}</td>`;
+      }).join("");
+      return `<tr>${cells}</tr>`;
+    }).join("");
     
     const htmlContent = `
     <!DOCTYPE html>
@@ -352,7 +493,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       <title>School Performance Report - ${testNameVal}</title>
       <style>
         @media print {
-          @page { size: A4 landscape; margin: 15mm; }
+          @page { size: A4 ${isRemedialTest ? 'landscape' : 'portrait'}; margin: 15mm; }
         }
         body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
         .header { text-align: center; margin-bottom: 20px; }
@@ -379,7 +520,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         .info-item strong {
           color: #2F4F4F;
         }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; font-size: ${isRemedialTest ? '10px' : '12px'}; }
         th { background: #2F4F4F; color: #fff; padding: 8px 6px; border: 1px solid #2F4F4F; }
         td { padding: 6px; border: 1px solid #ddd; }
         tr:nth-child(even) { background: #f8f9fa; }
@@ -399,32 +540,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       </div>
       <table>
         <thead>
-          <tr>
-            <th style="text-align:left;">School Name</th>
-            <th style="text-align:center;">Status</th>
-            <th style="text-align:center;">No. Of Students</th>
-            <th style="text-align:center;">Students Present</th>
-            <th style="text-align:center;">Student Absent</th>
-            <th style="text-align:center;">Average Score</th>
-            <th style="text-align:center;">Pass Percentage</th>
-          </tr>
+          <tr>${headerRow}</tr>
         </thead>
         <tbody>
-          ${data
-            .map(
-              (row) => `
-            <tr>
-              <td style="text-align:left">${toTitleCase(row.name)}</td>
-              <td style="text-align:center">${row.status}</td>
-              <td style="text-align:center">${row.totalStudents}</td>
-              <td style="text-align:center">${row.presentStudents}</td>
-              <td style="text-align:center">${row.absentStudents}</td>
-              <td style="text-align:center">${row.averageScore}</td>
-              <td style="text-align:center">${row.passRate}</td>
-            </tr>
-          `
-            )
-            .join("")}
+          ${dataRows}
         </tbody>
       </table>
     </body>
@@ -466,14 +585,68 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     });
   }, [filteredSchools, sortConfig]);
 
+  // Function to assign grade to school based on performance
+  const assignSchoolGrade = (school) => {
+    if (!school || school.status === "pending") {
+      return "-";
+    }
+    
+    if (isRemedialTest) {
+      // For remedial tests, grade based on highest grade level achieved by majority of students
+      const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
+      const gradeDistribution = school.gradeDistribution || {};
+      
+      // Find the highest level where significant number of students are present
+      const totalStudents = school.presentStudents || 0;
+      if (totalStudents === 0) return "No Data";
+      
+      // Start from highest level and work down
+      for (let i = gradeLevels.length - 1; i >= 0; i--) {
+        const level = gradeLevels[i];
+        const studentsAtLevel = gradeDistribution[level] || 0;
+        const percentage = (studentsAtLevel / totalStudents) * 100;
+        
+        if (percentage >= 25) { // If 25% or more students at this level
+          return level;
+        }
+      }
+      
+      // Fallback: find level with maximum students
+      let maxStudents = 0;
+      let dominantLevel = gradeLevels[0];
+      
+      gradeLevels.forEach(level => {
+        const students = gradeDistribution[level] || 0;
+        if (students > maxStudents) {
+          maxStudents = students;
+          dominantLevel = level;
+        }
+      });
+      
+      return dominantLevel;
+    } else {
+      // For regular tests, grade based on pass percentage
+      const passRate = parseFloat(school.passRate) || parseFloat(school.successRate) || 0;
+      if (passRate >= 90) return "A+";
+      if (passRate >= 80) return "A";
+      if (passRate >= 70) return "B+";
+      if (passRate >= 60) return "B";
+      if (passRate >= 50) return "C+";
+      if (passRate >= 40) return "C";
+      return "D";
+    }
+  };
+
   // Format table data for MUIDataTable
   const tableData = sortedSchools.map((school) => {
     const isPending = !school.submitted;
     
-    return {
+    const baseData = {
       id: school.id,
       name: toTitleCase(school.name || school.schoolName) || "-",
       status: school.submitted ? "Submitted" : "Pending",
+      blockName: school.blockName || "-",
+      clusterName: school.clusterName || "-",
       totalStudents: isPending 
         ? (school.totalStudentsInClass != null ? school.totalStudentsInClass : "-")
         : (school.totalStudents === 0 ? "0" : school.totalStudents != null ? school.totalStudents : "-"),
@@ -499,6 +672,20 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           : "-"),
       submitted: school.submitted,
     };
+
+    // Add grade distribution data for remedial tests
+    if (isRemedialTest) {
+      const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
+      gradeLevels.forEach(level => {
+        // Show "-" since API doesn't provide grade distribution data yet
+        baseData[level] = "-";
+      });
+    }
+
+    // Add overall grade from backend (not calculated)
+    baseData.overallGrade = isPending ? "-" : (school.overallGrade || school.grade || "-");
+
+    return baseData;
   });
 
   const resetFilters = () => {
@@ -522,8 +709,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       {columnMeta.label}
     </span>
   );
-
-  const isRemedialTest = testNameVal?.toLowerCase().includes("remedial");
 
   // MUI DataTable columns configuration
   const columns = [
@@ -567,8 +752,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       },
     },
     {
-      name: "totalStudents",
-      label: "No. Of Students",
+      name: "blockName",
+      label: "Block",
       options: {
         filter: false,
         sort: true,
@@ -578,6 +763,49 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         }),
       },
     },
+    {
+      name: "clusterName",
+      label: "Cluster",
+      options: {
+        filter: false,
+        sort: true,
+        sortThirdClickReset: true,
+        setCellProps: () => ({
+          className: "center-align-cell",
+        }),
+      },
+    },
+    // Conditional grade columns for remedial tests
+    ...(isRemedialTest 
+      ? getGradeLevelsForSubject(testSubject || testNameVal).map(level => ({
+          name: level,
+          label: level, // Already in proper title case from the updated GRADE_LEVELS
+          options: {
+            filter: false,
+            sort: true,
+            sortThirdClickReset: true,
+            setCellProps: () => ({
+              className: "center-align-cell",
+            }),
+            customHeadLabelRender: (columnMeta) => (
+              <span
+                style={{
+                  color: "#2F4F4F",
+                  fontFamily: "'Work Sans'",
+                  fontWeight: 600,
+                  fontSize: "12px",
+                  fontStyle: "normal",
+                  textTransform: "none",
+                  display: "block",
+                  textAlign: "center"
+                }}
+              >
+                {columnMeta.label}
+              </span>
+            ),
+          },
+        }))
+      : []),
     {
       name: "presentStudents",
       label: "Students Present",
@@ -592,7 +820,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     },
     {
       name: "absentStudents",
-      label: "Student Absent",
+      label: "Students Absent",
       options: {
         filter: false,
         sort: true,
@@ -602,8 +830,22 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         }),
       },
     },
-    ...(!isRemedialTest
-      ? [
+    {
+      name: "totalStudents",
+      label: "Total Students",
+      options: {
+        filter: false,
+        sort: true,
+        sortThirdClickReset: true,
+        setCellProps: () => ({
+          className: "center-align-cell",
+        }),
+      },
+    },
+    // Average Score and Pass Rate only for regular tests
+    ...(isRemedialTest 
+      ? []
+      : [
           {
             name: "averageScore",
             label: "Average Score",
@@ -632,8 +874,39 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               },
             },
           },
-        ]
-      : []),
+        ]),
+    // Overall Grade column (from backend)
+    {
+      name: "overallGrade",
+      label: "Overall Grade",
+      options: {
+        filter: false,
+        sort: true,
+        sortThirdClickReset: true,
+        setCellProps: () => ({
+          className: "center-align-cell",
+        }),
+        customBodyRenderLite: (dataIndex) => {
+          const rowData = tableData[dataIndex];
+          const isPending = rowData.status === "Pending";
+          if (isPending) return "-";
+          
+          const gradeColor = "#2F4F4F";
+          
+          return (
+            <span
+              style={{
+                color: gradeColor,
+                fontWeight: 600,
+                fontSize: "14px",
+              }}
+            >
+              {rowData.overallGrade}
+            </span>
+          );
+        },
+      },
+    },
     {
       name: "submitted",
       label: "Actions",
