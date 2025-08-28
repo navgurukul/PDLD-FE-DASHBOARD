@@ -33,6 +33,7 @@ import "react-toastify/dist/ReactToastify.css";
 import DownloadModal from "../../components/modal/DownloadModal";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { Search } from "lucide-react";
+import { useDebounce } from "../../customHook/useDebounce";
 
 // Utility function to convert school names to Title Case
 const toTitleCase = (str) => {
@@ -139,12 +140,19 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   // UI state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [level, setLevel] = useState("school"); // Add level state
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const [paginationData, setPaginationData] = useState({
+    totalCount: 0,
+    totalPages: 1,
+    currentPage: 1,
+    pageSize: 15
+  });
 
   // Get test ID from URL
   const { testId } = useParams();
@@ -182,11 +190,43 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   const [testSubject, setTestSubject] = useState(null);
 
   // Grade level definitions based on subject for remedial tests
+  // Display format with Hindi translations (for UI display)
   const GRADE_LEVELS = {
-    mathematics: ['Beginner(प्रारंभिक)', 'Number Recognition (अंक पहचान)', 'Number Identification (संख्या पहचान)', 'Subtraction (घटाव)', 'Division (भाग)'],
-    english: ['Capital Letter', 'Small Letter', 'Word', 'Sentence'],
-    hindi: ['Beginner (प्रारंभिक)', 'Letter (अक्षर)', 'Word (शब्द)', 'Paragraph (अनुच्छेद)', 'Story (कहानी)']
+    mathematics: ['Division (भाग)', 'Subtraction (घटाव)', 'Number Identification (संख्या पहचान)', 'Number Recognition (अंक पहचान)', 'Beginner (प्रारंभिक)'], // Reordered as requested
+    english: ['Sentence', 'Word', 'Small Letter', 'Capital Letter'], // Reordered as requested
+    hindi: ['Story (कहानी)', 'Paragraph (अनुच्छेद)', 'Word (शब्द)', 'Letter (अक्षर)', 'Beginner (प्रारंभिक)'] // Reordered as requested
   };
+  
+  // API key mappings for each grade level - for quick reference
+  const GRADE_LEVEL_API_KEYS = {
+    mathematics: {
+      'Beginner (प्रारंभिक)': 'BEGINNER',
+      'Number Recognition (अंक पहचान)': 'NUMBER_RECOGNITION',
+      'Number Identification (संख्या पहचान)': 'NUMBER_IDENTIFICATION',
+      'Subtraction (घटाव)': 'SUBTRACTION',
+      'Division (भाग)': 'DIVISION'
+    },
+    english: {
+      'Capital Letter': 'CAPITAL_LETTER',
+      'Small Letter': 'SMALL_LETTER',
+      'Word': 'WORD',
+      'Sentence': 'SENTENCE'
+    },
+    hindi: {
+      'Beginner (प्रारंभिक)': 'BEGINNER',
+      'Letter (अक्षर)': 'LETTER',
+      'Word (शब्द)': 'WORD',
+      'Paragraph (अनुच्छेद)': 'PARAGRAPH',
+      'Story (कहानी)': 'STORY'
+    }
+  };
+  
+  // Direct lookup for API response keys to handle different formats
+  const API_GRADE_KEYS = [
+    'CAPITAL_LETTER', 'SMALL_LETTER', 'WORD', 'SENTENCE', 
+    'BEGINNER', 'NUMBER_RECOGNITION', 'NUMBER_IDENTIFICATION', 'SUBTRACTION', 'DIVISION',
+    'LETTER', 'PARAGRAPH', 'STORY'
+  ];
 
   // Syllabus grade columns for syllabus tests - single line labels for better UI
   const SYLLABUS_GRADE_COLUMNS = [
@@ -219,58 +259,239 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     const detectedSubject = detectTestSubject(testNameVal, subject);
     return GRADE_LEVELS[detectedSubject] || GRADE_LEVELS.mathematics;
   };
+  
+  // Function to map UI grade level labels to API gradeCounts keys
+  const mapGradeLevelToApiKey = (levelLabel) => {
+    if (!levelLabel) return "";
+    
+    // Extract base label (remove hindi part if present)
+    const hindiMatch = levelLabel.match(/\((.*)\)/);
+    const baseLabel = hindiMatch ? levelLabel.split('(')[0].trim() : levelLabel;
+    
+    // Convert to uppercase and replace spaces with underscores
+    const apiKey = baseLabel.toUpperCase().replace(/\s+/g, '_');
+    
+    // Removed debug log
+    
+    return apiKey;
+  };
+  
+  // Function to get all possible key variations for a grade level
+  const getGradeLevelKeyVariations = (level, subject) => {
+    // Start with API keys from our mapping
+    const variations = [];
+    
+    // Add the predefined API key if available
+    if (GRADE_LEVEL_API_KEYS[subject] && GRADE_LEVEL_API_KEYS[subject][level]) {
+      variations.push(GRADE_LEVEL_API_KEYS[subject][level]);
+    }
+    
+    // Add standard API key format
+    const standardApiKey = mapGradeLevelToApiKey(level);
+    if (standardApiKey && !variations.includes(standardApiKey)) {
+      variations.push(standardApiKey);
+    }
+    
+    // Add the original level name
+    if (level) {
+      variations.push(level);
+    }
+    
+    // Add Hindi variations for Hindi tests
+    if (subject === 'hindi') {
+      // Extract Hindi label from parentheses if present
+      const hindiMatch = level.match(/\((.*)\)/);
+      if (hindiMatch && hindiMatch[1]) {
+        const hindiLabel = hindiMatch[1].trim();
+        if (!variations.includes(hindiLabel)) {
+          variations.push(hindiLabel);
+        }
+      }
+    }
+    
+    // Add Math variations with Hindi labels
+    if (subject === 'mathematics') {
+      // Extract Hindi label from parentheses if present
+      const hindiMatch = level.match(/\((.*)\)/);
+      if (hindiMatch && hindiMatch[1]) {
+        const hindiLabel = hindiMatch[1].trim();
+        if (!variations.includes(hindiLabel)) {
+          variations.push(hindiLabel);
+        }
+      }
+    }
+    
+    // Special handling for English which might have different formats
+    if (subject === 'english') {
+      const lowerLevel = level.toLowerCase();
+      if (lowerLevel.includes('capital') || lowerLevel.includes('small')) {
+        const letterType = lowerLevel.includes('capital') ? 'CAPITAL_LETTER' : 'SMALL_LETTER';
+        if (!variations.includes(letterType)) {
+          variations.push(letterType);
+        }
+      }
+    }
+    
+    // Special handling for Hindi to check both with and without parentheses
+    if (subject === 'hindi' && level.includes('(')) {
+      const baseLabel = level.split('(')[0].trim();
+      if (baseLabel) {
+        variations.push(baseLabel);
+        const baseApiKey = mapGradeLevelToApiKey(baseLabel);
+        if (baseApiKey && !variations.includes(baseApiKey)) {
+          variations.push(baseApiKey);
+        }
+      }
+    }
+    
+    // Add all standard API keys - this helps when the API is inconsistent
+    // but we know the general format of the keys
+    API_GRADE_KEYS.forEach(key => {
+      if (
+        // Only add if it seems relevant to current level
+        (level.toUpperCase().includes(key.replace('_', ' ')) || 
+         key.includes(standardApiKey) ||
+         (subject === 'english' && 
+          (key === 'CAPITAL_LETTER' || key === 'SMALL_LETTER' || key === 'WORD' || key === 'SENTENCE'))) &&
+        !variations.includes(key)
+      ) {
+        variations.push(key);
+      }
+    });
+    
+    return variations;
+  };
+  
+  // Helper function to get grade count value, trying multiple possible keys
+  const getGradeCountValue = (school, gradeLevel, subject, selectedLevel) => {
+    if (!school) return "-";
+    
+    // For school level use gradeCounts, for block/cluster/district use gradeDistribution
+    const gradeData = selectedLevel === "school" ? school.gradeCounts || {} : school.gradeDistribution || {};
+    
+    if (Object.keys(gradeData).length === 0) return "-";
+    
+    const keyVariations = getGradeLevelKeyVariations(gradeLevel, subject);
+    
+    // Find first matching key with data
+    for (const key of keyVariations) {
+      if (gradeData[key] !== undefined) {
+        return gradeData[key];
+      }
+    }
+    
+    return "-";
+  };
 
-  const fetchData = async (page = 1, size = pageSize) => {
+  const fetchData = async (page = 1, size = pageSize, selectedLevel = level, searchValue = searchQuery.trim()) => {
     setLoading(true);
     try {
+      // Build search parameters
+      const searchParams = {
+        page: page,
+        pageSize: size,
+        level: selectedLevel
+      };
+
+      // Add search parameter if provided
+      if (searchValue) {
+        searchParams.query = searchValue;
+      }
+
       const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
-        params: {
-          page: page,
-          pageSize: size
-        }
+        params: searchParams
       });
       if (response.data && response.data.success) {
-        const { 
-          schools: apiSchools, 
-          totalSubmittedSchools, 
-          totalpendingSchools,
-          totalEligibleSchools,
-          pagination, 
-          maxScore,
-          testSubject
-        } = response.data.data;
+        // Handle different response structure based on level
+        let apiSchools, totalSubmittedSchools, totalpendingSchools, totalEligibleSchools, pagination, maxScore, testSubject;
+        
+        if (response.data.data.items) {
+          // New API response structure with items
+          apiSchools = response.data.data.items;
+          // Extract values from metadata if available, otherwise use totalCount
+          const metadata = response.data.data.metadata || {};
+          totalSubmittedSchools = metadata.totalSubmittedSchools || response.data.data.totalCount || 0;
+          totalpendingSchools = metadata.totalpendingSchools || 0;
+          totalEligibleSchools = metadata.totalEligibleSchools || response.data.data.totalCount || 0;
+          pagination = response.data.data.pagination;
+          maxScore = response.data.data.maxScore || null;
+          testSubject = response.data.data.testSubject || null;
+        } else {
+          // Original API response structure
+          const data = response.data.data;
+          apiSchools = data.schools || [];
+          totalSubmittedSchools = data.totalSubmittedSchools || 0;
+          totalpendingSchools = data.totalpendingSchools || 0;
+          totalEligibleSchools = data.totalEligibleSchools || 0;
+          pagination = data.pagination;
+          maxScore = data.maxScore;
+          testSubject = data.testSubject;
+        }
+        
+        // Update pagination data state
+        if (pagination) {
+          setPaginationData({
+            totalCount: pagination.totalCount || totalEligibleSchools || 0,
+            totalPages: pagination.totalPages || Math.ceil(totalEligibleSchools / size) || 1,
+            currentPage: pagination.currentPage || page,
+            pageSize: pagination.pageSize || size
+          });
+          
+          // Removed debug log
+        }
 
         // Get requiredMarksToPass from first school (assuming all same)
         const requiredMarks = apiSchools.length > 0 ? apiSchools[0].requiredMarksToPass : null;
         setMaxScore(maxScore);
         setRequiredMarksToPass(requiredMarks);
-        setTestSubject(testSubject);
-
-        // For remedial tests, check if API provides grade distribution data
+        setTestSubject(testSubject);          // For remedial tests, check if API provides grade distribution data
         let mockGradeData = {};
         // Note: Currently the API doesn't provide grade distribution data for remedial tests
         // So we don't generate mock data to avoid showing incorrect information
         
+        // Removed debug log
+        
         // Transform API data to match the component's expected format
-        const formattedSchools = apiSchools.map((school) => ({
-          id: school.id,
-          name: toTitleCase(school.schoolName),
-          schoolName: toTitleCase(school.schoolName),
-          blockName: school.blockName,
-          clusterName: school.clusterName,
-          udiseCode: school.udiseCode,
-          passRate: school.successRate, // Map successRate to passRate
-          submitted: school.status === "submitted",
-          totalStudents: school.totalStudents,
-          totalStudentsInClass: school.totalStudentsInClass, // For pending schools
-          presentStudents: school.presentStudents,
-          absentStudents: school.absentStudents,
-          averageScore: school.averageScore,
-          overallGrade: school.overallGrade,
-          gradeDistribution: mockGradeData[school.id] || {},
-          gradeCounts: school.gradeCounts || {}, // Add gradeCounts from API for remedial tests
-          scoreCounts: school.scoreCounts || {} // Add scoreCounts from API for syllabus tests
-        }));
+        const formattedSchools = apiSchools.map((school) => {
+          // Handle different field names based on level
+          let name = "";
+          if (selectedLevel === "school") {
+            name = school.schoolName;
+          } else if (selectedLevel === "block") {
+            name = school.blockName;
+          } else if (selectedLevel === "cluster") {
+            name = school.clusterName;
+          } else if (selectedLevel === "district") {
+            // District name could be in "districtName" or "district" field
+            name = school.districtName || school.district;
+          }
+          
+          return {
+            id: school.id || `${selectedLevel}-${name}`, // Generate ID if not present
+            name: toTitleCase(name),
+            schoolName: toTitleCase(name), // For consistency
+            blockName: school.blockName,
+            clusterName: school.clusterName,
+            districtName: school.districtName || school.district,
+            udiseCode: school.udiseCode,
+            passRate: school.successRate, // Map successRate to passRate
+            submitted: school.status === "submitted" || selectedLevel !== "school", // Non-school levels don't have status
+            totalStudents: school.totalStudents,
+            totalStudentsInClass: school.totalStudentsInClass, // For pending schools
+            presentStudents: school.presentStudents || school.submittedStudents || school.testTakenStudents, // Some levels use different field names
+            absentStudents: school.absentStudents,
+            averageScore: school.averageScore,
+            overallGrade: school.overallGrade || school.averageGrade, // Some levels use averageGrade
+            gradeDistribution: school.gradeDistribution || {},
+            // For remedial tests, block/cluster/district level use gradeDistribution for grade counts
+            gradeCounts: selectedLevel === "school" ? (school.gradeCounts || {}) : (school.gradeDistribution || {}), 
+            scoreCounts: selectedLevel === "school" ? (school.scoreCounts || {}) : (school.gradeDistribution || {}), // For syllabus tests, use appropriate grade data source
+            // For district/block/cluster level, additional fields
+            totalSchools: school.totalSchools,
+            submittedSchools: school.submittedSchools,
+            submissionRate: school.submissionRate
+          };
+        });
 
         setSchools(formattedSchools);
         setSchoolsSubmitted(totalSubmittedSchools);
@@ -280,7 +501,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         setError("Failed to load data");
       }
     } catch (error) {
-      console.error("Error fetching school data:", error);
+      // Error handling is implemented via setError state
       setError(error.response?.data?.message || "An error occurred while fetching data");
     } finally {
       setLoading(false);
@@ -288,21 +509,33 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   };
 
   useEffect(() => {
-    fetchData(currentPage, pageSize);
-  }, [currentTestId, currentPage, pageSize]);
+    setCurrentPage(1); // Reset to first page when level changes
+    fetchData(1, pageSize, level);
+  }, [currentTestId, level]);
 
-  // Filter schools based on search query and status
+  useEffect(() => {
+    fetchData(currentPage, pageSize, level);
+  }, [currentPage, pageSize]);
+
+  // Handle search functionality with debouncing
+  const debouncedSearchQuery = useDebounce(searchQuery, 500); // Debounce search for 500ms
+  
+  useEffect(() => {
+    if (debouncedSearchQuery !== searchQuery) return; // Only proceed if debounced value matches current
+    setCurrentPage(1); // Reset to first page when search changes
+    fetchData(1, pageSize, level, debouncedSearchQuery);
+  }, [debouncedSearchQuery, level]);
+
+  // Filter schools based on status only (search is now server-side)
   const filteredSchools = useMemo(() => {
     return schools.filter((school) => {
-      const schoolName = toTitleCase(school.name || school.schoolName || "").toLowerCase();
-      const matchesSearch = schoolName.includes(searchQuery.toLowerCase());
       const matchesStatus =
         !statusFilter ||
         (statusFilter === "submitted" && school.submitted) ||
         (statusFilter === "pending" && !school.submitted);
-      return matchesSearch && matchesStatus;
+      return matchesStatus;
     });
-  }, [schools, searchQuery, statusFilter]);
+  }, [schools, statusFilter]);
 
   // For the Download Report
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
@@ -320,32 +553,59 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       } else {
         // For "all", fetch all data from API
         try {
+          // Build search parameters for download
+          const downloadParams = {
+            page: 1,
+            pageSize: totalSchools, // Fetch all records
+            level: level // Include level parameter
+          };
+
+          // Include search query if present
+          if (searchQuery.trim()) {
+            downloadParams.query = searchQuery.trim();
+          }
+
           const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
-            params: {
-              page: 1,
-              pageSize: totalSchools // Fetch all records
-            }
+            params: downloadParams
           });
           
           if (response.data && response.data.success) {
-            const allSchools = response.data.data.schools;
+            // Handle different response structures
+            const allSchools = response.data.data.schools || response.data.data.items || [];
             
             // Transform all schools data to match table format
             const formattedAllSchools = allSchools.map((school) => {
-              const isPending = school.status !== "submitted";
+              const isPending = school.status !== "submitted" && level === "school"; // Only school level has pending status
+              
+              // Handle different field names based on level
+              let name = "";
+              if (level === "school") {
+                name = school.schoolName;
+              } else if (level === "block") {
+                name = school.blockName;
+              } else if (level === "cluster") {
+                name = school.clusterName;
+              } else if (level === "district") {
+                // District name could be in "districtName" or "district" field
+                name = school.districtName || school.district;
+              }
               
               const baseData = {
-                id: school.id,
-                name: toTitleCase(school.schoolName) || "-",
-                status: school.status === "submitted" ? "Submitted" : "Pending",
+                id: school.id || `${level}-${name}`,
+                name: toTitleCase(name) || "-",
+                status: level === "school" ? (school.status === "submitted" ? "Submitted" : "Pending") : "N/A",
                 blockName: school.blockName || "-",
                 clusterName: school.clusterName || "-",
+                districtName: school.districtName || school.district || "-",
                 totalStudents: isPending 
                   ? (school.totalStudentsInClass != null ? school.totalStudentsInClass : "-")
                   : (school.totalStudents === 0 ? "0" : school.totalStudents != null ? school.totalStudents : "-"),
                 presentStudents: isPending 
                   ? "-"
-                  : (school.presentStudents === 0 ? "0" : school.presentStudents != null ? school.presentStudents : "-"),
+                  : (school.presentStudents === 0 ? "0" : 
+                     school.presentStudents != null ? school.presentStudents : 
+                     school.testTakenStudents != null ? school.testTakenStudents : 
+                     school.submittedStudents != null ? school.submittedStudents : "-"),
                 absentStudents: isPending 
                   ? "-"
                   : (school.absentStudents === 0 ? "0" : school.absentStudents != null ? school.absentStudents : "-"),
@@ -363,18 +623,87 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
               // Add grade distribution data for remedial tests
               if (isRemedialTest) {
-                const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
-                gradeLevels.forEach(level => {
-                  const hindiMatch = level.match(/\((.*)\)/);
-                  const hindiLabel = hindiMatch ? hindiMatch[1] : level;
-                  const gradeCounts = school.gradeCounts || {};
-                  baseData[level] = isPending ? "-" : (gradeCounts[hindiLabel] !== undefined ? gradeCounts[hindiLabel] : "-");
+                const subject = detectTestSubject(testSubject || testNameVal);
+                const gradeLevels = getGradeLevelsForSubject(subject);
+                
+                // Determine which field contains grade data (school level uses gradeCounts, others use gradeDistribution)
+                const gradeData = level === "school" ? (school.gradeCounts || {}) : (school.gradeDistribution || {});
+                
+                // Removed debug log
+                
+                // Direct mappings from UI labels to API keys for all subjects
+                const directMappings = {
+                  // English mappings
+                  'Capital Letter': 'CAPITAL_LETTER',
+                  'Small Letter': 'SMALL_LETTER',
+                  'Word': 'WORD', 
+                  'Sentence': 'SENTENCE',
+                  
+                  // Hindi mappings - both English API keys and Hindi API keys
+                  'Story (कहानी)': ['STORY', 'कहानी'],
+                  'Paragraph (अनुच्छेद)': ['PARAGRAPH', 'अनुच्छेद'],
+                  'Word (शब्द)': ['WORD', 'शब्द'],
+                  'Letter (अक्षर)': ['LETTER', 'अक्षर'],
+                  'Beginner (प्रारंभिक)': ['BEGINNER', 'प्रारंभिक'],
+                  
+                  // Mathematics mappings - both English API keys and Hindi API keys
+                  'Division (भाग)': ['DIVISION', 'भाग'],
+                  'Subtraction (घटाव)': ['SUBTRACTION', 'घटाव'],
+                  'Number Identification (संख्या पहचान)': ['NUMBER_IDENTIFICATION', 'संख्या पहचान'],
+                  'Number Recognition (अंक पहचान)': ['NUMBER_RECOGNITION', 'अंक पहचान']
+                  // Note: Mathematics Beginner already included in Hindi mappings above
+                };
+                
+                gradeLevels.forEach(levelLabel => {
+                  // First check direct mapping if available (works well for English remedial tests)
+                  let gradeValue = "-";
+                  let matchedKey = null;
+                  
+                  // Try direct mapping first (especially useful for English tests)
+                  const mapping = directMappings[levelLabel];
+                  
+                  if (mapping) {
+                    if (Array.isArray(mapping)) {
+                      // Try each possible key in the mapping array
+                      for (const key of mapping) {
+                        if (gradeData[key] !== undefined) {
+                          gradeValue = gradeData[key];
+                          matchedKey = key;
+                          break;
+                        }
+                      }
+                    } else if (gradeData[mapping] !== undefined) {
+                      gradeValue = gradeData[mapping];
+                      matchedKey = mapping;
+                    }
+                  }
+                  
+                  if (!matchedKey) {
+                    // Fallback to trying all variations
+                    const keyVariations = getGradeLevelKeyVariations(levelLabel, subject);
+                    
+                    for (const key of keyVariations) {
+                      if (gradeData[key] !== undefined) {
+                        gradeValue = gradeData[key];
+                        matchedKey = key;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  baseData[levelLabel] = isPending ? "-" : gradeValue;
+                  
+                  // Removed debug log
                 });
               }
 
               // Add syllabus grade columns for syllabus tests
               if (isSyllabusTest) {
-                const scoreCounts = school.scoreCounts || {};
+                // For school level use scoreCounts, for block/cluster/district use gradeDistribution
+                const scoreCounts = level === "school" ? (school.scoreCounts || {}) : (school.gradeDistribution || {});
+                
+                // Removed debug log
+                
                 SYLLABUS_GRADE_COLUMNS.forEach(col => {
                   if (col.key === 'gradeA') {
                     baseData[col.key] = isPending ? "-" : (scoreCounts["81_100"] !== undefined ? scoreCounts["81_100"] : "-");
@@ -392,7 +721,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                 });
               }
 
-              baseData.overallGrade = isPending ? "-" : (school.overallGrade || school.grade || "-");
+              baseData.overallGrade = isPending ? "-" : (school.overallGrade || school.averageGrade || school.grade || "-");
               return baseData;
             });
             
@@ -401,7 +730,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             throw new Error("Failed to fetch all records");
           }
         } catch (error) {
-          console.error("Error fetching all records:", error);
+          // Error handling is implemented via setError state
           toast.error("Failed to fetch all records. Using current page data.");
           dataToDownload = tableData;
         }
@@ -441,13 +770,28 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     csvLines.push(reportInfo);
     csvLines.push(""); // Empty line before table data
     
-    // Build headers based on test type
-    const baseHeaders = [
-      "School Name",
-      "Status",
-      "Block",
-      "Cluster",
+    // Build headers based on test type and level
+    let baseHeaders = [
+      level === "school" ? "School Name" : 
+      level === "block" ? "Block Name" :
+      level === "cluster" ? "Cluster Name" : 
+      "District Name"
     ];
+    
+    // Add Status only for school level
+    if (level === "school") {
+      baseHeaders.push("Status");
+    }
+    
+    // Add Block column for school and cluster level
+    if (level === "school" || level === "cluster") {
+      baseHeaders.push("Block");
+    }
+    
+    // Add Cluster column only for school level
+    if (level === "school") {
+      baseHeaders.push("Cluster");
+    }
 
     let headers = [];
     if (isRemedialTest) {
@@ -484,12 +828,22 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     csvLines.push(headers.join(","));
     
     data.forEach((row) => {
-      const baseRowData = [
-        toTitleCase(row.name),
-        row.status,
-        row.blockName || "-",
-        row.clusterName || "-",
-      ];
+      let baseRowData = [toTitleCase(row.name)];
+      
+      // Add Status only for school level
+      if (level === "school") {
+        baseRowData.push(row.status);
+      }
+      
+      // Add Block for school and cluster level
+      if (level === "school" || level === "cluster") {
+        baseRowData.push(row.blockName || "-");
+      }
+      
+      // Add Cluster only for school level
+      if (level === "school") {
+        baseRowData.push(row.clusterName || "-");
+      }
 
       let rowData = [];
       if (isRemedialTest) {
@@ -554,13 +908,32 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       day: "numeric",
     });
 
-    // Build table headers based on test type
-    const baseHeaders = [
-      { key: "name", label: "School Name", align: "left" },
-      { key: "status", label: "Status", align: "center" },
-      { key: "blockName", label: "Block", align: "center" },
-      { key: "clusterName", label: "Cluster", align: "center" },
+    // Build table headers based on test type and level
+    let baseHeaders = [
+      { 
+        key: "name", 
+        label: level === "school" ? "School Name" : 
+               level === "block" ? "Block Name" :
+               level === "cluster" ? "Cluster Name" : 
+               "District Name", 
+        align: "left" 
+      }
     ];
+    
+    // Add Status only for school level
+    if (level === "school") {
+      baseHeaders.push({ key: "status", label: "Status", align: "center" });
+    }
+    
+    // Add Block for school and cluster level
+    if (level === "school" || level === "cluster") {
+      baseHeaders.push({ key: "blockName", label: "Block", align: "center" });
+    }
+    
+    // Add Cluster only for school level
+    if (level === "school") {
+      baseHeaders.push({ key: "clusterName", label: "Cluster", align: "center" });
+    }
 
     let tableHeaders = [];
     if (isRemedialTest) {
@@ -730,8 +1103,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       const totalStudents = school.presentStudents || 0;
       if (totalStudents === 0) return "No Data";
       
-      // Start from highest level and work down
-      for (let i = gradeLevels.length - 1; i >= 0; i--) {
+      // For all subjects, the order is now from highest to lowest level
+      // So we start from the beginning of the array for all subjects
+      for (let i = 0; i < gradeLevels.length; i++) {
         const level = gradeLevels[i];
         const studentsAtLevel = gradeDistribution[level] || 0;
         const percentage = (studentsAtLevel / totalStudents) * 100;
@@ -743,6 +1117,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       
       // Fallback: find level with maximum students
       let maxStudents = 0;
+      // For all subjects, the highest level is now at index 0
       let dominantLevel = gradeLevels[0];
       
       gradeLevels.forEach(level => {
@@ -772,20 +1147,24 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   // Format table data for MUIDataTable
   const tableData = sortedSchools.map((school) => {
-    const isPending = !school.submitted;
+    const isPending = level === "school" ? !school.submitted : false; // Only school level has pending status
     
     const baseData = {
       id: school.id,
       name: toTitleCase(school.name || school.schoolName) || "-",
-      status: school.submitted ? "Submitted" : "Pending",
+      status: level === "school" ? (school.submitted ? "Submitted" : "Pending") : "N/A",
       blockName: school.blockName || "-",
       clusterName: school.clusterName || "-",
+      districtName: school.districtName || school.district || "-",
       totalStudents: isPending 
         ? (school.totalStudentsInClass != null ? school.totalStudentsInClass : "-")
         : (school.totalStudents === 0 ? "0" : school.totalStudents != null ? school.totalStudents : "-"),
       presentStudents: isPending 
         ? "-"
-        : (school.presentStudents === 0 ? "0" : school.presentStudents != null ? school.presentStudents : "-"),
+        : (school.presentStudents === 0 ? "0" : 
+           school.presentStudents != null ? school.presentStudents : 
+           school.testTakenStudents != null ? school.testTakenStudents : 
+           school.submittedStudents != null ? school.submittedStudents : "-"),
       absentStudents: isPending 
         ? "-"
         : (school.absentStudents === 0 ? "0" : school.absentStudents != null ? school.absentStudents : "-"),
@@ -808,21 +1187,88 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
     // Add grade distribution data for remedial tests
     if (isRemedialTest) {
-      const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
-      gradeLevels.forEach(level => {
-        // Extract the Hindi part from the grade level label
-        const hindiMatch = level.match(/\((.*)\)/);
-        const hindiLabel = hindiMatch ? hindiMatch[1] : level;
+      const subject = detectTestSubject(testSubject || testNameVal);
+      const gradeLevels = getGradeLevelsForSubject(subject);
+      
+      // Determine which field contains grade data (school level uses gradeCounts, others use gradeDistribution)
+      const gradeData = level === "school" ? (school.gradeCounts || {}) : (school.gradeDistribution || {});
+      
+      // Direct mappings from UI labels to API keys for all subjects
+      const directMappings = {
+        // English mappings
+        'Capital Letter': 'CAPITAL_LETTER',
+        'Small Letter': 'SMALL_LETTER',
+        'Word': 'WORD', 
+        'Sentence': 'SENTENCE',
         
-        // Use gradeCounts from backend if available, otherwise show "-"
-        const gradeCounts = school.gradeCounts || {};
-        baseData[level] = isPending ? "-" : (gradeCounts[hindiLabel] !== undefined ? gradeCounts[hindiLabel] : "-");
+        // Hindi mappings - both English API keys and Hindi API keys
+        'Story (कहानी)': ['STORY', 'कहानी'],
+        'Paragraph (अनुच्छेद)': ['PARAGRAPH', 'अनुच्छेद'],
+        'Word (शब्द)': ['WORD', 'शब्द'],
+        'Letter (अक्षर)': ['LETTER', 'अक्षर'],
+        'Beginner (प्रारंभिक)': ['BEGINNER', 'प्रारंभिक'],
+        
+        // Mathematics mappings - both English API keys and Hindi API keys
+        'Division (भाग)': ['DIVISION', 'भाग'],
+        'Subtraction (घटाव)': ['SUBTRACTION', 'घटाव'],
+        'Number Identification (संख्या पहचान)': ['NUMBER_IDENTIFICATION', 'संख्या पहचान'],
+        'Number Recognition (अंक पहचान)': ['NUMBER_RECOGNITION', 'अंक पहचान'],
+        // Note: Mathematics Beginner already included in Hindi mappings above
+      };
+      
+      // Removed debug logging
+      
+      gradeLevels.forEach(levelLabel => {
+        // First check direct mapping if available (works well for English remedial tests)
+        let gradeValue = "-";
+        let matchedKey = null;
+        
+        // Try direct mapping first (especially useful for English tests)
+        const mapping = directMappings[levelLabel];
+        
+        if (mapping) {
+          if (Array.isArray(mapping)) {
+            // Try each possible key in the mapping array
+            for (const key of mapping) {
+              if (gradeData[key] !== undefined) {
+                gradeValue = gradeData[key];
+                matchedKey = key;
+                break;
+              }
+            }
+          } else if (gradeData[mapping] !== undefined) {
+            gradeValue = gradeData[mapping];
+            matchedKey = mapping;
+          }
+        }
+        
+        if (!matchedKey) {
+          // Fallback to trying all variations
+          const keyVariations = getGradeLevelKeyVariations(levelLabel, subject);
+          
+          for (const key of keyVariations) {
+            if (gradeData[key] !== undefined) {
+              gradeValue = gradeData[key];
+              matchedKey = key;
+              break;
+            }
+          }
+        }
+        
+        baseData[levelLabel] = isPending ? "-" : gradeValue;
+        
+        // Removed debug log
+        
+        baseData[levelLabel] = isPending ? "-" : gradeValue;
       });
     }
 
     // Add syllabus grade columns for syllabus tests
     if (isSyllabusTest) {
-      const scoreCounts = school.scoreCounts || {};
+      // For school level use scoreCounts, for block/cluster/district use gradeDistribution
+      const scoreCounts = level === "school" ? (school.scoreCounts || {}) : (school.gradeDistribution || {});
+      
+      // Removed debug log
       
       SYLLABUS_GRADE_COLUMNS.forEach(col => {
         if (col.key === 'gradeA') {
@@ -848,7 +1294,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     }
 
     // Add overall grade from backend (not calculated)
-    baseData.overallGrade = isPending ? "-" : (school.overallGrade || school.grade || "-");
+    baseData.overallGrade = isPending ? "-" : (school.overallGrade || school.averageGrade || school.grade || "-");
 
     return baseData;
   });
@@ -856,9 +1302,12 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   const resetFilters = () => {
     setSearchQuery("");
     setStatusFilter("");
+    setLevel("school"); // Reset level to default
     setSortConfig({ key: null, direction: "asc" });
+    setCurrentPage(1); // Reset to first page
+    // Data will be fetched with default parameters
   };
-  const isAnyFilterActive = !!searchQuery.trim() || !!statusFilter;
+  const isAnyFilterActive = !!searchQuery.trim() || (level === "school" && !!statusFilter) || level !== "school";
 
   const defaultCustomHeadLabelRender = (columnMeta) => (
     <span
@@ -884,14 +1333,18 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     },
     {
       name: "name",
-      label: "School Name",
+      label: level === "school" ? "School Name" : 
+             level === "block" ? "Block Name" :
+             level === "cluster" ? "Cluster Name" : 
+             "District Name",
       options: {
         filter: false,
         sort: true,
         sortThirdClickReset: true,
       },
     },
-    {
+    // Status column only for school level
+    ...(level === "school" ? [{
       name: "status",
       label: "Status",
       options: {
@@ -915,8 +1368,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           );
         },
       },
-    },
-    {
+    }] : []),
+    // Block column only for school/cluster level (not for block/district level)
+    ...(level === "school" || level === "cluster" ? [{
       name: "blockName",
       label: "Block",
       options: {
@@ -927,8 +1381,9 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           className: "center-align-cell",
         }),
       },
-    },
-    {
+    }] : []),
+    // Cluster column only for school level (not for cluster/block/district level)
+    ...(level === "school" ? [{
       name: "clusterName",
       label: "Cluster",
       options: {
@@ -939,7 +1394,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           className: "center-align-cell",
         }),
       },
-    },
+    }] : []),
     // Conditional grade columns for remedial tests
     ...(isRemedialTest 
       ? getGradeLevelsForSubject(testSubject || testNameVal).map(level => ({
@@ -1105,7 +1560,8 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         },
       },
     },
-    {
+    // Actions column only for school level
+    ...(level === "school" ? [{
       name: "submitted",
       label: "Actions",
       options: {
@@ -1180,7 +1636,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           );
         },
       },
-    },
+    }] : []),
   ];
 
   columns.forEach((column) => {
@@ -1292,60 +1748,62 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             </div>
 
             <Box className="">
-              <Box className="flex flex-wrap gap-3 md:justify-end items-center">
-                <Chip
-                  icon={<SchoolIcon style={{ fontSize: "16px" }} />}
-                  label={`Total: ${totalSchools}`}
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    borderRadius: "100px",
-                    height: "32px",
-                    fontFamily: "Work Sans",
-                    fontSize: "14px",
-                    bgcolor: "#EAEDED",
-                    border: "1.5px solid #2F4F4F",
-                    fontWeight: 400,
-                    color: "#2F4F4F",
-                    "& .MuiChip-icon": { color: "#2F4F4F" },
-                  }}
-                />
-                <Chip
-                  icon={<DoneIcon style={{ fontSize: "16px" }} />}
-                  label={`Submitted: ${schoolsSubmitted}`}
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    borderRadius: "100px",
-                    height: "32px",
-                    fontFamily: "Work Sans",
-                    fontSize: "14px",
-                    bgcolor: "#E9F3E9",
-                    fontWeight: 400,
-                    color: "#2e7d32",
-                    "& .MuiChip-icon": { color: "#2e7d32" },
-                  }}
-                />
-                <Chip
-                  icon={<PendingIcon style={{ fontSize: "16px" }} />}
-                  label={`Pending: ${pendingSchools}`}
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    borderRadius: "100px",
-                    height: "32px",
-                    bgcolor: "#FFFBE6",
-                    fontFamily: "Work Sans",
-                    fontSize: "14px",
-                    border: "1.5px solid #FFD700",
-                    fontWeight: 400,
-                    color: "#2F4F4F",
-                    "& .MuiChip-icon": {
+              {level === "school" && (
+                <Box className="flex flex-wrap gap-3 md:justify-end items-center">
+                  <Chip
+                    icon={<SchoolIcon style={{ fontSize: "16px" }} />}
+                    label={`Total: ${totalSchools}`}
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      borderRadius: "100px",
+                      height: "32px",
+                      fontFamily: "Work Sans",
+                      fontSize: "14px",
+                      bgcolor: "#EAEDED",
+                      border: "1.5px solid #2F4F4F",
+                      fontWeight: 400,
                       color: "#2F4F4F",
-                    },
-                  }}
-                />
-              </Box>
+                      "& .MuiChip-icon": { color: "#2F4F4F" },
+                    }}
+                  />
+                  <Chip
+                    icon={<DoneIcon style={{ fontSize: "16px" }} />}
+                    label={`Submitted: ${schoolsSubmitted}`}
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      borderRadius: "100px",
+                      height: "32px",
+                      fontFamily: "Work Sans",
+                      fontSize: "14px",
+                      bgcolor: "#E9F3E9",
+                      fontWeight: 400,
+                      color: "#2e7d32",
+                      "& .MuiChip-icon": { color: "#2e7d32" },
+                    }}
+                  />
+                  <Chip
+                    icon={<PendingIcon style={{ fontSize: "16px" }} />}
+                    label={`Pending: ${pendingSchools}`}
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      borderRadius: "100px",
+                      height: "32px",
+                      bgcolor: "#FFFBE6",
+                      fontFamily: "Work Sans",
+                      fontSize: "14px",
+                      border: "1.5px solid #FFD700",
+                      fontWeight: 400,
+                      color: "#2F4F4F",
+                      "& .MuiChip-icon": {
+                        color: "#2F4F4F",
+                      },
+                    }}
+                  />
+                </Box>
+              )}
             </Box>
           </div>
         </div>
@@ -1358,7 +1816,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               <div className="flex flex-wrap items-center gap-3">
                 <TextField
                   variant="outlined"
-                  placeholder="Search by School Name"
+                  placeholder={`Search by ${level === "school" ? "School" : 
+                                           level === "block" ? "Block" :
+                                           level === "cluster" ? "Cluster" : 
+                                           "District"} Name`}
                   size="small"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -1379,6 +1840,57 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   sx={{ marginBottom: { xs: "10px", md: "0" } }}
                 />
 
+                {/* Status filter only for school level */}
+                {level === "school" && (
+                  <FormControl
+                    sx={{
+                      height: "48px",
+                      display: "flex",
+                      width: "150px",
+                    }}
+                  >
+                    <InputLabel
+                      id="status-select-label"
+                      sx={{
+                        color: "#2F4F4F",
+                        fontFamily: "Work Sans",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        transform: "translate(14px, 14px) scale(1)",
+                        "&.Mui-focused, &.MuiFormLabel-filled": {
+                          transform: "translate(14px, -9px) scale(0.75)",
+                        },
+                      }}
+                    >
+                      Status
+                    </InputLabel>
+                    <Select
+                      labelId="status-select-label"
+                      id="status-select"
+                      value={statusFilter}
+                      label="Status"
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      sx={{
+                        height: "100%",
+                        borderRadius: "8px",
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderRadius: "8px",
+                        },
+                        "& .MuiSelect-select": {
+                          paddingTop: "12px",
+                          paddingBottom: "12px",
+                          display: "flex",
+                          alignItems: "center",
+                        },
+                      }}
+                    >
+                      <MenuItem value="">All Status</MenuItem>
+                      <MenuItem value="submitted">Submitted</MenuItem>
+                      <MenuItem value="pending">Pending</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+
                 <FormControl
                   sx={{
                     height: "48px",
@@ -1387,7 +1899,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   }}
                 >
                   <InputLabel
-                    id="status-select-label"
+                    id="level-select-label"
                     sx={{
                       color: "#2F4F4F",
                       fontFamily: "Work Sans",
@@ -1399,14 +1911,14 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                       },
                     }}
                   >
-                    Status
+                    Level
                   </InputLabel>
                   <Select
-                    labelId="status-select-label"
-                    id="status-select"
-                    value={statusFilter}
-                    label="Status"
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    labelId="level-select-label"
+                    id="level-select"
+                    value={level}
+                    label="Level"
+                    onChange={(e) => setLevel(e.target.value)}
                     sx={{
                       height: "100%",
                       borderRadius: "8px",
@@ -1421,9 +1933,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                       },
                     }}
                   >
-                    <MenuItem value="">All Status</MenuItem>
-                    <MenuItem value="submitted">Submitted</MenuItem>
-                    <MenuItem value="pending">Pending</MenuItem>
+                    <MenuItem value="school">School</MenuItem>
+                    <MenuItem value="block">Block</MenuItem>
+                    <MenuItem value="cluster">Cluster</MenuItem>
+                    <MenuItem value="district">District</MenuItem>
                   </Select>
                 </FormControl>
 
@@ -1518,23 +2031,25 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             >
               <div style={{ width: "180px" }}></div>
               <div style={{ display: "flex", justifyContent: "center" }}>
-                <Pagination
-                  count={Math.ceil(totalSchools / pageSize)}
-                  page={currentPage}
-                  onChange={handlePageChange}
-                  showFirstButton
-                  showLastButton
-                  renderItem={(item) => (
-                    <PaginationItem
-                      {...item}
-                      sx={{
-                        ...(item.page === currentPage + 1 && item.type === "page"
-                          ? { border: "1px solid #2F4F4F", color: "#2F4F4F" }
-                          : {}),
-                      }}
-                    />
-                  )}
-                />
+                {paginationData.totalPages > 0 && (
+                  <Pagination
+                    count={paginationData.totalPages}
+                    page={currentPage}
+                    onChange={handlePageChange}
+                    showFirstButton
+                    showLastButton
+                    renderItem={(item) => (
+                      <PaginationItem
+                        {...item}
+                        sx={{
+                          ...(item.page === currentPage + 1 && item.type === "page"
+                            ? { border: "1px solid #2F4F4F", color: "#2F4F4F" }
+                            : {}),
+                        }}
+                      />
+                    )}
+                  />
+                )}
               </div>
               <div
                 style={{
