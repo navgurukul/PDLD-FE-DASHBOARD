@@ -184,7 +184,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   // Grade level definitions based on subject for remedial tests
   const GRADE_LEVELS = {
     mathematics: ['Beginner(प्रारंभिक)', 'Number Recognition (अंक पहचान)', 'Number Identification (संख्या पहचान)', 'Subtraction (घटाव)', 'Division (भाग)'],
-    english: ['Capital Letter (बड़े अक्षर)', 'Small Letter (छोटे अक्षर)', 'Word (शब्द)', 'Sentence (वाक्य)'],
+    english: ['Capital Letter', 'Small Letter', 'Word', 'Sentence'],
     hindi: ['Beginner (प्रारंभिक)', 'Letter (अक्षर)', 'Word (शब्द)', 'Paragraph (अनुच्छेद)', 'Story (कहानी)']
   };
 
@@ -314,12 +314,99 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       setIsLoading(true);
       toast.info(`Generating ${format.toUpperCase()} report...`);
       let dataToDownload = [];
+      
       if (rows === "current") {
         dataToDownload = tableData;
       } else {
-        // For "all", you may want to fetch all data from API if paginated.
-        dataToDownload = tableData; // For now, use all loaded data
+        // For "all", fetch all data from API
+        try {
+          const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
+            params: {
+              page: 1,
+              pageSize: totalSchools // Fetch all records
+            }
+          });
+          
+          if (response.data && response.data.success) {
+            const allSchools = response.data.data.schools;
+            
+            // Transform all schools data to match table format
+            const formattedAllSchools = allSchools.map((school) => {
+              const isPending = school.status !== "submitted";
+              
+              const baseData = {
+                id: school.id,
+                name: toTitleCase(school.schoolName) || "-",
+                status: school.status === "submitted" ? "Submitted" : "Pending",
+                blockName: school.blockName || "-",
+                clusterName: school.clusterName || "-",
+                totalStudents: isPending 
+                  ? (school.totalStudentsInClass != null ? school.totalStudentsInClass : "-")
+                  : (school.totalStudents === 0 ? "0" : school.totalStudents != null ? school.totalStudents : "-"),
+                presentStudents: isPending 
+                  ? "-"
+                  : (school.presentStudents === 0 ? "0" : school.presentStudents != null ? school.presentStudents : "-"),
+                absentStudents: isPending 
+                  ? "-"
+                  : (school.absentStudents === 0 ? "0" : school.absentStudents != null ? school.absentStudents : "-"),
+                averageScore: isPending 
+                  ? "-"
+                  : (school.averageScore === 0 ? "0" : school.averageScore != null ? school.averageScore : "-"),
+                passRate: isPending 
+                  ? "-"
+                  : (school.successRate === 0
+                    ? "0%"
+                    : school.successRate != null
+                    ? `${school.successRate}%`
+                    : "-"),
+              };
+
+              // Add grade distribution data for remedial tests
+              if (isRemedialTest) {
+                const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
+                gradeLevels.forEach(level => {
+                  const hindiMatch = level.match(/\((.*)\)/);
+                  const hindiLabel = hindiMatch ? hindiMatch[1] : level;
+                  const gradeCounts = school.gradeCounts || {};
+                  baseData[level] = isPending ? "-" : (gradeCounts[hindiLabel] !== undefined ? gradeCounts[hindiLabel] : "-");
+                });
+              }
+
+              // Add syllabus grade columns for syllabus tests
+              if (isSyllabusTest) {
+                const scoreCounts = school.scoreCounts || {};
+                SYLLABUS_GRADE_COLUMNS.forEach(col => {
+                  if (col.key === 'gradeA') {
+                    baseData[col.key] = isPending ? "-" : (scoreCounts["81_100"] !== undefined ? scoreCounts["81_100"] : "-");
+                  } else if (col.key === 'gradeB') {
+                    baseData[col.key] = isPending ? "-" : (scoreCounts["61_80"] !== undefined ? scoreCounts["61_80"] : "-");
+                  } else if (col.key === 'gradeC') {
+                    baseData[col.key] = isPending ? "-" : (scoreCounts["41_60"] !== undefined ? scoreCounts["41_60"] : "-");
+                  } else if (col.key === 'gradeD') {
+                    baseData[col.key] = isPending ? "-" : (scoreCounts["33_40"] !== undefined ? scoreCounts["33_40"] : "-");
+                  } else if (col.key === 'gradeE') {
+                    baseData[col.key] = isPending ? "-" : (scoreCounts["0_32"] !== undefined ? scoreCounts["0_32"] : "-");
+                  } else {
+                    baseData[col.key] = "-";
+                  }
+                });
+              }
+
+              baseData.overallGrade = isPending ? "-" : (school.overallGrade || school.grade || "-");
+              return baseData;
+            });
+            
+            dataToDownload = formattedAllSchools;
+          } else {
+            throw new Error("Failed to fetch all records");
+          }
+        } catch (error) {
+          console.error("Error fetching all records:", error);
+          toast.error("Failed to fetch all records. Using current page data.");
+          dataToDownload = tableData;
+        }
       }
+      
       if (format === "csv") {
         handleDownloadCSV(dataToDownload);
       } else {
@@ -1547,7 +1634,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           onClose={() => setDownloadModalOpen(false)}
           onConfirm={handleDownloadConfirm}
           currentPageCount={tableData.length}
-          totalRecords={tableData.length} // Or total count if you have it
+          totalRecords={totalSchools} // Use totalSchools from API response
           subject={"School Performance"}
         />
         {isLoading && !loading && <SpinnerPageOverlay isLoading={isLoading} />}
