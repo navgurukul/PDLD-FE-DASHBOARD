@@ -120,8 +120,10 @@ export default function SchoolList() {
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageSize: 20,
-    totalSchools: 0,
+    totalCount: 0,
     totalPages: 1,
+    hasNextPage: false,
+    hasPreviousPage: false,
   });
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [schoolToDelete, setSchoolToDelete] = useState(null);
@@ -176,12 +178,41 @@ export default function SchoolList() {
       if (response.data.success) {
         const schoolsArr = response.data.data.schools || [];
         setSchools(schoolsArr);
-        setPagination(response.data.data.pagination || {
-          currentPage: 1,
-          pageSize: pageSize,
-          totalSchools: schoolsArr.length,
-          totalPages: 1,
-        });
+        
+        // Handle pagination data from API
+        if (response.data.data.pagination) {
+          const apiPagination = response.data.data.pagination;
+          
+          // Process pagination data from API response
+          
+          // Calculate totalPages if not provided or if it's coming as 1 when hasNextPage is true
+          let calculatedTotalPages = apiPagination.totalPages || Math.ceil((apiPagination.totalCount || schoolsArr.length) / pageSize);
+          
+          // If API says hasNextPage is true but totalPages is 1, we need to ensure it's at least 2
+          if (apiPagination.hasNextPage && calculatedTotalPages <= 1) {
+            calculatedTotalPages = currentPage + 1; // At minimum, we have the next page
+          }
+          
+          setPagination({
+            currentPage: apiPagination.currentPage || 1,
+            pageSize: apiPagination.pageSize || pageSize,
+            totalCount: apiPagination.totalCount || schoolsArr.length,
+            totalPages: calculatedTotalPages,
+            hasNextPage: apiPagination.hasNextPage || false,
+            hasPreviousPage: apiPagination.hasPreviousPage || false
+          });
+        } else {
+          // Fallback if pagination data is not provided
+          setPagination({
+            currentPage: 1,
+            pageSize: pageSize,
+            totalCount: schoolsArr.length,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPreviousPage: false
+          });
+        }
+        
         if (response.data.data.academicYear) {
           setAcademicYear(response.data.data.academicYear);
         }
@@ -189,7 +220,7 @@ export default function SchoolList() {
         toast.error("Failed to fetch schools");
       }
     } catch (error) {
-      console.error("Error fetching schools:", error);
+      // Error handling via toast
       toast.error(error.response?.data?.message || "Error fetching schools");
     } finally {
       setIsLoading(false);
@@ -236,10 +267,10 @@ export default function SchoolList() {
         const uniqueClusters = [...new Set(allClusterNames)].filter(Boolean).sort();
         setClusters(uniqueClusters);
       } else {
-        console.error("Failed to fetch blocks and clusters:", response.data?.message);
+        // Error handled via toast
       }
     } catch (error) {
-      console.error("Error fetching blocks and clusters:", error);
+      // Error handling via toast
       toast.error("Failed to load blocks and clusters data");
     }
   };
@@ -301,9 +332,7 @@ export default function SchoolList() {
     return matchesCluster && matchesBlock;
   });
 
-  // Debug: Log the response data and filtered results
-  // console.log("Total schools from API:", schools.length);
-  // console.log("Filtered schools count:", filteredSchools.length);
+  // Schools are filtered based on selected filters
 
   // Open delete confirmation modal
   const openDeleteModal = (school) => {
@@ -337,7 +366,7 @@ export default function SchoolList() {
         setCurrentPage(currentPage - 1);
       } else {
         // If we're on the last page and it's now empty, go back one page
-        const totalPages = Math.ceil((pagination.totalSchools - 1) / pagination.pageSize);
+        const totalPages = Math.ceil((pagination.totalCount - 1) / pagination.pageSize);
         if (currentPage > totalPages && totalPages > 0) {
           setCurrentPage(totalPages);
         } else {
@@ -346,7 +375,7 @@ export default function SchoolList() {
         }
       }
     } catch (error) {
-      console.error("Error deleting school:", error);
+      // Error handling via toast
       toast.error(error.response?.data?.message || "Error deleting school");
     } finally {
       setIsDeleting(false);
@@ -364,10 +393,11 @@ export default function SchoolList() {
     return `admin_${schoolPrefix}${randomNum}`;
   };
 
-  // Make sure we're only showing 20 schools in the table per page
+  // Make sure we're only showing the proper number of schools in the table
   // This is a safeguard if the API isn't respecting the limit parameter
-  const limitedFilteredSchools = filteredSchools.slice(0, pagination.pageSize);
-  // console.log("Limited filtered schools:", limitedFilteredSchools.length);
+  // We're now using the server-side pagination, so we should show all received schools
+  const limitedFilteredSchools = filteredSchools;
+
 
   const tableData = limitedFilteredSchools.map((school) => ({
     id: school.id,
@@ -560,7 +590,7 @@ export default function SchoolList() {
                   minWidth: "unset",
                 }}
                 onClick={() => {
-                  console.log("Edit School ID:", schoolId);
+
                   navigate(`/schools/update/${schoolId}`, {
                     state: { schoolData: schoolObj }, // Pass the entire school object
                   });
@@ -924,13 +954,33 @@ export default function SchoolList() {
             <div style={{ display: "flex", justifyContent: "center" }}>
               {/* Centered pagination */}
               <Pagination
-                count={pagination.totalPages}
+                count={pagination.totalPages || 1}
                 page={currentPage}
                 onChange={handlePageChange}
-                showFirstButton
-                showLastButton
+                showFirstButton={pagination.totalPages > 1 || pagination.hasNextPage}
+                showLastButton={pagination.totalPages > 1 || pagination.hasNextPage}
+                disabled={isLoading || isSearchLoading}
+                siblingCount={1}
+                boundaryCount={1}
                 renderItem={(item) => {
                   const isNextNumberPage = item.page === currentPage + 1 && item.type === "page";
+                  
+                  // Special case for "next" button - force enable if API says hasNextPage
+                  if (item.type === 'next' && pagination.hasNextPage) {
+                    return (
+                      <PaginationItem
+                        {...item}
+                        disabled={false}
+                        sx={{
+                          color: "#2F4F4F",
+                          "&.Mui-selected": {
+                            backgroundColor: "#2F4F4F",
+                            color: "white",
+                          },
+                        }}
+                      />
+                    );
+                  }
 
                   return (
                     <PaginationItem
