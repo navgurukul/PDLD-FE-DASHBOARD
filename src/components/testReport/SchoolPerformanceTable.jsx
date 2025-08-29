@@ -135,6 +135,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   const [schoolsSubmitted, setSchoolsSubmitted] = useState(0);
   const [pendingSchools, setPendingSchools] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [error, setError] = useState(null);
 
   // UI state
@@ -384,7 +385,13 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   };
 
   const fetchData = async (page = 1, size = pageSize, selectedLevel = level, searchValue = searchQuery.trim()) => {
-    setLoading(true);
+    // Use different loading states for search vs regular data loading
+    const isSearching = searchValue && searchValue.trim() !== "";
+    if (isSearching) {
+      setIsSearchLoading(true);
+    } else {
+      setLoading(true);
+    }
     try {
       // Build search parameters
       const searchParams = {
@@ -505,6 +512,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       setError(error.response?.data?.message || "An error occurred while fetching data");
     } finally {
       setLoading(false);
+      setIsSearchLoading(false);
     }
   };
 
@@ -1826,7 +1834,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   InputProps={{
                     startAdornment: (
                       <div className="pr-2">
-                        <Search size={18} className="text-gray-500" />
+                        {isSearchLoading ? (
+                          <CircularProgress size={18} sx={{ color: "#2F4F4F" }} />
+                        ) : (
+                          <Search size={18} className="text-gray-500" />
+                        )}
                       </div>
                     ),
                     style: {
