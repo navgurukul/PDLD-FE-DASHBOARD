@@ -335,8 +335,10 @@ export default function TestListTable() {
         let url = `/tests/search?page=${currentPage}&pageSize=${pageSize}&query=${encodeURIComponent(debouncedSearchQuery)}`;
         const response = await apiInstance.get(url);
         if (response.data && response.data.data) {
-          setTests(response.data.data.tests); // Corrected to access 'tests' instead of 'data.data'
-          setTotalRecords(response.data.data.pagination.totalCount); // Corrected to access 'pagination.totalCount'
+          // Fix: Set tests from the correct path in search response
+          setTests(response.data.data.data || []); // The API returns data.data array
+          // Fix: Get total count from correct pagination path
+          setTotalRecords(response.data.data.pagination.totalRecords || 1);
         }
         return;
       }
