@@ -384,7 +384,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     return "-";
   };
 
-  const fetchData = async (page = 1, size = pageSize, selectedLevel = level, searchValue = searchQuery.trim()) => {
+  const fetchData = async (page = 1, size = pageSize, selectedLevel = level, searchValue = searchQuery.trim(), selectedStatus = statusFilter) => {
     // Use different loading states for search vs regular data loading
     const isSearching = searchValue && searchValue.trim() !== "";
     if (isSearching) {
@@ -403,6 +403,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       // Add search parameter if provided
       if (searchValue) {
         searchParams.query = searchValue;
+      }
+      
+      // Add status parameter if provided (only for school level)
+      if (selectedLevel === "school" && selectedStatus) {
+        searchParams.status = selectedStatus;
       }
 
       const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
@@ -513,11 +518,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   useEffect(() => {
     setCurrentPage(1); // Reset to first page when level changes
-    fetchData(1, pageSize, level);
+    fetchData(1, pageSize, level, searchQuery.trim(), statusFilter);
   }, [currentTestId, level]);
 
   useEffect(() => {
-    fetchData(currentPage, pageSize, level);
+    fetchData(currentPage, pageSize, level, searchQuery.trim(), statusFilter);
   }, [currentPage, pageSize]);
 
   // Handle search functionality with debouncing
@@ -526,19 +531,19 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   useEffect(() => {
     if (debouncedSearchQuery !== searchQuery) return; // Only proceed if debounced value matches current
     setCurrentPage(1); // Reset to first page when search changes
-    fetchData(1, pageSize, level, debouncedSearchQuery);
+    fetchData(1, pageSize, level, debouncedSearchQuery, statusFilter);
   }, [debouncedSearchQuery, level]);
+  
+  // Add effect for status filter changes
+  useEffect(() => {
+    setCurrentPage(1); // Reset to first page when status filter changes
+    fetchData(1, pageSize, level, searchQuery.trim(), statusFilter);
+  }, [statusFilter]);
 
-  // Filter schools based on status only (search is now server-side)
+  // No frontend filtering needed - all filtering is now done on the server
   const filteredSchools = useMemo(() => {
-    return schools.filter((school) => {
-      const matchesStatus =
-        !statusFilter ||
-        (statusFilter === "submitted" && school.submitted) ||
-        (statusFilter === "pending" && !school.submitted);
-      return matchesStatus;
-    });
-  }, [schools, statusFilter]);
+    return schools;
+  }, [schools]);
 
   // For the Download Report
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
