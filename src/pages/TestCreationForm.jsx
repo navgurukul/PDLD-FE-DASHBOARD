@@ -64,32 +64,34 @@ const TestCreationForm = () => {
       setSubjectsError(null);
 
       const response = await apiInstance.get('/report/class-wise-subjects');
-
       if (response.data.success && response.data.data) {
         //  Transform API response to our format
         const subjectsMap = {};
-        let remedialTestTag = [];
-        let syllabusTestTag = [];
+        let remedialTestTags = [];
+        let syllabusTestTags = [];
 
-        response.data.data.forEach((classData) => {
-          if (classData.remedialTestTag) {
-            remedialTestTag = classData.remedialTestTag;
+        // Extract test tags from the first item of data array
+        if (response.data.data[0]) {
+          // Get test tags from the correct location
+          remedialTestTags = response.data.data[0].remedialTestTags || [];
+          syllabusTestTags = response.data.data[0].syllabusTestTags || [];
+          
+          // Process class data which is nested one level deeper
+          if (response.data.data[0].data && Array.isArray(response.data.data[0].data)) {
+            response.data.data[0].data.forEach((classData) => {
+              if (classData.class) {
+                subjectsMap[classData.class] = {
+                  subjects: classData.subjects || [],
+                  VOCATIONAL: classData.vocationalSubjects || [],
+                  remedialSubjects: classData.remedialSubjects || [],
+                };
+              }
+            });
           }
-          if (classData.SyllabusTestTag) {
-            syllabusTestTag = classData.SyllabusTestTag;
-          }
-
-          if (classData.class) {
-            subjectsMap[classData.class] = {
-              subjects: classData.subjects || [],
-              VOCATIONAL: classData.vocationalSubjects || [],
-              remedialSubjects: classData.remedialSubjects || [],
-            };
-          }
-        });
+        }
 
         setClassWiseSubjects(subjectsMap);
-        setTestTags({ remedial: remedialTestTag, syllabus: syllabusTestTag });
+        setTestTags({ remedial: remedialTestTags, syllabus: syllabusTestTags });
       } else {
         throw new Error('Invalid API response');
       }
