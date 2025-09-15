@@ -250,6 +250,14 @@ export default function SchoolList() {
     }
   }, [location]);
 
+  // Reset to page 1 when search query or filters change
+  useEffect(() => {
+    // Only reset the page if we're not already on page 1
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearchQuery, selectedBlock, selectedCluster]);
+
   //  Add a new function to fetch global blocks and clusters
   const fetchGlobalBlocksAndClusters = async () => {
     try {
