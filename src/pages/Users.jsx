@@ -849,7 +849,7 @@ export default function Users() {
             <div className="w-full lg:w-[360px]">
               <TextField
                 variant="outlined"
-                placeholder="Search by Name or Role..."
+                placeholder="Search by User name"
                 size="small"
                 fullWidth
                 value={searchQuery}
