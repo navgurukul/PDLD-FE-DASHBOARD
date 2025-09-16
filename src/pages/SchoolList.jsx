@@ -710,7 +710,7 @@ export default function SchoolList() {
                   <div className="flex flex-wrap gap-2">
                     <TextField
                       variant="outlined"
-                      placeholder="Search by School name, UDISE, Block Name.."
+                      placeholder="Search by School name or UDISE"
                       size="small"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
