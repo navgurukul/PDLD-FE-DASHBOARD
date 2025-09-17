@@ -135,6 +135,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   const [schoolsSubmitted, setSchoolsSubmitted] = useState(0);
   const [pendingSchools, setPendingSchools] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [error, setError] = useState(null);
 
   // UI state
@@ -383,8 +384,14 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     return "-";
   };
 
-  const fetchData = async (page = 1, size = pageSize, selectedLevel = level, searchValue = searchQuery.trim()) => {
-    setLoading(true);
+  const fetchData = async (page = 1, size = pageSize, selectedLevel = level, searchValue = searchQuery.trim(), selectedStatus = statusFilter) => {
+    // Use different loading states for search vs regular data loading
+    const isSearching = searchValue && searchValue.trim() !== "";
+    if (isSearching) {
+      setIsSearchLoading(true);
+    } else {
+      setLoading(true);
+    }
     try {
       // Build search parameters
       const searchParams = {
@@ -396,6 +403,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       // Add search parameter if provided
       if (searchValue) {
         searchParams.query = searchValue;
+      }
+      
+      // Add status parameter if provided (only for school level)
+      if (selectedLevel === "school" && selectedStatus) {
+        searchParams.status = selectedStatus;
       }
 
       const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
@@ -436,8 +448,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
             currentPage: pagination.currentPage || page,
             pageSize: pagination.pageSize || size
           });
-          
-          // Removed debug log
+         
         }
 
         // Get requiredMarksToPass from first school (assuming all same)
@@ -446,10 +457,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         setRequiredMarksToPass(requiredMarks);
         setTestSubject(testSubject);          // For remedial tests, check if API provides grade distribution data
         let mockGradeData = {};
-        // Note: Currently the API doesn't provide grade distribution data for remedial tests
-        // So we don't generate mock data to avoid showing incorrect information
-        
-        // Removed debug log
         
         // Transform API data to match the component's expected format
         const formattedSchools = apiSchools.map((school) => {
@@ -505,16 +512,17 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       setError(error.response?.data?.message || "An error occurred while fetching data");
     } finally {
       setLoading(false);
+      setIsSearchLoading(false);
     }
   };
 
   useEffect(() => {
     setCurrentPage(1); // Reset to first page when level changes
-    fetchData(1, pageSize, level);
+    fetchData(1, pageSize, level, searchQuery.trim(), statusFilter);
   }, [currentTestId, level]);
 
   useEffect(() => {
-    fetchData(currentPage, pageSize, level);
+    fetchData(currentPage, pageSize, level, searchQuery.trim(), statusFilter);
   }, [currentPage, pageSize]);
 
   // Handle search functionality with debouncing
@@ -523,19 +531,19 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   useEffect(() => {
     if (debouncedSearchQuery !== searchQuery) return; // Only proceed if debounced value matches current
     setCurrentPage(1); // Reset to first page when search changes
-    fetchData(1, pageSize, level, debouncedSearchQuery);
+    fetchData(1, pageSize, level, debouncedSearchQuery, statusFilter);
   }, [debouncedSearchQuery, level]);
+  
+  // Add effect for status filter changes
+  useEffect(() => {
+    setCurrentPage(1); // Reset to first page when status filter changes
+    fetchData(1, pageSize, level, searchQuery.trim(), statusFilter);
+  }, [statusFilter]);
 
-  // Filter schools based on status only (search is now server-side)
+  // No frontend filtering needed - all filtering is now done on the server
   const filteredSchools = useMemo(() => {
-    return schools.filter((school) => {
-      const matchesStatus =
-        !statusFilter ||
-        (statusFilter === "submitted" && school.submitted) ||
-        (statusFilter === "pending" && !school.submitted);
-      return matchesStatus;
-    });
-  }, [schools, statusFilter]);
+    return schools;
+  }, [schools]);
 
   // For the Download Report
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
@@ -1808,12 +1816,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           </div>
         </div>
 
-        {/* Filters section */}
-        {schools.length > 0 && (
-          <div className="pb-4">
-            <div className="flex flex-wrap items-center gap-3 justify-between">
-              {/* LEFT: Search, Status, Clear */}
-              <div className="flex flex-wrap items-center gap-3">
+        {/* Filters section - always show it regardless of data presence */}
+        <div className="pb-4">
+          <div className="flex flex-wrap items-center gap-3 justify-between">
+            {/* LEFT: Search, Status, Clear */}
+            <div className="flex flex-wrap items-center gap-3">
                 <TextField
                   variant="outlined"
                   placeholder={`Search by ${level === "school" ? "School" : 
@@ -1826,7 +1833,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                   InputProps={{
                     startAdornment: (
                       <div className="pr-2">
-                        <Search size={18} className="text-gray-500" />
+                        {isSearchLoading ? (
+                          <CircularProgress size={18} sx={{ color: "#2F4F4F" }} />
+                        ) : (
+                          <Search size={18} className="text-gray-500" />
+                        )}
                       </div>
                     ),
                     style: {
@@ -1988,7 +1999,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
               </div>
             </div>
           </div>
-        )}
 
         {schools.length > 0 && !isRemedialTest && !isSyllabusTest && (
           <div
@@ -2005,18 +2015,16 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
              Maximum Marks: {maxScore} 
           </div>
         )}
-        {/* Data Table, Border, Pagination: Only when submissions exist */}
-        {schools.length > 0 ? (
-          <>
-            <div className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto">
-              <MUIDataTable
-                data={tableData}
-                columns={columns}
-                options={{
-                  ...options,
-                }}
-              />
-            </div>
+        {/* Data Table - Always shown regardless of data presence */}
+        <div className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto">
+          <MUIDataTable
+            data={schools.length > 0 ? tableData : []}
+            columns={columns}
+            options={{
+              ...options,
+            }}
+          />
+        </div>
 
             {/* Pagination and Rows per Page */}
             <div
@@ -2103,46 +2111,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                 </Select>
               </div>
             </div>
-          </>
-        ) : (
-          // No Data Message (no border, no pagination)
-          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <img
-              src={FolderEmptyImg}
-              alt="No Data"
-              style={{ width: 80, height: 80, marginBottom: 16, opacity: 0.7 }}
-            />
-            <p
-              style={{
-                fontFamily: "'Work Sans', sans-serif",
-                fontWeight: 400,
-                fontSize: "18px",
-                color: "#2F4F4F",
-                marginBottom: "16px",
-              }}
-            >
-              No school submissions have been recorded for this test yet.
-            </p>
-            <Button
-              variant="outlined"
-              sx={{
-                borderRadius: "8px",
-                borderColor: "#2F4F4F",
-                color: "#2F4F4F",
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "18px",
-                "&:hover": {
-                  borderColor: "#2F4F4F",
-                  backgroundColor: "rgba(47, 79, 79, 0.08)",
-                },
-              }}
-              onClick={() => navigate("/allTest")}
-            >
-              Return to Tests List
-            </Button>
-          </div>
-        )}
         
         <DownloadModal
           isOpen={downloadModalOpen}

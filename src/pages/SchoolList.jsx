@@ -137,6 +137,7 @@ export default function SchoolList() {
   const [selectedBlock, setSelectedBlock] = useState("");
   const [clusters, setClusters] = useState([]);
   const [blocks, setBlocks] = useState([]);
+  const [blockClusterData, setBlockClusterData] = useState([]); // Store the full block/cluster data
 
   // Fetch schools from API (uses /schools/search for searchQuery, /school/all otherwise)
   const fetchSchools = async () => {
@@ -249,18 +250,29 @@ export default function SchoolList() {
     }
   }, [location]);
 
+  // Reset to page 1 when search query or filters change
+  useEffect(() => {
+    // Only reset the page if we're not already on page 1
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearchQuery, selectedBlock, selectedCluster]);
+
   //  Add a new function to fetch global blocks and clusters
   const fetchGlobalBlocksAndClusters = async () => {
     try {
       const response = await apiInstance.get("/user/dropdown-data");
       if (response.data && response.data.success) {
         const blocksData = response.data.data;
+        
+        // Store the full data structure for block-cluster relationship
+        setBlockClusterData(blocksData);
 
         // Extract unique blocks
         const uniqueBlocks = blocksData.map((block) => block.blockName).filter(Boolean).sort();
         setBlocks(uniqueBlocks);
 
-        // Extract unique clusters
+        // For initial state (All Blocks selected), show all clusters
         const allClusterNames = blocksData.flatMap((block) =>
           block.clusters.map((cluster) => cluster.name)
         );
@@ -315,6 +327,15 @@ export default function SchoolList() {
     setSelectedBlock("");
     setSearchQuery("");
     setCurrentPage(1);
+    
+    // Reset clusters to show all available clusters
+    if (blockClusterData.length > 0) {
+      const allClusterNames = blockClusterData.flatMap((block) =>
+        block.clusters.map((cluster) => cluster.name)
+      );
+      const uniqueClusters = [...new Set(allClusterNames)].filter(Boolean).sort();
+      setClusters(uniqueClusters);
+    }
   };
 
   // Function to capitalize only the first letter and make rest lowercase
@@ -689,7 +710,7 @@ export default function SchoolList() {
                   <div className="flex flex-wrap gap-2">
                     <TextField
                       variant="outlined"
-                      placeholder="Search by School name, UDISE, Block Name.."
+                      placeholder="Search by School name or UDISE"
                       size="small"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -747,7 +768,30 @@ export default function SchoolList() {
                         id="block-select"
                         value={selectedBlock}
                         label="Block"
-                        onChange={(e) => setSelectedBlock(e.target.value)}
+                        onChange={(e) => {
+                          const newBlockValue = e.target.value;
+                          setSelectedBlock(newBlockValue);
+                          setSelectedCluster(""); // Reset cluster when block changes
+                          
+                          // Update clusters based on selected block
+                          if (newBlockValue === "") {
+                            // If "All Blocks" is selected, show all clusters
+                            const allClusterNames = blockClusterData.flatMap((block) =>
+                              block.clusters.map((cluster) => cluster.name)
+                            );
+                            const uniqueClusters = [...new Set(allClusterNames)].filter(Boolean).sort();
+                            setClusters(uniqueClusters);
+                          } else {
+                            // Otherwise, filter clusters by selected block
+                            const selectedBlockData = blockClusterData.find(
+                              (block) => block.blockName === newBlockValue
+                            );
+                            const blockClusters = selectedBlockData 
+                              ? selectedBlockData.clusters.map((cluster) => cluster.name).filter(Boolean).sort()
+                              : [];
+                            setClusters(blockClusters);
+                          }
+                        }}
                         sx={{
                           height: "100%",
                           borderRadius: "8px",

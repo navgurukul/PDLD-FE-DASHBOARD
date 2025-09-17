@@ -21,7 +21,6 @@ import { Search, X as CloseIcon, RefreshCw } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
-import { noSchoolImage } from "../utils/imagePath";
 import apiInstance from "../../api"; // Updated import path
 import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
@@ -527,17 +526,18 @@ const Reports = () => {
             </tr>
           </thead>
           <tbody>
-            {data.map((school, index) => (
-              <tr key={index}>
-                <td style={{ maxWidth: "300px", wordWrap: "break-word" }}>
-                  {school.udiseCode} - {toTitleCase(school.schoolName)}
-                </td>
-                <td
-                  className={parseInt(school.primaryAvg) < 33 ? "low-score" : ""}
-                  onClick={() => handleCellClick(index, 1)}
-                >
-                  {formatNumber(school.primaryAvg)}
-                </td>
+            {data.length > 0 ? (
+              data.map((school, index) => (
+                <tr key={index}>
+                  <td style={{ maxWidth: "300px", wordWrap: "break-word" }}>
+                    {school.udiseCode} - {toTitleCase(school.schoolName)}
+                  </td>
+                  <td
+                    className={parseInt(school.primaryAvg) < 33 ? "low-score" : ""}
+                    onClick={() => handleCellClick(index, 1)}
+                  >
+                    {formatNumber(school.primaryAvg)}
+                  </td>
                 <td
                   className={parseInt(school.primaryPass) < 33 ? "low-score" : ""}
                   onClick={() => handleCellClick(index, 2)}
@@ -581,7 +581,13 @@ const Reports = () => {
                   {school.higherSecondaryPass !== null ? `${formatNumber(school.higherSecondaryPass)}%` : "-"}
                 </td>
               </tr>
-            ))}
+            ))) : (
+              <tr>
+                <td colSpan="9" style={{ textAlign: "center", padding: "24px" }}>
+                  Sorry, no matching records found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -1559,131 +1565,115 @@ const Reports = () => {
         </div>
 
         {/* Report Table */}
-        {filteredData.length > 0 ? (
-          <>
-            <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
-              <CustomTable data={filteredData} />
-            </div>
+        <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
+          <CustomTable data={filteredData} />
+        </div>
 
-            {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between", // This spreads items to the edges
-                width: "100%",
-                margin: "20px 0",
-                padding: "0 24px", // Add some padding on the sides
+        {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between", // This spreads items to the edges
+            width: "100%",
+            margin: "20px 0",
+            padding: "0 24px", // Add some padding on the sides
+          }}
+        >
+          {/* Empty div for left spacing to help with centering */}
+          <div style={{ width: "180px" }}></div>
+
+          {/* Centered pagination */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <Pagination
+              count={totalPages || 1}
+              page={currentPage}
+              onChange={handlePageChange}
+              showFirstButton
+              showLastButton
+              size="medium"
+              renderItem={(item) => {
+                const isNextPage = item.type === "page" && item.page === currentPage + 1;
+                const isCurrentPage = item.type === "page" && item.page === currentPage;
+
+                return (
+                  <PaginationItem
+                    {...item}
+                    sx={{
+                      margin: "0 2px",
+                      ...(isNextPage && {
+                        border: "1px solid #2F4F4F !important",
+                        borderRadius: "9999px !important",
+                        color: "#2F4F4F !important",
+                        backgroundColor: "white !important",
+                      }),
+                      ...(isCurrentPage && {
+                        backgroundColor: "#2F4F4F !important",
+                        color: "white !important",
+                      }),
+                      "&:hover": {
+                        backgroundColor: "#A3BFBF !important",
+                      },
+                    }}
+                  />
+                );
+              }}
+            />
+          </div>
+
+          {/* Right-aligned compact rows selector */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              width: "180px",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#2F4F4F",
+                mr: 1,
+                fontSize: "0.875rem",
+                fontWeight: 500,
               }}
             >
-              {/* Empty div for left spacing to help with centering */}
-              <div style={{ width: "180px" }}></div>
-
-              {/* Centered pagination */}
-
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <Pagination
-                  count={totalPages || 1}
-                  page={currentPage}
-                  onChange={handlePageChange}
-                  showFirstButton
-                  showLastButton
-                  size="medium"
-                  renderItem={(item) => {
-                    const isNextPage = item.type === "page" && item.page === currentPage + 1;
-                    const isCurrentPage = item.type === "page" && item.page === currentPage;
-
-                    return (
-                      <PaginationItem
-                        {...item}
-                        sx={{
-                          margin: "0 2px",
-                          ...(isNextPage && {
-                            border: "1px solid #2F4F4F !important",
-                            borderRadius: "9999px !important",
-                            color: "#2F4F4F !important",
-                            backgroundColor: "white !important",
-                          }),
-                          ...(isCurrentPage && {
-                            backgroundColor: "#2F4F4F !important",
-                            color: "white !important",
-                          }),
-                          "&:hover": {
-                            backgroundColor: "#A3BFBF !important",
-                          },
-                        }}
-                      />
-                    );
-                  }}
-                />
-              </div>
-
-              {/* Right-aligned compact rows selector */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  width: "180px",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "#2F4F4F",
-                    mr: 1,
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                  }}
-                >
-                  Rows per page:
-                </Typography>
-                <Select
-                  value={pageSize}
-                  onChange={handlePageSizeChange}
-                  variant="standard" // More compact variant
-                  disableUnderline
-                  sx={{
-                    height: "32px",
-                    minWidth: "60px",
-                    "& .MuiSelect-select": {
-                      color: "#2F4F4F",
-                      fontWeight: "600",
-                      py: 0,
-                      pl: 1,
-                    },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      elevation: 2,
-                      sx: {
-                        borderRadius: "8px",
-                        mt: 0.5,
-                      },
-                    },
-                  }}
-                >
-                  <MenuItem value={10}>10</MenuItem>
-                  <MenuItem value={15}>15</MenuItem>
-                  <MenuItem value={20}>20</MenuItem>
-                  <MenuItem value={50}>50</MenuItem>
-                  <MenuItem value={100}>100</MenuItem>
-                </Select>
-              </div>
-            </div>
-          </>
-        ) : (
-          // Show placeholder when no data is available
-          <div className="flex flex-col items-center justify-center p-10">
-            <img src={noSchoolImage} alt="No data available" className="w-40 h-40 mb-6" />
-            <h3 className="text-xl text-gray-600 mb-2">No Data Available</h3>
-            <p className="text-gray-500">
-              {searchQuery
-                ? "No schools match your search criteria"
-                : "No school performance data available for the selected filters"}
-            </p>
+              Rows per page:
+            </Typography>
+            <Select
+              value={pageSize}
+              onChange={handlePageSizeChange}
+              variant="standard" // More compact variant
+              disableUnderline
+              sx={{
+                height: "32px",
+                minWidth: "60px",
+                "& .MuiSelect-select": {
+                  color: "#2F4F4F",
+                  fontWeight: "600",
+                  py: 0,
+                  pl: 1,
+                },
+              }}
+              MenuProps={{
+                PaperProps: {
+                  elevation: 2,
+                  sx: {
+                    borderRadius: "8px",
+                    mt: 0.5,
+                  },
+                },
+              }}
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={15}>15</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+              <MenuItem value={100}>100</MenuItem>
+            </Select>
           </div>
-        )}
+        </div>
 
         {/* Class Detail Modal */}
         <Dialog

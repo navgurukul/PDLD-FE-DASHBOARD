@@ -34,6 +34,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import { Search } from "lucide-react";
+import { getRole } from "../customHook/useAuth"; // Import getRole to get current user's role
 
 const theme = createTheme({
   typography: {
@@ -173,9 +174,33 @@ export default function Users() {
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
   };
 
+  // Function to get available roles based on current user's role
+  const getAvailableRolesByUserRole = () => {
+    const currentUserRole = getRole();
+    
+    // Return roles based on current user's role hierarchy
+    switch(currentUserRole) {
+      case 'DISTRICT_OFFICER':
+        return ['DISTRICT_OFFICER', 'BLOCK_OFFICER', 'CLUSTER_PRINCIPAL', 'CAC'];
+      case 'BLOCK_OFFICER':
+        return ['BLOCK_OFFICER', 'CLUSTER_PRINCIPAL', 'CAC'];
+      case 'CLUSTER_PRINCIPAL':
+        return ['CLUSTER_PRINCIPAL', 'CAC'];
+      case 'CAC':
+        return ['CAC'];
+      default:
+        // Fallback - if role is not recognized, return all roles
+        return ['DISTRICT_OFFICER', 'BLOCK_OFFICER', 'CLUSTER_PRINCIPAL', 'CAC'];
+    }
+  };
+
   // Fetch global blocks and roles data for filters
   const fetchGlobalBlocksAndRoles = async () => {
     try {
+      // Set available roles based on current user's role hierarchy
+      const hierarchicalRoles = getAvailableRolesByUserRole();
+      setAvailableRoles(hierarchicalRoles);
+      
       const response = await apiInstance.get("/user/dropdown-data");
       if (response.data && response.data.success) {
         const blocksData = response.data.data;
@@ -183,9 +208,6 @@ export default function Users() {
         // Extract unique blocks
         const uniqueBlocks = blocksData.map((block) => block.blockName).filter(Boolean).sort();
         setAvailableBlocks(uniqueBlocks);
-
-        // You can also set available roles here if the API provides them
-        // For now, keeping the existing role extraction logic
       } else {
         console.error("Failed to fetch blocks and roles:", response.data?.message);
       }
@@ -195,12 +217,9 @@ export default function Users() {
     }
   };
 
-  // Extract unique roles from users (keeping existing logic for backward compatibility)
+  // Extract blocks from users as fallback (but don't change roles)
   useEffect(() => {
     if (users.length > 0) {
-      const roles = [...new Set(users.map((user) => user.role))].filter(Boolean);
-      setAvailableRoles(roles);
-
       // If blocks weren't loaded from global API, extract from users as fallback
       if (availableBlocks.length === 0) {
         const blocks = new Set();
@@ -219,6 +238,11 @@ export default function Users() {
 
   // Call the function on component mount
   useEffect(() => {
+    // Set available roles immediately based on current user's role
+    const hierarchicalRoles = getAvailableRolesByUserRole();
+    setAvailableRoles(hierarchicalRoles);
+    
+    // Then fetch blocks and confirm roles
     fetchGlobalBlocksAndRoles();
   }, []);
 
@@ -234,7 +258,6 @@ export default function Users() {
       DISTRICT_OFFICER: "District Officer",
       BLOCK_OFFICER: "Block Officer",
       CLUSTER_PRINCIPAL: "Cluster Principal",
-      CLUSTER_ACADEMIC_COORDINATOR: "Cluster Academic Coordinator",
       CAC: "Cluster Academic Coordinator",
     };
 
@@ -249,7 +272,7 @@ export default function Users() {
       DISTRICT_OFFICER: "District Officer",
       BLOCK_OFFICER: "Block Officer",
       CLUSTER_PRINCIPAL: "Cluster Principal",
-      CLUSTER_ACADEMIC_COORDINATOR: "CAC",
+      CAC: "CAC",
     };
 
     return roleShortFormMap[role] || role.replace(/_/g, " ");
@@ -826,7 +849,7 @@ export default function Users() {
             <div className="w-full lg:w-[360px]">
               <TextField
                 variant="outlined"
-                placeholder="Search by Name or Role..."
+                placeholder="Search by User name"
                 size="small"
                 fullWidth
                 value={searchQuery}

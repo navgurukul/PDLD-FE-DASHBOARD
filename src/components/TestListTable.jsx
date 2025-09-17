@@ -167,7 +167,7 @@ export default function TestListTable() {
     try {
       const response = await apiInstance.get("/report/class-wise-subjects");
       if (response.data && response.data.data) {
-        const data = response.data.data;
+        const data = response.data.data[0].data;
         // Check if data is an array (new format) or object (old format)
         if (Array.isArray(data)) {
           // New format: array of objects with class and subjects
@@ -329,19 +329,19 @@ export default function TestListTable() {
     }
     
     try {
-      // If debouncedSearchQuery is present, use /tests/search (global, paginated search)
+      // If actively searching, use /tests/search
       if (isSearching) {
-        // Only test name search, ignore other filters for now (can be combined if backend supports)
+        // Only test name search, ignore other filters for now
         let url = `/tests/search?page=${currentPage}&pageSize=${pageSize}&query=${encodeURIComponent(debouncedSearchQuery)}`;
         const response = await apiInstance.get(url);
         if (response.data && response.data.data) {
-          setTests(response.data.data.tests); // Corrected to access 'tests' instead of 'data.data'
-          setTotalRecords(response.data.data.pagination.totalCount); // Corrected to access 'pagination.totalCount'
+          setTests(response.data.data.data || []);
+          setTotalRecords(response.data.data.pagination.totalTests || 1);
         }
         return;
       }
 
-      // Otherwise, use /test/filter for all other filters
+      // For all other cases (cleared search or regular filters)
       let startDateFormatted;
       let endDateFormatted;
       if (startDate && endDate) {
@@ -373,7 +373,7 @@ export default function TestListTable() {
       const response = await apiInstance.get(url);
       if (response.data && response.data.data) {
         setTests(response.data.data.data);
-        setTotalRecords(response.data.data.pagination.totalRecords);
+        setTotalRecords(response.data.data.pagination.totalTests);
       }
     } catch (error) {
       // Error fetching data, do nothing (no debug log)
@@ -385,10 +385,14 @@ export default function TestListTable() {
 
   // Re-fetch data whenever any filter or search changes (debounced for search)
   useEffect(() => {
-    if ((startDate && endDate) || (!startDate && !endDate) || (debouncedSearchQuery && debouncedSearchQuery.trim() !== "")) {
+    // Check if search is being cleared (searchQuery empty but debouncedSearchQuery still has value)
+    const isSearchClearing = searchQuery === "" && debouncedSearchQuery !== "";
+    
+    // When clearing search, only react to the debounced value update, not the immediate searchQuery change
+    if (!isSearchClearing && ((startDate && endDate) || (!startDate && !endDate) || (debouncedSearchQuery && debouncedSearchQuery.trim() !== ""))) {
       fetchData();
     }
-  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage, pageSize, debouncedSearchQuery]);
+  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage, pageSize, debouncedSearchQuery, searchQuery]);
 
   // Remove local filtering: tests are already filtered by backend
   const filteredTests = tests;
