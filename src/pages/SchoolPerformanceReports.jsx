@@ -417,6 +417,8 @@ const Reports = () => {
 
   // Custom Table Component
   const CustomTable = ({ data }) => {
+    // Helper to check if a cell is clickable (i.e., value is not null/undefined/empty)
+    const isCellClickable = (value) => value !== null && value !== undefined && value !== "" && value !== "-";
     return (
       <div className="overflow-x-auto">
         <style>
@@ -427,13 +429,14 @@ const Reports = () => {
               font-family: 'Karla', sans-serif;
             }
             .custom-table th, .custom-table td {
-              padding: 10px 18px; /* Increased row height */
+              padding: 10px 18px;
               text-align: center;
               border-bottom: none;
               font-family:  'Work Sans', sans-serif !important;
               font-weight: 400 !important;
               font-size: 14px !important;
               color: #2F4F4F;
+              background: #fff !important;
             }
             .custom-table th.group-header {
               font-family: 'Work Sans', sans-serif !important;
@@ -451,7 +454,7 @@ const Reports = () => {
               text-align: center;
             }
             .custom-table tbody tr:hover {
-              backgroundColor: "inherit !important",
+              background-color: inherit !important;
               cursor: default !important;
             }
             .custom-table td.low-score {
@@ -487,8 +490,17 @@ const Reports = () => {
             .custom-table td:first-child {
               text-align: left;
             }
-               .custom-table td {
+            .custom-table td {
               height: 60px;
+              background: #fff !important;
+            }
+            .custom-table td.clickable {
+              cursor: pointer !important;
+              background: #fff !important;
+              transition: background 0.2s;
+            }
+            .custom-table td.clickable:hover {
+              background: #fff !important;
             }
           `}
         </style>
@@ -497,7 +509,7 @@ const Reports = () => {
             <tr>
               <th
                 rowSpan="2"
-                className="school-header" // <-- Add this
+                className="school-header"
               >
                 School Name
               </th>
@@ -532,56 +544,137 @@ const Reports = () => {
                   <td style={{ maxWidth: "300px", wordWrap: "break-word" }}>
                     {school.udiseCode} - {toTitleCase(school.schoolName)}
                   </td>
-                  <td
-                    className={parseInt(school.primaryAvg) < 33 ? "low-score" : ""}
-                    onClick={() => handleCellClick(index, 1)}
-                  >
-                    {formatNumber(school.primaryAvg)}
-                  </td>
-                <td
-                  className={parseInt(school.primaryPass) < 33 ? "low-score" : ""}
-                  onClick={() => handleCellClick(index, 2)}
-                >
-                  {school.primaryPass !== null ? `${formatNumber(school.primaryPass)}%` : "-"}
-                </td>
-                <td
-                  className={parseInt(school.upperPrimaryAvg) < 33 ? "low-score" : ""}
-                  onClick={() => handleCellClick(index, 3)}
-                >
-                  {formatNumber(school.upperPrimaryAvg)}
-                </td>
-                <td
-                  className={parseInt(school.upperPrimaryPass) < 33 ? "low-score" : ""}
-                  onClick={() => handleCellClick(index, 4)}
-                >
-                  {school.upperPrimaryPass !== null ? `${formatNumber(school.upperPrimaryPass)}%` : "-"}
-                </td>
-                <td
-                  className={parseInt(school.highSchoolAvg) < 33 ? "low-score" : ""}
-                  onClick={() => handleCellClick(index, 5)}
-                >
-                  {formatNumber(school.highSchoolAvg)}
-                </td>
-                <td
-                  className={parseInt(school.highSchoolPass) < 33 ? "low-score" : ""}
-                  onClick={() => handleCellClick(index, 6)}
-                >
-                  {school.highSchoolPass !== null ? `${formatNumber(school.highSchoolPass)}%` : "-"}
-                </td>
-                <td
-                  className={parseInt(school.higherSecondaryAvg) < 33 ? "low-score" : ""}
-                  onClick={() => handleCellClick(index, 7)}
-                >
-                  {formatNumber(school.higherSecondaryAvg)}
-                </td>
-                <td
-                  className={parseInt(school.higherSecondaryPass) < 33 ? "low-score" : ""}
-                  onClick={() => handleCellClick(index, 8)}
-                >
-                  {school.higherSecondaryPass !== null ? `${formatNumber(school.higherSecondaryPass)}%` : "-"}
-                </td>
-              </tr>
-            ))) : (
+                  {/* Primary Avg */}
+                  {isCellClickable(school.primaryAvg) ? (
+                    <Tooltip title="Click to view classwise reports" arrow>
+                      <td
+                        className={`${parseInt(school.primaryAvg) < 33 ? "low-score" : ""} clickable`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleCellClick(index, 1)}
+                      >
+                        {formatNumber(school.primaryAvg)}
+                      </td>
+                    </Tooltip>
+                  ) : (
+                    <td className={parseInt(school.primaryAvg) < 33 ? "low-score" : ""}>
+                      {formatNumber(school.primaryAvg)}
+                    </td>
+                  )}
+                  {/* Primary Pass */}
+                  {isCellClickable(school.primaryPass) ? (
+                    <Tooltip title="Click to view classwise reports" arrow>
+                      <td
+                        className={`${parseInt(school.primaryPass) < 33 ? "low-score" : ""} clickable`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleCellClick(index, 2)}
+                      >
+                        {school.primaryPass !== null ? `${formatNumber(school.primaryPass)}%` : "-"}
+                      </td>
+                    </Tooltip>
+                  ) : (
+                    <td className={parseInt(school.primaryPass) < 33 ? "low-score" : ""}>
+                      {school.primaryPass !== null ? `${formatNumber(school.primaryPass)}%` : "-"}
+                    </td>
+                  )}
+                  {/* Upper Primary Avg */}
+                  {isCellClickable(school.upperPrimaryAvg) ? (
+                    <Tooltip title="Click to view classwise reports" arrow>
+                      <td
+                        className={`${parseInt(school.upperPrimaryAvg) < 33 ? "low-score" : ""} clickable`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleCellClick(index, 3)}
+                      >
+                        {formatNumber(school.upperPrimaryAvg)}
+                      </td>
+                    </Tooltip>
+                  ) : (
+                    <td className={parseInt(school.upperPrimaryAvg) < 33 ? "low-score" : ""}>
+                      {formatNumber(school.upperPrimaryAvg)}
+                    </td>
+                  )}
+                  {/* Upper Primary Pass */}
+                  {isCellClickable(school.upperPrimaryPass) ? (
+                    <Tooltip title="Click to view classwise reports" arrow>
+                      <td
+                        className={`${parseInt(school.upperPrimaryPass) < 33 ? "low-score" : ""} clickable`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleCellClick(index, 4)}
+                      >
+                        {school.upperPrimaryPass !== null ? `${formatNumber(school.upperPrimaryPass)}%` : "-"}
+                      </td>
+                    </Tooltip>
+                  ) : (
+                    <td className={parseInt(school.upperPrimaryPass) < 33 ? "low-score" : ""}>
+                      {school.upperPrimaryPass !== null ? `${formatNumber(school.upperPrimaryPass)}%` : "-"}
+                    </td>
+                  )}
+                  {/* High School Avg */}
+                  {isCellClickable(school.highSchoolAvg) ? (
+                    <Tooltip title="Click to view classwise reports" arrow>
+                      <td
+                        className={`${parseInt(school.highSchoolAvg) < 33 ? "low-score" : ""} clickable`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleCellClick(index, 5)}
+                      >
+                        {formatNumber(school.highSchoolAvg)}
+                      </td>
+                    </Tooltip>
+                  ) : (
+                    <td className={parseInt(school.highSchoolAvg) < 33 ? "low-score" : ""}>
+                      {formatNumber(school.highSchoolAvg)}
+                    </td>
+                  )}
+                  {/* High School Pass */}
+                  {isCellClickable(school.highSchoolPass) ? (
+                    <Tooltip title="Click to view classwise reports" arrow>
+                      <td
+                        className={`${parseInt(school.highSchoolPass) < 33 ? "low-score" : ""} clickable`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleCellClick(index, 6)}
+                      >
+                        {school.highSchoolPass !== null ? `${formatNumber(school.highSchoolPass)}%` : "-"}
+                      </td>
+                    </Tooltip>
+                  ) : (
+                    <td className={parseInt(school.highSchoolPass) < 33 ? "low-score" : ""}>
+                      {school.highSchoolPass !== null ? `${formatNumber(school.highSchoolPass)}%` : "-"}
+                    </td>
+                  )}
+                  {/* Higher Secondary Avg */}
+                  {isCellClickable(school.higherSecondaryAvg) ? (
+                    <Tooltip title="Click to view classwise reports" arrow>
+                      <td
+                        className={`${parseInt(school.higherSecondaryAvg) < 33 ? "low-score" : ""} clickable`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleCellClick(index, 7)}
+                      >
+                        {formatNumber(school.higherSecondaryAvg)}
+                      </td>
+                    </Tooltip>
+                  ) : (
+                    <td className={parseInt(school.higherSecondaryAvg) < 33 ? "low-score" : ""}>
+                      {formatNumber(school.higherSecondaryAvg)}
+                    </td>
+                  )}
+                  {/* Higher Secondary Pass */}
+                  {isCellClickable(school.higherSecondaryPass) ? (
+                    <Tooltip title="Click to view classwise reports" arrow>
+                      <td
+                        className={`${parseInt(school.higherSecondaryPass) < 33 ? "low-score" : ""} clickable`}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleCellClick(index, 8)}
+                      >
+                        {school.higherSecondaryPass !== null ? `${formatNumber(school.higherSecondaryPass)}%` : "-"}
+                      </td>
+                    </Tooltip>
+                  ) : (
+                    <td className={parseInt(school.higherSecondaryPass) < 33 ? "low-score" : ""}>
+                      {school.higherSecondaryPass !== null ? `${formatNumber(school.higherSecondaryPass)}%` : "-"}
+                    </td>
+                  )}
+                </tr>
+              ))
+            ) : (
               <tr>
                 <td colSpan="9" style={{ textAlign: "center", padding: "24px" }}>
                   Sorry, no matching records found
@@ -746,8 +839,7 @@ const Reports = () => {
               upperPrimaryPass:
                 upperData.upperPrimaryPass !== undefined ? upperData.upperPrimaryPass : null,
               highSchoolAvg: highData.highSchoolAvg !== undefined ? highData.highSchoolAvg : null,
-              highSchoolPass:
-                highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
+              highSchoolPass: highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
               higherSecondaryAvg:
                 higherData.higherSecondaryAvg !== undefined ? higherData.higherSecondaryAvg : null,
               higherSecondaryPass:
