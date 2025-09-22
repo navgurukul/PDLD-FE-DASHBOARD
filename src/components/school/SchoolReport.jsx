@@ -772,6 +772,8 @@ ${schoolName || "N/A"}</div>
           totalRecords={reports.length}
           subject={`Class ${selectedClass}`}
           hideRowOptions={true} // Since we only have current data
+          reportName="School Report"
+          reportLevel="school"
         />
 
         {/* Loading Overlay */}
