@@ -1264,10 +1264,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         }
         
         baseData[levelLabel] = isPending ? "-" : gradeValue;
-        
-        // Removed debug log
-        
-        baseData[levelLabel] = isPending ? "-" : gradeValue;
       });
     }
 
@@ -2117,8 +2113,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           onClose={() => setDownloadModalOpen(false)}
           onConfirm={handleDownloadConfirm}
           currentPageCount={tableData.length}
-          totalRecords={totalSchools} // Use totalSchools from API response
-          subject={"School Performance"}
+          totalRecords={totalSchools}
+          subject={testNameVal}
+          reportName={testNameVal ? `${testNameVal} Submission Report` : 'Submission Report'}
+          reportLevel={level}
         />
         {isLoading && !loading && <SpinnerPageOverlay isLoading={isLoading} />}
         <ToastContainer

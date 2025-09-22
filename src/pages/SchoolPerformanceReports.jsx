@@ -26,6 +26,7 @@ import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
 import { SUBJECTS_BY_GRADE } from "../data/testData"; // Import testData for curriculum mapping
+import mixpanel from '../utils/mixpanel';
 
 // Utility function to convert text to title case
 const toTitleCase = (str) => {
@@ -771,6 +772,7 @@ const Reports = () => {
       toast.error("An error occurred while generating the report");
     } finally {
       setIsLoading(false);
+      setDownloadModalOpen(false); // Close the modal after download completes
     }
   };
 
@@ -1843,6 +1845,8 @@ const Reports = () => {
           currentPageCount={filteredData.length}
           totalRecords={totalRecords}
           subject={selectedSubject}
+          reportName="School Performance Report"
+          reportLevel="school"
         />
 
         {/* Loading Indicator - only for non-search operations */}
