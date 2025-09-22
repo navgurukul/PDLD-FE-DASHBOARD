@@ -446,6 +446,7 @@ export default function EnrollmentReport() {
       toast.error("An error occurred while generating the report");
     } finally {
       setIsLoading(false);
+      setDownloadModalOpen(false); // Ensure modal closes after download
     }
   };
 
@@ -1375,8 +1376,10 @@ export default function EnrollmentReport() {
           onConfirm={handleDownloadConfirm}
           currentPageCount={processedData.length}
           totalRecords={pagination.totalItems}
-          subject="Data Analysis"        // ✅ Generic like SchoolPerformance
-          tableType="report"  
+          subject="Data Analysis"
+          tableType="report"
+          reportName="Enrollment Report"
+          reportLevel={selectedGrouping || 'school'}
         />
 
         {/* Page level loading overlay - only for non-search operations */}
