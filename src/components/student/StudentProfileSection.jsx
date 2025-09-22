@@ -1180,6 +1180,8 @@ const StudentProfileView = () => {
           { value: "remedial", label: "Remedial Recommendations" },
         ]}
         showReportTypes={true} // Enable report type selection
+        reportName="Student Profile Report"
+        reportLevel="student"
       />
 
       <ToastContainer
