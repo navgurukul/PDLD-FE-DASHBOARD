@@ -6,6 +6,7 @@ import { AuthContext } from "../App"; // Import the AuthContext
 import apiInstance from "../../api"; // Import your API instance
 import { Eye, EyeOff } from "lucide-react";
 import ButtonCustom from "./ButtonCustom";
+import mixpanel from '../utils/mixpanel';
 
 const theme = createTheme({
 	typography: {
@@ -117,6 +118,26 @@ export default function LoginForm({ onLogin }) {
 
 				// Store user data in localStorage for later use
 				localStorage.setItem("userData", JSON.stringify(userData));
+
+				// Track login event with rich metadata
+				mixpanel.track('Login', {
+				  userId: userData.id,
+				  username: userData.username,
+				  email: userData.email,
+				  role: userData.role,
+				  name: userData.name,
+				  loginTime: new Date().toISOString(),
+				});
+				// Identify and set Mixpanel people profile for Users tab
+				mixpanel.identify(userData.id);
+				mixpanel.people.set({
+				  $name: userData.name,
+				  role: userData.role,
+				  username: userData.username,
+				  district: userData.district,
+				  block: userData.block,
+				  cluster: userData.cluster,
+				});
 
 				// Pass the token to the login function from AuthContext
 				login(token, userData);
