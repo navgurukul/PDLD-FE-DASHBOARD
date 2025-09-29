@@ -446,7 +446,6 @@ export default function EnrollmentReport() {
       toast.error("An error occurred while generating the report");
     } finally {
       setIsLoading(false);
-      setDownloadModalOpen(false); // Ensure modal closes after download
     }
   };
 
