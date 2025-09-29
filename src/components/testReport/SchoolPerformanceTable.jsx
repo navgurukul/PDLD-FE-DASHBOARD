@@ -753,7 +753,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       toast.error("An error occurred while generating the report");
     } finally {
       setIsLoading(false);
-      setDownloadModalOpen(false);
     }
   };
 
