@@ -774,6 +774,7 @@ ${schoolName || "N/A"}</div>
           hideRowOptions={true} // Since we only have current data
           reportName="School Report"
           reportLevel="school"
+          reportDetails={{ class: selectedClass }}
         />
 
         {/* Loading Overlay */}
