@@ -34,6 +34,14 @@ const DownloadModal = ({
       downloadFormat: selectedFormat,
       timestamp: new Date().toISOString(),
     };
+    // Add conditional properties based on reportName
+    const lowerReportName = (reportName || '').toLowerCase();
+    if (lowerReportName.includes('school report') && !lowerReportName.includes('performance')) {
+      eventData.class = reportDetails?.class || 'Unknown';
+    }
+    if (lowerReportName.includes('school performance report')) {
+      eventData.subject = subject;
+    }
     mixpanel.track('Report Downloaded', eventData);
     onConfirm({
       format: selectedFormat,
@@ -41,6 +49,7 @@ const DownloadModal = ({
       count: getRowCount(),
       ...(tableType && { tableType: tableType }),
     });
+    onClose();
   };
 
   const getRowCount = () => {
