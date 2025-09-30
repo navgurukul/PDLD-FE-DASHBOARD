@@ -120,8 +120,10 @@ export default function LoginForm({ onLogin }) {
 				localStorage.setItem("userData", JSON.stringify(userData));
 
 				// Track login event with rich metadata
+				const uniqueId = userData.userId || userData.id ;
+				console.log('Mixpanel identify userId:', uniqueId, 'Raw userData:', userData);
 				mixpanel.track('Login', {
-				  userId: userData.id,
+				  userId: uniqueId,
 				  username: userData.username,
 				  email: userData.email,
 				  role: userData.role,
@@ -129,7 +131,7 @@ export default function LoginForm({ onLogin }) {
 				  loginTime: new Date().toISOString(),
 				});
 				// Identify and set Mixpanel people profile for Users tab
-				mixpanel.identify(userData.id);
+				mixpanel.identify(uniqueId);
 				mixpanel.people.set({
 				  $name: userData.name,
 				  role: userData.role,
