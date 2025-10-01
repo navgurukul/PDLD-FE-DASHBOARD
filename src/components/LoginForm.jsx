@@ -122,6 +122,13 @@ export default function LoginForm({ onLogin }) {
 				// Track login event with rich metadata
 				const uniqueId = userData.userId || userData.id ;
 				console.log('Mixpanel identify userId:', uniqueId, 'Raw userData:', userData);
+
+				// If you have a separate signup flow, call mixpanel.alias(uniqueId) there.
+				// For demo, call alias if userData.isNewUser (set this in backend on signup)
+				if (userData.isNewUser) {
+					mixpanel.alias(uniqueId);
+				}
+
 				mixpanel.track('Login', {
 				  userId: uniqueId,
 				  username: userData.username,
