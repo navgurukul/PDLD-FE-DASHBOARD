@@ -4,7 +4,7 @@ import notificationsIcon from "../assets/notifications.svg";
 import pdldLogo from "../assets/pdld-logo.webp";
 import { Link } from "react-router-dom";
 import useAuth, { getUserName } from "../customHook/useAuth";
-import mixpanel from '../utils/mixpanel';
+
 
 const Header = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -42,7 +42,6 @@ const Header = () => {
   }, []);
 
   const handleLogout = () => {
-    mixpanel.reset(); 
     logout();
     navigate("/login");
     setDropdownOpen(false);

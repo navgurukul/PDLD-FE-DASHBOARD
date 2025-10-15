@@ -119,27 +119,19 @@ export default function LoginForm({ onLogin }) {
 				// Store user data in localStorage for later use
 				localStorage.setItem("userData", JSON.stringify(userData));
 
-				// Track login event with proper identification and people profile
 				const uniqueId = String(userData.userId ?? userData.id ?? userData._id ?? userData.username ?? userData.email ?? '');
-				console.log('Mixpanel identify userId:', uniqueId, 'Raw userData:', userData);
 
 				if (uniqueId) {
 					try {
-						// If there is an existing anonymous distinct id and we haven't aliased this user before,
-						// create an alias so anonymous events are merged into this user profile.
 						const currentDistinctId = mixpanel.get_distinct_id && mixpanel.get_distinct_id();
 						const aliasKey = `mixpanel_aliased_${uniqueId}`;
 
 						if (currentDistinctId && currentDistinctId !== uniqueId && !localStorage.getItem(aliasKey)) {
-							// Create alias from anonymous id -> user id (only once per user)
 							mixpanel.alias(uniqueId);
 							localStorage.setItem(aliasKey, '1');
 						}
 
-						// Identify must be called so events go to the stable user id
 						mixpanel.identify(uniqueId);
-
-						// Set People properties after identify
 						mixpanel.people.set({
 							$name: userData.name,
 							$email: userData.email,
@@ -150,7 +142,6 @@ export default function LoginForm({ onLogin }) {
 							cluster: userData.cluster,
 						});
 
-						// Then track the Login event (will be attributed to the identified profile)
 						mixpanel.track('Login', {
 							userId: uniqueId,
 							username: userData.username,
@@ -160,10 +151,9 @@ export default function LoginForm({ onLogin }) {
 							loginTime: new Date().toISOString(),
 						});
 					} catch (mpErr) {
-						console.warn('Mixpanel error during identify/alias:', mpErr);
+						
 					}
 				} else {
-					// Fallback: still track but without identified profile
 					mixpanel.track('Login', {
 						username: userData.username ?? 'unknown',
 						loginTime: new Date().toISOString(),
@@ -180,9 +170,7 @@ export default function LoginForm({ onLogin }) {
 				setErrors({ general: "Login failed. Please try again." });
 			}
 		} catch (error) {
-			console.error("Login error:", error);
-
-			// Handle different error scenarios
+			// Removed console.error for general login errors
 			if (error.response && error.response.status === 401) {
 				setErrors({ general: "Invalid username or password. Please try again." });
 			} else if (error.response && error.response.data && error.response.data.message) {
