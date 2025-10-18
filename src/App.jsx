@@ -30,6 +30,8 @@ import SchoolReportPage from "./pages/SchoolReportPage";
 import StudentProfileView from "./components/student/StudentProfileSection";
 import SchoolPerformanceTable from "./components/testReport/SchoolPerformanceTable";
 import QRLogin from "./pages/QRLogin";
+import mixpanel from './utils/mixpanel';
+
 export const AuthContext = createContext(null);
 
 function App() {
@@ -59,6 +61,17 @@ function App() {
 
 	// Logout function
 	const logout = () => {
+		// Track Mixpanel logout event before clearing user
+		if (user) {
+			mixpanel.track('Logout', {
+				userId: user.id,
+				userName: user.name,
+				userRole: user.role,
+				timestamp: new Date().toISOString(),
+			});
+			// Optionally reset Mixpanel user session
+			mixpanel.reset();
+		}
 		localStorage.removeItem("authToken");
 		localStorage.removeItem("userData");
 		setIsAuthenticated(false);

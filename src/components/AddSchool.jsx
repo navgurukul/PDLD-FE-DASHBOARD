@@ -15,6 +15,7 @@ import { toast, ToastContainer } from "react-toastify";
 import apiInstance from "../../api";
 import ButtonCustom from "./ButtonCustom";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import mixpanel from '../utils/mixpanel';
 
 export default function AddSchool({ onClose, onSave }) {
   const { schoolId } = useParams();
@@ -543,6 +544,21 @@ export default function AddSchool({ onClose, onSave }) {
           // Check response status and show appropriate message
           if (response.status === 200 || response.status === 201) {
             toast.success("School created successfully!");
+
+            // Track school added event with rich metadata
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            const schoolData = response.data?.data || {};
+            mixpanel.track('School Added', {
+              userId: userData.id,
+              userRole: userData.role,
+              userName: userData.name || userData.username,
+              schoolId: schoolData.id,
+              schoolName: schoolData.schoolName || schoolData.name, // Fix: use schoolName if available, else name
+              district: schoolData.district,
+              block: schoolData.block || schoolData.blockName,
+              cluster: schoolData.cluster || schoolData.clusterName,
+              timestamp: new Date().toISOString(),
+            });
 
             // Call onSave with the created school data if needed
             if (onSave && typeof onSave === "function") {

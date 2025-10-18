@@ -1034,6 +1034,8 @@ const StudentPerformanceTable = ({
           currentPageCount={paginatedTableData.length}
           totalRecords={sortedStudents.length}
           defaultRows="all"
+          reportName={"Student Performance Report"}
+          reportLevel={"Student"}
           formats={["csv", "pdf"]}
         />
       </div>

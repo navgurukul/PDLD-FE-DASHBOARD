@@ -6,6 +6,7 @@ import { AuthContext } from "../App"; // Import the AuthContext
 import apiInstance from "../../api"; // Import your API instance
 import { Eye, EyeOff } from "lucide-react";
 import ButtonCustom from "./ButtonCustom";
+import mixpanel from '../utils/mixpanel';
 
 const theme = createTheme({
 	typography: {
@@ -118,6 +119,47 @@ export default function LoginForm({ onLogin }) {
 				// Store user data in localStorage for later use
 				localStorage.setItem("userData", JSON.stringify(userData));
 
+				const uniqueId = String(userData.userId ?? userData.id ?? userData._id ?? userData.username ?? userData.email ?? '');
+
+				if (uniqueId) {
+					try {
+						const currentDistinctId = mixpanel.get_distinct_id && mixpanel.get_distinct_id();
+						const aliasKey = `mixpanel_aliased_${uniqueId}`;
+
+						if (currentDistinctId && currentDistinctId !== uniqueId && !localStorage.getItem(aliasKey)) {
+							mixpanel.alias(uniqueId);
+							localStorage.setItem(aliasKey, '1');
+						}
+
+						mixpanel.identify(uniqueId);
+						mixpanel.people.set({
+							$name: userData.name,
+							$email: userData.email,
+							role: userData.role,
+							username: userData.username,
+							district: userData.district,
+							block: userData.block,
+							cluster: userData.cluster,
+						});
+
+						mixpanel.track('Login', {
+							userId: uniqueId,
+							username: userData.username,
+							email: userData.email,
+							role: userData.role,
+							name: userData.name,
+							loginTime: new Date().toISOString(),
+						});
+					} catch (mpErr) {
+						
+					}
+				} else {
+					mixpanel.track('Login', {
+						username: userData.username ?? 'unknown',
+						loginTime: new Date().toISOString(),
+					});
+				}
+
 				// Pass the token to the login function from AuthContext
 				login(token, userData);
 
@@ -128,9 +170,7 @@ export default function LoginForm({ onLogin }) {
 				setErrors({ general: "Login failed. Please try again." });
 			}
 		} catch (error) {
-			console.error("Login error:", error);
-
-			// Handle different error scenarios
+			// Removed console.error for general login errors
 			if (error.response && error.response.status === 401) {
 				setErrors({ general: "Invalid username or password. Please try again." });
 			} else if (error.response && error.response.data && error.response.data.message) {

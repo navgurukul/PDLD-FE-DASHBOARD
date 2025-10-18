@@ -10,6 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 import apiInstance from "../../api";
 import { Autocomplete, TextField, Paper } from "@mui/material";
 import axios from 'axios';
+import mixpanel from '../utils/mixpanel';
 
 const TestCreationForm = () => {
   const location = useLocation();
@@ -655,6 +656,26 @@ const TestCreationForm = () => {
         : await apiInstance.post("/test", payload);
 
       if (response?.data?.success) {
+        // Track test created event (only for create, not edit)
+        if (!editMode) {
+      const createdTest = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
+          // Always get user info from localStorage for Mixpanel
+          const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+
+          const eventData = {
+            testId: createdTest.id,
+            testName: createdTest.testName,
+            createdByName: userData.name || userData.username,
+            createdByRole: userData.role,
+            class: createdTest.testClass,
+            subject: createdTest.subject,
+            examType: createdTest.examType,
+            testType: createdTest.testType || formData.testType,
+            testTag: createdTest.testTag || formData.testTag || testTagInput,
+            timestamp: new Date().toISOString(),
+          };
+          mixpanel.track('Test Created', eventData);
+        }
         toast.success(editMode ? "Test Updated Successfully" : "Test Created Successfully");
         navigate("/", {
           state: {

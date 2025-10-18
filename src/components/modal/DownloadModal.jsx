@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FileText, FileSpreadsheet, Database } from "lucide-react";
 import ButtonCustom from "../ButtonCustom";
+import mixpanel from '../../utils/mixpanel';
 
 const DownloadModal = ({
   isOpen,
@@ -10,6 +11,10 @@ const DownloadModal = ({
   totalRecords = 0,
   subject = "English",
   tableType, // New prop to indicate table type - no default
+  user, 
+  reportDetails, 
+  reportName, 
+  reportLevel, 
 }) => {
   const [selectedFormat, setSelectedFormat] = useState("csv");
   const [selectedRows, setSelectedRows] = useState("current");
@@ -17,6 +22,27 @@ const DownloadModal = ({
   if (!isOpen) return null;
 
   const handleConfirm = () => {
+    // Get user info from prop or fallback to localStorage
+    const userData = user || JSON.parse(localStorage.getItem('userData') || '{}');
+    // Track report download event with rich metadata
+    const eventData = {
+      userId: userData.id,
+      userName: userData.name,
+      userRole: userData.role,
+      reportName: reportName || reportDetails?.name || subject + ' Report',
+      reportLevel: reportLevel || reportDetails?.level || tableType || 'Unknown',
+      downloadFormat: selectedFormat,
+      timestamp: new Date().toISOString(),
+    };
+    // Add conditional properties based on reportName
+    const lowerReportName = (reportName || '').toLowerCase();
+    if (lowerReportName.includes('school report') && !lowerReportName.includes('performance')) {
+      eventData.class = reportDetails?.class || 'Unknown';
+    }
+    if (lowerReportName.includes('school performance report')) {
+      eventData.subject = subject;
+    }
+    mixpanel.track('Report Downloaded', eventData);
     onConfirm({
       format: selectedFormat,
       rows: selectedRows,
