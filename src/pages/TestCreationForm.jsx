@@ -1045,8 +1045,8 @@ const TestCreationForm = () => {
                               color: "#2F4F4F",
                             },
                           },
-                          maxHeight: "none",
-                          overflowY: "visible",
+                          maxHeight: "300px",
+                          overflowY: "auto",
                         },
                       }}
                     />
