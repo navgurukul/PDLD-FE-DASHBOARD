@@ -516,29 +516,18 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     }
   };
 
-  useEffect(() => {
-    setCurrentPage(1); // Reset to first page when level changes
-    fetchData(1, pageSize, level, searchQuery.trim(), statusFilter);
-  }, [currentTestId, level]);
-
-  useEffect(() => {
-    fetchData(currentPage, pageSize, level, searchQuery.trim(), statusFilter);
-  }, [currentPage, pageSize]);
-
   // Handle search functionality with debouncing
   const debouncedSearchQuery = useDebounce(searchQuery, 500); // Debounce search for 500ms
   
   useEffect(() => {
-    if (debouncedSearchQuery !== searchQuery) return; // Only proceed if debounced value matches current
-    setCurrentPage(1); // Reset to first page when search changes
-    fetchData(1, pageSize, level, debouncedSearchQuery, statusFilter);
-  }, [debouncedSearchQuery, level]);
-  
-  // Add effect for status filter changes
-  useEffect(() => {
-    setCurrentPage(1); // Reset to first page when status filter changes
-    fetchData(1, pageSize, level, searchQuery.trim(), statusFilter);
-  }, [statusFilter]);
+    if (searchQuery && debouncedSearchQuery !== searchQuery) {
+      return;
+    }
+
+    const effectiveSearchQuery = searchQuery ? debouncedSearchQuery : "";
+    
+    fetchData( currentPage, pageSize, level,  effectiveSearchQuery,  statusFilter  );
+  }, [ currentTestId,currentPage, pageSize, level, debouncedSearchQuery,  statusFilter, searchQuery  ]);
 
   // No frontend filtering needed - all filtering is now done on the server
   const filteredSchools = useMemo(() => {
