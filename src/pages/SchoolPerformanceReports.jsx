@@ -457,37 +457,8 @@ const Reports = () => {
               backgroundColor: "inherit !important",
               cursor: default !important;
             }
-            .custom-table td.low-score {
-              color: #F45050;
-              font-weight: 600 !important;
-              font-family: "Work Sans" !important;
-            }
             .custom-table td.clickable {
               cursor: pointer !important;
-            }
-            .custom-table th.school-header {
-                font-family: 'Work Sans', sans-serif !important;
-                font-weight: 600 !important;
-                font-size: 14px !important;
-                color: #2F4F4F;
-                text-align: center;
-                border-bottom: 1px solid #e0e0e0;
-            }
-            .custom-table thead tr:nth-child(2) th:nth-child(2n+1):not(:last-child) {
-              position: relative;
-            }
-            .custom-table thead tr:nth-child(2) th:nth-child(2n+1):not(:last-child)::after {
-              content: "";
-              position: absolute;
-              right: -12px;
-              top: 50%;
-              transform: translateY(-50%);
-              height: 24px;
-              width: 1px;
-              background: #6D6D6D;
-              display: block;
-              border-radius: 1px;
-              font-weight: 400 !important;
             }
             .custom-table th.school-header,
             .custom-table td:first-child {
@@ -542,14 +513,14 @@ const Reports = () => {
                   {isCellClickable(school.primaryAvg) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.primaryAvg) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 1)}
                       >
                         {formatNumber(school.primaryAvg)}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.primaryAvg) < 33 ? "low-score" : ""}>
+                    <td>
                       {formatNumber(school.primaryAvg)}
                     </td>
                   )}
@@ -557,14 +528,14 @@ const Reports = () => {
                   {isCellClickable(school.primaryPass) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.primaryPass) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 2)}
                       >
                         {school.primaryPass !== null ? `${formatNumber(school.primaryPass)}%` : "-"}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.primaryPass) < 33 ? "low-score" : ""}>
+                    <td>
                       {school.primaryPass !== null ? `${formatNumber(school.primaryPass)}%` : "-"}
                     </td>
                   )}
@@ -572,14 +543,14 @@ const Reports = () => {
                   {isCellClickable(school.upperPrimaryAvg) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.upperPrimaryAvg) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 3)}
                       >
                         {formatNumber(school.upperPrimaryAvg)}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.upperPrimaryAvg) < 33 ? "low-score" : ""}>
+                    <td>
                       {formatNumber(school.upperPrimaryAvg)}
                     </td>
                   )}
@@ -587,14 +558,14 @@ const Reports = () => {
                   {isCellClickable(school.upperPrimaryPass) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.upperPrimaryPass) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 4)}
                       >
                         {school.upperPrimaryPass !== null ? `${formatNumber(school.upperPrimaryPass)}%` : "-"}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.upperPrimaryPass) < 33 ? "low-score" : ""}>
+                    <td>
                       {school.upperPrimaryPass !== null ? `${formatNumber(school.upperPrimaryPass)}%` : "-"}
                     </td>
                   )}
@@ -602,14 +573,14 @@ const Reports = () => {
                   {isCellClickable(school.highSchoolAvg) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.highSchoolAvg) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 5)}
                       >
                         {formatNumber(school.highSchoolAvg)}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.highSchoolAvg) < 33 ? "low-score" : ""}>
+                    <td>
                       {formatNumber(school.highSchoolAvg)}
                     </td>
                   )}
@@ -617,14 +588,14 @@ const Reports = () => {
                   {isCellClickable(school.highSchoolPass) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.highSchoolPass) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 6)}
                       >
                         {school.highSchoolPass !== null ? `${formatNumber(school.highSchoolPass)}%` : "-"}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.highSchoolPass) < 33 ? "low-score" : ""}>
+                    <td>
                       {school.highSchoolPass !== null ? `${formatNumber(school.highSchoolPass)}%` : "-"}
                     </td>
                   )}
@@ -632,14 +603,14 @@ const Reports = () => {
                   {isCellClickable(school.higherSecondaryAvg) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.higherSecondaryAvg) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 7)}
                       >
                         {formatNumber(school.higherSecondaryAvg)}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.higherSecondaryAvg) < 33 ? "low-score" : ""}>
+                    <td>
                       {formatNumber(school.higherSecondaryAvg)}
                     </td>
                   )}
@@ -647,14 +618,14 @@ const Reports = () => {
                   {isCellClickable(school.higherSecondaryPass) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.higherSecondaryPass) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 8)}
                       >
                         {school.higherSecondaryPass !== null ? `${formatNumber(school.higherSecondaryPass)}%` : "-"}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.higherSecondaryPass) < 33 ? "low-score" : ""}>
+                    <td>
                       {school.higherSecondaryPass !== null ? `${formatNumber(school.higherSecondaryPass)}%` : "-"}
                     </td>
                   )}
@@ -671,17 +642,6 @@ const Reports = () => {
         </table>
       </div>
     );
-  };
-
-  // Function to determine text color based on value
-  const getTextColor = (value) => {
-    if (typeof value === "string" || typeof value === "number") {
-      const numValue = parseInt(value, 10);
-      if (!isNaN(numValue) && numValue < 33) {
-        return "#FF0000"; // Red color for low scores
-      }
-    }
-    return "#000000"; // Default color
   };
 
   const handleCellClick = (rowIndex, colIndex) => {
@@ -825,8 +785,7 @@ const Reports = () => {
               upperPrimaryPass:
                 upperData.upperPrimaryPass !== undefined ? upperData.upperPrimaryPass : null,
               highSchoolAvg: highData.highSchoolAvg !== undefined ? highData.highSchoolAvg : null,
-              highSchoolPass:
-                highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
+              highSchoolPass: highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
               higherSecondaryAvg:
                 higherData.higherSecondaryAvg !== undefined ? higherData.higherSecondaryAvg : null,
               higherSecondaryPass:
@@ -850,7 +809,6 @@ const Reports = () => {
       toast.error("An error occurred while generating the report");
     } finally {
       setIsLoading(false);
-      setDownloadModalOpen(false); // Close the modal after download completes
     }
   };
 
@@ -1007,11 +965,6 @@ const Reports = () => {
             background-color: #e8f5f9;
           }
           
-          .low-score {
-            color: #F45050;
-            font-weight: 600;
-          }
-          
           .summary {
             margin-top: 20px;
             padding: 15px;
@@ -1126,36 +1079,31 @@ const Reports = () => {
             <tbody>
               ${data
                 .map((school) => {
-                  const isLowScore = (value) => {
-                    const num = parseInt(value);
-                    return !isNaN(num) && num < 33;
-                  };
-
                   return `
                   <tr>
                     <td class="school-name">${school.udiseCode} - ${toTitleCase(school.schoolName)}</td>
-                    <td class="${isLowScore(school.primaryAvg) ? "low-score" : ""}">
+                    <td>
                       ${formatNumber(school.primaryAvg)}
                     </td>
-                    <td class="${isLowScore(school.primaryPass) ? "low-score" : ""}">
+                    <td>
                       ${school.primaryPass !== null ? formatNumber(school.primaryPass) + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.upperPrimaryAvg) ? "low-score" : ""}">
+                    <td>
                       ${formatNumber(school.upperPrimaryAvg)}
                     </td>
-                    <td class="${isLowScore(school.upperPrimaryPass) ? "low-score" : ""}">
+                    <td>
                       ${school.upperPrimaryPass !== null ? formatNumber(school.upperPrimaryPass) + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.highSchoolAvg) ? "low-score" : ""}">
+                    <td>
                       ${formatNumber(school.highSchoolAvg)}
                     </td>
-                    <td class="${isLowScore(school.highSchoolPass) ? "low-score" : ""}">
+                    <td>
                       ${school.highSchoolPass !== null ? formatNumber(school.highSchoolPass) + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.higherSecondaryAvg) ? "low-score" : ""}">
+                    <td>
                       ${formatNumber(school.higherSecondaryAvg)}
                     </td>
-                    <td class="${isLowScore(school.higherSecondaryPass) ? "low-score" : ""}">
+                    <td>
                       ${
                         school.higherSecondaryPass !== null ? formatNumber(school.higherSecondaryPass) + "%" : "-"
                       }
@@ -1844,9 +1792,9 @@ const Reports = () => {
                                   <span
                                     style={{
                                       fontFamily: "'Work Sans', sans-serif",
-                                      fontWeight: parseInt(classData.avgMarks) < 33 ? 600 : 400,
+                                      fontWeight: 600, 
                                       fontSize: "14px",
-                                      color: parseInt(classData.avgMarks) < 33 ? "#F45050" : "#2F4F4F",
+                                      color: "#2F4F4F",
                                     }}
                                   >
                                     {formatNumber(classData.avgMarks)}
@@ -1857,9 +1805,9 @@ const Reports = () => {
                                   <span
                                     style={{
                                       fontFamily: "'Work Sans', sans-serif",
-                                      fontWeight: parseFloat(classData.successRate) < 33 ? 600 : 400,
+                                      fontWeight: 600, 
                                       fontSize: "14px",
-                                      color: parseFloat(classData.successRate) < 33 ? "#F45050" : "#2F4F4F",
+                                      color: "#2F4F4F",
                                     }}
                                   >
                                     {classData.successRate ? 
