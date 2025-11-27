@@ -200,7 +200,7 @@ const Reports = () => {
   const [subjects, setSubjects] = useState([]); // Dynamic subjects from API
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
   const subjectsFetched = useRef(false); // Track if subjects have been fetched
-
+  const [blockClusterData, setBlockClusterData] = useState([]);
   // State for available blocks and clusters
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [availableClusters, setAvailableClusters] = useState([]);
@@ -313,19 +313,39 @@ const Reports = () => {
     }
   };
 
-  // Extract unique blocks and clusters from the API response
-  const extractBlocksAndClusters = (schoolsData) => {
-    const blocks = new Set();
-    const clusters = new Set();
+  const fetchGlobalBlocksAndClusters = async () => {
+  try {
+    const response = await apiInstance.get("/user/dropdown-data");
+    if (response.data && response.data.success) {
+      const blocksData = response.data.data;
+      setBlockClusterData(blocksData);
 
-    schoolsData.forEach((school) => {
-      if (school.blockName) blocks.add(school.blockName);
-      if (school.clusterName) clusters.add(school.clusterName);
-    });
+      const uniqueBlocks = blocksData
+        .map((block) => block.blockName)
+        .filter(Boolean)
+        .sort();
+      setAvailableBlocks(uniqueBlocks);
 
-    setAvailableBlocks(Array.from(blocks).sort());
-    setAvailableClusters(Array.from(clusters).sort());
-  };
+      // For initial state (All Blocks selected), show all clusters
+      const allClusterNames = blocksData.flatMap((block) =>
+        block.clusters.map((cluster) => cluster.name)
+      );
+      const uniqueClusters = [...new Set(allClusterNames)]
+        .filter(Boolean)
+        .sort();
+      setAvailableClusters(uniqueClusters);
+    } else {
+      console.warn('Failed to fetch blocks and clusters');
+    }
+  } catch (error) {
+    console.error("Error fetching blocks and clusters:", error);
+    toast.error("Failed to load blocks and clusters data");
+  }
+};
+
+useEffect(() => {
+  fetchGlobalBlocksAndClusters();
+}, []);
 
   // Fetch subjects on component mount
   useEffect(() => {
@@ -376,10 +396,6 @@ const Reports = () => {
         setTotalRecords(pagination.totalSchools);
         setTotalPages(pagination.totalPages);
         if (academicYear) setAcademicYear(academicYear);
-        // Extract blocks and clusters if not already done
-        if (availableBlocks.length === 0 || availableClusters.length === 0) {
-          extractBlocksAndClusters(schools);
-        }
       } else {
         toast.error("Failed to fetch report data");
       }
@@ -391,30 +407,6 @@ const Reports = () => {
       setIsSearchLoading(false);
     }
   };
-
-  // Fetch all blocks and clusters for dropdowns (separate API call)
-  useEffect(() => {
-    // Only fetch if we have a selected subject and subjects are loaded
-    if (selectedSubject && !isLoadingSubjects) {
-      const fetchAllSchoolsForDropdowns = async () => {
-        try {
-          // This could be a separate API endpoint that returns all blocks and clusters
-          // For now, we'll just use the same endpoint with a larger page size
-          const response = await apiInstance.get(
-            `/report/subject-performance/${selectedSubject}?page=1&pageSize=100`
-          );
-
-          if (response.data.success) {
-            extractBlocksAndClusters(response.data.data.schools);
-          }
-        } catch (error) {
-          console.error("Error fetching dropdown data:", error);
-        }
-      };
-
-      fetchAllSchoolsForDropdowns();
-    }
-  }, [selectedSubject, isLoadingSubjects]); // Add proper dependencies
 
   // Custom Table Component
   const CustomTable = ({ data }) => {
@@ -712,7 +704,18 @@ const Reports = () => {
     setSelectedCluster("");
     setSearchQuery("");
     setCurrentPage(1);
-  };
+
+     if (blockClusterData.length > 0) {
+    const allClusterNames = blockClusterData.flatMap((block) =>
+      block.clusters.map((cluster) => cluster.name)
+    );
+    const uniqueClusters = [...new Set(allClusterNames)]
+      .filter(Boolean)
+      .sort();
+    setAvailableClusters(uniqueClusters);
+  }
+};
+
 
   const isAnyFilterActive = !!searchQuery.trim() || !!selectedBlock || !!selectedCluster;
 
@@ -1428,16 +1431,41 @@ const Reports = () => {
             <FormControl size="small" sx={{ minWidth: 0 }}>
               <Select
                 value={selectedBlock}
-                onChange={(e) => setSelectedBlock(e.target.value)}
-                displayEmpty
-                renderValue={(selected) => {
-                  if (!selected) return "Block";
-                  return selected
-                    .toLowerCase()
-                    .split(" ")
-                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(" ");
-                }}
+                onChange={(e) => {
+                  const newBlockValue = e.target.value;
+                  setSelectedBlock(newBlockValue);
+                  setSelectedCluster(""); // Reset cluster when block changes
+
+                  // Update clusters based on selected block
+                  if (newBlockValue === "") {
+                    // If "All Blocks" is selected, show all clusters
+                    const allClusterNames = blockClusterData.flatMap((block) =>
+                    block.clusters.map((cluster) => cluster.name)
+                  );
+                  const uniqueClusters = [...new Set(allClusterNames)]
+                  .filter(Boolean)
+                  .sort();
+                  setAvailableClusters(uniqueClusters);
+                  } else {
+                   // Otherwise, filter clusters by selected block
+                   const selectedBlockData = blockClusterData.find(
+                   (block) => block.blockName === newBlockValue
+                  );
+                  const blockClusters = selectedBlockData
+                  ? selectedBlockData.clusters.map((cluster) => cluster.name).filter(Boolean).sort()
+                  : [];
+                  setAvailableClusters(blockClusters);
+               }
+            }}
+             displayEmpty 
+             renderValue={(selected) => { 
+                if (!selected) return "Block";
+                return selected
+                .toLowerCase()
+                .split(" ")
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(" ");
+             }}
                 MenuProps={{
                   PaperProps: {
                     style: {
