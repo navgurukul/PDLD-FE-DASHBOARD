@@ -69,20 +69,21 @@ const theme = createTheme({
 
 // Define stream options
 const streamOptions = [
-  { value: "Mathematics", label: "MATHEMATICS" },
-  { value: "BIO", label: "BIO" },
-  { value: "COMMERCE", label: "COMMERCE" },
-  { value: "ARTS", label: "ARTS" },
-  { value: "AGRICULTURE", label: "AGRICULTURE" },
+  { value: "Maths", label: "Maths" },
+  { value: "Biology", label: "Biology" },
+  { value: "Commerce", label: "Commerce" },
+  { value: "Arts", label: "Arts" },
+  { value: "Agriculture", label: "Agriculture" },
 ];
 
 const vocationalOptions = [
   { value: "IT", label: "IT" },
-  { value: "HEALTH CARE", label: "HEALTH CARE" },
-  { value: "AUTOMOBILE", label: "AUTOMOBILE" },
-  { value: "RETAIL", label: "RETAIL" },
-  { value: "MEDIA", label: "MEDIA" },
-  { value: "AGRICULTURE", label: "AGRICULTURE" },
+  { value: "Sanskrit", label: "Sanskrit" },
+  { value: "HealthCare", label: "HealthCare" },
+  { value: "Automobile", label: "Automobile" },
+  { value: "Retail", label: "Retail" },
+  { value: "Media", label: "Media" },
+  { value: "Agriculture", label: "Agriculture" },
 ];
 
 // Define subject options based on class
@@ -983,14 +984,14 @@ export default function AddStudent({ isEditMode = false }) {
               {isClass9or10 && (
                 <Grid item xs={12} md={12}>
                   <FormControl fullWidth>
-                    <InputLabel id="extra-subjects-label">Optional Subjects</InputLabel>
+                    <InputLabel id="extra-subjects-label">Vocational Subjects</InputLabel>
                     <Select
                       labelId="extra-subjects-label"
                       id="extra-subjects"
                       multiple
                       value={formData.extraSubjects}
                       onChange={handleExtraSubjectsChange}
-                      input={<OutlinedInput label="Optional Subjects" />}
+                      input={<OutlinedInput label="Vocational Subjects" />}
                       renderValue={(selected) => selected.join(", ")}
                       sx={{
                         borderRadius: "8px",

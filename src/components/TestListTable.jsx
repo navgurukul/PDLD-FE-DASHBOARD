@@ -415,6 +415,13 @@ export default function TestListTable() {
       month: "short",
       year: "numeric",
     }),
+    submissionDeadline: test.deadline
+  ? new Date(test.deadline).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+  : "N/A",
     schoolsSubmitted: test.totalSubmittedSchools || 0,
     status: test.testStatus,
     actions: "View Report",
@@ -525,6 +532,17 @@ export default function TestListTable() {
     {
       name: "dateOfTest",
       label: "Date of Test",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => {
+          return <div style={{ whiteSpace: "nowrap" }}>{value}</div>;
+        },
+      },
+    },
+    {
+      name: "submissionDeadline",
+      label: "Submission Deadline",
       options: {
         filter: true,
         sort: true,
