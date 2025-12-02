@@ -1221,7 +1221,7 @@ export default function SchoolReport({ schoolName }) {
         )}
 
         {/* Remedial Test Reports Section */}
-        <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">Remedial Test</h5>
+        <h5 className="text-lg font-bold text-[#2F4F4F] mb-4 mt-6">Remedial Test</h5>
         {filteredRemedialTests.length > 0 ? (
           <div className="overflow-x-auto" style={styles.tableContainer}>
             <MUIDataTable
@@ -1277,12 +1277,8 @@ export default function SchoolReport({ schoolName }) {
           isOpen={downloadModalOpen}
           onClose={() => setDownloadModalOpen(false)}
           onConfirm={handleDownloadConfirm}
-          currentPageCount={
-            filteredSyllabusTests.length + filteredRemedialTests.length
-          }
-          totalRecords={
-            filteredSyllabusTests.length + filteredRemedialTests.length
-          }
+          currentPageCount={syllabusTableData.length + remedialTableData.length}
+          totalRecords={syllabusTableData.length + remedialTableData.length}
           subject={
             selectedClass === "" ? "All Classes" : `Class ${selectedClass}`
           }
