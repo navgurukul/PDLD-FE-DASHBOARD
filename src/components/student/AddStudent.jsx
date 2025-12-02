@@ -79,7 +79,7 @@ const streamOptions = [
 const vocationalOptions = [
   { value: "IT", label: "IT" },
   { value: "Sanskrit", label: "Sanskrit" },
-  { value: "HealthCare", label: "HealthCare" },
+  { value: "Health Care", label: "Health Care" },
   { value: "Automobile", label: "Automobile" },
   { value: "Retail", label: "Retail" },
   { value: "Media", label: "Media" },
