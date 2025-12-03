@@ -255,7 +255,7 @@ export default function SchoolDetailView() {
                 width: { xs: "100%", md: "auto" },
               }}
             >
-              Academic Year {academicYear || school.academicYear || "2024-25"}
+              Academic Year {academicYear || school.academicYear || "2025-26"}
             </Typography>
           </Box>
         </Box>

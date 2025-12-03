@@ -543,11 +543,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     pagination: false,
     selectableRows: "none",
     responsive: "standard",
-    textLabels: {
-      body: {
-        noMatch: "No students found",
-      },
-    },
   };
 
   const handleBulkUploadStudent = () => {
@@ -685,7 +680,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
             style={{
               borderRadius: "8px",
               position: "relative",
-              minHeight: "300px",
               marginTop: "16px",
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
@@ -698,7 +692,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           </div>
         )}
 
-        {filteredStudents.length === 0 && !isLoadingStudents && (
+        {/* {filteredStudents.length === 0 && !isLoadingStudents && (
           <Box
             sx={{
               display: "flex",
@@ -719,7 +713,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
               Click "Add Student" to register a new student.
             </Typography>
           </Box>
-        )}
+        )} */}
 
         {/* Delete Confirmation Modal */}
         <DeleteConfirmationModal

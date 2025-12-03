@@ -58,6 +58,23 @@ const theme = createTheme({
           color: "#2F4F4F",
           borderBottom: "none", 
         },
+        head: {
+          fontWeight: "600 !important", // Force bold
+          fontFamily: "'Work Sans', sans-serif",
+          fontSize: "14px",
+          color: "#2F4F4F",
+          textTransform: "none !important", 
+        },
+      },
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          "&:hover": {
+            backgroundColor: "inherit !important", 
+            cursor: "default",
+          },
+        },
       },
     },
   },
@@ -294,6 +311,29 @@ export default function EnrollmentReport() {
       : []
     ),
   ];
+
+  const defaultCustomHeadLabelRender = (columnMeta) => (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: columnMeta.name === "actions" ? "center" : "flex-start",
+        fontWeight: 600,
+        fontSize: "14px",
+        color: "#2F4F4F",
+        textTransform: "none",
+        fontFamily: "'Work Sans'",
+        fontStyle: "normal",
+      }}
+    >
+      {columnMeta.label}
+    </div>
+  );
+
+  // Add customHeadLabelRender to all columns
+  columns.forEach((column) => {
+    if (!column.options) column.options = {};
+    column.options.customHeadLabelRender = defaultCustomHeadLabelRender;
+  });
 
   const options = {
     filter: false,
@@ -1246,7 +1286,6 @@ export default function EnrollmentReport() {
             style={{
               borderRadius: "8px",
               position: "relative",
-              minHeight: "300px",
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
