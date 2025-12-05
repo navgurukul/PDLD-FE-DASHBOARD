@@ -660,7 +660,7 @@ const TestCreationForm = () => {
             subject: firstSubjectRow.subject
               .split("_")
               .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join("_"),
+              .join(" "),
             testDate: firstSubjectRow.testDate,
             deadline: firstSubjectRow.submissionDeadline,
           };
@@ -688,7 +688,7 @@ const TestCreationForm = () => {
                     subject: row.subject
                       .split("_")
                       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                      .join("_"),
+                      .join(" "),
                     testDate: row.testDate,
                     deadline: row.submissionDeadline,
                   };
