@@ -387,7 +387,7 @@ export default function TestListTable() {
   useEffect(() => {
     // Check if search is being cleared (searchQuery empty but debouncedSearchQuery still has value)
     const isSearchClearing = searchQuery === "" && debouncedSearchQuery !== "";
-    
+
     // When clearing search, only react to the debounced value update, not the immediate searchQuery change
     if (!isSearchClearing && ((startDate && endDate) || (!startDate && !endDate) || (debouncedSearchQuery && debouncedSearchQuery.trim() !== ""))) {
       fetchData();
@@ -416,12 +416,12 @@ export default function TestListTable() {
       year: "numeric",
     }),
     submissionDeadline: test.deadline
-  ? new Date(test.deadline).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
-  : "N/A",
+      ? new Date(test.deadline).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+      : "N/A",
     schoolsSubmitted: test.totalSubmittedSchools || 0,
     status: test.testStatus,
     actions: "View Report",
@@ -467,6 +467,7 @@ export default function TestListTable() {
       state: {
         isEditMode: true,
         testData: testToEdit,
+        submissionCount: testToEdit?.totalSubmittedSchools || 0
       },
     });
   };
@@ -500,9 +501,8 @@ export default function TestListTable() {
         customBodyRender: (value) => {
           return (
             <span
-              className={`px-2 py-1 text-xs font-medium rounded-full ${
-                value === "Important" ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
-              }`}
+              className={`px-2 py-1 text-xs font-medium rounded-full ${value === "Important" ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
+                }`}
             >
               {value || "N/A"} {/* Display "N/A" if no value is provided */}
             </span>
@@ -595,12 +595,6 @@ export default function TestListTable() {
         }),
         customBodyRender: (value, tableMeta) => {
           const testId = tableMeta.rowData[0];
-          const testDateObj = tableMeta.rowData[5];
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-
-          const isPast = testDateObj && new Date(testDateObj) < today;
-
           return (
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               {userRole === "DISTRICT_OFFICER" && (
@@ -611,12 +605,9 @@ export default function TestListTable() {
                   sx={{
                     borderColor: "transparent",
                     "&:hover": { borderColor: "transparent" },
-                    opacity: isPast ? 0.5 : 1,
-                    pointerEvents: isPast ? "none" : "auto",
                   }}
-                  disabled={isPast}
-                  onClick={(event) => !isPast && handleEditClick(event, testId)}
-                  title={isPast ? "You can't edit past tests" : "Edit Test"}
+                  onClick={(event) => handleEditClick(event, testId)}
+                  title="Edit Test"
                 >
                   <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
                   &nbsp;
@@ -884,10 +875,10 @@ export default function TestListTable() {
                   sx: {
                     maxHeight: "none",
                     "& .MuiAutocomplete-option[aria-selected='true'], & .MuiAutocomplete-option:hover":
-                      {
-                        backgroundColor: "transparent !important",
-                        color: "#2F4F4F",
-                      },
+                    {
+                      backgroundColor: "transparent !important",
+                      color: "#2F4F4F",
+                    },
                     "&": {
                       scrollbarWidth: "none",
                       msOverflowStyle: "none",
@@ -1036,10 +1027,10 @@ export default function TestListTable() {
                     maxHeight: "620px",
                     overflowY: "auto",
                     "& .MuiAutocomplete-option[aria-selected='true'], & .MuiAutocomplete-option:hover":
-                      {
-                        backgroundColor: "transparent !important",
-                        color: "#2F4F4F",
-                      },
+                    {
+                      backgroundColor: "transparent !important",
+                      color: "#2F4F4F",
+                    },
                     "&": {
                       scrollbarWidth: "none",
                       msOverflowStyle: "none",
