@@ -1091,13 +1091,13 @@ const StudentProfileView = () => {
                     {" "}
                     {/* Increased width to 50% */}
                     <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-                      Optional Subjects
+                      Vocational Subjects
                     </Typography>
                     <Tooltip
                       title={
                         student.extraSubjects && student.extraSubjects.length > 0
                           ? student.extraSubjects.join(", ")
-                          : "No optional subjects"
+                          : "No vocational subjects"
                       }
                       arrow
                       placement="top"
