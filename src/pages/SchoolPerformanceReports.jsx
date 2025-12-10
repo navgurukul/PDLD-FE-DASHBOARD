@@ -25,7 +25,6 @@ import apiInstance from "../../api"; // Updated import path
 import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
-import { SUBJECTS_BY_GRADE } from "../data/testData"; // Import testData for curriculum mapping
 import mixpanel from '../utils/mixpanel';
 
 // Utility function to convert text to title case
@@ -51,28 +50,6 @@ const formatNumber = (value) => {
   
   // If it has decimal part, show one decimal place
   return num.toFixed(1);
-};
-
-// Utility function to check if curriculum note should be shown
-const shouldShowCurriculumNote = (subject, groupTitle) => {
-  // Map group titles to class ranges
-  const groupClassMapping = {
-    "Primary (1-5)": [1, 2, 3, 4, 5],
-    "Upper Primary (6-8)": [6, 7, 8],
-    "High School (9-10)": [9, 10],
-    "Higher Secondary (11-12)": [11, 12]
-  };
-
-  const classesInGroup = groupClassMapping[groupTitle];
-  if (!classesInGroup) return false;
-
-  // Check how many classes in this group have this subject
-  const classesWithSubject = classesInGroup.filter(classNum => 
-    SUBJECTS_BY_GRADE[classNum] && SUBJECTS_BY_GRADE[classNum].includes(subject)
-  );
-
-  // Show note only if subject is present in SOME but not ALL classes of the group
-  return classesWithSubject.length > 0 && classesWithSubject.length < classesInGroup.length;
 };
 
 const theme = createTheme({
@@ -207,60 +184,6 @@ const Reports = () => {
   
   // Changed from fixed pageSize to state
   const [pageSize, setPageSize] = useState(15);
-
-  // Curriculum mapping for subjects
-  // Dynamic function to get expected classes for a subject in a group using testData.js
-  const getExpectedClassesForSubject = (subject, groupTitle) => {
-    const groupClassMapping = {
-      "Primary (1-5)": [1, 2, 3, 4, 5],
-      "Upper Primary (6-8)": [6, 7, 8],
-      "High School (9-10)": [9, 10],
-      "Higher Secondary (11-12)": [11, 12]
-    };
-
-    const classesInGroup = groupClassMapping[groupTitle];
-    if (!classesInGroup) return [];
-
-    // Filter classes that have this subject according to testData.js
-    return classesInGroup.filter(classNum => 
-      SUBJECTS_BY_GRADE[classNum] && SUBJECTS_BY_GRADE[classNum].includes(subject)
-    );
-  };
-
-  // Helper function to check curriculum availability
-  const checkCurriculumAvailability = (subject, groupTitle, classesInData) => {
-    const expectedClasses = getExpectedClassesForSubject(subject, groupTitle);
-    const actualClasses = classesInData.map(c => c.class);
-    
-    // Check if ALL classes that should have this subject are represented in the data
-    // If expected classes list is empty, it means subject is not taught in this group at all
-    if (expectedClasses.length === 0) {
-      return {
-        allClassesHaveSubject: false,
-        expectedClasses,
-        actualClasses,
-        reason: "Subject not taught in this group"
-      };
-    }
-    
-    // Check if subject is available in all classes of the group
-    const groupClassMapping = {
-      "Primary (1-5)": [1, 2, 3, 4, 5],
-      "Upper Primary (6-8)": [6, 7, 8],
-      "High School (9-10)": [9, 10],
-      "Higher Secondary (11-12)": [11, 12]
-    };
-    
-    const allClassesInGroup = groupClassMapping[groupTitle] || [];
-    const allClassesHaveSubject = expectedClasses.length === allClassesInGroup.length;
-    
-    return {
-      allClassesHaveSubject,
-      expectedClasses,
-      actualClasses,
-      totalClassesInGroup: allClassesInGroup.length
-    };
-  };
 
   // Add page size change handler
   const handlePageSizeChange = (event) => {
@@ -670,9 +593,6 @@ useEffect(() => {
 
       // Only open modal if there are classes for this level
       if (levelData && levelData.classes && levelData.classes.length > 0) {
-        // Use the utility function to check if curriculum note should be shown
-        const showNote = shouldShowCurriculumNote(selectedSubject, groupTitle);
-        
         setSelectedClassData({
           school: toTitleCase(school.schoolName),
           udiseCode: school.udiseCode,
@@ -680,7 +600,7 @@ useEffect(() => {
           subject: selectedSubject,
           data: [levelData],
           groupTitle: groupTitle,
-          showCurriculumNote: showNote
+          showCurriculumNote: true
         });
 
         setClassModalOpen(true);
@@ -1865,13 +1785,11 @@ useEffect(() => {
                 })()}
               </div>
 
-              {/* Curriculum Note - Only show when not all classes have the subject */}
-              {selectedClassData.showCurriculumNote && (
+              {/* Curriculum Note - Always show the original message */}
+              {selectedClassData.showCurriculumNote && selectedClassData.data[0]?.classes?.length > 0 && (
                 <div 
                   className="mt-5"
-                  style={{
-                   
-                  }}
+                  style={{}}
                 >
                   <div 
                     className="text-[#2F4F4F]"

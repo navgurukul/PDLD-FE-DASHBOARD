@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CLASS_GROUPS, SUBJECTS_BY_GRADE } from "./../data/testData";
+import { CLASS_GROUPS } from "./../data/testData";
 import { ChevronDown, Trash2 } from "lucide-react";
 import ButtonCustom from "../components/ButtonCustom";
 import ModalSummary from "../components/SummaryModal";
@@ -101,20 +101,7 @@ const TestCreationForm = () => {
     } catch (error) {
       console.error('Error fetching class-wise subjects:', error);
       setSubjectsError(error.message);
-
-      // Fallback to hardcoded subjects from testData.js
-      const fallbackSubjects = {};
-      Object.keys(SUBJECTS_BY_GRADE).forEach((classNum) => {
-        fallbackSubjects[classNum] = {
-          subjects: SUBJECTS_BY_GRADE[classNum] || [],
-          VOCATIONAL: [],
-          remedialSubjects: getRemedialSubjects(classNum),
-        };
-      });
-
-      setClassWiseSubjects(fallbackSubjects);
-
-      toast.error('Failed to load subjects from server, using default subjects');
+      toast.error('Failed to load subjects from server. Please reload the page.');
     } finally {
       setIsLoadingSubjects(false);
     }
@@ -123,40 +110,25 @@ const TestCreationForm = () => {
   // Helper function to check if a class group should be enabled for remedial
   const isGroupEnabledForRemedial = (group) => {
     // Allow remedial tests for all class groups
-    // const allowedClasses = [1, 2, 3, 4, 5];
-    // return group.classes.some((classNum) => allowedClasses.includes(classNum));
     return true;
   };
 
-  // Helper function to get remedial subjects based on class
-  const getRemedialSubjects = (classNum) => {
-    // For remedial tests, all classes should have only 3 subjects
-    return ["Hindi", "English", "Mathematics"];
-  };
-
-  // New helper function to get subjects for a class from API data
+  // Get subjects for a class from API data
   const getSubjectsForClass = (classNum) => {
     // For remedial tests, always use hardcoded subjects for all classes
     if (formData.testType === "remedial") {
       return {
-        academic: getRemedialSubjects(classNum),
+        academic: ["Hindi", "English", "Maths"],
         vocational: []
       };
     }
 
     // For syllabus tests, use API data
     const classData = classWiseSubjects[classNum];
-    if (!classData) {
-      // Fallback to hardcoded data if API data not available
-      return {
-        academic: SUBJECTS_BY_GRADE[classNum] || [],
-        vocational: []
-      };
-    }
-
+    
     return {
-      academic: classData.subjects || [],
-      vocational: classData.VOCATIONAL || []
+      academic: classData?.subjects || [],
+      vocational: classData?.VOCATIONAL || []
     };
   };
 
