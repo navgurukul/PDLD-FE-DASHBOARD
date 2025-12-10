@@ -976,7 +976,7 @@ export default function SchoolList() {
             style={{
               borderRadius: "8px",
               position: "relative",
-              minHeight: "300px",
+            
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
