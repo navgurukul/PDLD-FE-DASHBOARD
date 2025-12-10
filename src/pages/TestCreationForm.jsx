@@ -27,7 +27,9 @@ const TestCreationForm = () => {
   const [pendingGroupId, setPendingGroupId] = useState(null);
   const [showTestTypeModal, setShowTestTypeModal] = useState(false);
   const [pendingTestType, setPendingTestType] = useState(null);
-
+  const [submissionCount, setSubmissionCount] = useState(0);
+  const [canEditAllFields, setCanEditAllFields] = useState(true);
+  const [canOnlyEditDeadline, setCanOnlyEditDeadline] = useState(false);
   const [formData, setFormData] = useState({
     testType: "syllabus",
     testTag: "", // Use testCategory instead of testTag
@@ -76,7 +78,7 @@ const TestCreationForm = () => {
           // Get test tags from the correct location
           remedialTestTags = response.data.data[0].remedialTestTags || [];
           syllabusTestTags = response.data.data[0].syllabusTestTags || [];
-          
+
           // Process class data which is nested one level deeper
           if (response.data.data[0].data && Array.isArray(response.data.data[0].data)) {
             response.data.data[0].data.forEach((classData) => {
@@ -237,8 +239,34 @@ const TestCreationForm = () => {
   useEffect(() => {
     if (isEditMode && testData) {
       populateFormWithTestData(testData);
+
+      // Get submission count from location state
+      const submissions = location.state?.submissionCount || 0;
+      setSubmissionCount(submissions);
+
+      // Determine edit permissions based on submissions and test date
+      const testDate = new Date(testData.testDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      testDate.setHours(0, 0, 0, 0);
+
+      const isFutureTest = testDate > today;
+
+      if (submissions === 0 && isFutureTest) {
+        // No submissions and future test - can edit everything
+        setCanEditAllFields(true);
+        setCanOnlyEditDeadline(false);
+      } else if (submissions > 0) {
+        // Has submissions - can only edit deadline
+        setCanEditAllFields(false);
+        setCanOnlyEditDeadline(true);
+      } else {
+        // Past test with no submissions - can only edit deadline
+        setCanEditAllFields(false);
+        setCanOnlyEditDeadline(true);
+      }
     }
-  }, [isEditMode, testData]);
+  }, [isEditMode, testData, location.state]);
 
   // Fetch subjects and test tags on component mount
   useEffect(() => {
@@ -357,15 +385,25 @@ const TestCreationForm = () => {
     ) {
       const testDate = new Date(updatedRow.testDate);
       const submissionDate = new Date(updatedRow.submissionDeadline);
+      const originalDeadline = currentRow.submissionDeadline ? new Date(currentRow.submissionDeadline) : null;
 
       // Reset time part for accurate date comparison
       testDate.setHours(0, 0, 0, 0);
       submissionDate.setHours(0, 0, 0, 0);
+      if (originalDeadline) originalDeadline.setHours(0, 0, 0, 0);
 
       // Check if submission date is not AFTER the test date
       if (submissionDate.getTime() <= testDate.getTime()) {
         toast.error("Submission deadline must be after the test date");
-        return; // Don't update the state with invalid dates
+        return;
+      }
+
+      // Additional check: If can only edit deadline (has submissions), prevent moving deadline backward
+      if (canOnlyEditDeadline && field === "submissionDeadline" && originalDeadline) {
+        if (submissionDate.getTime() < originalDeadline.getTime()) {
+          toast.error("You can only extend the deadline, not move it backward");
+          return;
+        }
       }
     }
 
@@ -600,17 +638,36 @@ const TestCreationForm = () => {
       let payload;
 
       if (editMode) {
-        // Simplified payload for edit mode
-        // Get the first subject row from the first selected class
         const firstClassName = Object.keys(selectedClasses)[0];
         const firstSubjectRow = subjectRows[firstClassName][0];
 
-        payload = {
-          testType: formData.testType === "syllabus" ? "SYLLABUS" : "REMEDIAL",
-          testTag: getFormattedTestTag(),
-          testDate: firstSubjectRow.testDate,
-          deadline: firstSubjectRow.submissionDeadline,
-        };
+        const classNum = firstClassName.includes("Class ")
+          ? parseInt(firstClassName.replace("Class ", ""))
+          : parseInt(firstClassName);
+
+        // If can only edit deadline (has submissions), send deadline + required fields
+        if (canOnlyEditDeadline) {
+          payload = {
+            // testTag: getFormattedTestTag(),
+            deadline: firstSubjectRow.submissionDeadline,
+          };
+        } else {
+          // If can edit all fields (no submissions + future test), send all fields
+          payload = {
+            testType: formData.testType === "syllabus" ? "SYLLABUS" : "REMEDIAL",
+            testTag: getFormattedTestTag(),
+            testClass: classNum,
+            subject: firstSubjectRow.subject
+              .split("_")
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join("_"),
+            testDate: firstSubjectRow.testDate,
+            deadline: firstSubjectRow.submissionDeadline,
+          };
+          if (formData.testType === "syllabus") {
+            payload.maxScore = Number(maxScores[firstClassName]) || 100;
+          }
+        }
       } else {
         // Complex payload for create mode
         payload = {
@@ -650,6 +707,7 @@ const TestCreationForm = () => {
         };
       }
 
+
       // Make API call - use PATCH for edit, POST for create
       const response = editMode
         ? await apiInstance.patch(`/test/${testData.id}`, payload)
@@ -658,7 +716,7 @@ const TestCreationForm = () => {
       if (response?.data?.success) {
         // Track test created event (only for create, not edit)
         if (!editMode) {
-      const createdTest = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
+          const createdTest = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
           // Always get user info from localStorage for Mixpanel
           const userData = JSON.parse(localStorage.getItem('userData') || '{}');
 
@@ -846,15 +904,17 @@ const TestCreationForm = () => {
                   id="syllabus"
                   name="testType"
                   type="radio"
-                  className="h-4 w-4 text-[#2F4F4F] accent-[#2F4F4F] border-gray-300 focus:ring-[#2F4F4F]"
+                  className={`h-4 w-4 text-[#2F4F4F] accent-[#2F4F4F] border-gray-300 focus:ring-[#2F4F4F] ${editMode && !canEditAllFields ? "cursor-not-allowed" : ""
+                    }`}
                   value="syllabus"
                   checked={formData.testType === "syllabus"}
                   onChange={handleFormChange}
-                  disabled={editMode}
+                  disabled={editMode && !canEditAllFields}
                 />
                 <label
                   htmlFor="syllabus"
-                  className="ml-2 block text-sm"
+                  className={`ml-2 block text-sm ${editMode && !canEditAllFields ? "cursor-not-allowed" : ""
+                    }`}
                   style={{
                     fontFamily: "'Work Sans', sans-serif",
                     fontWeight: formData.testType === "syllabus" ? 600 : 400,
@@ -870,15 +930,17 @@ const TestCreationForm = () => {
                   id="remedial"
                   name="testType"
                   type="radio"
-                  className="h-4 w-4 text-[#2F4F4F] accent-[#2F4F4F] border-gray-300 focus:ring-[#2F4F4F]"
+                  className={`h-4 w-4 text-[#2F4F4F] accent-[#2F4F4F] border-gray-300 focus:ring-[#2F4F4F] ${editMode && !canEditAllFields ? "cursor-not-allowed" : ""
+                    }`}
                   value="remedial"
                   checked={formData.testType === "remedial"}
                   onChange={handleFormChange}
-                  disabled={editMode}
+                  disabled={editMode && !canEditAllFields}
                 />
                 <label
                   htmlFor="remedial"
-                  className="ml-2 block text-sm"
+                  className={`ml-2 block text-sm ${editMode && !canEditAllFields ? "cursor-not-allowed" : ""
+                    }`}
                   style={{
                     fontFamily: "'Work Sans', sans-serif",
                     fontWeight: formData.testType === "remedial" ? 600 : 400,
@@ -893,13 +955,11 @@ const TestCreationForm = () => {
           </div>
 
           <div
-            className={`grid grid-cols-1 md:grid-cols-${
-              formData.testTag === "Monthly" && !editMode ? "2" : "1"
-            } gap-x-6 gap-y-4`}
+            className={`grid grid-cols-1 md:grid-cols-${formData.testTag === "Monthly" && !editMode ? "2" : "1"
+              } gap-x-6 gap-y-4`}
           >
-            {/* Test Tag - Show combined value in edit mode, separate dropdowns in create mode */}
-            {editMode ? (
-              // Edit Mode: Show combined test tag as readonly
+            {editMode && !canEditAllFields ? (
+              // Edit Mode with submissions: Show combined test tag as readonly
               <div className="col-span-1">
                 <label
                   className="block mb-2 text-sm"
@@ -1093,25 +1153,25 @@ const TestCreationForm = () => {
                 return (
                   <div
                     key={group.id}
-                    className={`border rounded-lg transition-all ${
-                      isDisabled
+                    className={`border rounded-lg transition-all ${isDisabled
                         ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
                         : !editMode
-                        ? "cursor-pointer"
-                        : ""
-                    } ${
-                      activeClassGroupId === group.id && !isDisabled
+                          ? "cursor-pointer"
+                          : !canEditAllFields
+                            ? "cursor-not-allowed"
+                            : ""
+                      } ${activeClassGroupId === group.id && !isDisabled
                         ? "border-[#2F4F4F] shadow-sm bg-white"
                         : "border-[#E0E5E5] bg-white hover:border-[#597272]"
-                    } ${editMode ? "opacity-75" : ""}`}
+                      } ${editMode ? "opacity-75" : ""}`}
                     style={{
                       height: activeClassGroupId === group.id ? "111px" : "63px",
                       boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
                     }}
-                    onClick={() => !editMode && !isDisabled && handleGroupCardSelect(group.id)}
-                    tabIndex={!editMode && !isDisabled ? "0" : "-1"}
+                    onClick={() => canEditAllFields && !isDisabled && handleGroupCardSelect(group.id)}
+                    tabIndex={canEditAllFields && !isDisabled ? "0" : "-1"}
                     onKeyDown={(e) => {
-                      if (!editMode && !isDisabled && (e.key === "Enter" || e.key === " ")) {
+                      if (canEditAllFields && !isDisabled && (e.key === "Enter" || e.key === " ")) {
                         e.preventDefault();
                         handleGroupCardSelect(group.id);
                       }
@@ -1139,22 +1199,21 @@ const TestCreationForm = () => {
                                 key={className}
                                 className={`px-3 py-1 rounded-full text-sm transition-all
                                   bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
-                              ${
-                                selectedClasses[className]
-                                  ? "font-semibold border-2 border-[#2F4F4F]"
-                                  : "font-normal border border-transparent"
-                              }
-                              ${editMode ? "pointer-events-none" : ""}
-                              `}
+                              ${selectedClasses[className]
+                                    ? "font-semibold border-2 border-[#2F4F4F]"
+                                    : "font-normal border border-transparent"
+                                  }
+                            ${!canEditAllFields ? "pointer-events-none" : ""}
+`}
                                 onClick={(e) => {
-                                  if (!editMode) {
+                                  if (canEditAllFields) {
                                     e.stopPropagation();
                                     toggleClassSelection(className);
                                   }
                                 }}
-                                tabIndex={!editMode ? "0" : "-1"}
+                                tabIndex={canEditAllFields ? "0" : "-1"}
                                 onKeyDown={(e) => {
-                                  if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                                  if (canEditAllFields && (e.key === "Enter" || e.key === " ")) {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     toggleClassSelection(className);
@@ -1181,25 +1240,25 @@ const TestCreationForm = () => {
                 return (
                   <div
                     key={group.id}
-                    className={`border rounded-lg transition-all ${
-                      isDisabled
+                    className={`border rounded-lg transition-all ${isDisabled
                         ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
                         : !editMode
-                        ? "cursor-pointer"
-                        : ""
-                    } ${
-                      activeClassGroupId === group.id && !isDisabled
+                          ? "cursor-pointer"
+                          : !canEditAllFields
+                            ? "cursor-not-allowed"
+                            : ""
+                      } ${activeClassGroupId === group.id && !isDisabled
                         ? "border-[#2F4F4F] shadow-sm bg-white"
                         : "border-[#E0E5E5] bg-white hover:border-[#597272]"
-                    } ${editMode ? "opacity-75" : ""}`}
+                      } ${editMode ? "opacity-75" : ""}`}
                     style={{
                       height: activeClassGroupId === group.id ? "111px" : "63px",
                       boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
                     }}
-                    onClick={() => !editMode && !isDisabled && handleGroupCardSelect(group.id)}
-                    tabIndex={!editMode && !isDisabled ? "0" : "-1"}
+                    onClick={() => canEditAllFields && !isDisabled && handleGroupCardSelect(group.id)}
+                    tabIndex={canEditAllFields && !isDisabled ? "0" : "-1"}
                     onKeyDown={(e) => {
-                      if (!editMode && !isDisabled && (e.key === "Enter" || e.key === " ")) {
+                      if (canEditAllFields && !isDisabled && (e.key === "Enter" || e.key === " ")) {
                         e.preventDefault();
                         handleGroupCardSelect(group.id);
                       }
@@ -1227,22 +1286,21 @@ const TestCreationForm = () => {
                                 key={className}
                                 className={`px-3 py-1 rounded-full text-sm transition-all
     bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
-    ${
-      selectedClasses[className]
-        ? "font-semibold border-2 border-[#2F4F4F]"
-        : "font-normal border border-transparent"
-    }
-    ${editMode ? "pointer-events-none" : ""}
-  `}
+    ${selectedClasses[className]
+                                    ? "font-semibold border-2 border-[#2F4F4F]"
+                                    : "font-normal border border-transparent"
+                                  }
+   ${!canEditAllFields ? "pointer-events-none" : ""}
+`}
                                 onClick={(e) => {
-                                  if (!editMode) {
+                                  if (canEditAllFields) {
                                     e.stopPropagation();
                                     toggleClassSelection(className);
                                   }
                                 }}
-                                tabIndex={!editMode ? "0" : "-1"}
+                                tabIndex={canEditAllFields ? "0" : "-1"}
                                 onKeyDown={(e) => {
-                                  if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                                  if (canEditAllFields && (e.key === "Enter" || e.key === " ")) {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     toggleClassSelection(className);
@@ -1269,25 +1327,25 @@ const TestCreationForm = () => {
                 return (
                   <div
                     key={group.id}
-                    className={`border rounded-lg transition-all ${
-                      isDisabled
+                    className={`border rounded-lg transition-all ${isDisabled
                         ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
                         : !editMode
-                        ? "cursor-pointer"
-                        : ""
-                    } ${
-                      activeClassGroupId === group.id && !isDisabled
+                          ? "cursor-pointer"
+                          : !canEditAllFields
+                            ? "cursor-not-allowed"
+                            : ""
+                      } ${activeClassGroupId === group.id && !isDisabled
                         ? "border-[#2F4F4F] shadow-sm bg-white"
                         : "border-[#E0E5E5] bg-white hover:border-[#597272]"
-                    } ${editMode ? "opacity-75" : ""}`}
+                      } ${editMode ? "opacity-75" : ""}`}
                     style={{
                       height: activeClassGroupId === group.id ? "111px" : "63px",
                       boxShadow: "0px 1px 5px rgba(47, 79, 79, 0.08)",
                     }}
-                    onClick={() => !editMode && !isDisabled && handleGroupCardSelect(group.id)}
-                    tabIndex={!editMode && !isDisabled ? "0" : "-1"}
+                    onClick={() => canEditAllFields && !isDisabled && handleGroupCardSelect(group.id)}
+                    tabIndex={canEditAllFields && !isDisabled ? "0" : "-1"}
                     onKeyDown={(e) => {
-                      if (!editMode && !isDisabled && (e.key === "Enter" || e.key === " ")) {
+                      if (canEditAllFields && !isDisabled && (e.key === "Enter" || e.key === " ")) {
                         e.preventDefault();
                         handleGroupCardSelect(group.id);
                       }
@@ -1315,22 +1373,21 @@ const TestCreationForm = () => {
                                 key={className}
                                 className={`px-3 py-1 rounded-full text-sm transition-all
     bg-[#EAEDED] text-[#2F4F4F] hover:bg-[#F0F5F5]
-    ${
-      selectedClasses[className]
-        ? "font-semibold border-2 border-[#2F4F4F]"
-        : "font-normal border border-transparent"
-    }
-    ${editMode ? "pointer-events-none" : ""}
-  `}
+    ${selectedClasses[className]
+                                    ? "font-semibold border-2 border-[#2F4F4F]"
+                                    : "font-normal border border-transparent"
+                                  }
+   ${!canEditAllFields ? "pointer-events-none" : ""}
+`}
                                 onClick={(e) => {
-                                  if (!editMode) {
+                                  if (canEditAllFields) {
                                     e.stopPropagation();
                                     toggleClassSelection(className);
                                   }
                                 }}
-                                tabIndex={!editMode ? "0" : "-1"}
+                                tabIndex={canEditAllFields ? "0" : "-1"}
                                 onKeyDown={(e) => {
-                                  if (!editMode && (e.key === "Enter" || e.key === " ")) {
+                                  if (canEditAllFields && (e.key === "Enter" || e.key === " ")) {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     toggleClassSelection(className);
@@ -1379,13 +1436,12 @@ const TestCreationForm = () => {
                   <input
                     type="number"
                     id={`max_score_${getClassId(className)}`}
-                    className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${
-                      editMode ? "bg-gray-100 cursor-not-allowed" : ""
-                    }`}
+                    className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${!canEditAllFields ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
                     placeholder="e.g., 100"
                     value={maxScores[className] || ""}
-                    onChange={(e) => !editMode && handleMaxScoreChange(className, e.target.value)}
-                    disabled={editMode}
+                    onChange={(e) => canEditAllFields && handleMaxScoreChange(className, e.target.value)}
+                    disabled={!canEditAllFields}
                     required
                   />
                   <div className="mt-1">
@@ -1420,15 +1476,14 @@ const TestCreationForm = () => {
                   >
                     <div className="col-span-5">
                       <select
-                        className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${
-                          editMode ? "bg-gray-100 cursor-not-allowed" : ""
-                        }`}
+                        className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${!canEditAllFields ? "bg-gray-100 cursor-not-allowed" : ""
+                          }`}
                         value={row.subject}
                         onChange={(e) =>
-                          !editMode &&
+                          canEditAllFields &&
                           handleSubjectRowChange(className, row.id, "subject", e.target.value)
                         }
-                        disabled={editMode || isLoadingSubjects}
+                        disabled={!canEditAllFields || isLoadingSubjects}
                         required
                       >
                         {isLoadingSubjects ? (
@@ -1502,11 +1557,13 @@ const TestCreationForm = () => {
                       <div className="relative">
                         <input
                           type="date"
-                          className="w-full min-w-[130px] p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8]"
+                          className={`w-full min-w-[130px] p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${canOnlyEditDeadline ? "bg-gray-100 cursor-not-allowed" : ""
+                            }`}
                           value={row.testDate}
                           onChange={(e) =>
                             handleSubjectRowChange(className, row.id, "testDate", e.target.value)
                           }
+                          disabled={canOnlyEditDeadline}
                           required
                         />
                       </div>
@@ -1533,11 +1590,10 @@ const TestCreationForm = () => {
                     <div className="col-span-1 text-center">
                       <button
                         type="button"
-                        className={`bg-transparent text-[#F44336] hover:text-[#C3362B] p-1 rounded-md ${
-                          editMode ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
-                        onClick={() => !editMode && removeSubjectRow(className, row.id)}
-                        disabled={editMode}
+                        className={`bg-transparent text-[#F44336] hover:text-[#C3362B] p-1 rounded-md ${!canEditAllFields ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
+                        onClick={() => canEditAllFields && removeSubjectRow(className, row.id)}
+                        disabled={!canEditAllFields}
                         aria-label="Remove subject"
                       >
                         <Trash2 className="w-5 h-5 text-red-500" />
@@ -1589,11 +1645,10 @@ const TestCreationForm = () => {
                       <button
                         type="button"
                         onClick={handleAddSubject}
-                        className={`inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${
-                          hasEmptySubjectRow
+                        className={`inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${hasEmptySubjectRow
                             ? "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
                             : "border-[#2F4F4F] text-[#2F4F4F] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2F4F4F]"
-                        }`}
+                          }`}
                         style={{
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 600,
@@ -1626,8 +1681,8 @@ const TestCreationForm = () => {
                   ? "Updating Test..."
                   : "Creating Test..."
                 : editMode
-                ? "Update Test"
-                : "Create Test"
+                  ? "Update Test"
+                  : "Create Test"
             }
             disabled={isSubmitting}
           />
