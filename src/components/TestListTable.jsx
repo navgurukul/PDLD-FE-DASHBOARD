@@ -11,11 +11,9 @@ import { useNavigate } from "react-router-dom";
 import "./TestListTable.css";
 import { ToastContainer, toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import Tooltip from "@mui/material/Tooltip";
 
 import apiInstance from "../../api";
-import { CLASS_OPTIONS, SUBJECT_OPTIONS, STATUS_LABELS } from "../data/testData";
 import ButtonCustom from "./ButtonCustom";
 import SpinnerPageOverlay from "./SpinnerPageOverlay";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -232,9 +230,11 @@ export default function TestListTable() {
         }
       }
     } catch (error) {
-      // Fallback to static data if API fails
-      setClassOptions(CLASS_OPTIONS);
-      setSubjectOptions(SUBJECT_OPTIONS);
+      // No fallback - API-driven only
+      console.error('Failed to fetch class-wise subjects:', error);
+      toast.error('Failed to load class and subject options from API');
+      setClassOptions([]);
+      setSubjectOptions([]);
     }
   };
 
@@ -360,9 +360,6 @@ export default function TestListTable() {
       if (selectedSubject.length > 0) {
         selectedSubject.forEach((s) => {
           let apiSubjectName = s;
-          if (s === "Industrial Organization") {
-            apiSubjectName = "Industrial_organization";
-          }
           url += `&subject=${encodeURIComponent(apiSubjectName)}`;
         });
       }
