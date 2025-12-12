@@ -68,9 +68,11 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: "none",
-          fontFamily: "Karla !important",
+          fontFamily: "'Work Sans', sans-serif",
+          fontSize: "14px",
           textAlign: "left",
           padding: "16px 12px !important",
+          borderBottom: "none",
         },
       },
     },
@@ -78,7 +80,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "&:hover": {
-            backgroundColor: "rgba(47, 79, 79, 0.1) !important",
+            backgroundColor: "inherit !important", 
+            cursor: "default !important", 
           },
         },
       },
@@ -802,10 +805,12 @@ export default function SchoolReport({ schoolName }) {
   };
 
   const headerStyle = {
-    fontWeight: "bold",
     color: "#2F4F4F",
-    fontFamily: "Karla, sans-serif",
+    fontFamily: "'Work Sans', sans-serif", 
+    fontWeight: 600,
     fontSize: "14px",
+    fontStyle: "normal", 
+    textTransform: "none",
   };
 
   // Base columns for SYLLABUS tests (with Max Marks)

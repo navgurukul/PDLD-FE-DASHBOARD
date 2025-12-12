@@ -519,6 +519,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   // Handle search functionality with debouncing
   const debouncedSearchQuery = useDebounce(searchQuery, 500); // Debounce search for 500ms
   
+  // Reset page when filters change (search, status, or level)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, statusFilter, level]);
+  
   useEffect(() => {
     if (searchQuery && debouncedSearchQuery !== searchQuery) {
       return;
