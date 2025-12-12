@@ -39,20 +39,20 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#2F4F4F", // Use text.primary color on focus
+            borderColor: "#2F4F4F", 
           },
         },
         notchedOutline: {
-          borderColor: "#ccc", // default border color
+          borderColor: "#ccc", 
         },
       },
     },
     MuiInputLabel: {
       styleOverrides: {
         root: {
-          color: "#949494", // Default label color
+          color: "#949494", 
           "&.Mui-focused": {
-            color: "#2F4F4F", // Focused label color
+            color: "#2F4F4F", 
           },
         },
       },
@@ -60,7 +60,7 @@ const theme = createTheme({
     MuiSelect: {
       styleOverrides: {
         icon: {
-          color: "#2F4F4F", // Dropdown arrow icon color
+          color: "#2F4F4F", 
         },
       },
     },
@@ -104,14 +104,14 @@ const theme = createTheme({
 });
 
 export default function SchoolReport({ schoolName }) {
-  const [syllabusTests, setSyllabusTests] = useState([]); // Store syllabus test data
-  const [remedialTests, setRemedialTests] = useState([]); // Store remedial test data
-  const [schoolData, setSchoolData] = useState(null); // Store school information
+  const [syllabusTests, setSyllabusTests] = useState([]); 
+  const [remedialTests, setRemedialTests] = useState([]);
+  const [schoolData, setSchoolData] = useState(null); 
   const [academicYear, setAcademicYear] = useState(null);
-  const [selectedClass, setSelectedClass] = useState(""); // Empty = "All Classes"
+  const [selectedClass, setSelectedClass] = useState(""); 
   const [isLoading, setIsLoading] = useState(false);
   const [availableClasses, setAvailableClasses] = useState([]);
-  const [downloadModalOpen, setDownloadModalOpen] = useState(false); // Add download modal state
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false); 
   const navigate = useNavigate();
 
   // Extract school ID from URL
@@ -185,7 +185,7 @@ export default function SchoolReport({ schoolName }) {
 
   // Handle class change
   const handleClassChange = (e) => {
-    setSelectedClass(e.target.value); // Just update state, no API call
+    setSelectedClass(e.target.value); 
   };
 
   // Handle opening download modal
@@ -243,8 +243,8 @@ export default function SchoolReport({ schoolName }) {
             class: classTest.class,
             totalStudents: classTest.totalStudents || 0,
             maxMarks: test.maxScore || 0,
-            subject: test.subject || "-", // ✅ Individual test subject
-            averageScore: test.averageScore ?? "-", // ✅ Individual test average
+            subject: test.subject || "-", 
+            averageScore: test.averageScore ?? "-", 
           });
         });
       }
@@ -338,30 +338,7 @@ export default function SchoolReport({ schoolName }) {
     csvContent += `Total Tests:,${
       syllabusData.length + remedialData.length
     }\n\n`;
-    //     // Add table headers
-    //     csvContent += headers.join(",") + "\n";
 
-    //     // Add rows for each report
-    //     data.forEach((report) => {
-    //       const rowData = [
-    //   report.testName || "-",                                    // Test Name
-    //   report.testTag || "-",                                      // Test Tag
-    //   report.class || "-",                                        // Class
-    //   report.testType === "Syllabus" ? (report.maxMarks || "-") : "-", // Max Marks (only for syllabus)
-    //   ...allSubjects.map((subject) => report[subject] || "-"),   // Subjects
-    // ];
-    //       csvContent +=
-    //         rowData
-    //           .map((cell) => {
-    //             if (cell && cell.toString().includes(",")) {
-    //               return `"${cell}"`;
-    //             }
-    //             return cell;
-    //           })
-    //           .join(",") + "\n";
-    //     });
-    // SYLLABUS TEST SECTION
-    // SYLLABUS TEST SECTION
     if (syllabusData.length > 0) {
       csvContent += "=== SYLLABUS TESTS ===\n";
       // csvContent += "Test Name,Test Tag,Class,Total Students,Max Marks,Average Score\n";
@@ -437,8 +414,6 @@ export default function SchoolReport({ schoolName }) {
     // Create a new window for printing
     const printWindow = window.open("", "_blank");
 
-    // Calculate statistics
-    // ✅ FIXED: Define all required variables
     const classTitle =
       selectedClass === "" ? "All Classes" : `Class ${selectedClass}`;
     const totalTests = syllabusData.length + remedialData.length;
@@ -447,8 +422,7 @@ export default function SchoolReport({ schoolName }) {
       month: "long",
       day: "numeric",
     });
-    // Generate HTML content for the PDF
-    // Syllabus table HTML
+    
 
     // Syllabus table HTML
     const syllabusTableHTML =
@@ -816,7 +790,7 @@ export default function SchoolReport({ schoolName }) {
   // Base columns for SYLLABUS tests (with Max Marks)
   const syllabusBaseColumns = [
     {
-      name: "Test Tag", // NEW COLUMN
+      name: "Test Tag", 
       options: {
         filter: false,
         sort: true,
@@ -869,13 +843,12 @@ export default function SchoolReport({ schoolName }) {
           <span style={headerStyle}>{label}</span>
         ),
         customBodyRender: (value) => {
-          // Remove " — " from test name
           return value ? value.split(" — ")[0] : "-";
         },
       },
     },
     {
-      name: "Test Tag", // NEW COLUMN
+      name: "Test Tag", 
       options: {
         filter: false,
         sort: true,
@@ -1065,10 +1038,10 @@ export default function SchoolReport({ schoolName }) {
     if (classTest.tests && classTest.tests.length > 0) {
       classTest.tests.forEach((test) => {
         const rowData = [
-          test.testTag || "-", // Test Tag
-          classTest.class, // Class
-          classTest.totalStudents || 0, // Total Students
-          test.maxScore || 0, // Max Marks
+          test.testTag || "-", 
+          classTest.class,
+          classTest.totalStudents || 0, 
+          test.maxScore || 0, 
           ...syllabusSubjects.map((subject) =>
             test.subject === subject ? test.averageScore ?? "-" : "-"
           ),
@@ -1087,10 +1060,10 @@ export default function SchoolReport({ schoolName }) {
     if (classTest.subjects && classTest.subjects.length > 0) {
       classTest.subjects.forEach((subjectTest) => {
         const rowData = [
-          subjectTest.testName || "-", // Test Name
-          subjectTest.testTag || "-", // Test Tag
+          subjectTest.testName || "-", 
+          subjectTest.testTag || "-", 
           classTest.class, // Class
-          subjectTest.subject || "-", // Subject
+          subjectTest.subject || "-", 
           subjectTest.gradeCounts?.SENTENCE ??
             subjectTest.gradeCounts?.कहानी ??
             subjectTest.gradeCounts?.भाग ??
@@ -1110,10 +1083,10 @@ export default function SchoolReport({ schoolName }) {
           subjectTest.gradeCounts?.Beginner ??
             subjectTest.gradeCounts?.प्रारंभिक ??
             "-", // Beginner/प्रारंभिक
-          subjectTest.studentsPresent || 0, // Present Students
-          subjectTest.studentsAbsent || 0, // Absent Students
-          subjectTest.totalStudents || 0, // Total Students
-          subjectTest.overallGrade || "-", // Overall Grade
+          subjectTest.studentsPresent || 0, 
+          subjectTest.studentsAbsent || 0, 
+          subjectTest.totalStudents || 0, 
+          subjectTest.overallGrade || "-", 
         ];
 
         remedialTableData.push(rowData);
@@ -1199,7 +1172,6 @@ export default function SchoolReport({ schoolName }) {
           />
         </div>
 
-        {/* Data Tables with Headings */}
         {/* Syllabus Test Reports Section */}
         <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">Syllabus Test</h5>
         {filteredSyllabusTests.length > 0 ? (
@@ -1287,7 +1259,7 @@ export default function SchoolReport({ schoolName }) {
           subject={
             selectedClass === "" ? "All Classes" : `Class ${selectedClass}`
           }
-          hideRowOptions={true} // Since we only have current data
+          hideRowOptions={true} 
           reportName="School Report"
           reportLevel="school"
           reportDetails={{
