@@ -422,7 +422,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           apiSchools = response.data.data.items;
           // Extract values from metadata if available, otherwise use totalCount
           const metadata = response.data.data.metadata || {};
-          totalSubmittedSchools = metadata.totalSubmittedSchools || response.data.data.totalCount || 0;
+          totalSubmittedSchools = metadata.totalSubmittedSchools ?? response.data.data.totalCount ?? 0;
           totalpendingSchools = metadata.totalpendingSchools || 0;
           totalEligibleSchools = metadata.totalEligibleSchools || response.data.data.totalCount || 0;
           pagination = response.data.data.pagination;
@@ -1668,11 +1668,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   // Calculate submission rate
   const submissionRate = totalSchools > 0 ? Math.round((schoolsSubmitted / totalSchools) * 100) : 0;
-
-  // Show loading indicator while fetching data
-  if (loading) {
-    return <SpinnerPageOverlay isLoading={true} />;
-  }
 
   // Show error message if data fetch failed
   if (error) {
