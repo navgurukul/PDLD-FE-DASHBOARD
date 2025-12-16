@@ -86,6 +86,7 @@ export default function StreamVocationalReport() {
 
     // Ref to prevent double API calls
     const hasFetchedOnMount = useRef(false);
+    const isClearingFilters = useRef(false);
 
     // Class options - only 11 and 12
     const classOptions = [
@@ -99,60 +100,6 @@ export default function StreamVocationalReport() {
         { value: "all", label: "All Students" },
         { value: "with_stream", label: "With Stream" },
         { value: "without_stream", label: "Without Stream" }
-    ];
-
-    // Dummy data for testing
-    const dummyData = [
-        {
-            studentName: "Rajesh Kumar",
-            udiseCode: "27250100101",
-            schoolName: "Government Senior Secondary School, Panvel",
-            block: "Panvel",
-            cluster: "Panvel Urban",
-            class: "11",
-            stream: "Science",
-            vocationalSubject: ["Information Technology", "Web Design"]
-        },
-        {
-            studentName: "Priya Sharma",
-            udiseCode: "27250100102",
-            schoolName: "Zilla Parishad High School, Kharghar",
-            block: "Panvel",
-            cluster: "Kharghar",
-            class: "12",
-            stream: "Commerce",
-            vocationalSubject: ["Banking & Finance"]
-        },
-        {
-            studentName: "Amit Patel",
-            udiseCode: "27250200201",
-            schoolName: "District High School, Uran",
-            block: "Uran",
-            cluster: "Uran Central",
-            class: "11",
-            stream: null, // No stream assigned
-            vocationalSubject: ["Retail Management", "Marketing"]
-        },
-        {
-            studentName: "Sneha Desai",
-            udiseCode: "27250200202",
-            schoolName: "Government Secondary School, Karjat",
-            block: "Karjat",
-            cluster: "Karjat East",
-            class: "12",
-            stream: "Arts",
-            vocationalSubject: null // No vocational subject
-        },
-        {
-            studentName: "Vikram Singh",
-            udiseCode: "27250300301",
-            schoolName: "Municipal High School, Alibag",
-            block: "Alibag",
-            cluster: "Alibag North",
-            class: "11",
-            stream: null, // No stream assigned
-            vocationalSubject: null // No vocational subject
-        }
     ];
 
     // Fetch stream and vocational data from API
@@ -170,92 +117,100 @@ export default function StreamVocationalReport() {
                 pageSize: pagination.pageSize.toString(),
             });
 
-            // Add filters
+            // Add filters - matching backend API specs
             if (selectedBlock) params.append("block", selectedBlock);
             if (selectedCluster) params.append("cluster", selectedCluster);
             if (selectedClass && selectedClass !== "all") params.append("class", selectedClass);
-            if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
-                params.append("query", debouncedSearchQuery.trim());
+
+            // Add stream status filter - convert to backend format
+            if (selectedStreamFilter === "with_stream") {
+                params.append("streamStatus", "withStream");
+            } else if (selectedStreamFilter === "without_stream") {
+                params.append("streamStatus", "withoutStream");
             }
 
-            // TODO: Replace with actual API endpoint when backend is ready
+            // Add search query - backend uses "search" parameter
+            if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+                params.append("search", debouncedSearchQuery.trim());
+            }
+
             try {
+                // Actual API response format from backend:
+                // {
+                //   success: true,
+                //   data: {
+                //     students: [{ studentId, studentName, udiseCode, schoolName, block, cluster, class, stream?, vocationalSubjects: [] }],
+                //     pagination: { currentPage, pageSize, totalRecords, totalPages },
+                //     summary: { totalStudents, withStream, withoutStream, withVocationalSubject }
+                //   }
+                // }
                 const response = await apiInstance.get(`/report/stream-vocational?${params.toString()}`);
 
                 if (response.data.success) {
                     const responseData = response.data.data;
-                    const { students, reportType, academicYear, pagination: responsePagination, lastUpdatedOn } = responseData;
-                    const responseMetadata = responseData.metadata;
+                    const { students, pagination: responsePagination, summary } = responseData;
 
-                    setData(students || []);
+                    // Map API response to component's expected format
+                    const mappedStudents = (students || []).map(student => ({
+                        studentName: student.studentName,
+                        udiseCode: student.udiseCode,
+                        schoolName: student.schoolName,
+                        block: student.block,
+                        cluster: student.cluster,
+                        class: student.class?.toString() || "-",
+                        stream: student.stream || null,
+                        vocationalSubject: student.vocationalSubjects || []
+                    }));
+
+                    setData(mappedStudents);
                     setMetadata({
-                        ...(responseMetadata || {}),
-                        reportType,
-                        academicYear,
-                        lastUpdatedOn
+                        reportType: "Stream & Vocational Tracking",
+                        academicYear: "2024-25",
+                        lastUpdatedOn: response.data.timestamp,
+                        ...summary
                     });
 
                     setPagination(prev => ({
                         ...prev,
-                        totalItems: responsePagination?.totalItems || responseMetadata?.totalRecords || (students || []).length,
-                        totalPages: responsePagination?.totalPages || responseMetadata?.totalPages || Math.ceil((responseMetadata?.totalRecords || (students || []).length) / prev.pageSize),
+                        currentPage: responsePagination?.currentPage || prev.currentPage,
+                        totalItems: responsePagination?.totalRecords || mappedStudents.length,
+                        totalPages: responsePagination?.totalPages || 1,
                     }));
                 } else {
-                    toast.error(response.data.message || "Failed to fetch stream data");
+                    const errorMessage = response.data.message || "Failed to fetch stream data";
+                    console.error("API error:", errorMessage);
+                    toast.error(errorMessage);
                     setData([]);
                     setMetadata({});
+                    setPagination(prev => ({
+                        ...prev,
+                        totalItems: 0,
+                        totalPages: 0,
+                    }));
                 }
             } catch (apiError) {
-                // If API is not available, use dummy data for testing
-                console.warn("API not available, using dummy data for testing:", apiError);
-
-                // Apply filters to dummy data
-                let filteredData = [...dummyData];
-
-                if (selectedBlock) {
-                    filteredData = filteredData.filter(s => s.block === selectedBlock);
-                }
-                if (selectedCluster) {
-                    filteredData = filteredData.filter(s => s.cluster === selectedCluster);
-                }
-                if (selectedClass && selectedClass !== "all") {
-                    filteredData = filteredData.filter(s => s.class === selectedClass);
-                }
-                if (selectedStreamFilter === "with_stream") {
-                    filteredData = filteredData.filter(s => s.stream && s.stream !== "-" && s.stream.toLowerCase() !== "not assigned");
-                } else if (selectedStreamFilter === "without_stream") {
-                    filteredData = filteredData.filter(s => !s.stream || s.stream === "-" || s.stream.toLowerCase() === "not assigned");
-                }
-                if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
-                    const query = debouncedSearchQuery.toLowerCase();
-                    filteredData = filteredData.filter(s =>
-                        s.studentName.toLowerCase().includes(query) ||
-                        s.udiseCode.includes(query) ||
-                        s.schoolName.toLowerCase().includes(query)
-                    );
-                }
-
-                setData(filteredData);
-                setMetadata({
-                    reportType: "Stream & Vocational Tracking",
-                    academicYear: "2024-25",
-                    lastUpdatedOn: new Date().toISOString(),
-                    totalRecords: filteredData.length
-                });
-
+                // Handle API errors
+                console.error("API request failed:", apiError);
+                const errorMessage = apiError.response?.data?.message || apiError.message || "Unable to connect to server. Please check your connection.";
+                toast.error(errorMessage);
+                setData([]);
+                setMetadata({});
                 setPagination(prev => ({
                     ...prev,
-                    totalItems: filteredData.length,
-                    totalPages: Math.ceil(filteredData.length / prev.pageSize),
+                    totalItems: 0,
+                    totalPages: 0,
                 }));
-
-                toast.info("Using sample data for testing. Connect to backend for live data.");
             }
         } catch (error) {
-            console.error("Error fetching stream data:", error);
-            toast.error("Failed to fetch stream data. Please try again.");
+            console.error("Unexpected error fetching stream data:", error);
+            toast.error("An unexpected error occurred. Please try again.");
             setData([]);
             setMetadata({});
+            setPagination(prev => ({
+                ...prev,
+                totalItems: 0,
+                totalPages: 0,
+            }));
         } finally {
             setIsLoading(false);
             setIsSearchLoading(false);
@@ -305,13 +260,16 @@ export default function StreamVocationalReport() {
 
     // Fetch data when filters, search, or pagination changes
     useEffect(() => {
-        if (hasFetchedOnMount.current) {
+        if (hasFetchedOnMount.current && !isClearingFilters.current) {
             fetchStreamData();
         }
     }, [fetchStreamData]);
 
     // Reset to page 1 when filters or search changes (but not pagination itself)
     useEffect(() => {
+        // Skip on initial mount or when clearing filters (already handled)
+        if (!hasFetchedOnMount.current || isClearingFilters.current) return;
+
         // Only reset the page if we're not already on page 1
         if (pagination.currentPage !== 1) {
             setPagination(prev => ({ ...prev, currentPage: 1 }));
@@ -498,46 +456,118 @@ export default function StreamVocationalReport() {
         setPagination((prev) => ({ ...prev, currentPage: value }));
     };
 
-    const handleClearFilters = () => {
+    const handleClearFilters = useCallback(() => {
+        // Check if any filters are actually applied
+        const hasFilters =
+            selectedBlock !== "" ||
+            selectedCluster !== "" ||
+            selectedClass !== "all" ||
+            selectedStreamFilter !== "all" ||
+            searchQuery !== "" ||
+            pagination.currentPage !== 1;
+
+        // If no filters are applied, don't do anything
+        if (!hasFilters) {
+            toast.info("No filters to clear");
+            return;
+        }
+
+        // Mark that we're clearing to batch all state updates
+        isClearingFilters.current = true;
+
+        // Batch all state updates together in a single render cycle
         setSelectedBlock("");
         setSelectedCluster("");
         setSelectedClass("all");
         setSelectedStreamFilter("all");
         setSearchQuery("");
         setPagination((prev) => ({ ...prev, currentPage: 1 }));
-    };
+
+        // Allow the next render to process the fetch
+        setTimeout(() => {
+            isClearingFilters.current = false;
+            // Manually trigger fetch after all states are cleared
+            fetchStreamData();
+        }, 50);
+    }, [fetchStreamData, selectedBlock, selectedCluster, selectedClass, selectedStreamFilter, searchQuery, pagination.currentPage]);
 
     const handleDownload = async ({ format, rows, count }) => {
+        console.log("Download initiated:", { format, rows, count, currentDataLength: data.length });
+
         setIsLoading(true);
         try {
             let dataToDownload = data;
 
+            // For "all" data, use mode=download to get all records without pagination
             if (rows !== "current") {
-                const params = new URLSearchParams({
-                    page: "1",
-                    pageSize: count.toString(),
-                });
+                try {
+                    const params = new URLSearchParams({
+                        mode: "download", // Special mode to get all data without pagination
+                    });
 
-                if (selectedBlock) params.append("block", selectedBlock);
-                if (selectedCluster) params.append("cluster", selectedCluster);
-                if (selectedClass && selectedClass !== "all") params.append("class", selectedClass);
-                if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
-                    params.append("query", debouncedSearchQuery.trim());
-                }
+                    // Add filters - matching backend API specs
+                    if (selectedBlock) params.append("block", selectedBlock);
+                    if (selectedCluster) params.append("cluster", selectedCluster);
+                    if (selectedClass && selectedClass !== "all") params.append("class", selectedClass);
 
-                const response = await apiInstance.get(`/report/stream-vocational?${params.toString()}`);
-
-                if (response.data.success) {
-                    const responseData = response.data.data;
-                    const { students } = responseData;
-                    dataToDownload = students || [];
-
-                    if (count !== pagination.totalItems && dataToDownload.length > count) {
-                        dataToDownload = dataToDownload.slice(0, count);
+                    // Add stream status filter
+                    if (selectedStreamFilter === "with_stream") {
+                        params.append("streamStatus", "withStream");
+                    } else if (selectedStreamFilter === "without_stream") {
+                        params.append("streamStatus", "withoutStream");
                     }
-                } else {
-                    throw new Error("Failed to fetch extended data");
+
+                    // Add search query - backend uses "search" parameter
+                    if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+                        params.append("search", debouncedSearchQuery.trim());
+                    }
+
+                    console.log("Fetching all data for download with mode=download:", params.toString());
+
+                    const response = await apiInstance.get(`/report/stream-vocational?${params.toString()}`);
+
+                    console.log("Download API response:", {
+                        success: response.data.success,
+                        dataLength: response.data.data?.students?.length
+                    });
+
+                    if (response.data.success) {
+                        const responseData = response.data.data;
+                        const { students } = responseData;
+
+                        // Map API response to component's expected format for download
+                        dataToDownload = (students || []).map(student => ({
+                            studentName: student.studentName,
+                            udiseCode: student.udiseCode,
+                            schoolName: student.schoolName,
+                            block: student.block,
+                            cluster: student.cluster,
+                            class: student.class?.toString() || "-",
+                            stream: student.stream || null,
+                            vocationalSubject: student.vocationalSubjects || []
+                        }));
+
+                        console.log("Mapped download data:", { length: dataToDownload.length });
+                    } else {
+                        throw new Error(response.data.message || "Failed to fetch extended data");
+                    }
+                } catch (apiError) {
+                    console.error("API error during download:", apiError);
+                    toast.error("Unable to fetch all data. Downloading current page only.");
+                    dataToDownload = data;
                 }
+            }
+
+            console.log("Data to download:", {
+                length: dataToDownload.length,
+                sample: dataToDownload[0],
+                format
+            });
+
+            // Validate data before download
+            if (!dataToDownload || dataToDownload.length === 0) {
+                toast.error("No data available to download");
+                return;
             }
 
             if (format === "csv") {
@@ -554,66 +584,93 @@ export default function StreamVocationalReport() {
     };
 
     const handleDownloadCSV = (downloadData) => {
-        const headers = [
-            "Student Name",
-            "UDISE Code",
-            "School Name",
-            "Block",
-            "Cluster",
-            "Class",
-            "Stream",
-            "Vocational Subject"
-        ];
+        try {
+            console.log("CSV Download - Data received:", { length: downloadData.length, sample: downloadData[0] });
 
-        const csvContent = [
-            headers.join(","),
-            ...downloadData.map((row) =>
-                [
-                    `"${row.studentName || "-"}"`,
-                    `"${row.udiseCode || "-"}"`,
-                    `"${row.schoolName || "-"}"`,
-                    `"${row.block || "-"}"`,
-                    `"${row.cluster || "-"}"`,
-                    `"${row.class || "-"}"`,
-                    `"${row.stream || "Not Assigned"}"`,
-                    `"${Array.isArray(row.vocationalSubject) ? row.vocationalSubject.join(', ') : (row.vocationalSubject || "Not Assigned")}"`
-                ].join(",")
-            ),
-        ].join("\n");
+            if (!downloadData || downloadData.length === 0) {
+                toast.error("No data to download");
+                return;
+            }
 
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", `stream_vocational_report_${new Date().getTime()}.csv`);
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.success("CSV downloaded successfully!");
+            const headers = [
+                "Student Name",
+                "UDISE Code",
+                "School Name",
+                "Block",
+                "Cluster",
+                "Class",
+                "Stream",
+                "Vocational Subject"
+            ];
+
+            const csvContent = [
+                headers.join(","),
+                ...downloadData.map((row) =>
+                    [
+                        `"${row.studentName || "-"}"`,
+                        `"${row.udiseCode || "-"}"`,
+                        `"${row.schoolName || "-"}"`,
+                        `"${row.block || "-"}"`,
+                        `"${row.cluster || "-"}"`,
+                        `"${row.class || "-"}"`,
+                        `"${row.stream || "Not Assigned"}"`,
+                        `"${Array.isArray(row.vocationalSubject) ? row.vocationalSubject.join(', ') : (row.vocationalSubject || "Not Assigned")}"`
+                    ].join(",")
+                ),
+            ].join("\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `stream_vocational_report_${new Date().getTime()}.csv`);
+            link.style.visibility = "hidden";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            console.log("CSV download completed successfully");
+            toast.success(`CSV downloaded successfully! (${downloadData.length} students)`);
+        } catch (error) {
+            console.error("Error in handleDownloadCSV:", error);
+            toast.error("Failed to download CSV");
+        }
     };
 
     const handleDownloadPDF = (downloadData) => {
-        const printWindow = window.open("", "_blank");
+        try {
+            console.log("PDF Download - Data received:", { length: downloadData.length, sample: downloadData[0] });
 
-        const totalRecords = downloadData.length;
-        const currentDate = new Date().toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
-
-        const studentsWithStream = downloadData.filter(s => s.stream && s.stream !== "-" && s.stream.toLowerCase() !== "not assigned").length;
-        const studentsWithVocational = downloadData.filter(s => {
-            if (Array.isArray(s.vocationalSubject)) {
-                return s.vocationalSubject.length > 0;
+            if (!downloadData || downloadData.length === 0) {
+                toast.error("No data to download");
+                return;
             }
-            return s.vocationalSubject && s.vocationalSubject !== "-" && s.vocationalSubject.toLowerCase() !== "not assigned";
-        }).length;
-        const studentsWithoutStream = totalRecords - studentsWithStream;
-        const studentsWithoutVocational = totalRecords - studentsWithVocational;
 
-        const htmlContent = `
+            const printWindow = window.open("", "_blank");
+
+            if (!printWindow) {
+                toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+                return;
+            }
+
+            const totalRecords = downloadData.length;
+            const currentDate = new Date().toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+            });
+
+            const studentsWithStream = downloadData.filter(s => s.stream && s.stream !== "-" && s.stream.toLowerCase() !== "not assigned").length;
+            const studentsWithVocational = downloadData.filter(s => {
+                if (Array.isArray(s.vocationalSubject)) {
+                    return s.vocationalSubject.length > 0;
+                }
+                return s.vocationalSubject && s.vocationalSubject !== "-" && s.vocationalSubject.toLowerCase() !== "not assigned";
+            }).length;
+            const studentsWithoutStream = totalRecords - studentsWithStream;
+            const studentsWithoutVocational = totalRecords - studentsWithVocational;
+
+            const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -841,8 +898,8 @@ export default function StreamVocationalReport() {
             </thead>
             <tbody>
               ${downloadData
-                .map(
-                    (row) => `
+                    .map(
+                        (row) => `
                 <tr>
                   <td>${row.studentName || "-"}</td>
                   <td>${row.udiseCode || "-"}</td>
@@ -852,23 +909,23 @@ export default function StreamVocationalReport() {
                   <td>${row.class || "-"}</td>
                   <td>
                     ${row.stream && row.stream !== "-" && row.stream.toLowerCase() !== "not assigned"
-                            ? `<span class="chip chip-assigned">${row.stream}</span>`
-                            : `<span class="chip chip-not-assigned">Not Assigned</span>`
-                        }
+                                ? `<span class="chip chip-assigned">${row.stream}</span>`
+                                : `<span class="chip chip-not-assigned">Not Assigned</span>`
+                            }
                   </td>
                   <td>
                     ${Array.isArray(row.vocationalSubject) && row.vocationalSubject.length > 0
-                            ? row.vocationalSubject.map(subj => `<span class="chip chip-vocational">${subj}</span>`).join(' ')
-                            : (row.vocationalSubject && row.vocationalSubject !== "-" && row.vocationalSubject.toLowerCase() !== "not assigned"
-                                ? `<span class="chip chip-vocational">${row.vocationalSubject}</span>`
-                                : `<span class="chip chip-vocational-na">Not Assigned</span>`
-                            )
-                        }
+                                ? row.vocationalSubject.map(subj => `<span class="chip chip-vocational">${subj}</span>`).join(' ')
+                                : (row.vocationalSubject && typeof row.vocationalSubject === 'string' && row.vocationalSubject !== "-" && row.vocationalSubject.toLowerCase() !== "not assigned"
+                                    ? `<span class="chip chip-vocational">${row.vocationalSubject}</span>`
+                                    : `<span class="chip chip-vocational-na">Not Assigned</span>`
+                                )
+                            }
                   </td>
                 </tr>
               `
-                )
-                .join("")}
+                    )
+                    .join("")}
             </tbody>
           </table>
           
@@ -890,18 +947,28 @@ export default function StreamVocationalReport() {
       </html>
     `;
 
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-        setTimeout(() => {
-            printWindow.print();
-            toast.success("PDF download initiated!");
-        }, 250);
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.print();
+                console.log("PDF download completed successfully");
+                toast.success(`PDF download initiated! (${downloadData.length} students)`);
+            }, 250);
+        } catch (error) {
+            console.error("Error in handleDownloadPDF:", error);
+            toast.error("Failed to download PDF");
+        }
     };
 
     return (
         <ThemeProvider theme={theme}>
             <div style={{ padding: "20px", backgroundColor: "#FAFAFA", minHeight: "100vh" }}>
-                <ToastContainer position="top-right" autoClose={3000} />
+                <ToastContainer
+                    position="top-right"
+                    autoClose={3000}
+                    style={{ zIndex: 99999 }}
+                    toastStyle={{ zIndex: 99999 }}
+                />
                 {isLoading && !isSearchLoading && <SpinnerPageOverlay />}
 
                 {/* Header - Compact */}
@@ -1156,7 +1223,7 @@ export default function StreamVocationalReport() {
                                         Total Students
                                     </Typography>
                                     <Typography variant="h6" style={{ color: "#2F4F4F", fontWeight: 700, fontSize: "22px", lineHeight: 1.2 }}>
-                                        {pagination.totalItems}
+                                        {metadata?.totalStudents || pagination.totalItems}
                                     </Typography>
                                 </div>
                             </div>
@@ -1180,7 +1247,7 @@ export default function StreamVocationalReport() {
                                         With Stream
                                     </Typography>
                                     <Typography variant="h6" style={{ color: "#2e7d32", fontWeight: 700, fontSize: "22px", lineHeight: 1.2 }}>
-                                        {data.filter(s => s.stream && s.stream !== "-" && s.stream.toLowerCase() !== "not assigned").length}
+                                        {metadata?.withStream ?? data.filter(s => s.stream && s.stream !== "-" && s.stream.toLowerCase() !== "not assigned").length}
                                     </Typography>
                                 </div>
                             </div>
@@ -1204,7 +1271,7 @@ export default function StreamVocationalReport() {
                                         Without Stream
                                     </Typography>
                                     <Typography variant="h6" style={{ color: "#c62828", fontWeight: 700, fontSize: "22px", lineHeight: 1.2 }}>
-                                        {data.filter(s => !s.stream || s.stream === "-" || s.stream.toLowerCase() === "not assigned").length}
+                                        {metadata?.withoutStream ?? data.filter(s => !s.stream || s.stream === "-" || s.stream.toLowerCase() === "not assigned").length}
                                     </Typography>
                                 </div>
                             </div>
@@ -1228,7 +1295,7 @@ export default function StreamVocationalReport() {
                                         With Vocational Subject
                                     </Typography>
                                     <Typography variant="h6" style={{ color: "#1565c0", fontWeight: 700, fontSize: "22px", lineHeight: 1.2 }}>
-                                        {data.filter(s => {
+                                        {metadata?.withVocationalSubject ?? data.filter(s => {
                                             if (Array.isArray(s.vocationalSubject)) {
                                                 return s.vocationalSubject.length > 0;
                                             }
