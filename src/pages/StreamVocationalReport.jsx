@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "../customHook/useDebounce";
 import MUIDataTable from "mui-datatables";
 import { Button, TextField, CircularProgress, FormControl, InputLabel, MenuItem, Select, Tooltip, Typography, Chip } from "@mui/material";
@@ -84,6 +84,9 @@ export default function StreamVocationalReport() {
     const [clusters, setClusters] = useState([]);
     const [metadata, setMetadata] = useState({});
 
+    // Ref to prevent double API calls
+    const hasFetchedOnMount = useRef(false);
+
     // Class options - only 11 and 12
     const classOptions = [
         { value: "all", label: "All Classes (11-12)" },
@@ -153,8 +156,9 @@ export default function StreamVocationalReport() {
     ];
 
     // Fetch stream and vocational data from API
-    const fetchStreamData = async () => {
-        if (debouncedSearchQuery) {
+    const fetchStreamData = useCallback(async () => {
+        // Only show search loading if there's actual search query text
+        if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
             setIsSearchLoading(true);
         } else {
             setIsLoading(true);
@@ -256,7 +260,7 @@ export default function StreamVocationalReport() {
             setIsLoading(false);
             setIsSearchLoading(false);
         }
-    };
+    }, [debouncedSearchQuery, pagination.currentPage, pagination.pageSize, selectedBlock, selectedCluster, selectedClass, selectedStreamFilter]);
 
     // Fetch blocks and clusters for filter dropdowns
     const fetchGlobalBlocksAndClusters = async () => {
@@ -282,34 +286,38 @@ export default function StreamVocationalReport() {
         }
     };
 
+    // Mount effect - load dropdowns and track analytics
     useEffect(() => {
-        fetchGlobalBlocksAndClusters();
+        if (!hasFetchedOnMount.current) {
+            hasFetchedOnMount.current = true;
+            fetchGlobalBlocksAndClusters();
 
-        // Track page view
-        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        mixpanel.track('Stream Vocational Report Viewed', {
-            userId: userData.id,
-            userName: userData.name,
-            userRole: userData.role,
-            timestamp: new Date().toISOString(),
-        });
+            // Track page view
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            mixpanel.track('Stream Vocational Report Viewed', {
+                userId: userData.id,
+                userName: userData.name,
+                userRole: userData.role,
+                timestamp: new Date().toISOString(),
+            });
+        }
     }, []);
 
+    // Fetch data when filters, search, or pagination changes
     useEffect(() => {
-        fetchStreamData();
-    }, [
-        debouncedSearchQuery,
-        pagination.currentPage,
-        pagination.pageSize,
-        selectedBlock,
-        selectedCluster,
-        selectedClass,
-        selectedStreamFilter
-    ]);
+        if (hasFetchedOnMount.current) {
+            fetchStreamData();
+        }
+    }, [fetchStreamData]);
 
+    // Reset to page 1 when filters or search changes (but not pagination itself)
     useEffect(() => {
-        setPagination(prev => ({ ...prev, currentPage: 1 }));
-    }, [selectedBlock, selectedCluster, selectedClass, selectedStreamFilter, searchQuery]);
+        // Only reset the page if we're not already on page 1
+        if (pagination.currentPage !== 1) {
+            setPagination(prev => ({ ...prev, currentPage: 1 }));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [debouncedSearchQuery, selectedBlock, selectedCluster, selectedClass, selectedStreamFilter]);
 
     // Column definitions for the table
     const columns = [
@@ -459,11 +467,11 @@ export default function StreamVocationalReport() {
         rowsPerPage: pagination.pageSize,
         textLabels: {
             body: {
-                noMatch: isLoading || isSearchLoading ? (
+                noMatch: isSearchLoading ? (
                     <div style={{ textAlign: "center", padding: "20px" }}>
                         <CircularProgress style={{ color: "#2F4F4F" }} />
                         <Typography variant="body2" style={{ marginTop: "10px", color: "#666" }}>
-                            Loading stream data...
+                            Searching...
                         </Typography>
                     </div>
                 ) : (
