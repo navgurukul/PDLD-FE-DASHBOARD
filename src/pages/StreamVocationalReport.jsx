@@ -6,7 +6,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination, PaginationItem } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Search, Download } from "lucide-react";
+import { Search } from "lucide-react";
 import "../components/TestListTable.css";
 import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
@@ -1005,172 +1005,296 @@ export default function StreamVocationalReport() {
                     </Typography>
                 </div>
 
-                {/* Filters Section */}
-                <div
-                    style={{
-                        backgroundColor: "white",
-                        padding: "16px",
-                        borderRadius: "8px",
-                        marginBottom: "16px",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    }}
-                >
-                    {/* Search Box - First Row - Full width */}
-                    {/* <div style={{ marginBottom: "16px" }}>
-                        <TextField
-                            fullWidth
-                            size="small"
-                            placeholder="Search by name or UDISE"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            InputProps={{
-                                startAdornment: isSearchLoading ? (
-                                    <CircularProgress size={20} style={{ marginRight: 8, color: "#2F4F4F" }} />
-                                ) : (
-                                    <Search size={20} style={{ marginRight: 8, color: "#666" }} />
-                                ),
-                            }}
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    height: '40px',
-                                }
-                            }}
-                        />
-                    </div> */}
+                {/* Filters Section - Matching EnrollmentReports UI */}
+                <div className="school-list-container mt-1 bg-white rounded-lg">
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4">
+                        <div className="w-full lg:flex-1">
+                            <div className="flex flex-col md:flex-row md:flex-wrap gap-2 my-[10px] mx-0">
+                                <div className="flex justify-between w-full flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-2">
+                                        <TextField
+                                            variant="outlined"
+                                            placeholder="Search by student name, UDISE code"
+                                            size="small"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <div className="pr-2">
+                                                        {isSearchLoading ? (
+                                                            <CircularProgress size={18} sx={{ color: "#2F4F4F" }} />
+                                                        ) : (
+                                                            <Search size={18} className="text-gray-500" />
+                                                        )}
+                                                    </div>
+                                                ),
+                                                style: {
+                                                    backgroundColor: "#fff",
+                                                    borderRadius: "8px",
+                                                    height: "48px",
+                                                    minWidth: "150px",
+                                                    width: "385px",
+                                                },
+                                            }}
+                                            sx={{
+                                                width: { xs: "100%", md: "385px" },
+                                                marginBottom: { xs: "8px", md: "0" },
+                                            }}
+                                        />
 
-                    {/* Filters and Actions Row */}
-                    <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-                        <FormControl size="small" sx={{ minWidth: 300, flexGrow: 1 }}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                placeholder="Search by student name, UDISE code"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                InputProps={{
-                                    startAdornment: isSearchLoading ? (
-                                        <CircularProgress size={20} style={{ marginRight: 8, color: "#2F4F4F" }} />
-                                    ) : (
-                                        <Search size={20} style={{ marginRight: 8, color: "#666" }} />
-                                    ),
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        height: '40px',
-                                    }
-                                }}
-                            />
-                        </FormControl>
-                        {/* Block Filter */}
-                        <FormControl size="small" sx={{ minWidth: 140 }}>
-                            <InputLabel>Block</InputLabel>
-                            <Select
-                                value={selectedBlock}
-                                label="Block"
-                                onChange={(e) => setSelectedBlock(e.target.value)}
-                            >
-                                <MenuItem value="">All Blocks</MenuItem>
-                                {blocks.map((block) => (
-                                    <MenuItem key={block} value={block}>
-                                        {block}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                                        {/* Block Filter */}
+                                        <FormControl
+                                            sx={{
+                                                height: "48px",
+                                                display: "flex",
+                                                width: "auto",
+                                                minWidth: "120px",
+                                                marginBottom: { xs: "8px", md: "0" },
+                                            }}
+                                        >
+                                            <InputLabel
+                                                sx={{
+                                                    color: "#2F4F4F",
+                                                    fontFamily: "'Work Sans'",
+                                                    fontWeight: 400,
+                                                    fontSize: "14px",
+                                                    transform: "translate(14px, 14px) scale(1)",
+                                                    "&.Mui-focused, &.MuiFormLabel-filled": {
+                                                        transform: "translate(14px, -9px) scale(0.75)",
+                                                    },
+                                                }}
+                                            >
+                                                Block
+                                            </InputLabel>
+                                            <Select
+                                                value={selectedBlock}
+                                                onChange={(e) => setSelectedBlock(e.target.value)}
+                                                sx={{
+                                                    height: "100%",
+                                                    borderRadius: "8px",
+                                                    backgroundColor: "#fff",
+                                                    "& .MuiOutlinedInput-notchedOutline": {
+                                                        borderRadius: "8px",
+                                                    },
+                                                    "& .MuiSelect-select": {
+                                                        paddingTop: "12px",
+                                                        paddingBottom: "12px",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        color: "#2F4F4F",
+                                                        fontWeight: "600",
+                                                    },
+                                                }}
+                                            >
+                                                <MenuItem value="">All Blocks</MenuItem>
+                                                {blocks.map((block) => (
+                                                    <MenuItem key={block} value={block}>
+                                                        {block}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                        {/* Cluster Filter */}
-                        <FormControl size="small" sx={{ minWidth: 140 }}>
-                            <InputLabel>Cluster</InputLabel>
-                            <Select
-                                value={selectedCluster}
-                                label="Cluster"
-                                onChange={(e) => setSelectedCluster(e.target.value)}
-                            >
-                                <MenuItem value="">All Clusters</MenuItem>
-                                {clusters.map((cluster) => (
-                                    <MenuItem key={cluster} value={cluster}>
-                                        {cluster}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                                        {/* Cluster Filter */}
+                                        <FormControl
+                                            sx={{
+                                                height: "48px",
+                                                display: "flex",
+                                                width: "auto",
+                                                minWidth: "120px",
+                                                marginBottom: { xs: "8px", md: "0" },
+                                            }}
+                                        >
+                                            <InputLabel
+                                                sx={{
+                                                    color: "#2F4F4F",
+                                                    fontFamily: "'Work Sans'",
+                                                    fontWeight: 400,
+                                                    fontSize: "14px",
+                                                    transform: "translate(14px, 14px) scale(1)",
+                                                    "&.Mui-focused, &.MuiFormLabel-filled": {
+                                                        transform: "translate(14px, -9px) scale(0.75)",
+                                                    },
+                                                }}
+                                            >
+                                                Cluster
+                                            </InputLabel>
+                                            <Select
+                                                value={selectedCluster}
+                                                onChange={(e) => setSelectedCluster(e.target.value)}
+                                                sx={{
+                                                    height: "100%",
+                                                    borderRadius: "8px",
+                                                    backgroundColor: "#fff",
+                                                    "& .MuiOutlinedInput-notchedOutline": {
+                                                        borderRadius: "8px",
+                                                    },
+                                                    "& .MuiSelect-select": {
+                                                        paddingTop: "12px",
+                                                        paddingBottom: "12px",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        color: "#2F4F4F",
+                                                        fontWeight: "600",
+                                                    },
+                                                }}
+                                            >
+                                                <MenuItem value="">All Clusters</MenuItem>
+                                                {clusters.map((cluster) => (
+                                                    <MenuItem key={cluster} value={cluster}>
+                                                        {cluster}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                        {/* Class Filter */}
-                        <FormControl size="small" sx={{ minWidth: 140 }}>
-                            <InputLabel>Class</InputLabel>
-                            <Select
-                                value={selectedClass}
-                                label="Class"
-                                onChange={(e) => setSelectedClass(e.target.value)}
-                            >
-                                {classOptions.map((option) => (
-                                    <MenuItem key={option.value} value={option.value}>
-                                        {option.label}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                                        {/* Class Filter */}
+                                        <FormControl
+                                            sx={{
+                                                height: "48px",
+                                                display: "flex",
+                                                width: "auto",
+                                                minWidth: "140px",
+                                                marginBottom: { xs: "8px", md: "0" },
+                                            }}
+                                        >
+                                            <InputLabel
+                                                sx={{
+                                                    color: "#2F4F4F",
+                                                    fontFamily: "'Work Sans'",
+                                                    fontWeight: 400,
+                                                    fontSize: "14px",
+                                                    transform: "translate(14px, 14px) scale(1)",
+                                                    "&.Mui-focused, &.MuiFormLabel-filled": {
+                                                        transform: "translate(14px, -9px) scale(0.75)",
+                                                    },
+                                                }}
+                                            >
+                                                Class
+                                            </InputLabel>
+                                            <Select
+                                                value={selectedClass}
+                                                onChange={(e) => setSelectedClass(e.target.value)}
+                                                sx={{
+                                                    height: "100%",
+                                                    borderRadius: "8px",
+                                                    backgroundColor: "#fff",
+                                                    "& .MuiOutlinedInput-notchedOutline": {
+                                                        borderRadius: "8px",
+                                                    },
+                                                    "& .MuiSelect-select": {
+                                                        paddingTop: "12px",
+                                                        paddingBottom: "12px",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        color: "#2F4F4F",
+                                                        fontWeight: "600",
+                                                    },
+                                                }}
+                                            >
+                                                {classOptions.map((option) => (
+                                                    <MenuItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                        {/* Stream Filter */}
-                        <FormControl size="small" sx={{ minWidth: 140 }}>
-                            <InputLabel>Stream Status</InputLabel>
-                            <Select
-                                value={selectedStreamFilter}
-                                label="Stream Status"
-                                onChange={(e) => setSelectedStreamFilter(e.target.value)}
-                            >
-                                {streamFilterOptions.map((option) => (
-                                    <MenuItem key={option.value} value={option.value}>
-                                        {option.label}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                                        {/* Stream Status Filter */}
+                                        <FormControl
+                                            sx={{
+                                                height: "48px",
+                                                display: "flex",
+                                                width: "auto",
+                                                minWidth: "150px",
+                                                marginBottom: { xs: "8px", md: "0" },
+                                            }}
+                                        >
+                                            <InputLabel
+                                                sx={{
+                                                    color: "#2F4F4F",
+                                                    fontFamily: "'Work Sans'",
+                                                    fontWeight: 400,
+                                                    fontSize: "14px",
+                                                    transform: "translate(14px, 14px) scale(1)",
+                                                    "&.Mui-focused, &.MuiFormLabel-filled": {
+                                                        transform: "translate(14px, -9px) scale(0.75)",
+                                                    },
+                                                }}
+                                            >
+                                                Stream Status
+                                            </InputLabel>
+                                            <Select
+                                                value={selectedStreamFilter}
+                                                onChange={(e) => setSelectedStreamFilter(e.target.value)}
+                                                sx={{
+                                                    height: "100%",
+                                                    borderRadius: "8px",
+                                                    backgroundColor: "#fff",
+                                                    "& .MuiOutlinedInput-notchedOutline": {
+                                                        borderRadius: "8px",
+                                                    },
+                                                    "& .MuiSelect-select": {
+                                                        paddingTop: "12px",
+                                                        paddingBottom: "12px",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        color: "#2F4F4F",
+                                                        fontWeight: "600",
+                                                    },
+                                                }}
+                                            >
+                                                {streamFilterOptions.map((option) => (
+                                                    <MenuItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
-                        {/* Clear Filters Button */}
-                        <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={handleClearFilters}
-                            style={{
-                                color: "#2F4F4F",
-                                borderColor: "#2F4F4F",
-                                textTransform: "none",
-                                height: "40px",
-                                minWidth: "110px",
-                            }}
-                        >
-                            Clear Filters
-                        </Button>
+                                        {/* Clear Filters Button - Conditional */}
+                                        {(selectedBlock !== "" || selectedCluster !== "" || selectedClass !== "all" || selectedStreamFilter !== "all" || searchQuery !== "") && (
+                                            <Tooltip title="Clear Filters" placement="top">
+                                                <Button
+                                                    type="button"
+                                                    onClick={handleClearFilters}
+                                                    variant="text"
+                                                    sx={{
+                                                        color: "#2F4F4F",
+                                                        fontFamily: "Work Sans",
+                                                        fontWeight: 600,
+                                                        fontSize: "14px",
+                                                        textTransform: "none",
+                                                        height: "48px",
+                                                        padding: "0 12px",
+                                                        background: "transparent",
+                                                        "&:hover": {
+                                                            background: "#f5f5f5",
+                                                        },
+                                                    }}
+                                                >
+                                                    Clear Filters
+                                                </Button>
+                                            </Tooltip>
+                                        )}
+                                    </div>
 
-                        {/* Spacer to push Download button to the right */}
-                        <div style={{ flexGrow: 1 }} />
-
-                        {/* Download Button - Right aligned */}
-                        <Button
-                            variant="contained"
-                            onClick={() => setDownloadModalOpen(true)}
-                            disabled={!data || data.length === 0}
-                            startIcon={<Download size={18} />}
-                            sx={{
-                                backgroundColor: "#FFD700",
-                                color: "white",
-                                textTransform: "none",
-                                height: "40px",
-                                minWidth: "170px",
-                                fontSize: "14px",
-                                fontWeight: 500,
-                                "&:hover": {
-                                    backgroundColor: "#FFD700",
-                                },
-                                "&:disabled": {
-                                    backgroundColor: "#ccc",
-                                    color: "#666",
-                                },
-                            }}
-                        >
-                            Download Report
-                        </Button>
+                                    {/* Download Button - Right Aligned */}
+                                    <div className="ml-auto">
+                                        <ButtonCustom
+                                            onClick={() => setDownloadModalOpen(true)}
+                                            text="Download Report"
+                                            disabled={!data || data.length === 0}
+                                            style={{
+                                                height: "48px",
+                                                borderRadius: "8px",
+                                                padding: "12px 16px",
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Legend - Compact */}
@@ -1178,7 +1302,7 @@ export default function StreamVocationalReport() {
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
-                        marginTop: "12px",
+                        marginBottom: "12px",
                         padding: "6px 12px",
                         backgroundColor: "#fff9f0",
                         borderRadius: "4px",
@@ -1188,8 +1312,9 @@ export default function StreamVocationalReport() {
                             Note: Students without stream (highlighted rows)
                         </Typography>
                     </div>
-                </div>                {/* Summary Card - Single Compact Card */}
-                {data && data.length > 0 && (
+
+                    {/* Summary Card - Single Compact Card */}
+                    {data && data.length > 0 && (
                     <div style={{
                         backgroundColor: "white",
                         padding: "16px 20px",
@@ -1303,14 +1428,19 @@ export default function StreamVocationalReport() {
                                         }).length}
                                     </Typography>
                                 </div>
-                            </div>
+                            </div>                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Table */}
-                <div style={{ backgroundColor: "white", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
-                    <MUIDataTable data={data} columns={columns} options={options} />
+                    {/* Table */}
+                    <div style={{
+                        borderRadius: "8px",
+                        position: "relative",
+                    }}
+                        className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
+                    >
+                        <MUIDataTable data={data} columns={columns} options={options} />
+                    </div>
 
                     {/* Pagination with Rows Per Page */}
                     {pagination.totalPages > 0 && (
@@ -1432,6 +1562,17 @@ export default function StreamVocationalReport() {
                     tableType="stream-vocational"
                     reportName="Stream & Vocational Report"
                 />
+
+                <ToastContainer
+                    position="top-right"
+                    autoClose={3000}
+                    hideProgressBar={false}
+                    closeOnClick
+                    style={{ zIndex: 99999999 }}
+                />
+
+                {/* Page level loading overlay - only for non-search operations */}
+                {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}
             </div>
         </ThemeProvider>
     );
