@@ -99,6 +99,7 @@ export default function EnrollmentReport() {
   const [selectedClassGroup, setSelectedClassGroup] = useState("all"); // New class group state
   const [blocks, setBlocks] = useState([]);
   const [clusters, setClusters] = useState([]);
+  const [blockClusterData, setBlockClusterData] = useState([]); 
   const [metadata, setMetadata] = useState({});
   const [groupingOptions] = useState([
     { value: "block", label: "Block Level" },
@@ -217,11 +218,14 @@ export default function EnrollmentReport() {
       if (response.data && response.data.success) {
         const blocksData = response.data.data;
 
+        // Store the full data structure for block-cluster relationship
+        setBlockClusterData(blocksData);
+
         // Extract unique blocks
         const uniqueBlocks = blocksData.map((block) => block.blockName).filter(Boolean).sort();
         setBlocks(uniqueBlocks);
 
-        // Extract unique clusters
+        // Extract unique clusters - show all initially
         const allClusterNames = blocksData.flatMap((block) =>
           block.clusters.map((cluster) => cluster.name)
         );
@@ -354,6 +358,15 @@ export default function EnrollmentReport() {
     setSearchQuery("");
     setSelectedGrouping("school");
     setSelectedClassGroup("all");
+    
+    // Reset clusters to show all available clusters
+    if (blockClusterData.length > 0) {
+      const allClusterNames = blockClusterData.flatMap((block) =>
+        block.clusters.map((cluster) => cluster.name)
+      );
+      const uniqueClusters = [...new Set(allClusterNames)].filter(Boolean).sort();
+      setClusters(uniqueClusters);
+    }
   };
 
   const handlePageChange = (event, page) => {
@@ -1156,7 +1169,30 @@ export default function EnrollmentReport() {
                       </InputLabel>
                       <Select
                         value={selectedBlock}
-                        onChange={(e) => setSelectedBlock(e.target.value)}
+                        onChange={(e) => {
+                          const newBlockValue = e.target.value;
+                          setSelectedBlock(newBlockValue);
+                          setSelectedCluster(""); // Reset cluster when block changes
+                          
+                          // Update clusters based on selected block
+                          if (newBlockValue === "") {
+                            // If "All Blocks" is selected, show all clusters
+                            const allClusterNames = blockClusterData.flatMap((block) =>
+                              block.clusters.map((cluster) => cluster.name)
+                            );
+                            const uniqueClusters = [...new Set(allClusterNames)].filter(Boolean).sort();
+                            setClusters(uniqueClusters);
+                          } else {
+                            // Otherwise, filter clusters by selected block
+                            const selectedBlockData = blockClusterData.find(
+                              (block) => block.blockName === newBlockValue
+                            );
+                            const blockClusters = selectedBlockData 
+                              ? selectedBlockData.clusters.map((cluster) => cluster.name).filter(Boolean).sort()
+                              : [];
+                            setClusters(blockClusters);
+                          }
+                        }}
                         sx={{
                           height: "100%",
                           borderRadius: "8px",
@@ -1171,6 +1207,24 @@ export default function EnrollmentReport() {
                             alignItems: "center",
                             color: "#2F4F4F",
                             fontWeight: "600",
+                          },
+                        }}
+                        MenuProps={{
+                          PaperProps: {
+                            sx: {
+                              maxHeight: 200,
+                              overflowY: "auto",
+                              "&::-webkit-scrollbar": {
+                                width: "5px",
+                              },
+                              "&::-webkit-scrollbar-thumb": {
+                                backgroundColor: "#B0B0B0",
+                                borderRadius: "5px",
+                              },
+                              "&::-webkit-scrollbar-track": {
+                                backgroundColor: "#F0F0F0",
+                              },
+                            },
                           },
                         }}
                       >
@@ -1225,6 +1279,24 @@ export default function EnrollmentReport() {
                               alignItems: "center",
                               color: "#2F4F4F",
                               fontWeight: "600",
+                            },
+                          }}
+                          MenuProps={{
+                            PaperProps: {
+                              sx: {
+                                maxHeight: 200,
+                                overflowY: "auto",
+                                "&::-webkit-scrollbar": {
+                                  width: "5px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                  backgroundColor: "#B0B0B0",
+                                  borderRadius: "5px",
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                  backgroundColor: "#F0F0F0",
+                                },
+                              },
                             },
                           }}
                         >
