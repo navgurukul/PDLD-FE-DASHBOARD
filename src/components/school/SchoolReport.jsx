@@ -39,20 +39,20 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#2F4F4F", // Use text.primary color on focus
+            borderColor: "#2F4F4F", 
           },
         },
         notchedOutline: {
-          borderColor: "#ccc", // default border color
+          borderColor: "#ccc", 
         },
       },
     },
     MuiInputLabel: {
       styleOverrides: {
         root: {
-          color: "#949494", // Default label color
+          color: "#949494", 
           "&.Mui-focused": {
-            color: "#2F4F4F", // Focused label color
+            color: "#2F4F4F", 
           },
         },
       },
@@ -60,7 +60,7 @@ const theme = createTheme({
     MuiSelect: {
       styleOverrides: {
         icon: {
-          color: "#2F4F4F", // Dropdown arrow icon color
+          color: "#2F4F4F", 
         },
       },
     },
@@ -68,9 +68,11 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: "none",
-          fontFamily: "Karla !important",
+          fontFamily: "'Work Sans', sans-serif",
+          fontSize: "14px",
           textAlign: "left",
           padding: "16px 12px !important",
+          borderBottom: "none",
         },
       },
     },
@@ -78,7 +80,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "&:hover": {
-            backgroundColor: "rgba(47, 79, 79, 0.1) !important",
+            backgroundColor: "inherit !important", 
+            cursor: "default !important", 
           },
         },
       },
@@ -101,72 +104,88 @@ const theme = createTheme({
 });
 
 export default function SchoolReport({ schoolName }) {
-  const [reports, setReports] = useState([]);
+  const [syllabusTests, setSyllabusTests] = useState([]); 
+  const [remedialTests, setRemedialTests] = useState([]);
+  const [schoolData, setSchoolData] = useState(null); 
   const [academicYear, setAcademicYear] = useState(null);
-  const [selectedClass, setSelectedClass] = useState(1);
+  const [selectedClass, setSelectedClass] = useState(""); 
   const [isLoading, setIsLoading] = useState(false);
   const [availableClasses, setAvailableClasses] = useState([]);
-  const [downloadModalOpen, setDownloadModalOpen] = useState(false); // Add download modal state
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false); 
   const navigate = useNavigate();
 
   // Extract school ID from URL
   const { schoolId } = useParams();
 
-  // Function to fetch report data from API
-  const fetchReportData = async (classNumber) => {
+  // Function to fetch all reports data from API
+  const fetchAllReportsData = async () => {
     setIsLoading(true);
     try {
       // Use the API instance with the schoolId from URL params
-      const result = await api.get(`/report/class/${schoolId}/${classNumber}`);
+      const result = await api.get(`/report/class/${schoolId}/all`);
 
       if (result.data && result.data.success) {
-        setReports(result.data.data || []);
+        const data = result.data.data || {};
 
-        // If we don't have available classes yet, extract them from this response
-        if (availableClasses.length === 0) {
-          const uniqueClasses = [...new Set(result.data.data.map((item) => item.testClass))];
-          const formattedClasses = uniqueClasses
-            .filter((cls) => cls)
-            .sort((a, b) => parseInt(a) - parseInt(b))
-            .map((cls) => ({
-              value: cls,
-              label: `Class ${cls}`,
-            }));
+        // Store school information
+        setSchoolData(data);
 
-          if (formattedClasses.length > 0) {
-            setAvailableClasses(formattedClasses);
-          }
-        }
+        // Store syllabus and remedial tests
+        setSyllabusTests(data.syllabusTests || []);
+        setRemedialTests(data.remedialTests || []);
+
+        // Extract unique classes from both syllabus and remedial tests
+        const syllabusClasses = (data.syllabusTests || []).map(
+          (test) => test.class
+        );
+        const remedialClasses = (data.remedialTests || []).map(
+          (test) => test.class
+        );
+        const uniqueClasses = [
+          ...new Set([...syllabusClasses, ...remedialClasses]),
+        ]
+          .filter((cls) => cls)
+          .sort((a, b) => Number(a) - Number(b));
+
+        setAvailableClasses(uniqueClasses);
       } else {
         console.error("API Error:", result.data?.error);
-        setReports([]);
+        setSyllabusTests([]);
+        setRemedialTests([]);
+        setSchoolData(null);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      setReports([]);
+      setSyllabusTests([]);
+      setRemedialTests([]);
+      setSchoolData(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Re-fetch data when selected class changes or when schoolId changes
+  // Fetch all reports data when component mounts or schoolId changes
   useEffect(() => {
     if (schoolId) {
-      fetchReportData(selectedClass);
+      fetchAllReportsData();
     }
-  }, [selectedClass, schoolId]);
+  }, [schoolId]);
 
-  // Get academic year from localStorage
+  // Get academic year from localStorage (but prioritize API data)
   useEffect(() => {
-    const storedAcademicYear = localStorage.getItem("currentAcademicYear");
-    if (storedAcademicYear) {
-      setAcademicYear(storedAcademicYear);
+    if (schoolData?.academicYear) {
+      setAcademicYear(schoolData.academicYear);
+    } else {
+      const storedAcademicYear = localStorage.getItem("currentAcademicYear");
+      if (storedAcademicYear) {
+        setAcademicYear(storedAcademicYear);
+      }
     }
-  }, []);
+  }, [schoolData]);
 
   // Handle class change
   const handleClassChange = (e) => {
-    setSelectedClass(parseInt(e.target.value, 10));
+    setSelectedClass(e.target.value); 
   };
 
   // Handle opening download modal
@@ -174,36 +193,119 @@ export default function SchoolReport({ schoolName }) {
     setDownloadModalOpen(true);
   };
 
-  // Get all unique subjects from the reports
-  const allSubjects = [
-    ...new Set(reports.flatMap((report) => Object.keys(report.subjectAverages || {}))),
+  // Filter tests based on selected class
+  const filteredSyllabusTests =
+    selectedClass === ""
+      ? syllabusTests // Show all if no class selected
+      : syllabusTests.filter(
+          (test) => String(test.class) === String(selectedClass)
+        );
+
+  const filteredRemedialTests =
+    selectedClass === ""
+      ? remedialTests // Show all if no class selected
+      : remedialTests.filter(
+          (test) => String(test.class) === String(selectedClass)
+        );
+
+  // Get all unique subjects from filtered tests
+  const syllabusSubjects = [
+    ...new Set(
+      filteredSyllabusTests.flatMap((test) =>
+        Object.keys(test.subjectAverages || {})
+      )
+    ),
   ];
+
+  const remedialSubjects = [
+    ...new Set(
+      filteredRemedialTests.flatMap((test) =>
+        Object.keys(test.subjectAverages || {})
+      )
+    ),
+  ];
+
+  // Combine all subjects for download purposes
+  const allSubjects = [...new Set([...syllabusSubjects, ...remedialSubjects])];
 
   // Transform data for download
   const transformDataForDownload = () => {
-    return reports.map((report) => {
-      const transformedReport = {
-        examName: report.testTag === "null" ? "Untitled Test" : report.testTag,
-        totalStudents: report.totalStudents || 0,
-        maxMarks: report.maxScore || 0,
-      };
+    const syllabusData = [];
+    const remedialData = [];
 
-      // Add subject averages
-      allSubjects.forEach((subject) => {
-        transformedReport[subject] = report.subjectAverages?.[subject] ?? "-";
-      });
-
-      return transformedReport;
+    // Add syllabus tests data
+    filteredSyllabusTests.forEach((classTest) => {
+      if (classTest.tests && classTest.tests.length > 0) {
+        classTest.tests.forEach((test) => {
+          syllabusData.push({
+            testName: test.testName ? test.testName.split(" — ")[0] : "-",
+            testTag: test.testTag || "-",
+            class: classTest.class,
+            totalStudents: classTest.totalStudents || 0,
+            maxMarks: test.maxScore || 0,
+            subject: test.subject || "-", 
+            averageScore: test.averageScore ?? "-", 
+          });
+        });
+      }
     });
-  };
+    // Add remedial tests data
+    filteredRemedialTests.forEach((classTest) => {
+      if (classTest.subjects && classTest.subjects.length > 0) {
+        classTest.subjects.forEach((subjectTest) => {
+          remedialData.push({
+            testName: subjectTest.testName || "-",
+            testTag: subjectTest.testTag || "-",
+            class: classTest.class,
+            subject: subjectTest.subject || "-",
+            sentence:
+              subjectTest.gradeCounts?.SENTENCE ??
+              subjectTest.gradeCounts?.कहानी ??
+              subjectTest.gradeCounts?.भाग ??
+              "-",
+            word:
+              subjectTest.gradeCounts?.WORD ??
+              subjectTest.gradeCounts?.अनुच्छेद ??
+              subjectTest.gradeCounts?.घटाव ??
+              "-",
+            smallLetter:
+              subjectTest.gradeCounts?.SMALL_LETTER ??
+              subjectTest.gradeCounts?.शब्द ??
+              subjectTest.gradeCounts?.संख्या_पहचान ??
+              "-",
+            capitalLetter:
+              subjectTest.gradeCounts?.CAPITAL_LETTER ??
+              subjectTest.gradeCounts?.अक्षर ??
+              subjectTest.gradeCounts?.अंक_पहचान ??
+              "-",
+            beginner:
+              subjectTest.gradeCounts?.Beginner ??
+              subjectTest.gradeCounts?.प्रारंभिक ??
+              "-",
+            presentStudents: subjectTest.studentsPresent || 0,
+            absentStudents: subjectTest.studentsAbsent || 0,
+            totalStudents: subjectTest.totalStudents || 0,
+            overallGrade: subjectTest.overallGrade || "-",
+          });
+        });
+      }
+    });
 
+    return { syllabusData, remedialData };
+  };
   // Handle download confirmation from modal
   const handleDownloadConfirm = async (downloadOptions) => {
     const { format, rows } = downloadOptions;
 
     try {
       setIsLoading(true);
-      toast.info(`Generating ${format.toUpperCase()} report for Class ${selectedClass}...`);
+      const classInfo =
+        selectedClass === "" ? "All_Classes" : `Class_${selectedClass}`;
+      toast.info(
+        `Generating ${format.toUpperCase()} report for ${
+          selectedClass === "" ? "All Classes" : `Class ${selectedClass}`
+        }...`
+      );
 
       const dataToDownload = transformDataForDownload();
 
@@ -221,82 +323,207 @@ export default function SchoolReport({ schoolName }) {
   };
 
   // Download report as CSV
-  const handleDownloadCSV = (data) => {
-    // Define headers for the CSV
-    const headers = ["Name of Exam", "Total Students", "Max Marks", ...allSubjects];
+  const handleDownloadCSV = ({ syllabusData, remedialData }) => {
+    let csvContent = "";
 
     // Add extra information as a header section
-    let csvContent = `School:,${schoolName || "N/A"}\n`;
-    csvContent += `Class:,${selectedClass}\n`;
-    csvContent += `Total Tests:,${data.length}\n\n`;
+    csvContent = `School:,${schoolData?.schoolName || schoolName || "N/A"}\n`;
+    csvContent += `UDISE Code:,${schoolData?.udiseCode || "N/A"}\n`;
+    csvContent += `Academic Year:,${
+      schoolData?.academicYear || academicYear || "N/A"
+    }\n`;
+    csvContent += `Class:,${
+      selectedClass === "" ? "All Classes" : selectedClass
+    }\n`;
+    csvContent += `Total Tests:,${
+      syllabusData.length + remedialData.length
+    }\n\n`;
 
-    // Add table headers
-    csvContent += headers.join(",") + "\n";
+    if (syllabusData.length > 0) {
+      csvContent += "=== SYLLABUS TESTS ===\n";
+      // csvContent += "Test Name,Test Tag,Class,Total Students,Max Marks,Average Score\n";
 
-    // Add rows for each report
-    data.forEach((report) => {
-      const rowData = [
-        report.examName, // Name of the exam
-        report.totalStudents, // Total students
-        report.maxMarks, // Maximum marks
-        ...allSubjects.map((subject) => report[subject] || "-"), // Subject averages
+      // Dynamic headers based on syllabusSubjects
+      const syllabusHeaders = [
+        "Test Name",
+        "Test Tag",
+        "Class",
+        "Total Students",
+        "Max Marks",
+        ...syllabusSubjects,
       ];
+      csvContent += syllabusHeaders.join(",") + "\n";
 
-      // Escape commas in data and join the row
+      syllabusData.forEach((test) => {
+        const rowData = [
+          test.testName,
+          test.testTag,
+          test.class,
+          test.totalStudents,
+          test.maxMarks,
+          // Add subject averages dynamically
+          ...syllabusSubjects.map((subject) =>
+            test.subject === subject ? test.averageScore : "-"
+          ),
+        ];
+        csvContent += rowData.join(",") + "\n";
+      });
+
+      csvContent += "\n\n";
+    }
+    // REMEDIAL TEST SECTION
+    if (remedialData.length > 0) {
+      csvContent += "=== REMEDIAL TESTS ===\n";
       csvContent +=
-        rowData
-          .map((cell) => {
-            if (cell && cell.toString().includes(",")) {
-              return `"${cell}"`;
-            }
-            return cell;
-          })
-          .join(",") + "\n";
-    });
+        "Test Name,Test Tag,Class,Subject,SENTENCE/कहानी/भाग,WORD/अनुच्छेद/घटाव,SMALL_LETTER/शब्द/संख्या पहचान,CAPITAL_LETTER/अक्षर/अंक पहचान,Beginner/प्रारंभिक,Present Students,Absent Students,Total Students,Overall Grade\n";
 
-    // Create a Blob for the CSV content
+      remedialData.forEach((test) => {
+        csvContent += `${test.testName},${test.testTag},${test.class},${test.subject},${test.sentence},${test.word},${test.smallLetter},${test.capitalLetter},${test.beginner},${test.presentStudents},${test.absentStudents},${test.totalStudents},${test.overallGrade}\n`;
+      });
+    }
+
+    // Create and download blob
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
-
-    // Create a download link
     const link = document.createElement("a");
     link.href = url;
+    const classInfo =
+      selectedClass === "" ? "All_Classes" : `Class_${selectedClass}`;
     link.setAttribute(
       "download",
-      `Class_${selectedClass}_Report_${schoolName || "School"}_$${new Date().toISOString().split("T")[0]}.csv`
+      `${classInfo}_Report_${
+        schoolData?.schoolName || schoolName || "School"
+      }_${new Date().toISOString().split("T")[0]}.csv`
     );
-
-    // Trigger the download
     document.body.appendChild(link);
     link.click();
 
-    // Cleanup
     setTimeout(() => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success(`CSV report downloaded for Class ${selectedClass}`);
+      toast.success(
+        `CSV report downloaded for ${
+          selectedClass === "" ? "All Classes" : `Class ${selectedClass}`
+        }`
+      );
     }, 100);
   };
 
   // Download report as PDF
-  const handleDownloadPDF = (data) => {
+  const handleDownloadPDF = ({ syllabusData, remedialData }) => {
     // Create a new window for printing
     const printWindow = window.open("", "_blank");
 
-    // Calculate statistics
-    const totalTests = data.length;
+    const classTitle =
+      selectedClass === "" ? "All Classes" : `Class ${selectedClass}`;
+    const totalTests = syllabusData.length + remedialData.length;
     const currentDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+    
 
-    // Generate HTML content for the PDF
+    // Syllabus table HTML
+    const syllabusTableHTML =
+      syllabusData.length > 0
+        ? `
+    <h2 style="color: #2F4F4F; font-size: 18px; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #2F4F4F; padding-bottom: 8px;">Syllabus Tests</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Test Name</th>
+          <th>Test Tag</th>
+          <th>Class</th>
+          <th>Total Students</th>
+          <th>Max Marks</th>
+           ${syllabusSubjects.map((subject) => `<th>${subject}</th>`).join("")}
+        </tr>
+      </thead>
+      <tbody>
+        ${syllabusData
+          .map(
+            (test) => `
+          <tr>
+            <td class="exam-name">${test.testName}</td>
+            <td>${test.testTag}</td>
+            <td>${test.class}</td>
+            <td>${test.totalStudents}</td>
+            <td>${test.maxMarks}</td>
+           ${syllabusSubjects
+             .map(
+               (subject) =>
+                 `<td>${
+                   test.subject === subject ? test.averageScore : "-"
+                 }</td>`
+             )
+             .join("")}
+          </tr>
+        `
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `
+        : "";
+
+    // Remedial table HTML
+    const remedialTableHTML =
+      remedialData.length > 0
+        ? `
+    <h2 style="color: #2F4F4F; font-size: 18px; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #2F4F4F; padding-bottom: 8px;">Remedial Tests</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Test Name</th>
+          <th>Test Tag</th>
+          <th>Class</th>
+          <th>Subject</th>
+          <th>SENTENCE/कहानी/भाग</th>
+          <th>WORD/अनुच्छेद/घटाव</th>
+          <th>SMALL_LETTER/शब्द/संख्या पहचान</th>
+          <th>CAPITAL_LETTER/अक्षर/अंक पहचान</th>
+          <th>Beginner/प्रारंभिक</th>
+          <th>Present</th>
+          <th>Absent</th>
+          <th>Total</th>
+          <th>Grade</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${remedialData
+          .map(
+            (test) => `
+          <tr>
+            <td class="exam-name">${test.testName}</td>
+            <td>${test.testTag}</td>
+            <td>${test.class}</td>
+            <td>${test.subject}</td>
+            <td>${test.sentence}</td>
+            <td>${test.word}</td>
+            <td>${test.smallLetter}</td>
+            <td>${test.capitalLetter}</td>
+            <td>${test.beginner}</td>
+            <td>${test.presentStudents}</td>
+            <td>${test.absentStudents}</td>
+            <td>${test.totalStudents}</td>
+            <td>${test.overallGrade}</td>
+          </tr>
+        `
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `
+        : "";
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Class ${selectedClass} Test Report - ${schoolName || "School"}</title>
+        <title>${classTitle} Test Report - ${
+      schoolData?.schoolName || schoolName || "School"
+    }</title>
         <style>
           @media print {
             @page {
@@ -491,112 +718,106 @@ export default function SchoolReport({ schoolName }) {
           }
         </style>
       </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Class ${selectedClass} Test Report</h1>
-            <div class="subtitle">${schoolName || "School Report"}
-${schoolName || "N/A"}</div>
-            <div class="date">Generated on: ${currentDate}</div>
-          </div>
-          
-          <div class="school-info">
-            <h3>Report Information:</h3>
-            <div class="info-item"><strong>Class:</strong> ${selectedClass}</div>
-            <div class="info-item"><strong>Total Tests:</strong> ${totalTests}</div>
-            <div class="info-item"><strong>School:</strong>${schoolName || "N/A"}</div>
-          </div>
-          
-          <table>
-            <thead>
-              <tr>
-                <th class="exam-header">Name of Exam</th>
-                <!-- <th>Total Students</th> -->
-                <th>Max Marks</th>
-                ${allSubjects.map((subject) => `<th>${subject}</th>`).join("")}
-              </tr>
-            </thead>
-            <tbody>
-              ${data
-                .map((report) => {
-                  const isLowScore = (value, maxMarks) => {
-                    const num = parseFloat(value);
-                    const threshold = maxMarks ? maxMarks / 3 : 15;
-                    return !isNaN(num) && num < threshold;
-                  };
-
-                  return `
-                  <tr>
-                    <td class="exam-name">${report.examName}</td>
-                    <!-- <td>${report.totalStudents}</td> -->
-                    <td>${report.maxMarks}</td>
-                    ${allSubjects
-                      .map((subject) => {
-                        const value = report[subject];
-                        const isLow = isLowScore(value, report.maxMarks);
-                        return `<td class="${isLow ? "low-score" : ""}">${value}</td>`;
-                      })
-                      .join("")}
-                  </tr>
-                `;
-                })
-                .join("")}
-            </tbody>
-          </table>
-          
-          <div class="note">
-            <strong>Note:</strong> These marks represent the subject-wise average score of the class, calculated as: (Total Marks Obtained in the Subject ÷ Number of Students Appeared). Red values indicate scores below the passing threshold.
-          </div>
-          
-          <div class="summary">
-            <h3>Report Summary</h3>
-            <div class="summary-item"><strong>Class:</strong> ${selectedClass}</div>
-            <div class="summary-item"><strong>Total Tests:</strong> ${totalTests}</div>
-            <div class="summary-item"><strong>Subjects Covered:</strong> ${allSubjects.length}</div>
-            <div class="summary-item"><strong>Report Type:</strong> Class Test Performance Analysis</div>
-          </div>
-          
-          <div class="footer">
-            <p>This report is generated automatically from the School Performance System</p>
-            <p>© ${academicYear || "2024-25"} Academic Performance Tracking System</p>
-          </div>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>${classTitle} Test Report</h1>
+          <div class="subtitle">${
+            schoolData?.schoolName || schoolName || "School Report"
+          }</div>
+          <div class="date">Generated on: ${currentDate}</div>
         </div>
-      </body>
-      </html>
-    `;
+        
+        <div class="school-info">
+          <h3>Report Information:</h3>
+          <div class="info-item"><strong>School:</strong> ${
+            schoolData?.schoolName || schoolName || "N/A"
+          }</div>
+          <div class="info-item"><strong>UDISE Code:</strong> ${
+            schoolData?.udiseCode || "N/A"
+          }</div>
+          <div class="info-item"><strong>Academic Year:</strong> ${
+            schoolData?.academicYear || academicYear || "N/A"
+          }</div>
+          <div class="info-item"><strong>Class:</strong> ${
+            selectedClass === "" ? "All Classes" : selectedClass
+          }</div>
+          <div class="info-item"><strong>Total Tests:</strong> ${totalTests}</div>
+        </div>
+        
+        ${syllabusTableHTML}
+        ${remedialTableHTML}
+        
+        <div class="note">
+          <strong>Note:</strong> These marks represent the subject-wise average score of the class, calculated as: (Total Marks Obtained in the Subject ÷ Number of Students Appeared). Red values indicate scores below the passing threshold.
+        </div>
+        
+        <div class="footer">
+          <p>This report is generated automatically from the School Performance System</p>
+          <p>© ${
+            academicYear || "2024-25"
+          } Academic Performance Tracking System</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 
-    // Write the content to the new window
     printWindow.document.write(htmlContent);
     printWindow.document.close();
 
-    // Wait for content to load, then trigger print
     printWindow.onload = function () {
       setTimeout(() => {
         printWindow.print();
-        toast.success(`PDF report ready for Class ${selectedClass}`);
+        toast.success(
+          `PDF report ready for ${
+            selectedClass === "" ? "All Classes" : `Class ${selectedClass}`
+          }`
+        );
       }, 250);
     };
   };
 
-  // Define columns for MUIDataTable
   const headerStyle = {
-    fontFamily: '"Work Sans", sans-serif',
-    fontSize: "14px",
-    fontStyle: "normal",
-    fontWeight: 600,
-    lineHeight: "170%",
     color: "#2F4F4F",
+    fontFamily: "'Work Sans', sans-serif", 
+    fontWeight: 600,
+    fontSize: "14px",
+    fontStyle: "normal", 
     textTransform: "none",
   };
 
-  // Base columns (always present)
-  const baseColumns = [
+  // Base columns for SYLLABUS tests (with Max Marks)
+  const syllabusBaseColumns = [
     {
-      name: "Name of Exam",
+      name: "Test Tag", 
       options: {
         filter: false,
         sort: true,
-        customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+        customBodyRender: (value) => value || "-",
+      },
+    },
+    {
+      name: "Class",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "Total Students",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
       },
     },
     {
@@ -604,28 +825,172 @@ ${schoolName || "N/A"}</div>
       options: {
         filter: false,
         sort: true,
-        customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
       },
     },
   ];
 
-  // Dynamic subject columns based on the available subjects in the data
-  const subjectColumns = allSubjects.map((subject) => ({
+  // Base columns for REMEDIAL tests (WITHOUT Max Marks)
+  const remedialBaseColumns = [
+    {
+      name: "Test Name",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+        customBodyRender: (value) => {
+          return value ? value.split(" — ")[0] : "-";
+        },
+      },
+    },
+    {
+      name: "Test Tag", 
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+        customBodyRender: (value) => value || "-",
+      },
+    },
+    {
+      name: "Class",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "Subject",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "SENTENCE/कहानी/भाग",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "WORD/अनुच्छेद/घटाव",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "SMALL_LETTER/शब्द/संख्या पहचान",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "CAPITAL_LETTER/अक्षर/अंक पहचान",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "Beginner/प्रारंभिक",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "Present Students",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "Absent Students",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "Total Students",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+    {
+      name: "Overall Grade",
+      options: {
+        filter: false,
+        sort: true,
+        customHeadLabelRender: ({ label }) => (
+          <span style={headerStyle}>{label}</span>
+        ),
+      },
+    },
+  ];
+
+  // Dynamic subject columns for syllabus tests
+  const syllabusSubjectColumns = syllabusSubjects.map((subject) => ({
     name: subject,
     options: {
       filter: false,
       sort: true,
-      customHeadLabelRender: ({ label }) => <span style={headerStyle}>{label}</span>,
+      customHeadLabelRender: ({ label }) => (
+        <span style={headerStyle}>{label}</span>
+      ),
       customBodyRender: (value) => {
-        // Check if value is a valid number and below the passing threshold
         const numValue = parseFloat(value);
-        const report = reports.find(
-          (r) => r.subjectAverages && r.subjectAverages[subject] === numValue
-        );
-        const passingMark = report ? report.requiredMarksToPass / 3 : 15; // Default threshold if not specified
+        const passingMark = 15; // Default threshold
 
         return (
-          <div style={!isNaN(numValue) && numValue < passingMark ? styles.lowScore : null}>
+          <div
+            style={
+              !isNaN(numValue) && numValue < passingMark
+                ? styles.lowScore
+                : null
+            }
+          >
             {!isNaN(numValue) ? numValue : "-"}
           </div>
         );
@@ -633,23 +998,100 @@ ${schoolName || "N/A"}</div>
     },
   }));
 
-  // Combine base columns with subject columns
-  const columns = [...baseColumns, ...subjectColumns];
+  // Dynamic subject columns for remedial tests
+  const remedialSubjectColumns = remedialSubjects.map((subject) => ({
+    name: subject,
+    options: {
+      filter: false,
+      sort: true,
+      customHeadLabelRender: ({ label }) => (
+        <span style={headerStyle}>{label}</span>
+      ),
+      customBodyRender: (value) => {
+        const numValue = parseFloat(value);
+        const passingMark = 15; // Default threshold
 
-  // Format the data for MUIDataTable
-  const tableData = reports.map((report) => {
-    // Start with base data
-    const rowData = [
-      report.testTag === "null" ? "Untitled Test" : report.testTag,
-      report.maxScore || 0,
-    ];
+        return (
+          <div
+            style={
+              !isNaN(numValue) && numValue < passingMark
+                ? styles.lowScore
+                : null
+            }
+          >
+            {!isNaN(numValue) ? numValue : "-"}
+          </div>
+        );
+      },
+    },
+  }));
 
-    // Add subject data
-    allSubjects.forEach((subject) => {
-      rowData.push(report.subjectAverages?.[subject] ?? "-");
-    });
+  // Combine base columns with subject columns for each test type
+  const syllabusColumns = [...syllabusBaseColumns, ...syllabusSubjectColumns];
+  const remedialColumns = [...remedialBaseColumns, ...remedialSubjectColumns];
 
-    return rowData;
+  // Format the data for MUIDataTable - Syllabus Tests
+  const syllabusTableData = [];
+
+  filteredSyllabusTests.forEach((classTest) => {
+    // Each class has an array of tests
+    if (classTest.tests && classTest.tests.length > 0) {
+      classTest.tests.forEach((test) => {
+        const rowData = [
+          test.testTag || "-", 
+          classTest.class,
+          classTest.totalStudents || 0, 
+          test.maxScore || 0, 
+          ...syllabusSubjects.map((subject) =>
+            test.subject === subject ? test.averageScore ?? "-" : "-"
+          ),
+        ];
+
+        syllabusTableData.push(rowData);
+      });
+    }
+  });
+
+  // Format the data for MUIDataTable - Remedial Tests
+  const remedialTableData = [];
+
+  filteredRemedialTests.forEach((classTest) => {
+    // Each class has an array of subjects
+    if (classTest.subjects && classTest.subjects.length > 0) {
+      classTest.subjects.forEach((subjectTest) => {
+        const rowData = [
+          subjectTest.testName || "-", 
+          subjectTest.testTag || "-", 
+          classTest.class, // Class
+          subjectTest.subject || "-", 
+          subjectTest.gradeCounts?.SENTENCE ??
+            subjectTest.gradeCounts?.कहानी ??
+            subjectTest.gradeCounts?.भाग ??
+            "-", // SENTENCE/कहानी/भाग
+          subjectTest.gradeCounts?.WORD ??
+            subjectTest.gradeCounts?.अनुच्छेद ??
+            subjectTest.gradeCounts?.घटाव ??
+            "-", // WORD/अनुच्छेद/घटाव
+          subjectTest.gradeCounts?.SMALL_LETTER ??
+            subjectTest.gradeCounts?.शब्द ??
+            subjectTest.gradeCounts?.संख्या_पहचान ??
+            "-", // SMALL_LETTER/शब्द/संख्या पहचान
+          subjectTest.gradeCounts?.CAPITAL_LETTER ??
+            subjectTest.gradeCounts?.अक्षर ??
+            subjectTest.gradeCounts?.अंक_पहचान ??
+            "-", // CAPITAL_LETTER/अक्षर/अंक पहचान
+          subjectTest.gradeCounts?.Beginner ??
+            subjectTest.gradeCounts?.प्रारंभिक ??
+            "-", // Beginner/प्रारंभिक
+          subjectTest.studentsPresent || 0, 
+          subjectTest.studentsAbsent || 0, 
+          subjectTest.totalStudents || 0, 
+          subjectTest.overallGrade || "-", 
+        ];
+
+        remedialTableData.push(rowData);
+      });
+    }
   });
 
   // MUIDataTable options
@@ -687,23 +1129,16 @@ ${schoolName || "N/A"}</div>
                 minWidth: "120px",
               }}
             >
-              <InputLabel
-                id="class-select-label"
-                sx={{
-                  transform: "translate(14px, 14px) scale(1)",
-                  "&.Mui-focused, &.MuiFormLabel-filled": {
-                    transform: "translate(14px, -9px) scale(0.75)",
-                  },
-                }}
-              >
-                Class
-              </InputLabel>
               <Select
                 labelId="class-select-label"
                 id="class-select"
                 value={selectedClass}
                 label="Class"
                 onChange={handleClassChange}
+                displayEmpty
+                renderValue={(value) =>
+                  value === "" ? "All Classes" : `Class ${value}`
+                }
                 sx={{
                   height: "100%",
                   borderRadius: "8px",
@@ -719,48 +1154,99 @@ ${schoolName || "N/A"}</div>
                   },
                 }}
               >
-                {/* {availableClasses.length > 0 ? (
-                  availableClasses.map((classOption) => (
-                    <MenuItem key={classOption.value} value={parseInt(classOption.value, 10)}>
-                      {classOption.label}
-                    </MenuItem>
-                  ))
-                ) : (
-                  <>
-                    <MenuItem value={1}>Class 1</MenuItem>
-                    <MenuItem value={2}>Class 2</MenuItem>
-                  </>
-                )} */}
-
-                <MenuItem value={1}>Class 1</MenuItem>
-                <MenuItem value={2}>Class 2</MenuItem>
-                <MenuItem value={3}>Class 3</MenuItem>
-                <MenuItem value={4}>Class 4</MenuItem>
-                <MenuItem value={5}>Class 5</MenuItem>
-                <MenuItem value={6}>Class 6</MenuItem>
-                <MenuItem value={7}>Class 7</MenuItem>
-                <MenuItem value={8}>Class 8</MenuItem>
-                <MenuItem value={9}>Class 9</MenuItem>
-                <MenuItem value={10}>Class 10</MenuItem>
-                <MenuItem value={11}>Class 11</MenuItem>
-                <MenuItem value={12}>Class 12</MenuItem>
+                <MenuItem value="">All Classes</MenuItem>
+                {availableClasses.map((classNum) => (
+                  <MenuItem key={classNum} value={classNum.toString()}>
+                    Class {classNum}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </div>
 
           {/* Download Report Button */}
-          <ButtonCustom text={"Download Report"} onClick={handleDownloadClick} btnWidth={200} />
+          <ButtonCustom
+            text={"Download Report"}
+            onClick={handleDownloadClick}
+            btnWidth={200}
+          />
         </div>
 
-        {/* Data Table */}
-        <div className="overflow-x-auto" style={styles.tableContainer}>
-          <MUIDataTable data={tableData} columns={columns} options={options} />
-        </div>
+        {/* Syllabus Test Reports Section */}
+        <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">Syllabus Test</h5>
+        {filteredSyllabusTests.length > 0 ? (
+          <div className="overflow-x-auto" style={styles.tableContainer}>
+            <MUIDataTable
+              data={syllabusTableData}
+              columns={syllabusColumns}
+              options={options}
+            />
+          </div>
+        ) : (
+          <div
+            style={{
+              fontFamily: "Work Sans, sans-serif",
+              fontWeight: 400,
+              fontSize: "18px",
+              color: "#2F4F4F",
+              textAlign: "left",
+              marginBottom: "16px",
+            }}
+          >
+            No syllabus test reports available for this class/school.
+          </div>
+        )}
+
+        {/* Remedial Test Reports Section */}
+        <h5 className="text-lg font-bold text-[#2F4F4F] mb-4 mt-6">Remedial Test</h5>
+        {filteredRemedialTests.length > 0 ? (
+          <div className="overflow-x-auto" style={styles.tableContainer}>
+            <MUIDataTable
+              data={remedialTableData}
+              columns={remedialColumns}
+              options={options}
+            />
+          </div>
+        ) : (
+          <div
+            style={{
+              fontFamily: "Work Sans, sans-serif",
+              fontWeight: 400,
+              fontSize: "18px",
+              color: "#2F4F4F",
+              textAlign: "left",
+              marginBottom: "16px",
+            }}
+          >
+            No remedial test reports available for this school.
+          </div>
+        )}
 
         {/* Note text */}
         <div style={styles.noteText}>
-          <span style={{ fontFamily: "'Work Sans', sans-serif", fontWeight: 600, fontSize: "14px", color:"#2F4F4F" }}>Note:</span>
-          <span style={{ fontFamily: "'Work Sans', sans-serif", fontWeight: 400, fontSize: "14px",color:"#2F4F4F" }}> These marks represent the subject-wise average score of the class, calculated as: (Total Marks Obtained in the Subject ÷ Number of Students Appeared)</span>
+          <span
+            style={{
+              fontFamily: "'Work Sans', sans-serif",
+              fontWeight: 600,
+              fontSize: "14px",
+              color: "#2F4F4F",
+            }}
+          >
+            Note:
+          </span>
+          <span
+            style={{
+              fontFamily: "'Work Sans', sans-serif",
+              fontWeight: 400,
+              fontSize: "14px",
+              color: "#2F4F4F",
+            }}
+          >
+            {" "}
+            These marks represent the subject-wise average score of the class,
+            calculated as: (Total Marks Obtained in the Subject ÷ Number of
+            Students Appeared)
+          </span>
         </div>
 
         {/* Download Modal */}
@@ -768,13 +1254,17 @@ ${schoolName || "N/A"}</div>
           isOpen={downloadModalOpen}
           onClose={() => setDownloadModalOpen(false)}
           onConfirm={handleDownloadConfirm}
-          currentPageCount={reports.length}
-          totalRecords={reports.length}
-          subject={`Class ${selectedClass}`}
-          hideRowOptions={true} // Since we only have current data
+          currentPageCount={syllabusTableData.length + remedialTableData.length}
+          totalRecords={syllabusTableData.length + remedialTableData.length}
+          subject={
+            selectedClass === "" ? "All Classes" : `Class ${selectedClass}`
+          }
+          hideRowOptions={true} 
           reportName="School Report"
           reportLevel="school"
-          reportDetails={{ class: selectedClass }}
+          reportDetails={{
+            class: selectedClass === "" ? "All Classes" : selectedClass,
+          }}
         />
 
         {/* Loading Overlay */}

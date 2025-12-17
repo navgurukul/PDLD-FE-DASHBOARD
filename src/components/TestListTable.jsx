@@ -11,11 +11,9 @@ import { useNavigate } from "react-router-dom";
 import "./TestListTable.css";
 import { ToastContainer, toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import Tooltip from "@mui/material/Tooltip";
 
 import apiInstance from "../../api";
-import { CLASS_OPTIONS, SUBJECT_OPTIONS, STATUS_LABELS } from "../data/testData";
 import ButtonCustom from "./ButtonCustom";
 import SpinnerPageOverlay from "./SpinnerPageOverlay";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -232,9 +230,11 @@ export default function TestListTable() {
         }
       }
     } catch (error) {
-      // Fallback to static data if API fails
-      setClassOptions(CLASS_OPTIONS);
-      setSubjectOptions(SUBJECT_OPTIONS);
+      // No fallback - API-driven only
+      console.error('Failed to fetch class-wise subjects:', error);
+      toast.error('Failed to load class and subject options from API');
+      setClassOptions([]);
+      setSubjectOptions([]);
     }
   };
 
@@ -360,9 +360,6 @@ export default function TestListTable() {
       if (selectedSubject.length > 0) {
         selectedSubject.forEach((s) => {
           let apiSubjectName = s;
-          if (s === "Industrial Organization") {
-            apiSubjectName = "Industrial_organization";
-          }
           url += `&subject=${encodeURIComponent(apiSubjectName)}`;
         });
       }
@@ -387,7 +384,7 @@ export default function TestListTable() {
   useEffect(() => {
     // Check if search is being cleared (searchQuery empty but debouncedSearchQuery still has value)
     const isSearchClearing = searchQuery === "" && debouncedSearchQuery !== "";
-    
+
     // When clearing search, only react to the debounced value update, not the immediate searchQuery change
     if (!isSearchClearing && ((startDate && endDate) || (!startDate && !endDate) || (debouncedSearchQuery && debouncedSearchQuery.trim() !== ""))) {
       fetchData();
@@ -415,6 +412,13 @@ export default function TestListTable() {
       month: "short",
       year: "numeric",
     }),
+    submissionDeadline: test.deadline
+      ? new Date(test.deadline).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+      : "N/A",
     schoolsSubmitted: test.totalSubmittedSchools || 0,
     status: test.testStatus,
     actions: "View Report",
@@ -460,6 +464,7 @@ export default function TestListTable() {
       state: {
         isEditMode: true,
         testData: testToEdit,
+        submissionCount: testToEdit?.totalSubmittedSchools || 0
       },
     });
   };
@@ -493,9 +498,8 @@ export default function TestListTable() {
         customBodyRender: (value) => {
           return (
             <span
-              className={`px-2 py-1 text-xs font-medium rounded-full ${
-                value === "Important" ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
-              }`}
+              className={`px-2 py-1 text-xs font-medium rounded-full ${value === "Important" ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
+                }`}
             >
               {value || "N/A"} {/* Display "N/A" if no value is provided */}
             </span>
@@ -525,6 +529,17 @@ export default function TestListTable() {
     {
       name: "dateOfTest",
       label: "Date of Test",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => {
+          return <div style={{ whiteSpace: "nowrap" }}>{value}</div>;
+        },
+      },
+    },
+    {
+      name: "submissionDeadline",
+      label: "Submission Deadline",
       options: {
         filter: true,
         sort: true,
@@ -577,12 +592,6 @@ export default function TestListTable() {
         }),
         customBodyRender: (value, tableMeta) => {
           const testId = tableMeta.rowData[0];
-          const testDateObj = tableMeta.rowData[5];
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-
-          const isPast = testDateObj && new Date(testDateObj) < today;
-
           return (
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               {userRole === "DISTRICT_OFFICER" && (
@@ -593,12 +602,9 @@ export default function TestListTable() {
                   sx={{
                     borderColor: "transparent",
                     "&:hover": { borderColor: "transparent" },
-                    opacity: isPast ? 0.5 : 1,
-                    pointerEvents: isPast ? "none" : "auto",
                   }}
-                  disabled={isPast}
-                  onClick={(event) => !isPast && handleEditClick(event, testId)}
-                  title={isPast ? "You can't edit past tests" : "Edit Test"}
+                  onClick={(event) => handleEditClick(event, testId)}
+                  title="Edit Test"
                 >
                   <img src={EditPencilIcon} alt="Edit" style={{ width: "20px", height: "20px" }} />
                   &nbsp;
@@ -866,10 +872,10 @@ export default function TestListTable() {
                   sx: {
                     maxHeight: "none",
                     "& .MuiAutocomplete-option[aria-selected='true'], & .MuiAutocomplete-option:hover":
-                      {
-                        backgroundColor: "transparent !important",
-                        color: "#2F4F4F",
-                      },
+                    {
+                      backgroundColor: "transparent !important",
+                      color: "#2F4F4F",
+                    },
                     "&": {
                       scrollbarWidth: "none",
                       msOverflowStyle: "none",
@@ -1018,10 +1024,10 @@ export default function TestListTable() {
                     maxHeight: "620px",
                     overflowY: "auto",
                     "& .MuiAutocomplete-option[aria-selected='true'], & .MuiAutocomplete-option:hover":
-                      {
-                        backgroundColor: "transparent !important",
-                        color: "#2F4F4F",
-                      },
+                    {
+                      backgroundColor: "transparent !important",
+                      color: "#2F4F4F",
+                    },
                     "&": {
                       scrollbarWidth: "none",
                       msOverflowStyle: "none",

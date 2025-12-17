@@ -69,63 +69,22 @@ const theme = createTheme({
 
 // Define stream options
 const streamOptions = [
-  { value: "Mathematics", label: "MATHEMATICS" },
-  { value: "BIO", label: "BIO" },
-  { value: "COMMERCE", label: "COMMERCE" },
-  { value: "ARTS", label: "ARTS" },
-  { value: "AGRICULTURE", label: "AGRICULTURE" },
+  { value: "Maths", label: "Maths" },
+  { value: "Biology", label: "Biology" },
+  { value: "Commerce", label: "Commerce" },
+  { value: "Arts", label: "Arts" },
+  { value: "Agriculture", label: "Agriculture" },
 ];
 
 const vocationalOptions = [
   { value: "IT", label: "IT" },
-  { value: "HEALTH CARE", label: "HEALTH CARE" },
-  { value: "AUTOMOBILE", label: "AUTOMOBILE" },
-  { value: "RETAIL", label: "RETAIL" },
-  { value: "MEDIA", label: "MEDIA" },
-  { value: "AGRICULTURE", label: "AGRICULTURE" },
+  { value: "Sanskrit", label: "Sanskrit" },
+  { value: "Health Care", label: "Health Care" },
+  { value: "Automobile", label: "Automobile" },
+  { value: "Retail", label: "Retail" },
+  { value: "Media", label: "Media" },
+  { value: "Agriculture", label: "Agriculture" },
 ];
-
-// Define subject options based on class
-const getSubjectOptions = (classLevel) => {
-  const classNum = parseInt(classLevel);
-
-  if (classNum >= 1 && classNum <= 3) {
-    return [
-      { value: "MATH", label: "Math" },
-      { value: "HINDI", label: "Hindi" },
-      { value: "ENGLISH", label: "English" },
-    ];
-  } else if (classNum >= 4 && classNum <= 5) {
-    return [
-      { value: "MATH", label: "Math" },
-      { value: "HINDI", label: "Hindi" },
-      { value: "ENGLISH", label: "English" },
-      { value: "EVS", label: "Social Science (EVS)" },
-    ];
-  } else if (classNum >= 6 && classNum <= 10) {
-    return [
-      { value: "MATH", label: "Math" },
-      { value: "HINDI", label: "Hindi" },
-      { value: "ENGLISH", label: "English" },
-      { value: "SCIENCE", label: "Science" },
-      { value: "SO_SCIENCE", label: "Social Science" },
-      { value: "SANSKRIT", label: "Sanskrit" },
-    ];
-  } else if (classNum >= 11 && classNum <= 12) {
-    return [
-      { value: "COMPUTER_SCIENCE", label: "Computer Science" },
-      { value: "BUSINESS_STUDIES", label: "Business Studies" },
-      { value: "PSYCHOLOGY", label: "Psychology" },
-      { value: "SOCIOLOGY", label: "Sociology" },
-      { value: "POLITICAL_SCIENCE", label: "Political Science" },
-      { value: "AGRICULTURE", label: "Agriculture" },
-      { value: "HOME_SCIENCE", label: "Home Science" },
-    ];
-  }
-
-  // Default case
-  return [];
-};
 
 export default function AddStudent({ isEditMode = false }) {
   const originalNavigate = useNavigate();
@@ -147,8 +106,6 @@ export default function AddStudent({ isEditMode = false }) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [subjectOptions, setSubjectOptions] = useState(getSubjectOptions("11"));
-
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingRoute, setPendingRoute] = useState(null);
@@ -395,13 +352,6 @@ export default function AddStudent({ isEditMode = false }) {
       }
     }
   }, [formData, isEditMode]);
-
-  // Subject options based on class
-  useEffect(() => {
-    if (isHigherClass || isClass9or10) {
-      setSubjectOptions(vocationalOptions);
-    }
-  }, [formData.class, isHigherClass, isClass9or10]);
 
   // Custom navigate function
   const navigate = (to, options) => {
@@ -983,14 +933,14 @@ export default function AddStudent({ isEditMode = false }) {
               {isClass9or10 && (
                 <Grid item xs={12} md={12}>
                   <FormControl fullWidth>
-                    <InputLabel id="extra-subjects-label">Optional Subjects</InputLabel>
+                    <InputLabel id="extra-subjects-label">Vocational Subjects</InputLabel>
                     <Select
                       labelId="extra-subjects-label"
                       id="extra-subjects"
                       multiple
                       value={formData.extraSubjects}
                       onChange={handleExtraSubjectsChange}
-                      input={<OutlinedInput label="Optional Subjects" />}
+                      input={<OutlinedInput label="Vocational Subjects" />}
                       renderValue={(selected) => selected.join(", ")}
                       sx={{
                         borderRadius: "8px",
@@ -1022,14 +972,14 @@ export default function AddStudent({ isEditMode = false }) {
               {isHigherClass && (
                 <Grid item xs={12} md={12}>
                   <FormControl fullWidth>
-                    <InputLabel id="extra-subjects-label">Optional Subjects</InputLabel>
+                    <InputLabel id="extra-subjects-label">Vocational Subjects</InputLabel>
                     <Select
                       labelId="extra-subjects-label"
                       id="extra-subjects"
                       multiple
                       value={formData.extraSubjects}
                       onChange={handleExtraSubjectsChange}
-                      input={<OutlinedInput label="Optional Subjects" />}
+                      input={<OutlinedInput label="Vocational Subjects" />}
                       renderValue={(selected) => selected.join(", ")}
                       sx={{
                         borderRadius: "8px",

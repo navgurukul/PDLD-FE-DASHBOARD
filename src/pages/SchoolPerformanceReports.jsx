@@ -25,7 +25,6 @@ import apiInstance from "../../api"; // Updated import path
 import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
-import { SUBJECTS_BY_GRADE } from "../data/testData"; // Import testData for curriculum mapping
 import mixpanel from '../utils/mixpanel';
 
 // Utility function to convert text to title case
@@ -51,28 +50,6 @@ const formatNumber = (value) => {
   
   // If it has decimal part, show one decimal place
   return num.toFixed(1);
-};
-
-// Utility function to check if curriculum note should be shown
-const shouldShowCurriculumNote = (subject, groupTitle) => {
-  // Map group titles to class ranges
-  const groupClassMapping = {
-    "Primary (1-5)": [1, 2, 3, 4, 5],
-    "Upper Primary (6-8)": [6, 7, 8],
-    "High School (9-10)": [9, 10],
-    "Higher Secondary (11-12)": [11, 12]
-  };
-
-  const classesInGroup = groupClassMapping[groupTitle];
-  if (!classesInGroup) return false;
-
-  // Check how many classes in this group have this subject
-  const classesWithSubject = classesInGroup.filter(classNum => 
-    SUBJECTS_BY_GRADE[classNum] && SUBJECTS_BY_GRADE[classNum].includes(subject)
-  );
-
-  // Show note only if subject is present in SOME but not ALL classes of the group
-  return classesWithSubject.length > 0 && classesWithSubject.length < classesInGroup.length;
 };
 
 const theme = createTheme({
@@ -200,67 +177,13 @@ const Reports = () => {
   const [subjects, setSubjects] = useState([]); // Dynamic subjects from API
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
   const subjectsFetched = useRef(false); // Track if subjects have been fetched
-
+  const [blockClusterData, setBlockClusterData] = useState([]);
   // State for available blocks and clusters
   const [availableBlocks, setAvailableBlocks] = useState([]);
   const [availableClusters, setAvailableClusters] = useState([]);
   
   // Changed from fixed pageSize to state
   const [pageSize, setPageSize] = useState(15);
-
-  // Curriculum mapping for subjects
-  // Dynamic function to get expected classes for a subject in a group using testData.js
-  const getExpectedClassesForSubject = (subject, groupTitle) => {
-    const groupClassMapping = {
-      "Primary (1-5)": [1, 2, 3, 4, 5],
-      "Upper Primary (6-8)": [6, 7, 8],
-      "High School (9-10)": [9, 10],
-      "Higher Secondary (11-12)": [11, 12]
-    };
-
-    const classesInGroup = groupClassMapping[groupTitle];
-    if (!classesInGroup) return [];
-
-    // Filter classes that have this subject according to testData.js
-    return classesInGroup.filter(classNum => 
-      SUBJECTS_BY_GRADE[classNum] && SUBJECTS_BY_GRADE[classNum].includes(subject)
-    );
-  };
-
-  // Helper function to check curriculum availability
-  const checkCurriculumAvailability = (subject, groupTitle, classesInData) => {
-    const expectedClasses = getExpectedClassesForSubject(subject, groupTitle);
-    const actualClasses = classesInData.map(c => c.class);
-    
-    // Check if ALL classes that should have this subject are represented in the data
-    // If expected classes list is empty, it means subject is not taught in this group at all
-    if (expectedClasses.length === 0) {
-      return {
-        allClassesHaveSubject: false,
-        expectedClasses,
-        actualClasses,
-        reason: "Subject not taught in this group"
-      };
-    }
-    
-    // Check if subject is available in all classes of the group
-    const groupClassMapping = {
-      "Primary (1-5)": [1, 2, 3, 4, 5],
-      "Upper Primary (6-8)": [6, 7, 8],
-      "High School (9-10)": [9, 10],
-      "Higher Secondary (11-12)": [11, 12]
-    };
-    
-    const allClassesInGroup = groupClassMapping[groupTitle] || [];
-    const allClassesHaveSubject = expectedClasses.length === allClassesInGroup.length;
-    
-    return {
-      allClassesHaveSubject,
-      expectedClasses,
-      actualClasses,
-      totalClassesInGroup: allClassesInGroup.length
-    };
-  };
 
   // Add page size change handler
   const handlePageSizeChange = (event) => {
@@ -313,19 +236,39 @@ const Reports = () => {
     }
   };
 
-  // Extract unique blocks and clusters from the API response
-  const extractBlocksAndClusters = (schoolsData) => {
-    const blocks = new Set();
-    const clusters = new Set();
+  const fetchGlobalBlocksAndClusters = async () => {
+  try {
+    const response = await apiInstance.get("/user/dropdown-data");
+    if (response.data && response.data.success) {
+      const blocksData = response.data.data;
+      setBlockClusterData(blocksData);
 
-    schoolsData.forEach((school) => {
-      if (school.blockName) blocks.add(school.blockName);
-      if (school.clusterName) clusters.add(school.clusterName);
-    });
+      const uniqueBlocks = blocksData
+        .map((block) => block.blockName)
+        .filter(Boolean)
+        .sort();
+      setAvailableBlocks(uniqueBlocks);
 
-    setAvailableBlocks(Array.from(blocks).sort());
-    setAvailableClusters(Array.from(clusters).sort());
-  };
+      // For initial state (All Blocks selected), show all clusters
+      const allClusterNames = blocksData.flatMap((block) =>
+        block.clusters.map((cluster) => cluster.name)
+      );
+      const uniqueClusters = [...new Set(allClusterNames)]
+        .filter(Boolean)
+        .sort();
+      setAvailableClusters(uniqueClusters);
+    } else {
+      console.warn('Failed to fetch blocks and clusters');
+    }
+  } catch (error) {
+    console.error("Error fetching blocks and clusters:", error);
+    toast.error("Failed to load blocks and clusters data");
+  }
+};
+
+useEffect(() => {
+  fetchGlobalBlocksAndClusters();
+}, []);
 
   // Fetch subjects on component mount
   useEffect(() => {
@@ -376,10 +319,6 @@ const Reports = () => {
         setTotalRecords(pagination.totalSchools);
         setTotalPages(pagination.totalPages);
         if (academicYear) setAcademicYear(academicYear);
-        // Extract blocks and clusters if not already done
-        if (availableBlocks.length === 0 || availableClusters.length === 0) {
-          extractBlocksAndClusters(schools);
-        }
       } else {
         toast.error("Failed to fetch report data");
       }
@@ -391,30 +330,6 @@ const Reports = () => {
       setIsSearchLoading(false);
     }
   };
-
-  // Fetch all blocks and clusters for dropdowns (separate API call)
-  useEffect(() => {
-    // Only fetch if we have a selected subject and subjects are loaded
-    if (selectedSubject && !isLoadingSubjects) {
-      const fetchAllSchoolsForDropdowns = async () => {
-        try {
-          // This could be a separate API endpoint that returns all blocks and clusters
-          // For now, we'll just use the same endpoint with a larger page size
-          const response = await apiInstance.get(
-            `/report/subject-performance/${selectedSubject}?page=1&pageSize=100`
-          );
-
-          if (response.data.success) {
-            extractBlocksAndClusters(response.data.data.schools);
-          }
-        } catch (error) {
-          console.error("Error fetching dropdown data:", error);
-        }
-      };
-
-      fetchAllSchoolsForDropdowns();
-    }
-  }, [selectedSubject, isLoadingSubjects]); // Add proper dependencies
 
   // Custom Table Component
   const CustomTable = ({ data }) => {
@@ -457,37 +372,8 @@ const Reports = () => {
               backgroundColor: "inherit !important",
               cursor: default !important;
             }
-            .custom-table td.low-score {
-              color: #F45050;
-              font-weight: 600 !important;
-              font-family: "Work Sans" !important;
-            }
             .custom-table td.clickable {
               cursor: pointer !important;
-            }
-            .custom-table th.school-header {
-                font-family: 'Work Sans', sans-serif !important;
-                font-weight: 600 !important;
-                font-size: 14px !important;
-                color: #2F4F4F;
-                text-align: center;
-                border-bottom: 1px solid #e0e0e0;
-            }
-            .custom-table thead tr:nth-child(2) th:nth-child(2n+1):not(:last-child) {
-              position: relative;
-            }
-            .custom-table thead tr:nth-child(2) th:nth-child(2n+1):not(:last-child)::after {
-              content: "";
-              position: absolute;
-              right: -12px;
-              top: 50%;
-              transform: translateY(-50%);
-              height: 24px;
-              width: 1px;
-              background: #6D6D6D;
-              display: block;
-              border-radius: 1px;
-              font-weight: 400 !important;
             }
             .custom-table th.school-header,
             .custom-table td:first-child {
@@ -542,14 +428,14 @@ const Reports = () => {
                   {isCellClickable(school.primaryAvg) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.primaryAvg) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 1)}
                       >
                         {formatNumber(school.primaryAvg)}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.primaryAvg) < 33 ? "low-score" : ""}>
+                    <td>
                       {formatNumber(school.primaryAvg)}
                     </td>
                   )}
@@ -557,14 +443,14 @@ const Reports = () => {
                   {isCellClickable(school.primaryPass) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.primaryPass) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 2)}
                       >
                         {school.primaryPass !== null ? `${formatNumber(school.primaryPass)}%` : "-"}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.primaryPass) < 33 ? "low-score" : ""}>
+                    <td>
                       {school.primaryPass !== null ? `${formatNumber(school.primaryPass)}%` : "-"}
                     </td>
                   )}
@@ -572,14 +458,14 @@ const Reports = () => {
                   {isCellClickable(school.upperPrimaryAvg) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.upperPrimaryAvg) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 3)}
                       >
                         {formatNumber(school.upperPrimaryAvg)}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.upperPrimaryAvg) < 33 ? "low-score" : ""}>
+                    <td>
                       {formatNumber(school.upperPrimaryAvg)}
                     </td>
                   )}
@@ -587,14 +473,14 @@ const Reports = () => {
                   {isCellClickable(school.upperPrimaryPass) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.upperPrimaryPass) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 4)}
                       >
                         {school.upperPrimaryPass !== null ? `${formatNumber(school.upperPrimaryPass)}%` : "-"}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.upperPrimaryPass) < 33 ? "low-score" : ""}>
+                    <td>
                       {school.upperPrimaryPass !== null ? `${formatNumber(school.upperPrimaryPass)}%` : "-"}
                     </td>
                   )}
@@ -602,14 +488,14 @@ const Reports = () => {
                   {isCellClickable(school.highSchoolAvg) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.highSchoolAvg) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 5)}
                       >
                         {formatNumber(school.highSchoolAvg)}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.highSchoolAvg) < 33 ? "low-score" : ""}>
+                    <td>
                       {formatNumber(school.highSchoolAvg)}
                     </td>
                   )}
@@ -617,14 +503,14 @@ const Reports = () => {
                   {isCellClickable(school.highSchoolPass) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.highSchoolPass) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 6)}
                       >
                         {school.highSchoolPass !== null ? `${formatNumber(school.highSchoolPass)}%` : "-"}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.highSchoolPass) < 33 ? "low-score" : ""}>
+                    <td>
                       {school.highSchoolPass !== null ? `${formatNumber(school.highSchoolPass)}%` : "-"}
                     </td>
                   )}
@@ -632,14 +518,14 @@ const Reports = () => {
                   {isCellClickable(school.higherSecondaryAvg) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.higherSecondaryAvg) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 7)}
                       >
                         {formatNumber(school.higherSecondaryAvg)}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.higherSecondaryAvg) < 33 ? "low-score" : ""}>
+                    <td>
                       {formatNumber(school.higherSecondaryAvg)}
                     </td>
                   )}
@@ -647,14 +533,14 @@ const Reports = () => {
                   {isCellClickable(school.higherSecondaryPass) ? (
                     <Tooltip title="Click for classwise report" arrow>
                       <td
-                        className={`${parseInt(school.higherSecondaryPass) < 33 ? "low-score" : ""} clickable`}
+                        className={`clickable`}
                         onClick={() => handleCellClick(index, 8)}
                       >
                         {school.higherSecondaryPass !== null ? `${formatNumber(school.higherSecondaryPass)}%` : "-"}
                       </td>
                     </Tooltip>
                   ) : (
-                    <td className={parseInt(school.higherSecondaryPass) < 33 ? "low-score" : ""}>
+                    <td>
                       {school.higherSecondaryPass !== null ? `${formatNumber(school.higherSecondaryPass)}%` : "-"}
                     </td>
                   )}
@@ -671,17 +557,6 @@ const Reports = () => {
         </table>
       </div>
     );
-  };
-
-  // Function to determine text color based on value
-  const getTextColor = (value) => {
-    if (typeof value === "string" || typeof value === "number") {
-      const numValue = parseInt(value, 10);
-      if (!isNaN(numValue) && numValue < 33) {
-        return "#FF0000"; // Red color for low scores
-      }
-    }
-    return "#000000"; // Default color
   };
 
   const handleCellClick = (rowIndex, colIndex) => {
@@ -718,9 +593,6 @@ const Reports = () => {
 
       // Only open modal if there are classes for this level
       if (levelData && levelData.classes && levelData.classes.length > 0) {
-        // Use the utility function to check if curriculum note should be shown
-        const showNote = shouldShowCurriculumNote(selectedSubject, groupTitle);
-        
         setSelectedClassData({
           school: toTitleCase(school.schoolName),
           udiseCode: school.udiseCode,
@@ -728,7 +600,7 @@ const Reports = () => {
           subject: selectedSubject,
           data: [levelData],
           groupTitle: groupTitle,
-          showCurriculumNote: showNote
+          showCurriculumNote: true
         });
 
         setClassModalOpen(true);
@@ -752,7 +624,18 @@ const Reports = () => {
     setSelectedCluster("");
     setSearchQuery("");
     setCurrentPage(1);
-  };
+
+     if (blockClusterData.length > 0) {
+    const allClusterNames = blockClusterData.flatMap((block) =>
+      block.clusters.map((cluster) => cluster.name)
+    );
+    const uniqueClusters = [...new Set(allClusterNames)]
+      .filter(Boolean)
+      .sort();
+    setAvailableClusters(uniqueClusters);
+  }
+};
+
 
   const isAnyFilterActive = !!searchQuery.trim() || !!selectedBlock || !!selectedCluster;
 
@@ -825,8 +708,7 @@ const Reports = () => {
               upperPrimaryPass:
                 upperData.upperPrimaryPass !== undefined ? upperData.upperPrimaryPass : null,
               highSchoolAvg: highData.highSchoolAvg !== undefined ? highData.highSchoolAvg : null,
-              highSchoolPass:
-                highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
+              highSchoolPass: highData.highSchoolPass !== undefined ? highData.highSchoolPass : null,
               higherSecondaryAvg:
                 higherData.higherSecondaryAvg !== undefined ? higherData.higherSecondaryAvg : null,
               higherSecondaryPass:
@@ -850,7 +732,6 @@ const Reports = () => {
       toast.error("An error occurred while generating the report");
     } finally {
       setIsLoading(false);
-      setDownloadModalOpen(false); // Close the modal after download completes
     }
   };
 
@@ -1007,11 +888,6 @@ const Reports = () => {
             background-color: #e8f5f9;
           }
           
-          .low-score {
-            color: #F45050;
-            font-weight: 600;
-          }
-          
           .summary {
             margin-top: 20px;
             padding: 15px;
@@ -1126,36 +1002,31 @@ const Reports = () => {
             <tbody>
               ${data
                 .map((school) => {
-                  const isLowScore = (value) => {
-                    const num = parseInt(value);
-                    return !isNaN(num) && num < 33;
-                  };
-
                   return `
                   <tr>
                     <td class="school-name">${school.udiseCode} - ${toTitleCase(school.schoolName)}</td>
-                    <td class="${isLowScore(school.primaryAvg) ? "low-score" : ""}">
+                    <td>
                       ${formatNumber(school.primaryAvg)}
                     </td>
-                    <td class="${isLowScore(school.primaryPass) ? "low-score" : ""}">
+                    <td>
                       ${school.primaryPass !== null ? formatNumber(school.primaryPass) + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.upperPrimaryAvg) ? "low-score" : ""}">
+                    <td>
                       ${formatNumber(school.upperPrimaryAvg)}
                     </td>
-                    <td class="${isLowScore(school.upperPrimaryPass) ? "low-score" : ""}">
+                    <td>
                       ${school.upperPrimaryPass !== null ? formatNumber(school.upperPrimaryPass) + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.highSchoolAvg) ? "low-score" : ""}">
+                    <td>
                       ${formatNumber(school.highSchoolAvg)}
                     </td>
-                    <td class="${isLowScore(school.highSchoolPass) ? "low-score" : ""}">
+                    <td>
                       ${school.highSchoolPass !== null ? formatNumber(school.highSchoolPass) + "%" : "-"}
                     </td>
-                    <td class="${isLowScore(school.higherSecondaryAvg) ? "low-score" : ""}">
+                    <td>
                       ${formatNumber(school.higherSecondaryAvg)}
                     </td>
-                    <td class="${isLowScore(school.higherSecondaryPass) ? "low-score" : ""}">
+                    <td>
                       ${
                         school.higherSecondaryPass !== null ? formatNumber(school.higherSecondaryPass) + "%" : "-"
                       }
@@ -1480,16 +1351,41 @@ const Reports = () => {
             <FormControl size="small" sx={{ minWidth: 0 }}>
               <Select
                 value={selectedBlock}
-                onChange={(e) => setSelectedBlock(e.target.value)}
-                displayEmpty
-                renderValue={(selected) => {
-                  if (!selected) return "Block";
-                  return selected
-                    .toLowerCase()
-                    .split(" ")
-                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(" ");
-                }}
+                onChange={(e) => {
+                  const newBlockValue = e.target.value;
+                  setSelectedBlock(newBlockValue);
+                  setSelectedCluster(""); // Reset cluster when block changes
+
+                  // Update clusters based on selected block
+                  if (newBlockValue === "") {
+                    // If "All Blocks" is selected, show all clusters
+                    const allClusterNames = blockClusterData.flatMap((block) =>
+                    block.clusters.map((cluster) => cluster.name)
+                  );
+                  const uniqueClusters = [...new Set(allClusterNames)]
+                  .filter(Boolean)
+                  .sort();
+                  setAvailableClusters(uniqueClusters);
+                  } else {
+                   // Otherwise, filter clusters by selected block
+                   const selectedBlockData = blockClusterData.find(
+                   (block) => block.blockName === newBlockValue
+                  );
+                  const blockClusters = selectedBlockData
+                  ? selectedBlockData.clusters.map((cluster) => cluster.name).filter(Boolean).sort()
+                  : [];
+                  setAvailableClusters(blockClusters);
+               }
+            }}
+             displayEmpty 
+             renderValue={(selected) => { 
+                if (!selected) return "Block";
+                return selected
+                .toLowerCase()
+                .split(" ")
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(" ");
+             }}
                 MenuProps={{
                   PaperProps: {
                     style: {
@@ -1844,9 +1740,9 @@ const Reports = () => {
                                   <span
                                     style={{
                                       fontFamily: "'Work Sans', sans-serif",
-                                      fontWeight: parseInt(classData.avgMarks) < 33 ? 600 : 400,
+                                      fontWeight: 600, 
                                       fontSize: "14px",
-                                      color: parseInt(classData.avgMarks) < 33 ? "#F45050" : "#2F4F4F",
+                                      color: "#2F4F4F",
                                     }}
                                   >
                                     {formatNumber(classData.avgMarks)}
@@ -1857,9 +1753,9 @@ const Reports = () => {
                                   <span
                                     style={{
                                       fontFamily: "'Work Sans', sans-serif",
-                                      fontWeight: parseFloat(classData.successRate) < 33 ? 600 : 400,
+                                      fontWeight: 600, 
                                       fontSize: "14px",
-                                      color: parseFloat(classData.successRate) < 33 ? "#F45050" : "#2F4F4F",
+                                      color: "#2F4F4F",
                                     }}
                                   >
                                     {classData.successRate ? 
@@ -1889,13 +1785,11 @@ const Reports = () => {
                 })()}
               </div>
 
-              {/* Curriculum Note - Only show when not all classes have the subject */}
-              {selectedClassData.showCurriculumNote && (
+              {/* Curriculum Note - Always show the original message */}
+              {selectedClassData.showCurriculumNote && selectedClassData.data[0]?.classes?.length > 0 && (
                 <div 
                   className="mt-5"
-                  style={{
-                   
-                  }}
+                  style={{}}
                 >
                   <div 
                     className="text-[#2F4F4F]"

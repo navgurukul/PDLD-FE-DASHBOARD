@@ -422,7 +422,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           apiSchools = response.data.data.items;
           // Extract values from metadata if available, otherwise use totalCount
           const metadata = response.data.data.metadata || {};
-          totalSubmittedSchools = metadata.totalSubmittedSchools || response.data.data.totalCount || 0;
+          totalSubmittedSchools = metadata.totalSubmittedSchools ?? response.data.data.totalCount ?? 0;
           totalpendingSchools = metadata.totalpendingSchools || 0;
           totalEligibleSchools = metadata.totalEligibleSchools || response.data.data.totalCount || 0;
           pagination = response.data.data.pagination;
@@ -516,29 +516,23 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     }
   };
 
-  useEffect(() => {
-    setCurrentPage(1); // Reset to first page when level changes
-    fetchData(1, pageSize, level, searchQuery.trim(), statusFilter);
-  }, [currentTestId, level]);
-
-  useEffect(() => {
-    fetchData(currentPage, pageSize, level, searchQuery.trim(), statusFilter);
-  }, [currentPage, pageSize]);
-
   // Handle search functionality with debouncing
   const debouncedSearchQuery = useDebounce(searchQuery, 500); // Debounce search for 500ms
   
+  // Reset page when filters change (search, status, or level)
   useEffect(() => {
-    if (debouncedSearchQuery !== searchQuery) return; // Only proceed if debounced value matches current
-    setCurrentPage(1); // Reset to first page when search changes
-    fetchData(1, pageSize, level, debouncedSearchQuery, statusFilter);
-  }, [debouncedSearchQuery, level]);
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, statusFilter, level]);
   
-  // Add effect for status filter changes
   useEffect(() => {
-    setCurrentPage(1); // Reset to first page when status filter changes
-    fetchData(1, pageSize, level, searchQuery.trim(), statusFilter);
-  }, [statusFilter]);
+    if (searchQuery && debouncedSearchQuery !== searchQuery) {
+      return;
+    }
+
+    const effectiveSearchQuery = searchQuery ? debouncedSearchQuery : "";
+    
+    fetchData( currentPage, pageSize, level,  effectiveSearchQuery,  statusFilter  );
+  }, [ currentTestId,currentPage, pageSize, level, debouncedSearchQuery,  statusFilter, searchQuery  ]);
 
   // No frontend filtering needed - all filtering is now done on the server
   const filteredSchools = useMemo(() => {
@@ -1674,11 +1668,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   // Calculate submission rate
   const submissionRate = totalSchools > 0 ? Math.round((schoolsSubmitted / totalSchools) * 100) : 0;
-
-  // Show loading indicator while fetching data
-  if (loading) {
-    return <SpinnerPageOverlay isLoading={true} />;
-  }
 
   // Show error message if data fetch failed
   if (error) {

@@ -20,6 +20,7 @@ import SchoolPerformance from "./components/school/SchoolPerformance";
 import LegalTerms from "./pages/LegalTerm";
 import EnrollmentReports from "./pages/EnrollmentReports";
 import SchoolPerformanceReports from "./pages/SchoolPerformanceReports";
+import StreamVocationalReport from "./pages/StreamVocationalReport";
 
 // Auth context to manage authentication state
 import { createContext } from "react";
@@ -100,14 +101,14 @@ function App() {
 						element={isAuthenticated ? <Navigate to="/allTest" /> : <LoginForm onLogin={login} />}
 					/>
 					{/* Privacy Policy route */}
-					<Route 
-						path="/privacy-policy" 
-						element={<LegalTerms />} 
+					<Route
+						path="/privacy-policy"
+						element={<LegalTerms />}
 					/>
 					{/* QR Login redirect route */}
-					<Route 
-						path="/qr-login" 
-						element={<QRLogin />} 
+					<Route
+						path="/qr-login"
+						element={<QRLogin />}
 					/>
 
 
@@ -170,6 +171,7 @@ function App() {
 						/>
 						<Route path="/reports/EnrollmentReports" element={<EnrollmentReports />} />
 						<Route path="/reports/SchoolPerformanceReports" element={<SchoolPerformanceReports />} />
+						<Route path="/reports/StreamVocationalReport" element={<StreamVocationalReport />} />
 
 						{/* Fallback Route */}
 						<Route path="*" element={<PageNotFound />} />
