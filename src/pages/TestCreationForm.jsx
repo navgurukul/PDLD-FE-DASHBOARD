@@ -960,7 +960,6 @@ const TestCreationForm = () => {
                 <div className={formData.testTag === "Monthly" ? "" : "col-span-1"}>
                   <label
                     className="block mb-2 text-sm"
-                    htmlFor="testTag"
                     style={{
                       fontFamily: "'Work Sans', sans-serif",
                       fontWeight: 600,
@@ -970,35 +969,65 @@ const TestCreationForm = () => {
                   >
                     Test Tag
                   </label>
-                  <div className="relative">
-                    <select
-                      id="testTag"
-                      name="testTag"
-                      className="w-full p-2.5 border border-gray-300 rounded-md bg-white text-[#2F4F4F] focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] appearance-none"
-                      value={formData.testTag}
-                      onChange={handleFormChange}
-                    >
-                      <option value="">Select Test Tag</option>
-                      {formData.testType === 'syllabus' ? (
-                        testTags.syllabus.map((tag) => (
-                          <option key={tag} value={tag}>{tag}</option>
-                        ))
-                      ) : (
-                        testTags.remedial.map((tag) => (
-                          <option key={tag} value={tag}>{tag}</option>
-                        ))
-                      )}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                      <svg
-                        className="fill-current h-4 w-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                      </svg>
-                    </div>
-                  </div>
+                  <Autocomplete
+                    disableClearable
+                    options={formData.testType === 'syllabus' ? testTags.syllabus : testTags.remedial}
+                    value={formData.testTag || ""}
+                    onChange={(_, value) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        testTag: value,
+                      }));
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Select Test Tag"
+                        size="small"
+                        sx={{
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: "14px",
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "8px",
+                            background: "#fff",
+                            color: "#2F4F4F",
+                            height: "48px",
+                          },
+                        }}
+                      />
+                    )}
+                    PaperComponent={(props) => (
+                      <Paper
+                        {...props}
+                        sx={{
+                          boxShadow: "0px 8px 24px 0 rgba(72, 61, 139, 0.12)",
+                          borderRadius: "8px",
+                          mt: 1,
+                        }}
+                      />
+                    )}
+                    ListboxProps={{
+                      sx: {
+                        "& .MuiAutocomplete-option": {
+                          px: 2,
+                          py: 0.5,
+                          borderRadius: "6px",
+                          mb: 0.5,
+                          fontFamily: "'Work Sans', sans-serif",
+                          fontWeight: 400,
+                          fontSize: "14px",
+                          color: "#2F4F4F",
+                          "&[aria-selected='true'], &:hover": {
+                            backgroundColor: "#F0F5F5",
+                            color: "#2F4F4F",
+                          },
+                        },
+                        maxHeight: "300px",
+                        overflowY: "auto",
+                      },
+                    }}
+                  />
                 </div>
 
                 {/* Test Series Month Dropdown - Only show if Monthly in create mode */}
@@ -1006,7 +1035,6 @@ const TestCreationForm = () => {
                   <div>
                     <label
                       className="block mb-2 text-sm"
-                      htmlFor="testSeriesMonth"
                       style={{
                         fontFamily: "'Work Sans', sans-serif",
                         fontWeight: 600,
@@ -1038,15 +1066,27 @@ const TestCreationForm = () => {
                         <TextField
                           {...params}
                           placeholder="Select Month"
-                          size="small"
                           sx={{
                             fontFamily: "'Work Sans', sans-serif",
                             fontWeight: 400,
-                            fontSize: "14px",
+                            fontSize: "16px",
                             "& .MuiOutlinedInput-root": {
                               borderRadius: "8px",
                               background: "#fff",
                               color: "#2F4F4F",
+                              height: "48px",
+                              "& fieldset": {
+                                borderColor: "rgba(0, 0, 0, 0.23)",
+                              },
+                              "&:hover fieldset": {
+                                borderColor: "#2F4F4F",
+                              },
+                              "&.Mui-focused fieldset": {
+                                borderColor: "#2F4F4F",
+                              },
+                            },
+                            "& .MuiInputBase-input": {
+                              fontSize: "16px",
                             },
                           }}
                         />
@@ -1070,9 +1110,13 @@ const TestCreationForm = () => {
                             mb: 0.5,
                             fontFamily: "'Work Sans', sans-serif",
                             fontWeight: 400,
-                            fontSize: "14px",
+                            fontSize: "16px",
                             color: "#2F4F4F",
-                            "&[aria-selected='true'], &:hover": {
+                            "&[aria-selected='true']": {
+                              backgroundColor: "#F0F5F5 !important",
+                              color: "#2F4F4F",
+                            },
+                            "&:hover": {
                               backgroundColor: "#F0F5F5",
                               color: "#2F4F4F",
                             },
@@ -1447,82 +1491,116 @@ const TestCreationForm = () => {
                     className="grid grid-cols-10 gap-4 items-center py-3 border-b border-gray-100"
                   >
                     <div className="col-span-5">
-                      <select
-                        className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${!canEditAllFields ? "bg-gray-100 cursor-not-allowed" : ""
-                          }`}
-                        value={row.subject}
-                        onChange={(e) =>
-                          canEditAllFields &&
-                          handleSubjectRowChange(className, row.id, "subject", e.target.value)
-                        }
+                      <Autocomplete
+                        disableClearable
                         disabled={!canEditAllFields || isLoadingSubjects}
-                        required
-                      >
-                        {isLoadingSubjects ? (
-                          <option value="">Loading subjects...</option>
-                        ) : (
-                          <>
-                            <option value="">Select Subject...</option>
-                            {(() => {
-                              const classNum = className.includes("Class ")
-                                ? parseInt(className.replace("Class ", ""))
-                                : parseInt(className);
+                        options={(() => {
+                          const classNum = className.includes("Class ")
+                            ? parseInt(className.replace("Class ", ""))
+                            : parseInt(className);
 
-                              // Get subjects for this class (academic and vocational)
-                              const { academic, vocational } = getSubjectsForClass(classNum);
+                          const { academic, vocational } = getSubjectsForClass(classNum);
+                          
+                          const classSubjectRows = subjectRows[className] || [];
+                          const selectedSubjects = classSubjectRows
+                            .filter((otherRow) => otherRow.id !== row.id && otherRow.subject)
+                            .map((otherRow) => otherRow.subject);
 
-                              // Get already selected subjects in this class (EXCLUDING the current row)
-                              const classSubjectRows = subjectRows[className] || [];
-                              const selectedSubjects = classSubjectRows
-                                .filter((otherRow) => otherRow.id !== row.id && otherRow.subject)
-                                .map((otherRow) => otherRow.subject);
+                          const availableAcademic = academic
+                            .filter((subject) => !selectedSubjects.includes(subject.toLowerCase().replace(/\s+/g, "_")))
+                            .map(subject => ({
+                              label: subject,
+                              value: subject.toLowerCase().replace(/\s+/g, "_"),
+                              group: "Academic Subjects"
+                            }));
 
-                              // Filter out already selected subjects from both academic and vocational
-                              const availableAcademic = academic.filter(
-                                (subject) =>
-                                  !selectedSubjects.includes(subject.toLowerCase().replace(/\s+/g, "_"))
-                              );
+                          const availableVocational = vocational
+                            .filter((subject) => !selectedSubjects.includes(subject.toLowerCase().replace(/\s+/g, "_")))
+                            .map(subject => ({
+                              label: subject,
+                              value: subject.toLowerCase().replace(/\s+/g, "_"),
+                              group: "Vocational Subjects"
+                            }));
 
-                              const availableVocational = vocational.filter(
-                                (subject) =>
-                                  !selectedSubjects.includes(subject.toLowerCase().replace(/\s+/g, "_"))
-                              );
-
-                              return (
-                                <>
-                                  {/* Academic Subjects Group */}
-                                  {availableAcademic.length > 0 && (
-                                    <optgroup label="Academic Subjects">
-                                      {availableAcademic.map((subject) => (
-                                        <option
-                                          key={subject}
-                                          value={subject.toLowerCase().replace(/\s+/g, "_")}
-                                        >
-                                          {subject}
-                                        </option>
-                                      ))}
-                                    </optgroup>
-                                  )}
-
-                                  {/* Vocational Subjects Group */}
-                                  {availableVocational.length > 0 && (
-                                    <optgroup label="Vocational Subjects">
-                                      {availableVocational.map((subject) => (
-                                        <option
-                                          key={subject}
-                                          value={subject.toLowerCase().replace(/\s+/g, "_")}
-                                        >
-                                          {subject}
-                                        </option>
-                                      ))}
-                                    </optgroup>
-                                  )}
-                                </>
-                              );
-                            })()}
-                          </>
+                          return [...availableAcademic, ...availableVocational];
+                        })()}
+                        value={(() => {
+                          const classNum = className.includes("Class ")
+                            ? parseInt(className.replace("Class ", ""))
+                            : parseInt(className);
+                          const { academic, vocational } = getSubjectsForClass(classNum);
+                          const allSubjects = [...academic, ...vocational];
+                          const matchedSubject = allSubjects.find(subject => 
+                            subject.toLowerCase().replace(/\s+/g, "_") === row.subject
+                          );
+                          return matchedSubject ? {
+                            label: matchedSubject,
+                            value: row.subject
+                          } : null;
+                        })()}
+                        onChange={(_, newValue) => {
+                          if (canEditAllFields && newValue) {
+                            handleSubjectRowChange(className, row.id, "subject", newValue.value);
+                          }
+                        }}
+                        groupBy={(option) => option.group}
+                        getOptionLabel={(option) => option.label || ""}
+                        isOptionEqualToValue={(option, value) => option.value === value.value}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            placeholder={isLoadingSubjects ? "Loading subjects..." : "Select Subject..."}
+                            size="small"
+                            sx={{
+                              fontFamily: "'Work Sans', sans-serif",
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: "6px",
+                                background: canEditAllFields ? "#fff" : "#f3f4f6",
+                                color: "#2F4F4F",
+                                fontSize: "14px",
+                              },
+                            }}
+                          />
                         )}
-                      </select>
+                        PaperComponent={(props) => (
+                          <Paper
+                            {...props}
+                            sx={{
+                              boxShadow: "0px 8px 24px 0 rgba(72, 61, 139, 0.12)",
+                              borderRadius: "8px",
+                              mt: 1,
+                            }}
+                          />
+                        )}
+                        ListboxProps={{
+                          sx: {
+                            "& .MuiAutocomplete-option": {
+                              px: 2,
+                              py: 0.5,
+                              borderRadius: "6px",
+                              mb: 0.5,
+                              fontFamily: "'Work Sans', sans-serif",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "#2F4F4F",
+                              "&[aria-selected='true'], &:hover": {
+                                backgroundColor: "#F0F5F5",
+                                color: "#2F4F4F",
+                              },
+                            },
+                            "& .MuiAutocomplete-groupLabel": {
+                              backgroundColor: "#EAEDED",
+                              color: "#2F4F4F",
+                              fontWeight: 600,
+                              fontSize: "13px",
+                              px: 2,
+                              py: 1,
+                            },
+                            maxHeight: "300px",
+                            overflowY: "auto",
+                          },
+                        }}
+                      />
                     </div>
                     {/* Test Date - EDITABLE EVEN IN EDIT MODE */}
                     <div className="col-span-2">
