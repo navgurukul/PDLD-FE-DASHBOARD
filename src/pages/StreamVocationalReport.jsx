@@ -82,6 +82,7 @@ export default function StreamVocationalReport() {
     const [selectedStreamFilter, setSelectedStreamFilter] = useState("all");
     const [blocks, setBlocks] = useState([]);
     const [clusters, setClusters] = useState([]);
+    const [blockClusterData, setBlockClusterData] = useState([]); 
     const [metadata, setMetadata] = useState({});
 
     // Ref to prevent double API calls
@@ -223,6 +224,9 @@ export default function StreamVocationalReport() {
             const response = await apiInstance.get("/user/dropdown-data");
             if (response.data && response.data.success) {
                 const blocksData = response.data.data;
+
+                // Store the full data structure for block-cluster relationship
+                setBlockClusterData(blocksData);
 
                 const uniqueBlocks = blocksData.map((block) => block.blockName).filter(Boolean).sort();
                 setBlocks(uniqueBlocks);
@@ -482,6 +486,15 @@ export default function StreamVocationalReport() {
         setSelectedStreamFilter("all");
         setSearchQuery("");
         setPagination((prev) => ({ ...prev, currentPage: 1 }));
+
+        // Reset clusters to show all available clusters
+        if (blockClusterData.length > 0) {
+            const allClusterNames = blockClusterData.flatMap((block) =>
+                block.clusters.map((cluster) => cluster.name)
+            );
+            const uniqueClusters = [...new Set(allClusterNames)].filter(Boolean).sort();
+            setClusters(uniqueClusters);
+        }
 
         // Allow the next render to process the fetch
         setTimeout(() => {
@@ -1068,7 +1081,30 @@ export default function StreamVocationalReport() {
                                             </InputLabel>
                                             <Select
                                                 value={selectedBlock}
-                                                onChange={(e) => setSelectedBlock(e.target.value)}
+                                                onChange={(e) => {
+                                                    const newBlockValue = e.target.value;
+                                                    setSelectedBlock(newBlockValue);
+                                                    setSelectedCluster(""); // Reset cluster when block changes
+                                                    
+                                                    // Update clusters based on selected block
+                                                    if (newBlockValue === "") {
+                                                        // If "All Blocks" is selected, show all clusters
+                                                        const allClusterNames = blockClusterData.flatMap((block) =>
+                                                            block.clusters.map((cluster) => cluster.name)
+                                                        );
+                                                        const uniqueClusters = [...new Set(allClusterNames)].filter(Boolean).sort();
+                                                        setClusters(uniqueClusters);
+                                                    } else {
+                                                        // Otherwise, filter clusters by selected block
+                                                        const selectedBlockData = blockClusterData.find(
+                                                            (block) => block.blockName === newBlockValue
+                                                        );
+                                                        const blockClusters = selectedBlockData 
+                                                            ? selectedBlockData.clusters.map((cluster) => cluster.name).filter(Boolean).sort()
+                                                            : [];
+                                                        setClusters(blockClusters);
+                                                    }
+                                                }}
                                                 sx={{
                                                     height: "100%",
                                                     borderRadius: "8px",
@@ -1083,6 +1119,24 @@ export default function StreamVocationalReport() {
                                                         alignItems: "center",
                                                         color: "#2F4F4F",
                                                         fontWeight: "600",
+                                                    },
+                                                }}
+                                                MenuProps={{
+                                                    PaperProps: {
+                                                        sx: {
+                                                            maxHeight: 200,
+                                                            overflowY: "auto",
+                                                            "&::-webkit-scrollbar": {
+                                                                width: "5px",
+                                                            },
+                                                            "&::-webkit-scrollbar-thumb": {
+                                                                backgroundColor: "#B0B0B0",
+                                                                borderRadius: "5px",
+                                                            },
+                                                            "&::-webkit-scrollbar-track": {
+                                                                backgroundColor: "#F0F0F0",
+                                                            },
+                                                        },
                                                     },
                                                 }}
                                             >
@@ -1136,6 +1190,24 @@ export default function StreamVocationalReport() {
                                                         alignItems: "center",
                                                         color: "#2F4F4F",
                                                         fontWeight: "600",
+                                                    },
+                                                }}
+                                                MenuProps={{
+                                                    PaperProps: {
+                                                        sx: {
+                                                            maxHeight: 200,
+                                                            overflowY: "auto",
+                                                            "&::-webkit-scrollbar": {
+                                                                width: "5px",
+                                                            },
+                                                            "&::-webkit-scrollbar-thumb": {
+                                                                backgroundColor: "#B0B0B0",
+                                                                borderRadius: "5px",
+                                                            },
+                                                            "&::-webkit-scrollbar-track": {
+                                                                backgroundColor: "#F0F0F0",
+                                                            },
+                                                        },
                                                     },
                                                 }}
                                             >
