@@ -225,7 +225,7 @@ const Reports = () => {
       } else {
         // Fallback to hardcoded subjects if API fails
         console.warn('Failed to fetch subjects from API, using fallback');
-        const fallbackSubjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
+        const fallbackSubjects = ["Hindi", "English", "Maths", "EVS", "Science", "Social Science"];
         setSubjects(fallbackSubjects);
         if (!fallbackSubjects.includes(selectedSubject)) {
           setSelectedSubject(fallbackSubjects[0]);
@@ -234,7 +234,7 @@ const Reports = () => {
     } catch (error) {
       console.error('Error fetching subjects:', error);
       // Fallback to hardcoded subjects if API fails
-      const fallbackSubjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
+      const fallbackSubjects = ["Hindi", "English", "Maths", "EVS", "Science", "Social Science"];
       setSubjects(fallbackSubjects);
       if (!fallbackSubjects.includes(selectedSubject)) {
         setSelectedSubject(fallbackSubjects[0]);
@@ -311,7 +311,7 @@ useEffect(() => {
     
     try {
       // Updated to use dynamic pageSize
-      let url = `/report/subject-performance/${selectedSubject}?page=${currentPage}&pageSize=${pageSize}&academicYear=${toApiAcademicYear(selectedYearStart)}`;
+      let url = `/report/subject-performance/${encodeURIComponent(selectedSubject)}?page=${currentPage}&pageSize=${pageSize}&academicYear=${toApiAcademicYear(selectedYearStart)}`;
 
       // Add block and cluster filters if selected - updated parameter names
       if (selectedBlock) {
@@ -683,7 +683,7 @@ useEffect(() => {
       } else {
         // For non-current options, fetch from API with proper parameters
         // Fetch more data from API
-        let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${
+        let url = `/report/subject-performance/${encodeURIComponent(selectedSubject)}?page=1&pageSize=${
           count === totalRecords ? totalRecords : count
         }&academicYear=${toApiAcademicYear(selectedYearStart)}`;
 
@@ -1270,7 +1270,6 @@ useEffect(() => {
                       vertical: "top",
                       horizontal: "left",
                     },
-                    getContentAnchorEl: null, // Prevents automatic positioning
                   }}
                   sx={{
                     height: "48px",
@@ -1403,7 +1402,6 @@ useEffect(() => {
                     vertical: "top",
                     horizontal: "left",
                   },
-                  getContentAnchorEl: null, // Prevents automatic positioning
                 }}
                 sx={{
                   height: "48px",
@@ -1466,7 +1464,6 @@ useEffect(() => {
                     vertical: "top",
                     horizontal: "left",
                   },
-                  getContentAnchorEl: null, // Prevents automatic positioning
                 }}
                 sx={{
                   height: "48px",
