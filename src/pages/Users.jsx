@@ -209,11 +209,11 @@ export default function Users() {
         const uniqueBlocks = blocksData.map((block) => block.blockName).filter(Boolean).sort();
         setAvailableBlocks(uniqueBlocks);
       } else {
-        console.error("Failed to fetch blocks and roles:", response.data?.message);
+        console.error("Failed to fetch blocks and roles:", response.data?.error);
       }
     } catch (error) {
       console.error("Error fetching blocks and roles:", error);
-      toast.error("Failed to load blocks and roles data");
+      toast.error(error.response?.data?.error || "Failed to load blocks and roles data");
     }
   };
 
@@ -334,7 +334,7 @@ export default function Users() {
       }
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast.error(error.response?.data?.message || "Error fetching users");
+      toast.error(error.response?.data?.error || "Error fetching users");
     } finally {
       setIsLoading(false);
       setIsSearchLoading(false);
