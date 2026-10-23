@@ -27,3 +27,30 @@ export const getAcademicYearStarts = () => {
   for (let y = getAcademicYearStart(); y >= FIRST_ACADEMIC_YEAR_START; y--) years.push(y);
   return years;
 };
+
+// "DD-MM-YYYY" bounds of an academic year (1 Apr to 31 Mar), the format /test/filter takes
+export const getAcademicYearDateRange = (startYear) => ({
+  startDate: `01-04-${startYear}`,
+  endDate: `31-03-${startYear + 1}`,
+});
+
+// Remembers a page's academic year choice for this browser tab, so it survives going to a
+// detail page and back. Storage can be unavailable (private mode), so failures fall back.
+export const readStoredAcademicYear = (key, fallback) => {
+  try {
+    const stored = sessionStorage.getItem(`academicYear:${key}`);
+    if (stored === "all") return stored;
+    const year = Number(stored);
+    return stored && getAcademicYearStarts().includes(year) ? year : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+export const storeAcademicYear = (key, value) => {
+  try {
+    sessionStorage.setItem(`academicYear:${key}`, String(value));
+  } catch {
+    // not critical
+  }
+};

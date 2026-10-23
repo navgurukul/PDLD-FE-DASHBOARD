@@ -4,6 +4,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, InputLabel, Select, MenuItem, Button } from "@mui/material";
 import { ToggleButtonGroup, ToggleButton } from "@mui/material";
 import StudentReportSubjectWise from "./StudentReportSubjectWise";
+import { toDisplayAcademicYear } from "../../utils/academicYear";
 
 //  Create theme matching the TestListTable styling
 const theme = createTheme({
@@ -700,7 +701,7 @@ const StudentAcademics = ({
                   textAlign: "left",
                 }}
               >
-                No syllabus assessments have been conducted for this student yet.
+                No syllabus assessments recorded for this student in {toDisplayAcademicYear(academicData?.year)}.
               </div>
             ) : (
               <>
@@ -725,7 +726,7 @@ const StudentAcademics = ({
                   textAlign: "left",
                 }}
               >
-                No syllabus assessments have been conducted for this student yet.
+                No syllabus assessments recorded for this student in {toDisplayAcademicYear(academicData?.year)}.
               </div>
             ) : (
               <>
@@ -891,7 +892,7 @@ const StudentAcademics = ({
                 textAlign: "left",
               }}
             >
-              No remedial assessments have been conducted for this student yet
+              No remedial assessments recorded for this student in {toDisplayAcademicYear(academicData?.year)}
             </div>
           ) : (
             <>

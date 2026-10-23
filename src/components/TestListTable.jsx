@@ -22,6 +22,13 @@ import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import Paper from "@mui/material/Paper";
 import { Search } from "lucide-react";
+import AcademicYearSelect, { ALL_YEARS, CUSTOM_DATES } from "./AcademicYearSelect";
+import {
+  getAcademicYearStart,
+  getAcademicYearDateRange,
+  readStoredAcademicYear,
+  storeAcademicYear,
+} from "../utils/academicYear";
 
 const theme = createTheme({
   typography: {
@@ -127,6 +134,9 @@ export default function TestListTable() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState([null, null]);
   const [startDate, endDate] = dateRange;
+  // Academic year shown (start year, ALL_YEARS, or CUSTOM_DATES while a date range is picked);
+  // defaults to the current year and is remembered for this browser tab
+  const [selectedYear, setSelectedYear] = useState(() => readStoredAcademicYear("tests", getAcademicYearStart()));
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [userRole, setUserRole] = useState("");
@@ -347,10 +357,12 @@ export default function TestListTable() {
       if (startDate && endDate) {
         startDateFormatted = formatDate(startDate);
         endDateFormatted = formatDate(endDate);
-      } else {
-        // No range picked: list every test, including ones scheduled up to the end of next year
+      } else if (selectedYear === ALL_YEARS || selectedYear === CUSTOM_DATES) {
+        // Every test, including ones scheduled up to the end of next year
         startDateFormatted = "01-02-2020";
         endDateFormatted = `31-12-${new Date().getFullYear() + 1}`;
+      } else {
+        ({ startDate: startDateFormatted, endDate: endDateFormatted } = getAcademicYearDateRange(selectedYear));
       }
       let url = `/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
       if (selectedClass.length > 0) {
@@ -390,7 +402,7 @@ export default function TestListTable() {
     if (!isSearchClearing && ((startDate && endDate) || (!startDate && !endDate) || (debouncedSearchQuery && debouncedSearchQuery.trim() !== ""))) {
       fetchData();
     }
-  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage, pageSize, debouncedSearchQuery, searchQuery]);
+  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, selectedYear, currentPage, pageSize, debouncedSearchQuery, searchQuery]);
 
   // Remove local filtering: tests are already filtered by backend
   const filteredTests = tests;
@@ -430,6 +442,7 @@ export default function TestListTable() {
     selectedSubject.length > 0 ||
     selectedStatus ||
     (startDate && endDate) ||
+    selectedYear !== getAcademicYearStart() ||
     searchQuery;
 
   const [classFocused, setClassFocused] = useState(false);
@@ -674,11 +687,32 @@ export default function TestListTable() {
     },
   };
 
+  // Picking a year replaces any custom date range; picking a full date range replaces the year
+  const handleYearChange = (year) => {
+    setSelectedYear(year);
+    storeAcademicYear("tests", year);
+    setDateRange([null, null]);
+    setCurrentPage(1);
+  };
+
+  const handleDateRangeChange = (dates) => {
+    setDateRange(dates);
+    if (dates[0] && dates[1]) {
+      setSelectedYear(CUSTOM_DATES);
+      setCurrentPage(1);
+    }
+  };
+
+  const clearDateRange = () => {
+    setDateRange([null, null]);
+    if (selectedYear === CUSTOM_DATES) handleYearChange(getAcademicYearStart());
+  };
+
   const resetFilters = () => {
     setSelectedClass([]);
     setSelectedSubject([]);
     setSelectedStatus("");
-    setDateRange([null, null]);
+    handleYearChange(getAcademicYearStart());
     setSearchQuery("");
     setCurrentPage(1);
   };
@@ -687,14 +721,26 @@ export default function TestListTable() {
     <ThemeProvider theme={theme}>
       {/* Main container with responsive adjustments */}
       <div className="main-page-wrapper px-3 sm:px-4">
-        <h5 className="text-lg font-bold text-[#2F4F4F] mt-5">All Tests</h5>
+        {/* Title and Create Test button */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mt-5">
+          <h5 className="text-lg font-bold text-[#2F4F4F]">All Tests</h5>
+          {userRole === "DISTRICT_OFFICER" && (
+            <div className="shrink-0">
+              <ButtonCustom
+                imageName={addSymbolBtn}
+                text={"Create Test"}
+                onClick={handleCreateTest}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Filters and Action Button - Responsive Row */}
         <div className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 flex-wrap mb-4 mt-6">
           {/* Filters Group */}
           <div className="flex flex-wrap gap-2 items-center">
             {/* Search bar */}
-            <div className="w-full lg:w-[360px]">
+            <div className="w-full lg:w-[220px]">
               <TextField
                 variant="outlined"
                 placeholder="Search by Test Name"
@@ -1040,8 +1086,11 @@ export default function TestListTable() {
                 }}
               />
             </div>
+            {/* Academic Year */}
+            <AcademicYearSelect value={selectedYear} onChange={handleYearChange} includeAll minWidth={210} />
+
             {/* Date Range Picker */}
-            <div className="w-full lg:w-[280px]">
+            <div className="w-full lg:w-[220px]">
               <div
                 style={{
                   border: dateFocused ? "2px solid #2F4F4F" : "1px solid lightgrey",
@@ -1070,14 +1119,14 @@ export default function TestListTable() {
                     endDate={endDate}
                     shouldCloseOnSelect={false}
                     isClearable={false}
-                    onChange={(dates) => setDateRange(dates)}
+                    onChange={handleDateRangeChange}
                     placeholderText="Date Range"
                     dateFormat="dd/MM/yyyy"
                   />
                   {(startDate || endDate) && (
                     <span
                       className="datepicker-clear"
-                      onClick={() => setDateRange([null, null])}
+                      onClick={clearDateRange}
                       style={{
                         position: "absolute",
                         right: 10,
@@ -1125,16 +1174,6 @@ export default function TestListTable() {
             )}
           </div>
 
-          {/* Create Test Button */}
-          {userRole === "DISTRICT_OFFICER" && (
-            <div className="shrink-0">
-              <ButtonCustom
-                imageName={addSymbolBtn}
-                text={"Create Test"}
-                onClick={handleCreateTest}
-              />
-            </div>
-          )}
         </div>
 
         {/* Data Table */}

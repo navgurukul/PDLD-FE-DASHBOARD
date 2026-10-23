@@ -1,7 +1,7 @@
 //student profile page inside school flow
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { Typography, Box, Grid, Paper, Tabs, Tab, Button, Alert, FormControl, Select, MenuItem } from "@mui/material";
+import { Typography, Box, Grid, Paper, Tabs, Tab, Button, Alert, LinearProgress } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -13,13 +13,8 @@ import DownloadModal from "../../components/modal/DownloadModal";
 import apiInstance from "../../../api";
 import AcademicOverviewGraph from "../graph/AcademicOverviewGraph";
 import { Tooltip } from "@mui/material";
-import {
-  getAcademicYearStart,
-  getAcademicYearStarts,
-  formatAcademicYear,
-  toApiAcademicYear,
-  toDisplayAcademicYear,
-} from "../../utils/academicYear";
+import AcademicYearSelect from "../AcademicYearSelect";
+import { getAcademicYearStart, toApiAcademicYear, toDisplayAcademicYear } from "../../utils/academicYear";
 
 // Tab panel component
 function TabPanel(props) {
@@ -51,6 +46,8 @@ const StudentProfileView = () => {
   const [error, setError] = useState(null);
   // Academic year shown on the profile (start year, e.g. 2026 for 2026-27); defaults to the current one
   const [selectedYearStart, setSelectedYearStart] = useState(getAcademicYearStart());
+  // Year switches reload in place (the page stays visible) instead of the full-page spinner
+  const [isYearLoading, setIsYearLoading] = useState(false);
 
   // Download modal states
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
@@ -91,7 +88,9 @@ const StudentProfileView = () => {
 
   // Fetch student profile data
   const fetchStudentProfile = async () => {
-    setIsLoading(true);
+    const isYearSwitch = student?.id === studentId;
+    if (isYearSwitch) setIsYearLoading(true);
+    else setIsLoading(true);
     setError(null);
     try {
       // Get contextual school information from location state if available
@@ -141,6 +140,7 @@ const StudentProfileView = () => {
       setError("Error fetching student data: " + (error.message || "Unknown error"));
     } finally {
       setIsLoading(false);
+      setIsYearLoading(false);
     }
   };
 
@@ -941,32 +941,18 @@ const StudentProfileView = () => {
         {/* Show Academic Year and Download Report button based on tab */}
         {student.academic && (
           <div className="flex" style={{ flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-            <FormControl
-              size="small"
+            <Box
               sx={{
                 marginRight: { xs: 0, md: tabValue === 1 ? "16px" : 0 },
                 marginBottom: { xs: tabValue === 1 ? "8px" : 0, md: 0 },
               }}
             >
-              <Select
+              <AcademicYearSelect
                 value={selectedYearStart}
-                onChange={(e) => setSelectedYearStart(Number(e.target.value))}
-                renderValue={(value) => `Academic Year ${formatAcademicYear(value)}`}
-                inputProps={{ "aria-label": "Academic year" }}
-                sx={{
-                  bgcolor: theme.palette.secondary.light,
-                  borderRadius: "8px",
-                  height: "48px",
-                  "& .MuiOutlinedInput-notchedOutline": { border: "none" },
-                }}
-              >
-                {getAcademicYearStarts().map((startYear) => (
-                  <MenuItem key={startYear} value={startYear}>
-                    {formatAcademicYear(startYear)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                onChange={setSelectedYearStart}
+                disabled={isYearLoading}
+              />
+            </Box>
             {tabValue === 1 && (
               <ButtonCustom text={"Download Report"} onClick={handleDownloadClick} btnWidth={200} />
             )}
@@ -980,6 +966,7 @@ const StudentProfileView = () => {
           <Tab label="Overview" />
           <Tab label="Academics" />
         </Tabs>
+        {isYearLoading && <LinearProgress aria-label="Loading academic year" />}
       </Box>
 
       {/* Overview tab content */}

@@ -26,7 +26,14 @@ import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
 import mixpanel from '../utils/mixpanel';
-import { getCurrentAcademicYear } from "../utils/academicYear";
+import AcademicYearSelect from "../components/AcademicYearSelect";
+import {
+  getAcademicYearStart,
+  toApiAcademicYear,
+  toDisplayAcademicYear,
+  readStoredAcademicYear,
+  storeAcademicYear,
+} from "../utils/academicYear";
 
 // Utility function to convert text to title case
 const toTitleCase = (str) => {
@@ -174,7 +181,9 @@ const Reports = () => {
   const [selectedCluster, setSelectedCluster] = useState("");
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [selectedClassData, setSelectedClassData] = useState(null);
-  const [academicYear, setAcademicYear] = useState(getCurrentAcademicYear());
+  // Year the report covers (start year, 2026 = 2026-27); current by default, remembered for this tab
+  const [selectedYearStart, setSelectedYearStart] = useState(() => readStoredAcademicYear("schoolPerformance", getAcademicYearStart()));
+  const academicYear = toDisplayAcademicYear(String(selectedYearStart));
   const [subjects, setSubjects] = useState([]); // Dynamic subjects from API
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
   const subjectsFetched = useRef(false); // Track if subjects have been fetched
@@ -279,7 +288,13 @@ useEffect(() => {
   // Fetch schools data from API
   useEffect(() => {
     fetchSchoolsData();
-  }, [currentPage, selectedSubject, selectedBlock, selectedCluster, pageSize, debouncedSearchQuery]);
+  }, [currentPage, selectedSubject, selectedBlock, selectedCluster, pageSize, debouncedSearchQuery, selectedYearStart]);
+
+  const handleYearChange = (year) => {
+    setSelectedYearStart(year);
+    storeAcademicYear("schoolPerformance", year);
+    setCurrentPage(1);
+  };
 
   useEffect(() => {
     // Reset to first page when search query changes
@@ -296,7 +311,7 @@ useEffect(() => {
     
     try {
       // Updated to use dynamic pageSize
-      let url = `/report/subject-performance/${selectedSubject}?page=${currentPage}&pageSize=${pageSize}`;
+      let url = `/report/subject-performance/${selectedSubject}?page=${currentPage}&pageSize=${pageSize}&academicYear=${toApiAcademicYear(selectedYearStart)}`;
 
       // Add block and cluster filters if selected - updated parameter names
       if (selectedBlock) {
@@ -315,11 +330,10 @@ useEffect(() => {
       const response = await apiInstance.get(url);
 
       if (response.data.success) {
-        const { schools, pagination, academicYear } = response.data.data;
+        const { schools, pagination } = response.data.data;
         setReportData(schools);
         setTotalRecords(pagination.totalSchools);
         setTotalPages(pagination.totalPages);
-        if (academicYear) setAcademicYear(academicYear);
       } else {
         toast.error("Failed to fetch report data");
       }
@@ -671,7 +685,7 @@ useEffect(() => {
         // Fetch more data from API
         let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${
           count === totalRecords ? totalRecords : count
-        }`;
+        }&academicYear=${toApiAcademicYear(selectedYearStart)}`;
 
         // Important: Include the same filters as current view
         if (selectedBlock) {
@@ -1225,22 +1239,7 @@ useEffect(() => {
           </div>
 
           <Box sx={{ flexShrink: 0 }}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                bgcolor: theme.palette.secondary.light,
-                color: theme.palette.primary.main,
-                padding: "4px 16px",
-                borderRadius: "8px",
-                height: "48px",
-                display: "flex",
-                alignItems: "center",
-                whiteSpace: "nowrap",
-                minWidth: "fit-content"
-              }}
-            >
-              Academic Year {academicYear}
-            </Typography>
+            <AcademicYearSelect value={selectedYearStart} onChange={handleYearChange} disabled={isLoading} />
           </Box>
         </Box>
 
