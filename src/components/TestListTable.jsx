@@ -348,8 +348,9 @@ export default function TestListTable() {
         startDateFormatted = formatDate(startDate);
         endDateFormatted = formatDate(endDate);
       } else {
+        // No range picked: list every test, including ones scheduled up to the end of next year
         startDateFormatted = "01-02-2020";
-        endDateFormatted = "01-02-2026";
+        endDateFormatted = `31-12-${new Date().getFullYear() + 1}`;
       }
       let url = `/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
       if (selectedClass.length > 0) {

@@ -13,6 +13,7 @@ import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import DownloadModal from "../components/modal/DownloadModal";
 import apiInstance from "../../api";
+import { toDisplayAcademicYear } from "../utils/academicYear";
 
 const theme = createTheme({
   typography: {
@@ -759,7 +760,7 @@ export default function EnrollmentReport() {
         <div class="container">
           <div class="header">
             <h1>Student Enrollment Analytics</h1>
-            <div class="subtitle">Academic Year ${metadata.academicYear || new Date().getFullYear()}</div>
+            <div class="subtitle">Academic Year ${toDisplayAcademicYear(metadata.academicYear)}</div>
             <div class="date">Generated on: ${currentDate}</div>
             ${metadata.lastUpdatedOn ? `<div class="date">Last Updated: ${new Date(metadata.lastUpdatedOn).toLocaleString('en-IN', {
               year: 'numeric',
@@ -818,7 +819,7 @@ export default function EnrollmentReport() {
           
           <div class="footer">
             <p>This report is generated automatically from the Student Enrollment System</p>
-            <p>© ${metadata.academicYear || new Date().getFullYear()} Academic Performance Tracking System</p>
+            <p>© ${toDisplayAcademicYear(metadata.academicYear)} Academic Performance Tracking System</p>
           </div>
         </div>
       </body>
@@ -888,7 +889,7 @@ export default function EnrollmentReport() {
 
     // Header Information
     csvContent += `"Student Enrollment Analytics"\n`;
-    csvContent += `"Academic Year ${metadata.academicYear || new Date().getFullYear()}"\n`;
+    csvContent += `"Academic Year ${toDisplayAcademicYear(metadata.academicYear)}"\n`;
     csvContent += `"Generated on: ${currentDate}"\n`;
     if (metadata.lastUpdatedOn) {
       csvContent += `"Last Updated: ${new Date(metadata.lastUpdatedOn).toLocaleString('en-IN', {
@@ -977,7 +978,7 @@ export default function EnrollmentReport() {
               </p>
               {metadata.academicYear && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Academic Year: {metadata.academicYear} | Report Type: {metadata.reportType || selectedGrouping}
+                  Academic Year: {toDisplayAcademicYear(metadata.academicYear)} | Report Type: {metadata.reportType || selectedGrouping}
                   {metadata.lastUpdatedOn && (
                     <span className="ml-2">
                       | Last Updated: {new Date(metadata.lastUpdatedOn).toLocaleString('en-IN', {

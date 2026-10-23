@@ -21,6 +21,7 @@ import StudentDetails from "./StudentDetails";
 import SchoolReport from "../components/school/SchoolReport";
 import ButtonCustom from "./ButtonCustom";
 import { useTheme } from "@mui/material/styles";
+import { getCurrentAcademicYear } from "../utils/academicYear";
 
 const theme = createTheme({
   typography: {
@@ -255,7 +256,7 @@ export default function SchoolDetailView() {
                 width: { xs: "100%", md: "auto" },
               }}
             >
-              Academic Year {academicYear || school.academicYear || "2025-26"}
+              Academic Year {academicYear || school.academicYear || getCurrentAcademicYear()}
             </Typography>
           </Box>
         </Box>

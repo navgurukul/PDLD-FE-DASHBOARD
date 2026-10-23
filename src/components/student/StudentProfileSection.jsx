@@ -1,7 +1,7 @@
 //student profile page inside school flow
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { Typography, Box, Grid, Paper, Tabs, Tab, Button, Alert } from "@mui/material";
+import { Typography, Box, Grid, Paper, Tabs, Tab, Button, Alert, FormControl, Select, MenuItem } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -13,6 +13,13 @@ import DownloadModal from "../../components/modal/DownloadModal";
 import apiInstance from "../../../api";
 import AcademicOverviewGraph from "../graph/AcademicOverviewGraph";
 import { Tooltip } from "@mui/material";
+import {
+  getAcademicYearStart,
+  getAcademicYearStarts,
+  formatAcademicYear,
+  toApiAcademicYear,
+  toDisplayAcademicYear,
+} from "../../utils/academicYear";
 
 // Tab panel component
 function TabPanel(props) {
@@ -42,6 +49,8 @@ const StudentProfileView = () => {
   const [schoolName, setSchoolName] = useState("");
   const [udiseCode, setUdiseCode] = useState("");
   const [error, setError] = useState(null);
+  // Academic year shown on the profile (start year, e.g. 2026 for 2026-27); defaults to the current one
+  const [selectedYearStart, setSelectedYearStart] = useState(getAcademicYearStart());
 
   // Download modal states
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
@@ -92,7 +101,9 @@ const StudentProfileView = () => {
       }
 
       // Fetch student profile data using the API
-      const response = await apiInstance.get(`/student/profile/${studentId}`);
+      const response = await apiInstance.get(
+        `/student/profile/${studentId}?year=${toApiAcademicYear(selectedYearStart)}`
+      );
 
       if (response.data && response.data.success) {
         const profileData = response.data.data;
@@ -108,7 +119,7 @@ const StudentProfileView = () => {
           gender: profileData.gender,
           class: profileData.class,
           // Include academic data if available
-          academic: profileData.academic || { year: "2025-2026", months: [] },
+          academic: profileData.academic || { year: toApiAcademicYear(selectedYearStart), months: [] },
           // Any missing fields that the UI might expect
           aparId: profileData.aparId || "N/A",
           aadharId: profileData.aadharId || "N/A",
@@ -140,7 +151,7 @@ const StudentProfileView = () => {
       setIsLoading(false);
       setError("No student ID provided. Unable to fetch student information.");
     }
-  }, [studentId]); // Re-fetch when studentId changes
+  }, [studentId, selectedYearStart]); // Re-fetch when the student or the selected year changes
 
   useEffect(() => {
     if (student?.fullName) {
@@ -320,7 +331,7 @@ const StudentProfileView = () => {
     csvContent += `Father's Name,${student.fatherName || "N/A"}\n`;
     csvContent += `Mother's Name,${student.motherName || "N/A"}\n`;
     csvContent += `Date of Birth,${formatDate(student.dob)}\n`;
-    csvContent += `Academic Year,${student.academic?.year || "2024-25"}\n\n`;
+    csvContent += `Academic Year,${toDisplayAcademicYear(student.academic?.year)}\n\n`;
 
     // Handle different report types
     const includeAggregate = reportType === "aggregate" || reportType === "comprehensive" || reportType === "aggregate+remedial";
@@ -784,14 +795,14 @@ const StudentProfileView = () => {
             <h3>Report Summary</h3>
             <div class="summary-grid">
               <div class="summary-item"><strong>Report Type:</strong>${reportTypeText}</div>
-              <div class="summary-item"><strong>Academic Year:</strong>${student.academic?.year || "2024-25"}</div>
+              <div class="summary-item"><strong>Academic Year:</strong>${toDisplayAcademicYear(student.academic?.year)}</div>
               <div class="summary-item"><strong>Generated:</strong>${currentDate}</div>
             </div>
           </div>
           
           <div class="footer">
             <p>This report is generated automatically from the School Performance System</p>
-            <p>© ${student.academic?.year || "2024-25"} Academic Performance Tracking System</p>
+            <p>© ${toDisplayAcademicYear(student.academic?.year)} Academic Performance Tracking System</p>
           </div>
         </div>
       </body>
@@ -930,22 +941,32 @@ const StudentProfileView = () => {
         {/* Show Academic Year and Download Report button based on tab */}
         {student.academic && (
           <div className="flex" style={{ flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-            <Typography
-              variant="subtitle1"
+            <FormControl
+              size="small"
               sx={{
-                bgcolor: theme.palette.secondary.light,
-                color: theme.palette.primary,
-                padding: "4px 16px",
-                borderRadius: "8px",
-                height: "48px",
-                display: "flex",
-                alignItems: "center",
                 marginRight: { xs: 0, md: tabValue === 1 ? "16px" : 0 },
-                marginBottom: { xs: tabValue === 1 ? "8px" : 0, md: 0 }
+                marginBottom: { xs: tabValue === 1 ? "8px" : 0, md: 0 },
               }}
             >
-              Academic Year {student.academic.year || "2024-25"}
-            </Typography>
+              <Select
+                value={selectedYearStart}
+                onChange={(e) => setSelectedYearStart(Number(e.target.value))}
+                renderValue={(value) => `Academic Year ${formatAcademicYear(value)}`}
+                inputProps={{ "aria-label": "Academic year" }}
+                sx={{
+                  bgcolor: theme.palette.secondary.light,
+                  borderRadius: "8px",
+                  height: "48px",
+                  "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+                }}
+              >
+                {getAcademicYearStarts().map((startYear) => (
+                  <MenuItem key={startYear} value={startYear}>
+                    {formatAcademicYear(startYear)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             {tabValue === 1 && (
               <ButtonCustom text={"Download Report"} onClick={handleDownloadClick} btnWidth={200} />
             )}

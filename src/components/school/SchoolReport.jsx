@@ -10,6 +10,7 @@ import ButtonCustom from "../../components/ButtonCustom";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import DownloadModal from "../../components/modal/DownloadModal"; // Import the download modal
 import api from "../../../api";
+import { getCurrentAcademicYear } from "../../utils/academicYear";
 
 // Internal styles
 const styles = {
@@ -330,7 +331,7 @@ export default function SchoolReport({ schoolName }) {
     csvContent = `School:,${schoolData?.schoolName || schoolName || "N/A"}\n`;
     csvContent += `UDISE Code:,${schoolData?.udiseCode || "N/A"}\n`;
     csvContent += `Academic Year:,${
-      schoolData?.academicYear || academicYear || "N/A"
+      schoolData?.academicYear || academicYear || getCurrentAcademicYear()
     }\n`;
     csvContent += `Class:,${
       selectedClass === "" ? "All Classes" : selectedClass
@@ -737,7 +738,7 @@ export default function SchoolReport({ schoolName }) {
             schoolData?.udiseCode || "N/A"
           }</div>
           <div class="info-item"><strong>Academic Year:</strong> ${
-            schoolData?.academicYear || academicYear || "N/A"
+            schoolData?.academicYear || academicYear || getCurrentAcademicYear()
           }</div>
           <div class="info-item"><strong>Class:</strong> ${
             selectedClass === "" ? "All Classes" : selectedClass
@@ -755,7 +756,7 @@ export default function SchoolReport({ schoolName }) {
         <div class="footer">
           <p>This report is generated automatically from the School Performance System</p>
           <p>© ${
-            academicYear || "2024-25"
+            academicYear || getCurrentAcademicYear()
           } Academic Performance Tracking System</p>
         </div>
       </div>

@@ -26,6 +26,7 @@ import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
 import mixpanel from '../utils/mixpanel';
+import { getCurrentAcademicYear } from "../utils/academicYear";
 
 // Utility function to convert text to title case
 const toTitleCase = (str) => {
@@ -173,7 +174,7 @@ const Reports = () => {
   const [selectedCluster, setSelectedCluster] = useState("");
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [selectedClassData, setSelectedClassData] = useState(null);
-  const [academicYear, setAcademicYear] = useState("2024-25");
+  const [academicYear, setAcademicYear] = useState(getCurrentAcademicYear());
   const [subjects, setSubjects] = useState([]); // Dynamic subjects from API
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
   const subjectsFetched = useRef(false); // Track if subjects have been fetched

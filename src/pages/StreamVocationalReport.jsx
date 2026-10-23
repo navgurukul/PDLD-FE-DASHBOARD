@@ -13,6 +13,7 @@ import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import DownloadModal from "../components/modal/DownloadModal";
 import apiInstance from "../../api";
 import mixpanel from '../utils/mixpanel';
+import { getCurrentAcademicYear } from "../utils/academicYear";
 
 const theme = createTheme({
     typography: {
@@ -166,7 +167,7 @@ export default function StreamVocationalReport() {
                     setData(mappedStudents);
                     setMetadata({
                         reportType: "Stream & Vocational Tracking",
-                        academicYear: "2024-25",
+                        academicYear: getCurrentAcademicYear(),
                         lastUpdatedOn: response.data.timestamp,
                         ...summary
                     });
@@ -884,7 +885,7 @@ export default function StreamVocationalReport() {
         <div class="container">
           <div class="header">
             <h1>Stream & Vocational Report</h1>
-            <p class="subtitle">Academic Year: ${metadata.academicYear || "2024-25"}</p>
+            <p class="subtitle">Academic Year: ${metadata.academicYear || getCurrentAcademicYear()}</p>
             <p class="date">Generated on: ${currentDate}</p>
           </div>
           
@@ -952,7 +953,7 @@ export default function StreamVocationalReport() {
           </div>
           
           <div class="footer">
-            <p>© 2024-25 PDLD Dashboard - Stream & Vocational Tracking Report</p>
+            <p>© ${metadata.academicYear || getCurrentAcademicYear()} PDLD Dashboard - Stream & Vocational Tracking Report</p>
             <p>This report is generated electronically and contains confidential information.</p>
           </div>
         </div>
