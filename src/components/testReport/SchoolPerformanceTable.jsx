@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 
 import {
   Button,
@@ -23,6 +23,7 @@ import DoneIcon from "@mui/icons-material/Done";
 import PendingIcon from "@mui/icons-material/Pending";
 import { FileText } from "lucide-react";
 import apiInstance from "../../../api";
+import { useLatestRequest, isCancelledRequest } from "../../customHook/useLatestRequest";
 import axios from "axios"; // Keep axios as fallback
 import { useParams, useLocation, Navigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
@@ -384,7 +385,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     return "-";
   };
 
+  const startRequest = useLatestRequest();
+
   const fetchData = async (page = 1, size = pageSize, selectedLevel = level, searchValue = searchQuery.trim(), selectedStatus = statusFilter) => {
+    const request = startRequest();
+    setError(null);
     // Use different loading states for search vs regular data loading
     const isSearching = searchValue && searchValue.trim() !== "";
     if (isSearching) {
@@ -411,8 +416,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       }
 
       const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
-        params: searchParams
+        params: searchParams,
+        signal: request.signal
       });
+      if (!request.isLatest()) return;
       if (response.data && response.data.success) {
         // Handle different response structure based on level
         let apiSchools, totalSubmittedSchools, totalpendingSchools, totalEligibleSchools, pagination, maxScore, testSubject;
@@ -508,31 +515,33 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         setError("Failed to load data");
       }
     } catch (error) {
+      if (isCancelledRequest(error) || !request.isLatest()) return;
       // Error handling is implemented via setError state
       setError(error.response?.data?.message || "An error occurred while fetching data");
     } finally {
-      setLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
   // Handle search functionality with debouncing
   const debouncedSearchQuery = useDebounce(searchQuery, 500); // Debounce search for 500ms
-  
-  // Reset page when filters change (search, status, or level)
+
+  // One request per change: a search, status or level change goes back to page 1 first (and
+  // loads there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([currentTestId, debouncedSearchQuery.trim(), statusFilter, level]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearchQuery, statusFilter, level]);
-  
-  useEffect(() => {
-    if (searchQuery && debouncedSearchQuery !== searchQuery) {
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1);
       return;
     }
-
-    const effectiveSearchQuery = searchQuery ? debouncedSearchQuery : "";
-    
-    fetchData( currentPage, pageSize, level,  effectiveSearchQuery,  statusFilter  );
-  }, [ currentTestId,currentPage, pageSize, level, debouncedSearchQuery,  statusFilter, searchQuery  ]);
+    fetchData(currentPage, pageSize, level, debouncedSearchQuery.trim(), statusFilter);
+  }, [filterKey, currentPage, pageSize]);
 
   // No frontend filtering needed - all filtering is now done on the server
   const filteredSchools = useMemo(() => {
@@ -555,16 +564,20 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       } else {
         // For "all", fetch all data from API
         try {
-          // Build search parameters for download
+          // Every row with the same filters as the table (download mode is not capped by page size)
           const downloadParams = {
-            page: 1,
-            pageSize: totalSchools, // Fetch all records
+            mode: "download",
             level: level // Include level parameter
           };
 
           // Include search query if present
-          if (searchQuery.trim()) {
-            downloadParams.query = searchQuery.trim();
+          if (debouncedSearchQuery.trim()) {
+            downloadParams.query = debouncedSearchQuery.trim();
+          }
+
+          // Same status filter as the table (school level only)
+          if (level === "school" && statusFilter) {
+            downloadParams.status = statusFilter;
           }
 
           const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
