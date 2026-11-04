@@ -723,6 +723,7 @@ const TestCreationForm = () => {
           mixpanel.track('Test Created', eventData);
         }
         toast.success(editMode ? "Test Updated Successfully" : "Test Created Successfully");
+<<<<<<< HEAD
         const change = response.data.data?.maxScoreChange;
         if (change) {
           toast.info(

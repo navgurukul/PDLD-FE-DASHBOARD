@@ -62,6 +62,8 @@ export default function LoginForm({ onLogin }) {
 	const navigate = useNavigate();
 	const { login } = useContext(AuthContext);
 	const [showPassword, setShowPassword] = useState(false);
+	// "officer": username login; "school": a headmaster signs in with the school's UDISE code
+	const [mode, setMode] = useState("officer");
 
 	const [formData, setFormData] = useState({
 		username: "",
@@ -85,7 +87,7 @@ export default function LoginForm({ onLogin }) {
 		const newErrors = {};
 
 		if (!formData.username.trim()) {
-			newErrors.username = "Username is required";
+			newErrors.username = mode === "school" ? "UDISE code is required" : "Username is required";
 		}
 
 		if (!formData.password) {
@@ -104,6 +106,40 @@ export default function LoginForm({ onLogin }) {
 		}
 
 		setIsLoading(true);
+
+		if (mode === "school") {
+			try {
+				const response = await apiInstance.post("/auth/school-login", {
+					udiseCode: formData.username.trim(),
+					password: formData.password,
+				});
+				const { token, data: school } = response.data.data;
+				const userData = {
+					role: "SCHOOL",
+					schoolId: school.id,
+					schoolName: school.schoolName,
+					udiseCode: school.udiseCode,
+					name: school.schoolName,
+				};
+				localStorage.setItem("userData", JSON.stringify(userData));
+				try {
+					mixpanel.track("Login", { role: "SCHOOL", udiseCode: school.udiseCode, loginTime: new Date().toISOString() });
+				} catch {
+					// analytics must not block sign-in
+				}
+				login(token, userData);
+				navigate("/my-school");
+			} catch (error) {
+				if (error.response && error.response.status === 401) {
+					setErrors({ general: "Wrong UDISE code or password. Please try again." });
+				} else {
+					setErrors({ general: "Connection error. Please try again later." });
+				}
+			} finally {
+				setIsLoading(false);
+			}
+			return;
+		}
 
 		try {
 			// Call your authentication API here
@@ -220,6 +256,27 @@ export default function LoginForm({ onLogin }) {
 						Enter your credentials to access your account
 					</Typography>
 
+					<div
+						role="group"
+						aria-label="Sign in as"
+						style={{ display: "grid", gridTemplateColumns: "1fr 1fr", background: "#EFF3F9", borderRadius: 10, padding: 4, marginBottom: 20 }}
+					>
+						{[["officer", "Officer"], ["school", "School (headmaster)"]].map(([key, label]) => (
+							<button
+								key={key}
+								type="button"
+								aria-pressed={mode === key}
+								onClick={() => { setMode(key); setErrors({}); }}
+								style={{
+									minHeight: 44, border: "none", borderRadius: 8, cursor: "pointer", font: "inherit", fontWeight: mode === key ? 700 : 500,
+									background: mode === key ? "#2F4F4F" : "transparent", color: mode === key ? "#ffffff" : "#2F4F4F",
+								}}
+							>
+								{label}
+							</button>
+						))}
+					</div>
+
 					<form onSubmit={handleSubmit}>
 						<Box sx={{ mb: 2, position: "relative" }}>
 							<Typography
@@ -231,7 +288,7 @@ export default function LoginForm({ onLogin }) {
 									fontWeight: 500,
 								}}
 							>
-								Username*
+								{mode === "school" ? "School UDISE code*" : "Username*"}
 							</Typography>
 							<TextField
 								id="username"
@@ -240,7 +297,8 @@ export default function LoginForm({ onLogin }) {
 								onChange={handleInputChange}
 								fullWidth
 								variant="outlined"
-								placeholder="Enter your username"
+								placeholder={mode === "school" ? "11-digit UDISE code" : "Enter your username"}
+								inputMode={mode === "school" ? "numeric" : undefined}
 								error={!!errors.username}
 								helperText={errors.username}
 								InputProps={{
