@@ -725,11 +725,18 @@ const TestCreationForm = () => {
         toast.success(editMode ? "Test Updated Successfully" : "Test Created Successfully");
         const change = response.data.data?.maxScoreChange;
         if (change) {
+          const what = change.from !== change.to ? `Max score changed from ${change.from} to ${change.to}: ` : "";
           toast.info(
-            `Max score changed from ${change.from} to ${change.to}: ${change.schoolsRecalculated} school results recalculated` +
-              (change.marksAboveMax ? `. ${change.marksAboveMax} marks in ${change.schoolsWithMarksAboveMax} schools are above ${change.to}; those schools need to correct them.` : "."),
+            `${what}${change.schoolsRecalculated} school results recalculated out of ${change.to}.` +
+              (change.marksAboveMax ? ` ${change.marksAboveMax} marks in ${change.schoolsWithMarksAboveMax} schools are above ${change.to}; those schools need to correct them.` : ""),
             { autoClose: 10000 }
           );
+          if (change.failed > 0) {
+            toast.warning(`${change.failed} school results could not be updated just now. Open the test and save again to finish.`, { autoClose: false });
+          }
+          if (change.superseded) {
+            toast.warning("The max score was changed again by someone else while saving; their change is the one in effect.", { autoClose: false });
+          }
         }
         navigate("/allTest", {
           state: {
