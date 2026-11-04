@@ -14,6 +14,7 @@ const ModalSummary = ({
   modalTitle,
   isSubmitting, // Add isSubmitting prop
   testNames,
+  notice, // optional warning shown above the buttons
 }) => {
   if (!isOpen) return null;
 
@@ -216,6 +217,12 @@ const ModalSummary = ({
             </div>
           ))}
         </div>
+
+        {notice && (
+          <div role="alert" className="mt-5 p-3 rounded-md text-sm" style={{ background: "#FFEFD6", color: "#7a5418", border: "1px solid #FFAD33" }}>
+            {notice}
+          </div>
+        )}
 
         {/* Footer Actions */}
         <div className="mt-6 flex justify-end gap-4">

@@ -607,6 +607,16 @@ const TestCreationForm = () => {
     return formData.testTag;
   };
 
+  // Officers who can edit a test may change a class test's max score even after schools have
+  // entered marks (the API then re-works out each school's totals); other fields stay locked
+  const canEditMaxScore = canEditAllFields || (editMode && formData.testType === "syllabus");
+  const editedClass = Object.keys(selectedClasses)[0];
+  const newMaxScore = Number(maxScores[editedClass]);
+  const maxScoreChanged = editMode && formData.testType === "syllabus" && !!newMaxScore && newMaxScore !== Number(testData?.maxScore);
+  const maxScoreNotice = maxScoreChanged && submissionCount > 0
+    ? `${submissionCount} school${submissionCount === 1 ? " has" : "s have"} already entered marks out of ${testData?.maxScore}. Their pass marks, pass rates and grades will be worked out again out of ${newMaxScore}. Marks are not changed: any mark above ${newMaxScore} will need correcting by the school.`
+    : null;
+
   // API call to create or update test
   const handleCreateTest = async () => {
     setIsSubmitting(true);
@@ -627,6 +637,8 @@ const TestCreationForm = () => {
             // testTag: getFormattedTestTag(),
             deadline: firstSubjectRow.submissionDeadline,
           };
+          // The max score can still change (class tests); the API re-works out schools' totals
+          if (maxScoreChanged) payload.maxScore = newMaxScore;
         } else {
           // If can edit all fields (no submissions + future test), send all fields
           payload = {
@@ -711,7 +723,15 @@ const TestCreationForm = () => {
           mixpanel.track('Test Created', eventData);
         }
         toast.success(editMode ? "Test Updated Successfully" : "Test Created Successfully");
-        navigate("/", {
+        const change = response.data.data?.maxScoreChange;
+        if (change) {
+          toast.info(
+            `Max score changed from ${change.from} to ${change.to}: ${change.schoolsRecalculated} school results recalculated` +
+              (change.marksAboveMax ? `. ${change.marksAboveMax} marks in ${change.schoolsWithMarksAboveMax} schools are above ${change.to}; those schools need to correct them.` : "."),
+            { autoClose: 10000 }
+          );
+        }
+        navigate("/allTest", {
           state: {
             successMessage: editMode ? "Test Updated Successfully" : "Test Created Successfully",
           },
@@ -1456,13 +1476,13 @@ const TestCreationForm = () => {
                   <input
                     type="number"
                     id={`max_score_${getClassId(className)}`}
-                    className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${!canEditAllFields ? "bg-gray-100 cursor-not-allowed" : ""
+                    className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${!canEditMaxScore ? "bg-gray-100 cursor-not-allowed" : ""
                       }`}
                     placeholder={`e.g., ${maxScoreLimit(className)}`}
                     max={maxScoreLimit(className)}
                     value={maxScores[className] || ""}
-                    onChange={(e) => canEditAllFields && handleMaxScoreChange(className, e.target.value)}
-                    disabled={!canEditAllFields}
+                    onChange={(e) => canEditMaxScore && handleMaxScoreChange(className, e.target.value)}
+                    disabled={!canEditMaxScore}
                     required
                   />
                   <div className="mt-1">
@@ -1765,6 +1785,7 @@ const TestCreationForm = () => {
         {...prepareSummaryData()}
         handleConfirm={handleModalConfirm}
         modalTitle={editMode ? "Test Update Summary" : "Confirm Test Creation"}
+        notice={maxScoreNotice}
         isSubmitting={isSubmitting} // Pass the isSubmitting state to the modal
       />
 
