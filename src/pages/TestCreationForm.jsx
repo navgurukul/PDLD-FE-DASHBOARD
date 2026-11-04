@@ -707,7 +707,7 @@ const TestCreationForm = () => {
           mixpanel.track('Test Created', eventData);
         }
         toast.success(editMode ? "Test Updated Successfully" : "Test Created Successfully");
-        navigate("/", {
+        navigate("/allTest", {
           state: {
             successMessage: editMode ? "Test Updated Successfully" : "Test Created Successfully",
           },
