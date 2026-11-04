@@ -22,6 +22,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import apiInstance from "../../api"; // Updated import path
+import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
@@ -285,10 +286,19 @@ useEffect(() => {
     fetchSubjects();
   }, []);
 
-  // Fetch schools data from API
+  // One request per change: a subject, year, filter or search change goes back to page 1 first
+  // (and loads there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([selectedSubject, selectedBlock, selectedCluster, debouncedSearchQuery.trim(), selectedYearStart]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1);
+      return;
+    }
     fetchSchoolsData();
-  }, [currentPage, selectedSubject, selectedBlock, selectedCluster, pageSize, debouncedSearchQuery, selectedYearStart]);
+  }, [filterKey, currentPage, pageSize]);
 
   const handleYearChange = (year) => {
     setSelectedYearStart(year);
@@ -296,12 +306,10 @@ useEffect(() => {
     setCurrentPage(1);
   };
 
-  useEffect(() => {
-    // Reset to first page when search query changes
-    setCurrentPage(1);
-  }, [searchQuery]);
+  const startRequest = useLatestRequest();
 
   const fetchSchoolsData = async () => {
+    const request = startRequest();
     // Set appropriate loading state based on search
     if (debouncedSearchQuery) {
       setIsSearchLoading(true);
@@ -315,19 +323,20 @@ useEffect(() => {
 
       // Add block and cluster filters if selected - updated parameter names
       if (selectedBlock) {
-        url += `&blockName=${selectedBlock}`;
+        url += `&blockName=${encodeURIComponent(selectedBlock)}`;
       }
 
       if (selectedCluster) {
-        url += `&clusterName=${selectedCluster}`;
+        url += `&clusterName=${encodeURIComponent(selectedCluster)}`;
       }
 
       // Add search query parameter
-      if (debouncedSearchQuery) {
-        url += `&query=${encodeURIComponent(debouncedSearchQuery)}`;
+      if (debouncedSearchQuery.trim()) {
+        url += `&query=${encodeURIComponent(debouncedSearchQuery.trim())}`;
       }
 
-      const response = await apiInstance.get(url);
+      const response = await apiInstance.get(url, { signal: request.signal });
+      if (!request.isLatest()) return;
 
       if (response.data.success) {
         const { schools, pagination } = response.data.data;
@@ -335,14 +344,22 @@ useEffect(() => {
         setTotalRecords(pagination.totalSchools);
         setTotalPages(pagination.totalPages);
       } else {
+        setReportData([]);
+        setTotalRecords(0);
         toast.error("Failed to fetch report data");
       }
     } catch (error) {
+      if (isCancelledRequest(error) || !request.isLatest()) return;
       console.error("Error fetching data:", error);
+      // Don't leave the previous filter's rows on screen as if they were the answer
+      setReportData([]);
+      setTotalRecords(0);
       toast.error("An error occurred while fetching the report data");
     } finally {
-      setIsLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setIsLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
@@ -683,28 +700,27 @@ useEffect(() => {
       } else {
         // For non-current options, fetch from API with proper parameters
         // Fetch more data from API
-        let url = `/report/subject-performance/${encodeURIComponent(selectedSubject)}?page=1&pageSize=${
-          count === totalRecords ? totalRecords : count
-        }&academicYear=${toApiAcademicYear(selectedYearStart)}`;
+        // Download mode returns every matching school (a page is capped at 100); trimmed to the
+        // chosen count below
+        let url = `/report/subject-performance/${encodeURIComponent(selectedSubject)}?mode=download&academicYear=${toApiAcademicYear(selectedYearStart)}`;
 
         // Important: Include the same filters as current view
         if (selectedBlock) {
-          url += `&blockName=${selectedBlock}`;
+          url += `&blockName=${encodeURIComponent(selectedBlock)}`;
         }
         if (selectedCluster) {
-          url += `&clusterName=${selectedCluster}`;
+          url += `&clusterName=${encodeURIComponent(selectedCluster)}`;
         }
-        if (debouncedSearchQuery) {
-          url += `&query=${encodeURIComponent(debouncedSearchQuery)}`;
+        if (debouncedSearchQuery.trim()) {
+          url += `&query=${encodeURIComponent(debouncedSearchQuery.trim())}`;
         }
 
         const response = await apiInstance.get(url);
         if (response.data.success) {
           const apiData = response.data.data.schools;
           
-          // Additional safety check for API response
-          if (apiData.length > count && count !== totalRecords) {
-            // Slice to exact count if API returned more than expected
+          // Keep only the number of schools asked for
+          if (apiData.length > count) {
             apiData.splice(count);
           }
           dataToDownload = apiData.map((school) => {

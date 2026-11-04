@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useDebounce } from "../customHook/useDebounce";
 import MUIDataTable from "mui-datatables";
 import { Button, TextField, CircularProgress, FormControl, InputLabel, MenuItem, Select, Tooltip, Typography } from "@mui/material";
@@ -13,6 +13,7 @@ import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import DownloadModal from "../components/modal/DownloadModal";
 import apiInstance from "../../api";
+import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import { toDisplayAcademicYear } from "../utils/academicYear";
 
 const theme = createTheme({
@@ -129,7 +130,10 @@ export default function EnrollmentReport() {
   };
 
   // Fetch enrollment data from API
+  const startRequest = useLatestRequest();
+
   const fetchEnrollmentData = async () => {
+    const request = startRequest();
     // Set appropriate loading state based on search
     if (debouncedSearchQuery) {
       setIsSearchLoading(true);
@@ -145,35 +149,17 @@ export default function EnrollmentReport() {
         sortBy: "totalStudents"
       });
 
-      // Smart parameter handling - detect search intent and use appropriate parameter
+      // The server matches the text against the names at the chosen level (block, cluster, school)
       if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
-        const searchLower = debouncedSearchQuery.toLowerCase().trim();
-        
-        // Check if search matches any block (case-insensitive, partial match)
-        const matchingBlock = blocks.find(block => 
-          block.toLowerCase().includes(searchLower)
-        );
-        
-        // Check if search matches any cluster (case-insensitive, partial match)
-        const matchingCluster = clusters.find(cluster => 
-          cluster.toLowerCase().includes(searchLower)
-        );
-        
-        // Use specific parameter based on what was found
-        if (matchingBlock) {
-          params.append("block", matchingBlock);
-        } else if (matchingCluster) {
-          params.append("cluster", matchingCluster);
-        } else {
-          params.append("query", debouncedSearchQuery);
-        }
+        params.append("query", debouncedSearchQuery.trim());
       }
 
       // Add dropdown-selected filters (these work independently of search)
       if (selectedBlock) params.append("block", selectedBlock);
       if (selectedCluster) params.append("cluster", selectedCluster);
 
-      const response = await apiInstance.get(`/report/enrollment?${params.toString()}`);
+      const response = await apiInstance.get(`/report/enrollment?${params.toString()}`, { signal: request.signal });
+      if (!request.isLatest()) return;
       
       if (response.data.success) {
         const responseData = response.data.data;
@@ -202,13 +188,16 @@ export default function EnrollmentReport() {
         setMetadata({});
       }
     } catch (error) {
+      if (isCancelledRequest(error) || !request.isLatest()) return;
       console.error("Error fetching enrollment data:", error);
       toast.error("Failed to fetch enrollment data. Please try again.");
       setData([]);
       setMetadata({});
     } finally {
-      setIsLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setIsLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
@@ -246,21 +235,19 @@ export default function EnrollmentReport() {
     fetchGlobalBlocksAndClusters();
   }, []);
 
+  // One request per change: a search, filter or level change goes back to page 1 first (and
+  // loads there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([debouncedSearchQuery.trim(), selectedBlock, selectedCluster, selectedGrouping, selectedClassGroup]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && pagination.currentPage !== 1) {
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
+      return;
+    }
     fetchEnrollmentData();
-  }, [
-    debouncedSearchQuery, 
-    pagination.currentPage, 
-    pagination.pageSize, 
-    selectedBlock, 
-    selectedCluster, 
-    selectedGrouping
-  ]);
-
-  useEffect(() => {
-    // Reset to first page when filters or class group changes
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-  }, [selectedClassGroup, selectedBlock, selectedCluster, searchQuery, selectedGrouping]);
+  }, [filterKey, pagination.currentPage, pagination.pageSize]);
 
   useEffect(() => {
     // Clear cluster filter when level changes to "block"
@@ -423,28 +410,9 @@ export default function EnrollmentReport() {
           params.append("pageSize", Math.min(count, 100).toString()); // Cap pageSize at 100
         }
 
-        // Important: Include the same filters as current view using smart parameter detection
+        // Important: Include the same filters as current view
         if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
-          const searchLower = debouncedSearchQuery.toLowerCase().trim();
-          
-          // Check if search matches any block (case-insensitive, partial match)
-          const matchingBlock = blocks.find(block => 
-            block.toLowerCase().includes(searchLower)
-          );
-          
-          // Check if search matches any cluster (case-insensitive, partial match) 
-          const matchingCluster = clusters.find(cluster => 
-            cluster.toLowerCase().includes(searchLower)
-          );
-          
-          // Use specific parameter based on what was found
-          if (matchingBlock) {
-            params.append("block", matchingBlock);
-          } else if (matchingCluster) {
-            params.append("cluster", matchingCluster);
-          } else {
-            params.append("query", debouncedSearchQuery);
-          }
+          params.append("query", debouncedSearchQuery.trim());
         }
         
         // Add dropdown-selected filters

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import notificationsIcon from "../assets/notifications.svg";
-import pdldLogo from "../assets/pdld-logo.webp";
+import pdldLogo from "../assets/pdld-badge.svg";
 import { Link } from "react-router-dom";
 import useAuth, { getUserName } from "../customHook/useAuth";
 
@@ -49,13 +49,14 @@ const Header = () => {
 
   return (
     <header className="w-full fixed z-10000 bg-white shadow-md p-4 flex justify-between items-center">
-      <Link to="/">
+      <Link to="/allTest">
         <img
           src={pdldLogo}
-          alt="pdldLogo"
+          alt="PDLD dashboard home"
           style={{
-            width: "100px",
-            height: "35px",
+            width: "40px",
+            height: "40px",
+            borderRadius: "9px",
             objectFit: "contain",
             cursor: "pointer",
           }}

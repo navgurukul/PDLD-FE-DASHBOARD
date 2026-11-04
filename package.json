@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seed:learning-progress": "node scripts/fetch-learning-progress-seed.mjs",
+    "prebuild": "node scripts/fetch-learning-progress-seed.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -20,6 +22,7 @@
     "@tailwindcss/vite": "^4.0.7",
     "axios": "^1.8.1",
     "dayjs": "^1.11.13",
+    "exceljs": "^4.4.0",
     "lucide-react": "^0.477.0",
     "mixpanel-browser": "^2.70.0",
     "mui-datatables": "^4.3.0",

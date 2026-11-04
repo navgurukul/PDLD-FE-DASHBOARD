@@ -25,6 +25,7 @@ const Breadcrumb = () => {
     reports: "Reports",
     SchoolPerformanceReports: "School Performance Reports",
     EnrollmentReports: "Enrollment Reports",
+    "learning-progress": "Learning Progress",
     allTest: "Tests", // made changes
     testCreationForm: "Create Test",
     edit: "Edit Test", // made changes

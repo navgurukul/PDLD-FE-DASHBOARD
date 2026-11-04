@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDebounce } from "../customHook/useDebounce";
 import QRCode from "react-qr-code";
 import MUIDataTable from "mui-datatables";
@@ -27,6 +27,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import apiInstance from "../../api";
+import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
@@ -279,8 +280,11 @@ export default function Users() {
   };
 
   // Updated fetchData function with global search implementation
+  const startRequest = useLatestRequest();
+
   const fetchData = async () => {
     const isSearching = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
+    const request = startRequest();
     
     // Use different loading states for search vs other operations
     if (isSearching) {
@@ -313,7 +317,8 @@ export default function Users() {
         url = `/users?page=${currentPage}&pageSize=${pageSize}`;
       }
 
-      const response = await apiInstance.get(url);
+      const response = await apiInstance.get(url, { signal: request.signal });
+      if (!request.isLatest()) return;
 
       if (response.data?.success && response.data?.data) {
         // Extract users array from response
@@ -330,21 +335,38 @@ export default function Users() {
         });
         setTotalRecords(paginationData.totalUsers || usersData.length);
       } else {
+        setUsers([]);
+        setTotalRecords(0);
         toast.error("Failed to fetch users");
       }
     } catch (error) {
+      if (isCancelledRequest(error) || !request.isLatest()) return;
       console.error("Error fetching users:", error);
+      // Don't leave the previous filter's rows on screen as if they were the answer
+      setUsers([]);
+      setTotalRecords(0);
       toast.error(error.response?.data?.error || "Error fetching users");
     } finally {
-      setIsLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setIsLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
-  // Updated useEffect to use the new fetchData function
+  // One request per change: a search or filter change goes back to page 1 first (and loads
+  // there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([debouncedSearchQuery.trim(), selectedRole, selectedBlock]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1);
+      return;
+    }
     fetchData();
-  }, [currentPage, pageSize, debouncedSearchQuery, selectedRole, selectedBlock]);
+  }, [filterKey, currentPage, pageSize]);
 
   // Open delete confirmation modal
   const openDeleteModal = (user) => {

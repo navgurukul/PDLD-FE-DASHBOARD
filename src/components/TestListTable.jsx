@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useDebounce } from "../customHook/useDebounce";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, DocScanner } from "../utils/imagePath";
@@ -14,6 +14,7 @@ import { useLocation } from "react-router-dom";
 import Tooltip from "@mui/material/Tooltip";
 
 import apiInstance from "../../api";
+import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import ButtonCustom from "./ButtonCustom";
 import SpinnerPageOverlay from "./SpinnerPageOverlay";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -327,31 +328,21 @@ export default function TestListTable() {
   // Debounced searchQuery for API calls
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
-  // Fetch data from API (switches to /tests/search for test name search)
+  const startRequest = useLatestRequest();
+
+  // Fetch one page of tests: the search text is sent together with every other filter
   const fetchData = async () => {
     const isSearching = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
-    
+    const request = startRequest();
+
     // Use different loading states for search vs other operations
     if (isSearching) {
       setIsSearchLoading(true);
     } else {
       setIsLoading(true);
     }
-    
-    try {
-      // If actively searching, use /tests/search
-      if (isSearching) {
-        // Only test name search, ignore other filters for now
-        let url = `/tests/search?page=${currentPage}&pageSize=${pageSize}&query=${encodeURIComponent(debouncedSearchQuery)}`;
-        const response = await apiInstance.get(url);
-        if (response.data && response.data.data) {
-          setTests(response.data.data.data || []);
-          setTotalRecords(response.data.data.pagination.totalTests || 1);
-        }
-        return;
-      }
 
-      // For all other cases (cleared search or regular filters)
+    try {
       let startDateFormatted;
       let endDateFormatted;
       if (startDate && endDate) {
@@ -372,37 +363,49 @@ export default function TestListTable() {
       }
       if (selectedSubject.length > 0) {
         selectedSubject.forEach((s) => {
-          let apiSubjectName = s;
-          url += `&subject=${encodeURIComponent(apiSubjectName)}`;
+          url += `&subject=${encodeURIComponent(s)}`;
         });
       }
       if (selectedStatus) {
         url += `&testStatus=${selectedStatus}`;
       }
-      url += `&page=${currentPage}`;
-      const response = await apiInstance.get(url);
-      if (response.data && response.data.data) {
-        setTests(response.data.data.data);
-        setTotalRecords(response.data.data.pagination.totalTests);
+      if (isSearching) {
+        url += `&search=${encodeURIComponent(debouncedSearchQuery.trim())}`;
       }
+      url += `&page=${currentPage}`;
+      const response = await apiInstance.get(url, { signal: request.signal });
+      if (!request.isLatest()) return;
+      setTests(response.data?.data?.data || []);
+      setTotalRecords(response.data?.data?.pagination?.totalTests || 0);
     } catch (error) {
-      // Error fetching data, do nothing (no debug log)
+      if (isCancelledRequest(error) || !request.isLatest()) return;
+      // Don't leave the previous filter's rows on screen as if they were the answer
+      setTests([]);
+      setTotalRecords(0);
+      toast.error(error.response?.data?.error || "Could not load tests. Please try again.");
     } finally {
-      setIsLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setIsLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
-  // Re-fetch data whenever any filter or search changes (debounced for search)
+  // One request per change: a filter or search change goes back to page 1 first (and loads
+  // there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([selectedClass, selectedSubject, selectedStatus, startDate, endDate, selectedYear, debouncedSearchQuery.trim()]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
-    // Check if search is being cleared (searchQuery empty but debouncedSearchQuery still has value)
-    const isSearchClearing = searchQuery === "" && debouncedSearchQuery !== "";
-
-    // When clearing search, only react to the debounced value update, not the immediate searchQuery change
-    if (!isSearchClearing && ((startDate && endDate) || (!startDate && !endDate) || (debouncedSearchQuery && debouncedSearchQuery.trim() !== ""))) {
-      fetchData();
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1);
+      return;
     }
-  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, selectedYear, currentPage, pageSize, debouncedSearchQuery, searchQuery]);
+    // Wait until both ends of a custom date range are picked
+    if (startDate && !endDate) return;
+    fetchData();
+  }, [filterKey, currentPage, pageSize]);
 
   // Remove local filtering: tests are already filtered by backend
   const filteredTests = tests;
