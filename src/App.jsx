@@ -21,6 +21,10 @@ import LegalTerms from "./pages/LegalTerm";
 import EnrollmentReports from "./pages/EnrollmentReports";
 import SchoolPerformanceReports from "./pages/SchoolPerformanceReports";
 import StreamVocationalReport from "./pages/StreamVocationalReport";
+import LearningProgressReport from "./pages/LearningProgressReport";
+import MySchoolReport from "./pages/MySchoolReport";
+import PublicHome from "./pages/public/PublicHome";
+import PublicLearningProgress from "./pages/public/PublicLearningProgress";
 
 // Auth context to manage authentication state
 import { createContext } from "react";
@@ -79,6 +83,10 @@ function App() {
 		setUser(null);
 	};
 
+	// A school (headmaster) login only has its own school's report; officers have the dashboard
+	const isSchool = String(user?.role || "").toUpperCase() === "SCHOOL";
+	const homeAfterLogin = isSchool ? "/my-school" : "/allTest";
+
 	// Protected route component
 	const ProtectedRoute = ({ children }) => {
 		if (!isAuthenticated) {
@@ -98,7 +106,19 @@ function App() {
 					{/* Public route for login */}
 					<Route
 						path="/login"
-						element={isAuthenticated ? <Navigate to="/allTest" /> : <LoginForm onLogin={login} />}
+						element={isAuthenticated ? <Navigate to={homeAfterLogin} /> : <LoginForm onLogin={login} />}
+					/>
+					{/* Public website: landing page and the Learning Progress report, no login */}
+					<Route path="/" element={<PublicHome />} />
+					<Route path="/learning-progress" element={<PublicLearningProgress />} />
+					{/* Headmaster: own school's report */}
+					<Route
+						path="/my-school"
+						element={
+							<ProtectedRoute>
+								{isSchool ? <MySchoolReport /> : <Navigate to="/reports/learning-progress" replace />}
+							</ProtectedRoute>
+						}
 					/>
 					{/* Privacy Policy route */}
 					<Route
@@ -114,16 +134,12 @@ function App() {
 
 					{/* Protected routes under Layout */}
 					<Route
-						path="/"
 						element={
 							<ProtectedRoute>
-								<Layout onLogout={logout} />
+								{isSchool ? <Navigate to="/my-school" replace /> : <Layout onLogout={logout} />}
 							</ProtectedRoute>
 						}
 					>
-						{/* Default Route - redirect to allTest */}
-						<Route index element={<Navigate to="/allTest" replace />} />
-
 						{/* Nested Routes within Layout */}
 						<Route path="/allTest" element={<TableList />} />
 						<Route path="/users" element={<Users />} />
@@ -172,18 +188,11 @@ function App() {
 						<Route path="/reports/EnrollmentReports" element={<EnrollmentReports />} />
 						<Route path="/reports/SchoolPerformanceReports" element={<SchoolPerformanceReports />} />
 						<Route path="/reports/StreamVocationalReport" element={<StreamVocationalReport />} />
+						<Route path="/reports/learning-progress" element={<LearningProgressReport />} />
 
-						{/* Fallback Route */}
+						{/* Fallback Route (signed-out visitors are sent to the login page) */}
 						<Route path="*" element={<PageNotFound />} />
 					</Route>
-
-					{/* Redirect to allTest if logged in, otherwise redirect to login */}
-					<Route
-						path="*"
-						element={
-							isAuthenticated ? <Navigate to="/allTest" replace /> : <Navigate to="/login" replace />
-						}
-					/>
 				</Routes>
 			</Router>
 		</AuthContext.Provider>
