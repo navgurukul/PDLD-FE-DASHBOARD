@@ -11,10 +11,15 @@ import apiInstance from "../../api";
 import { Autocomplete, TextField, Paper } from "@mui/material";
 import axios from 'axios';
 import mixpanel from '../utils/mixpanel';
-import { showApiError } from "../utils/apiError";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import { FIELD_ERROR_STYLE, showFormErrors, scrollToFirstError, withoutError } from "../utils/formErrors";
 
 // Syllabus max score limit: 50 for primary classes (1-5), 100 for the rest. className is "Class 3" or "3"
 const maxScoreLimit = (className) => (parseInt(String(className).replace("Class ", "")) <= 5 ? 50 : 100);
+
+const subjectKey = (subject) => subject.toLowerCase().replace(/\s+/g, "_");
+const inputClass = (invalid) => (invalid ? "border-[#D32F2F] ring-1 ring-[#D32F2F]" : "border-gray-300");
+const fieldError = (text) => (text ? <div style={FIELD_ERROR_STYLE}>{text}</div> : null);
 
 const TestCreationForm = () => {
   const location = useLocation();
@@ -40,6 +45,9 @@ const TestCreationForm = () => {
   });
   const [subjectRows, setSubjectRows] = useState({});
   const [maxScores, setMaxScores] = useState({});
+  // Problems shown on the fields: { testTag, month, classes, "maxScore:Class 4", "subjects:Class 4", "<rowId>:subject" / ":testDate" / ":submissionDeadline" }
+  const [errors, setErrors] = useState({});
+  const clearError = (key) => setErrors((prev) => withoutError(prev, key));
 
   // Modal and API states
   const [showSummary, setShowSummary] = useState(false);
@@ -251,6 +259,7 @@ const TestCreationForm = () => {
 
   // Toggle class selection within the active group
   const toggleClassSelection = (className) => {
+    clearError("classes");
     setSelectedClasses((prev) => {
       const newSelections = { ...prev };
 
@@ -280,9 +289,11 @@ const TestCreationForm = () => {
 
   // Add a new subject row for a class
   const addSubjectRow = (className) => {
+    clearError(`subjects:${className}`);
     setSubjectRows((prev) => {
       const currentRows = prev[className] || [];
-      const newId = `${className}_${currentRows.length + 1}`;
+      // Unique even after a row is removed (a repeated id made one change update two rows)
+      const newId = `${className}_${Date.now()}`;
 
       return {
         ...prev,
@@ -343,6 +354,7 @@ const TestCreationForm = () => {
 
     // Create updated row with new value
     const updatedRow = { ...currentRow, [field]: value };
+    clearError(`${rowId}:${field}`);
 
     // Special logic for edit mode when test date changes
     if (editMode && field === "testDate") {
@@ -368,16 +380,16 @@ const TestCreationForm = () => {
       submissionDate.setHours(0, 0, 0, 0);
       if (originalDeadline) originalDeadline.setHours(0, 0, 0, 0);
 
-      // Check if submission date is not AFTER the test date
+      // Check if submission date is not AFTER the test date (the change is not kept; the reason shows under the field)
       if (submissionDate.getTime() <= testDate.getTime()) {
-        toast.error("Submission deadline must be after the test date");
+        setErrors((prev) => ({ ...prev, [`${rowId}:${field}`]: "Submission deadline must be after the test date" }));
         return;
       }
 
       // Additional check: If can only edit deadline (has submissions), prevent moving deadline backward
       if (canOnlyEditDeadline && field === "submissionDeadline" && originalDeadline) {
         if (submissionDate.getTime() < originalDeadline.getTime()) {
-          toast.error("You can only extend the deadline, not move it backward");
+          setErrors((prev) => ({ ...prev, [`${rowId}:${field}`]: "You can only extend the deadline, not move it backward" }));
           return;
         }
       }
@@ -399,112 +411,80 @@ const TestCreationForm = () => {
     });
   };
 
-  // 2. UPDATED FORM VALIDATION FUNCTION
+  // Checks the whole form at once; every problem is shown on its field (in page order)
   const validateForm = () => {
-    // Check if class group is selected
-    if (!activeClassGroupId) {
-      toast.error("Please select a class group");
-      return false;
-    }
+    const found = {};
+    const subjectDisplay = (subject) =>
+      subject
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
 
-    if (formData.testTag === "Monthly" && !testSeriesMonth) {
-      toast.error("Please enter a Monthly Test Series Month");
-      return false;
-    }
+    if (!formData.testTag) found.testTag = "Select a test tag";
+    if (formData.testTag === "Monthly" && !testSeriesMonth) found.month = "Select the month";
 
-    // Check if at least one class is selected
-    if (Object.keys(selectedClasses).length === 0) {
-      toast.error("Please select at least one class");
-      return false;
-    }
+    if (!activeClassGroupId) found.classes = "Select a class group";
+    else if (Object.keys(selectedClasses).length === 0) found.classes = "Select at least one class";
 
-    // Check test tag/category
-    if (!formData.testTag) {
-      toast.error("Please select a test tag");
-      return false;
-    }
-
-    // Validate each class's data
     for (const className of Object.keys(selectedClasses)) {
-      // Skip max score validation for remedial tests
+      // Max score only for syllabus tests (50 for classes 1-5, else 100)
       if (formData.testType === "syllabus") {
-        // Validate max score exists
-        if (!maxScores[className]) {
-          toast.error(`Please enter a max score for ${className}`);
-          return false;
-        }
-
-        // Validate max score value against the class limit (50 for classes 1-5, else 100)
-        if (parseInt(maxScores[className]) > maxScoreLimit(className)) {
-          toast.error(`Maximum score cannot exceed ${maxScoreLimit(className)} for ${className}`);
-          return false;
-        }
+        if (!maxScores[className]) found[`maxScore:${className}`] = `Enter the max score for ${className}`;
+        else if (parseInt(maxScores[className]) > maxScoreLimit(className))
+          found[`maxScore:${className}`] = `Max score can be at most ${maxScoreLimit(className)}`;
       }
 
-      // Check if at least one subject is added
-      if (!subjectRows[className] || subjectRows[className].length === 0) {
-        toast.error(`Please add at least one subject for ${className}`);
-        return false;
-      }
-
-      // Validate each subject row
       const classSubjectRows = subjectRows[className] || [];
+      if (classSubjectRows.length === 0) found[`subjects:${className}`] = `Add at least one subject for ${className}`;
+
       for (const row of classSubjectRows) {
-        // Validate subject is selected
-        if (!row.subject) {
-          toast.error(`Please select a subject for ${className}`);
-          return false;
-        }
+        if (!row.subject) found[`${row.id}:subject`] = "Select a subject";
+        if (!row.testDate) found[`${row.id}:testDate`] = row.subject ? `Select the test date for ${subjectDisplay(row.subject)}` : "Select the test date";
+        if (!row.submissionDeadline) found[`${row.id}:submissionDeadline`] = "Select the submission deadline";
 
-        // Validate test date is selected
-        if (!row.testDate) {
-          // Get formatted subject name for display
-          const subjectDisplay = row.subject
-            .split("_")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
-
-          toast.error(`Please select a test date for ${subjectDisplay} in ${className}`);
-          return false;
-        }
-
-        // Validate submission deadline is selected
-        if (!row.submissionDeadline) {
-          // Get formatted subject name for display
-          const subjectDisplay = row.subject
-            .split("_")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
-
-          toast.error(`Please select a submission deadline for ${subjectDisplay} in ${className}`);
-          return false;
-        }
-
-        // Validate submission date is after test date
-        const testDate = new Date(row.testDate);
-        const submissionDate = new Date(row.submissionDeadline);
-
-        // Reset time part for accurate date comparison
-        testDate.setHours(0, 0, 0, 0);
-        submissionDate.setHours(0, 0, 0, 0);
-
-        if (submissionDate.getTime() <= testDate.getTime()) {
-          // Get formatted subject name for display
-          const subjectDisplay = row.subject
-            .split("_")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
-
-          toast.error(
-            `Submission deadline must be after the test date for ${subjectDisplay} in ${className}`
-          );
-          return false;
+        if (row.testDate && row.submissionDeadline) {
+          const testDate = new Date(row.testDate);
+          const submissionDate = new Date(row.submissionDeadline);
+          testDate.setHours(0, 0, 0, 0);
+          submissionDate.setHours(0, 0, 0, 0);
+          if (submissionDate.getTime() <= testDate.getTime())
+            found[`${row.id}:submissionDeadline`] = "Submission deadline must be after the test date";
         }
       }
     }
 
-    // All validations passed
-    return true;
+    setErrors(found);
+    return !showFormErrors(found);
+  };
+
+  // A problem the server found: put it on the matching field when the message names one
+  const showServerError = (error) => {
+    const message = getErrorMessage(error, editMode ? "Could not update the test. Please try again." : "Could not create the test. Please try again.");
+    const found = {};
+    const rowsOf = (classNum, subject) =>
+      (subjectRows[`Class ${classNum}`] || []).filter((row) => !subject || row.subject === subjectKey(subject));
+
+    // "Max score for Class 4 can be at most 50..." / "Please enter the max score for Maths in Class 4"
+    const maxScore = message.match(/max score for (?:.+ in )?Class (\d+)/i);
+    if (maxScore && selectedClasses[`Class ${maxScore[1]}`]) found[`maxScore:Class ${maxScore[1]}`] = message;
+
+    // "This test already exists ...: Class 4 Maths (test date ..., deadline ...); Class 5 Hindi (...)"
+    if (/already exists/i.test(message)) {
+      for (const [, classNum, subject] of message.matchAll(/Class (\d+) (.+?) \(test date/g)) {
+        rowsOf(classNum, subject).forEach((row) => {
+          found[`${row.id}:testDate`] = "A test with this tag and date already exists";
+        });
+      }
+    }
+
+    // "Remedial tests are only for Classes 1 to 8. Remove Class 9..."
+    if (/Remedial tests are only for/i.test(message)) found.classes = message;
+
+    if (Object.keys(found).length) {
+      setErrors(found);
+      scrollToFirstError();
+    }
+    toast.error(message, { autoClose: 8000 });
   };
 
   const handleMaxScoreChange = (className, value) => {
@@ -514,7 +494,8 @@ const TestCreationForm = () => {
     // Check if score exceeds the class limit (50 for classes 1-5, else 100)
     const limit = maxScoreLimit(className);
     if (scoreValue > limit) {
-      toast.error(`Maximum score cannot exceed ${limit} for ${className}`);
+      // Shown under the field (red) instead of a popup; cleared on the next change
+      setErrors((prev) => ({ ...prev, [`maxScore:${className}`]: `Max score can be at most ${limit}, so it was set to ${limit}` }));
       // Cap the value at the limit
       setMaxScores((prev) => ({
         ...prev,
@@ -522,6 +503,7 @@ const TestCreationForm = () => {
       }));
     } else {
       // Normal case, update as usual
+      clearError(`maxScore:${className}`);
       setMaxScores((prev) => ({
         ...prev,
         [className]: value,
@@ -745,11 +727,11 @@ const TestCreationForm = () => {
           },
         });
       } else {
-        toast.error(editMode ? "Failed to update test" : "Failed to create test");
+        toast.error(editMode ? "Could not update the test. Please try again." : "Could not create the test. Please try again.");
       }
     } catch (error) {
       console.error("Error =>", error);
-      showApiError(error, editMode ? "Could not update the test. Please try again." : "Could not create the test. Please try again.");
+      showServerError(error);
     } finally {
       setIsSubmitting(false);
       setShowSummary(false);
@@ -782,6 +764,7 @@ const TestCreationForm = () => {
   };
 
   const handleGroupCardSelect = (groupId) => {
+    clearError("classes");
     // If there's no active group or no subjects added yet, just select it directly
     if (
       activeClassGroupId === null ||
@@ -1006,6 +989,7 @@ const TestCreationForm = () => {
                     options={formData.testType === 'syllabus' ? testTags.syllabus : testTags.remedial}
                     value={formData.testTag || ""}
                     onChange={(_, value) => {
+                      clearError("testTag");
                       setFormData((prev) => ({
                         ...prev,
                         testTag: value,
@@ -1016,6 +1000,8 @@ const TestCreationForm = () => {
                         {...params}
                         placeholder="Select Test Tag"
                         size="small"
+                        error={!!errors.testTag}
+                        helperText={errors.testTag}
                         sx={{
                           fontFamily: "'Work Sans', sans-serif",
                           fontWeight: 400,
@@ -1093,11 +1079,16 @@ const TestCreationForm = () => {
                         "December",
                       ]}
                       value={testSeriesMonth || ""}
-                      onChange={(_, value) => setTestSeriesMonth(value)}
+                      onChange={(_, value) => {
+                        clearError("month");
+                        setTestSeriesMonth(value);
+                      }}
                       renderInput={(params) => (
                         <TextField
                           {...params}
                           placeholder="Select Month"
+                          error={!!errors.month}
+                          helperText={errors.month}
                           sx={{
                             fontFamily: "'Work Sans', sans-serif",
                             fontWeight: 400,
@@ -1107,15 +1098,17 @@ const TestCreationForm = () => {
                               background: "#fff",
                               color: "#2F4F4F",
                               height: "48px",
-                              "& fieldset": {
-                                borderColor: "rgba(0, 0, 0, 0.23)",
-                              },
-                              "&:hover fieldset": {
-                                borderColor: "#2F4F4F",
-                              },
-                              "&.Mui-focused fieldset": {
-                                borderColor: "#2F4F4F",
-                              },
+                              ...(!errors.month && {
+                                "& fieldset": {
+                                  borderColor: "rgba(0, 0, 0, 0.23)",
+                                },
+                                "&:hover fieldset": {
+                                  borderColor: "#2F4F4F",
+                                },
+                                "&.Mui-focused fieldset": {
+                                  borderColor: "#2F4F4F",
+                                },
+                              }),
                             },
                             "& .MuiInputBase-input": {
                               fontSize: "16px",
@@ -1191,6 +1184,11 @@ const TestCreationForm = () => {
           >
             {editMode ? "Target Class Group" : "Select Target Class Group"}
           </h2>
+          {errors.classes && (
+            <div data-invalid="true" tabIndex={-1} style={{ ...FIELD_ERROR_STYLE, marginTop: "-8px", marginBottom: "12px" }}>
+              {errors.classes}
+            </div>
+          )}
 
           <div className="space-y-4">
             {/* Row 1: First 2 cards */}
@@ -1484,8 +1482,9 @@ const TestCreationForm = () => {
                   <input
                     type="number"
                     id={`max_score_${getClassId(className)}`}
-                    className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${!canEditMaxScore ? "bg-gray-100 cursor-not-allowed" : ""
+                    className={`w-full p-2.5 text-sm border ${inputClass(errors[`maxScore:${className}`])} rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${!canEditMaxScore ? "bg-gray-100 cursor-not-allowed" : ""
                       }`}
+                    aria-invalid={!!errors[`maxScore:${className}`]}
                     placeholder={`e.g., ${maxScoreLimit(className)}`}
                     max={maxScoreLimit(className)}
                     value={maxScores[className] || ""}
@@ -1493,6 +1492,7 @@ const TestCreationForm = () => {
                     disabled={!canEditMaxScore}
                     required
                   />
+                  {fieldError(errors[`maxScore:${className}`])}
                   <div className="mt-1">
                     <div
                       style={{
@@ -1518,10 +1518,13 @@ const TestCreationForm = () => {
                   <div className="col-span-1">Actions</div>
                 </div>
 
+                {errors[`subjects:${className}`] && (
+                  <div data-invalid="true" tabIndex={-1} style={FIELD_ERROR_STYLE}>{errors[`subjects:${className}`]}</div>
+                )}
                 {(subjectRows[className] || []).map((row) => (
                   <div
                     key={row.id}
-                    className="grid grid-cols-10 gap-4 items-center py-3 border-b border-gray-100"
+                    className="grid grid-cols-10 gap-4 items-start py-3 border-b border-gray-100"
                   >
                     <div className="col-span-5">
                       <Autocomplete
@@ -1584,6 +1587,8 @@ const TestCreationForm = () => {
                             {...params}
                             placeholder={isLoadingSubjects ? "Loading subjects..." : "Select Subject..."}
                             size="small"
+                            error={!!errors[`${row.id}:subject`]}
+                            helperText={errors[`${row.id}:subject`]}
                             sx={{
                               fontFamily: "'Work Sans', sans-serif",
                               "& .MuiOutlinedInput-root": {
@@ -1640,8 +1645,9 @@ const TestCreationForm = () => {
                       <div className="relative">
                         <input
                           type="date"
-                          className={`w-full min-w-[130px] p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${canOnlyEditDeadline ? "bg-gray-100 cursor-not-allowed" : ""
+                          className={`w-full min-w-[130px] p-2.5 text-sm border ${inputClass(errors[`${row.id}:testDate`])} rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${canOnlyEditDeadline ? "bg-gray-100 cursor-not-allowed" : ""
                             }`}
+                          aria-invalid={!!errors[`${row.id}:testDate`]}
                           value={row.testDate}
                           onChange={(e) =>
                             handleSubjectRowChange(className, row.id, "testDate", e.target.value)
@@ -1649,6 +1655,7 @@ const TestCreationForm = () => {
                           disabled={canOnlyEditDeadline}
                           required
                         />
+                        {fieldError(errors[`${row.id}:testDate`])}
                       </div>
                     </div>
                     {/* Submission Deadline - EDITABLE EVEN IN EDIT MODE */}
@@ -1656,7 +1663,8 @@ const TestCreationForm = () => {
                       <div className="relative">
                         <input
                           type="date"
-                          className="w-full min-w-[130px] p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8]"
+                          className={`w-full min-w-[130px] p-2.5 text-sm border ${inputClass(errors[`${row.id}:submissionDeadline`])} rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8]`}
+                          aria-invalid={!!errors[`${row.id}:submissionDeadline`]}
                           value={row.submissionDeadline}
                           onChange={(e) =>
                             handleSubjectRowChange(
@@ -1668,6 +1676,7 @@ const TestCreationForm = () => {
                           }
                           required
                         />
+                        {fieldError(errors[`${row.id}:submissionDeadline`])}
                       </div>
                     </div>
                     <div className="col-span-1 text-center">
@@ -1716,7 +1725,9 @@ const TestCreationForm = () => {
                   // Handle add subject click with validation
                   const handleAddSubject = () => {
                     if (hasEmptySubjectRow) {
-                      toast.error("Please select a subject in the above dropdown first");
+                      const emptyRow = classSubjectRows.find((row) => !row.subject);
+                      setErrors((prev) => ({ ...prev, [`${emptyRow.id}:subject`]: "Select a subject here first" }));
+                      scrollToFirstError();
                       return;
                     }
                     addSubjectRow(className);
