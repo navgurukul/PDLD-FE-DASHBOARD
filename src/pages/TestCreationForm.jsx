@@ -12,6 +12,9 @@ import { Autocomplete, TextField, Paper } from "@mui/material";
 import axios from 'axios';
 import mixpanel from '../utils/mixpanel';
 
+// Syllabus max score limit: 50 for primary classes (1-5), 100 for the rest. className is "Class 3" or "3"
+const maxScoreLimit = (className) => (parseInt(String(className).replace("Class ", "")) <= 5 ? 50 : 100);
+
 const TestCreationForm = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -430,9 +433,9 @@ const TestCreationForm = () => {
           return false;
         }
 
-        // Validate max score value <= 100
-        if (parseInt(maxScores[className]) > 100) {
-          toast.error(`Maximum score cannot exceed 100 for ${className}`);
+        // Validate max score value against the class limit (50 for classes 1-5, else 100)
+        if (parseInt(maxScores[className]) > maxScoreLimit(className)) {
+          toast.error(`Maximum score cannot exceed ${maxScoreLimit(className)} for ${className}`);
           return false;
         }
       }
@@ -507,13 +510,14 @@ const TestCreationForm = () => {
     // Parse value to number
     const scoreValue = parseInt(value);
 
-    // Check if score exceeds max allowed (100)
-    if (scoreValue > 100) {
-      toast.error("Maximum score cannot exceed 100");
-      // Cap the value at 100
+    // Check if score exceeds the class limit (50 for classes 1-5, else 100)
+    const limit = maxScoreLimit(className);
+    if (scoreValue > limit) {
+      toast.error(`Maximum score cannot exceed ${limit} for ${className}`);
+      // Cap the value at the limit
       setMaxScores((prev) => ({
         ...prev,
-        [className]: 100,
+        [className]: limit,
       }));
     } else {
       // Normal case, update as usual
@@ -603,6 +607,16 @@ const TestCreationForm = () => {
     return formData.testTag;
   };
 
+  // Officers who can edit a test may change a class test's max score even after schools have
+  // entered marks (the API then re-works out each school's totals); other fields stay locked
+  const canEditMaxScore = canEditAllFields || (editMode && formData.testType === "syllabus");
+  const editedClass = Object.keys(selectedClasses)[0];
+  const newMaxScore = Number(maxScores[editedClass]);
+  const maxScoreChanged = editMode && formData.testType === "syllabus" && !!newMaxScore && newMaxScore !== Number(testData?.maxScore);
+  const maxScoreNotice = maxScoreChanged && submissionCount > 0
+    ? `${submissionCount} school${submissionCount === 1 ? " has" : "s have"} already entered marks out of ${testData?.maxScore}. Their pass marks, pass rates and grades will be worked out again out of ${newMaxScore}. Marks are not changed: any mark above ${newMaxScore} will need correcting by the school.`
+    : null;
+
   // API call to create or update test
   const handleCreateTest = async () => {
     setIsSubmitting(true);
@@ -623,6 +637,8 @@ const TestCreationForm = () => {
             // testTag: getFormattedTestTag(),
             deadline: firstSubjectRow.submissionDeadline,
           };
+          // The max score can still change (class tests); the API re-works out schools' totals
+          if (maxScoreChanged) payload.maxScore = newMaxScore;
         } else {
           // If can edit all fields (no submissions + future test), send all fields
           payload = {
@@ -637,7 +653,7 @@ const TestCreationForm = () => {
             deadline: firstSubjectRow.submissionDeadline,
           };
           if (formData.testType === "syllabus") {
-            payload.maxScore = Number(maxScores[firstClassName]) || 100;
+            payload.maxScore = Number(maxScores[firstClassName]) || maxScoreLimit(firstClassName);
           }
         }
       } else {
@@ -667,7 +683,7 @@ const TestCreationForm = () => {
 
                   // Only add maxScore for syllabus tests
                   if (formData.testType === "syllabus") {
-                    subjectData.maxScore = Number(maxScores[className]) || 100;
+                    subjectData.maxScore = Number(maxScores[className]) || maxScoreLimit(className);
                   }
 
                   return subjectData;
@@ -707,7 +723,22 @@ const TestCreationForm = () => {
           mixpanel.track('Test Created', eventData);
         }
         toast.success(editMode ? "Test Updated Successfully" : "Test Created Successfully");
-        navigate("/", {
+        const change = response.data.data?.maxScoreChange;
+        if (change) {
+          const what = change.from !== change.to ? `Max score changed from ${change.from} to ${change.to}: ` : "";
+          toast.info(
+            `${what}${change.schoolsRecalculated} school results recalculated out of ${change.to}.` +
+              (change.marksAboveMax ? ` ${change.marksAboveMax} marks in ${change.schoolsWithMarksAboveMax} schools are above ${change.to}; those schools need to correct them.` : ""),
+            { autoClose: 10000 }
+          );
+          if (change.failed > 0) {
+            toast.warning(`${change.failed} school results could not be updated just now. Open the test and save again to finish.`, { autoClose: false });
+          }
+          if (change.superseded) {
+            toast.warning("The max score was changed again by someone else while saving; their change is the one in effect.", { autoClose: false });
+          }
+        }
+        navigate("/allTest", {
           state: {
             successMessage: editMode ? "Test Updated Successfully" : "Test Created Successfully",
           },
@@ -1452,12 +1483,13 @@ const TestCreationForm = () => {
                   <input
                     type="number"
                     id={`max_score_${getClassId(className)}`}
-                    className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${!canEditAllFields ? "bg-gray-100 cursor-not-allowed" : ""
+                    className={`w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2F4F4F] focus:ring-1 focus:ring-[#D4DAE8] ${!canEditMaxScore ? "bg-gray-100 cursor-not-allowed" : ""
                       }`}
-                    placeholder="e.g., 100"
+                    placeholder={`e.g., ${maxScoreLimit(className)}`}
+                    max={maxScoreLimit(className)}
                     value={maxScores[className] || ""}
-                    onChange={(e) => canEditAllFields && handleMaxScoreChange(className, e.target.value)}
-                    disabled={!canEditAllFields}
+                    onChange={(e) => canEditMaxScore && handleMaxScoreChange(className, e.target.value)}
+                    disabled={!canEditMaxScore}
                     required
                   />
                   <div className="mt-1">
@@ -1760,6 +1792,7 @@ const TestCreationForm = () => {
         {...prepareSummaryData()}
         handleConfirm={handleModalConfirm}
         modalTitle={editMode ? "Test Update Summary" : "Confirm Test Creation"}
+        notice={maxScoreNotice}
         isSubmitting={isSubmitting} // Pass the isSubmitting state to the modal
       />
 
