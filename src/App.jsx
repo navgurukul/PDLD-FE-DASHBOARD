@@ -36,6 +36,9 @@ import StudentProfileView from "./components/student/StudentProfileSection";
 import SchoolPerformanceTable from "./components/testReport/SchoolPerformanceTable";
 import QRLogin from "./pages/QRLogin";
 import mixpanel from './utils/mixpanel';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "./utils/toastSetup";
 
 export const AuthContext = createContext(null);
 
@@ -195,6 +198,8 @@ function App() {
 					</Route>
 				</Routes>
 			</Router>
+			{/* The only popup area: one per app, so a message never appears twice */}
+			<ToastContainer position="top-right" autoClose={3000} newestOnTop limit={3} style={{ zIndex: 99999999 }} />
 		</AuthContext.Provider>
 	);
 }

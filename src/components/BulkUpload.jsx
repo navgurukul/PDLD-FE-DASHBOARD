@@ -47,8 +47,8 @@ import StepConnector, {
 import CheckIcon from "@mui/icons-material/Check";
 import FileDownloadSvg from "../assets/file_download.svg";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
-import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { showApiError } from "../utils/apiError";
 
 const theme = createTheme({
   typography: {
@@ -703,7 +703,7 @@ export default function BulkUploadSchools() {
       }
     } catch (error) {
       console.error("Error uploading file:", error);
-      toast.error(error.response?.data?.message || "Error uploading file");
+      showApiError(error, "Could not upload the file. Please try again.");
 
       // Check if the error response contains error rows in the expected format
       if (error.response?.data?.data?.errors?.length > 0) {
@@ -1915,11 +1915,6 @@ export default function BulkUploadSchools() {
           />
         )}
       </Box>
-      <ToastContainer
-        style={{ zIndex: 99999999 }}
-        position="top-right"
-        autoClose={4000}
-      />
     </ThemeProvider>
   );
 }

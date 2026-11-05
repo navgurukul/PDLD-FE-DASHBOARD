@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import SchoolPerformanceTable from "../components/testReport/SchoolPerformanceTable";
@@ -11,6 +11,7 @@ import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 
 // Import mock data and helper functions
 import { MOCK_TESTS, formatDate } from "../data/testReportData";
+import { showApiError } from "../utils/apiError";
 
 // Flag to toggle between mock data and API calls
 const USE_MOCK_DATA = true;
@@ -56,8 +57,7 @@ const TestReportPage = () => {
         setIsLoading(false);
       } catch (err) {
         console.error("Error fetching test report:", err);
-        setError("Failed to load test report. Please try again later.");
-        toast.error("Failed to load test report. Please try again later.");
+        setError(showApiError(err, "Could not load the test report. Please try again."));
         setIsLoading(false);
       }
     };
@@ -124,13 +124,6 @@ const TestReportPage = () => {
           </>
         )}
 
-        <ToastContainer
-          style={{ zIndex: 99999999 }}
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-        />
       </div>
     </ThemeProvider>
   );

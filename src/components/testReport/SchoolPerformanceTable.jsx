@@ -29,12 +29,13 @@ import { useParams, useLocation, Navigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import OutlinedButton from "../../components/button/OutlinedButton";
 import FolderEmptyImg from "../../assets/Folder Empty 1.svg";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DownloadModal from "../../components/modal/DownloadModal";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { Search } from "lucide-react";
 import { useDebounce } from "../../customHook/useDebounce";
+import { showApiError, getErrorMessage } from "../../utils/apiError";
 
 // Utility function to convert school names to Title Case
 const toTitleCase = (str) => {
@@ -517,7 +518,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     } catch (error) {
       if (isCancelledRequest(error) || !request.isLatest()) return;
       // Error handling is implemented via setError state
-      setError(error.response?.data?.message || "An error occurred while fetching data");
+      setError(getErrorMessage(error, "Could not load the report. Please try again."));
     } finally {
       if (request.isLatest()) {
         setLoading(false);
@@ -746,7 +747,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           }
         } catch (error) {
           // Error handling is implemented via setError state
-          toast.error("Failed to fetch all records. Using current page data.");
+          toast.error("Could not load all records, so only this page will be downloaded.", { autoClose: 8000 });
           dataToDownload = tableData;
         }
       }
@@ -757,7 +758,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         handleDownloadPDF(dataToDownload);
       }
     } catch (error) {
-      toast.error("An error occurred while generating the report");
+      showApiError(error, "Could not create the report file. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -2120,13 +2121,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           reportLevel={level}
         />
         {isLoading && !loading && <SpinnerPageOverlay isLoading={isLoading} />}
-        <ToastContainer
-          style={{ zIndex: 99999999 }}
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-        />
       </div>
     </ThemeProvider>
   );

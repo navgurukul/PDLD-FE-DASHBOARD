@@ -4,7 +4,7 @@ import MUIDataTable from "mui-datatables";
 import { Button, TextField, CircularProgress, FormControl, InputLabel, MenuItem, Select, Tooltip, Typography, Chip } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination, PaginationItem } from "@mui/material";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Search } from "lucide-react";
 import "../components/TestListTable.css";
@@ -15,6 +15,7 @@ import apiInstance from "../../api";
 import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import mixpanel from '../utils/mixpanel';
 import { getCurrentAcademicYear } from "../utils/academicYear";
+import { showApiError } from "../utils/apiError";
 
 const theme = createTheme({
     typography: {
@@ -197,8 +198,7 @@ export default function StreamVocationalReport() {
                 if (isCancelledRequest(apiError) || !request.isLatest()) return;
                 // Handle API errors
                 console.error("API request failed:", apiError);
-                const errorMessage = apiError.response?.data?.message || apiError.message || "Unable to connect to server. Please check your connection.";
-                toast.error(errorMessage);
+                showApiError(apiError, "Could not load the stream report. Please try again.");
                 setData([]);
                 setMetadata({});
                 setPagination(prev => ({
@@ -209,7 +209,7 @@ export default function StreamVocationalReport() {
             }
         } catch (error) {
             console.error("Unexpected error fetching stream data:", error);
-            toast.error("An unexpected error occurred. Please try again.");
+            showApiError(error, "Could not load the stream report. Please try again.");
             setData([]);
             setMetadata({});
             setPagination(prev => ({
@@ -248,7 +248,7 @@ export default function StreamVocationalReport() {
             }
         } catch (error) {
             console.error("Error fetching blocks and clusters:", error);
-            toast.error("Failed to load blocks and clusters data");
+            showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
         }
     };
 
@@ -559,7 +559,7 @@ export default function StreamVocationalReport() {
                     }
                 } catch (apiError) {
                     console.error("API error during download:", apiError);
-                    toast.error("Unable to fetch all data. Downloading current page only.");
+                    toast.error("Could not load all records, so only this page will be downloaded.", { autoClose: 8000 });
                     dataToDownload = data;
                 }
             }
@@ -583,7 +583,7 @@ export default function StreamVocationalReport() {
             }
         } catch (error) {
             console.error("Error downloading report:", error);
-            toast.error("An error occurred while generating the report");
+            showApiError(error, "Could not create the report file. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -639,7 +639,7 @@ export default function StreamVocationalReport() {
             toast.success(`CSV downloaded successfully! (${downloadData.length} students)`);
         } catch (error) {
             console.error("Error in handleDownloadCSV:", error);
-            toast.error("Failed to download CSV");
+            showApiError(error, "Could not download the CSV file. Please try again.");
         }
     };
 
@@ -962,19 +962,13 @@ export default function StreamVocationalReport() {
             }, 250);
         } catch (error) {
             console.error("Error in handleDownloadPDF:", error);
-            toast.error("Failed to download PDF");
+            showApiError(error, "Could not download the PDF file. Please try again.");
         }
     };
 
     return (
         <ThemeProvider theme={theme}>
             <div style={{ padding: "20px", backgroundColor: "#FAFAFA", minHeight: "100vh" }}>
-                <ToastContainer
-                    position="top-right"
-                    autoClose={3000}
-                    style={{ zIndex: 99999 }}
-                    toastStyle={{ zIndex: 99999 }}
-                />
                 {isLoading && !isSearchLoading && <SpinnerPageOverlay />}
 
                 {/* Header - Compact */}
@@ -1628,13 +1622,6 @@ export default function StreamVocationalReport() {
                     reportName="Stream & Vocational Report"
                 />
 
-                <ToastContainer
-                    position="top-right"
-                    autoClose={3000}
-                    hideProgressBar={false}
-                    closeOnClick
-                    style={{ zIndex: 99999999 }}
-                />
 
                 {/* Page level loading overlay - only for non-search operations */}
                 {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}

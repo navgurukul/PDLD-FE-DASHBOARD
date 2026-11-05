@@ -5,7 +5,7 @@ import { Button, TextField, CircularProgress } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -26,6 +26,7 @@ import { Select } from "@mui/material";
 import { InputLabel } from "@mui/material";
 import { Typography } from "@mui/material";
 import { Search } from "lucide-react";
+import { showApiError } from "../utils/apiError";
 const theme = createTheme({
   typography: {
     fontFamily: "'Karla', sans-serif",
@@ -230,7 +231,7 @@ export default function SchoolList() {
       if (isCancelledRequest(error) || !request.isLatest()) return;
       // Don't leave the previous filter's rows on screen as if they were the answer
       setSchools([]);
-      toast.error(error.response?.data?.message || "Error fetching schools");
+      showApiError(error, "Could not load the schools. Please try again.");
     } finally {
       if (request.isLatest()) {
         setIsLoading(false);
@@ -294,7 +295,7 @@ export default function SchoolList() {
       }
     } catch (error) {
       // Error handling via toast
-      toast.error("Failed to load blocks and clusters data");
+      showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
     }
   };
 
@@ -408,7 +409,7 @@ export default function SchoolList() {
       }
     } catch (error) {
       // Error handling via toast
-      toast.error(error.response?.data?.message || "Error deleting school");
+      showApiError(error, "Could not delete the school. Please try again.");
     } finally {
       setIsDeleting(false);
       closeDeleteModal();
@@ -1105,13 +1106,6 @@ export default function SchoolList() {
             </div>
           </div>
 
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            closeOnClick
-            style={{ zIndex: 99999999 }}
-          />
 
           {/* Delete Confirmation Modal */}
           <GenericConfirmationModal

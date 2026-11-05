@@ -18,7 +18,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, InputLabel } from "@mui/material";
 import { Pagination, PaginationItem } from "@mui/material";
 import { Search, X as CloseIcon, RefreshCw } from "lucide-react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import apiInstance from "../../api"; // Updated import path
@@ -35,6 +35,7 @@ import {
   readStoredAcademicYear,
   storeAcademicYear,
 } from "../utils/academicYear";
+import { showApiError } from "../utils/apiError";
 
 // Utility function to convert text to title case
 const toTitleCase = (str) => {
@@ -241,7 +242,7 @@ const Reports = () => {
         setSelectedSubject(fallbackSubjects[0]);
       }
       // Only show toast once and only if we haven't shown it before
-      toast.error('Failed to load subjects, using default list');
+      showApiError(error, "Could not load the subject list, so the default subjects are shown.");
     } finally {
       setIsLoadingSubjects(false);
     }
@@ -273,7 +274,7 @@ const Reports = () => {
     }
   } catch (error) {
     console.error("Error fetching blocks and clusters:", error);
-    toast.error("Failed to load blocks and clusters data");
+    showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
   }
 };
 
@@ -354,7 +355,7 @@ useEffect(() => {
       // Don't leave the previous filter's rows on screen as if they were the answer
       setReportData([]);
       setTotalRecords(0);
-      toast.error("An error occurred while fetching the report data");
+      showApiError(error, "Could not load the report. Please try again.");
     } finally {
       if (request.isLatest()) {
         setIsLoading(false);
@@ -760,7 +761,7 @@ useEffect(() => {
       }
     } catch (error) {
       console.error("Error downloading report:", error);
-      toast.error("An error occurred while generating the report");
+      showApiError(error, "Could not create the report file. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -1837,13 +1838,6 @@ useEffect(() => {
         {/* Loading Indicator - only for non-search operations */}
         {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}
 
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-          style={{ zIndex: 99999999 }}
-        />
       </div>
     </ThemeProvider>
   );

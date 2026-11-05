@@ -25,7 +25,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import apiInstance from "../../api";
 import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import ButtonCustom from "../components/ButtonCustom";
@@ -36,6 +36,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import { Search } from "lucide-react";
 import { getRole } from "../customHook/useAuth"; // Import getRole to get current user's role
+import { showApiError } from "../utils/apiError";
 
 const theme = createTheme({
   typography: {
@@ -214,7 +215,7 @@ export default function Users() {
       }
     } catch (error) {
       console.error("Error fetching blocks and roles:", error);
-      toast.error(error.response?.data?.error || "Failed to load blocks and roles data");
+      showApiError(error, "Could not load the blocks and roles. Please reload the page.");
     }
   };
 
@@ -345,7 +346,7 @@ export default function Users() {
       // Don't leave the previous filter's rows on screen as if they were the answer
       setUsers([]);
       setTotalRecords(0);
-      toast.error(error.response?.data?.error || "Error fetching users");
+      showApiError(error, "Could not load the users. Please try again.");
     } finally {
       if (request.isLatest()) {
         setIsLoading(false);
@@ -412,7 +413,7 @@ export default function Users() {
       }
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast.error(error.response?.data?.message || "Error deleting user");
+      showApiError(error, "Could not delete the user. Please try again.");
     } finally {
       setIsDeleting(false);
       closeDeleteModal();
@@ -1199,7 +1200,6 @@ export default function Users() {
           sx={{ zIndex: 12000 }}
         />
 
-        <ToastContainer style={{ zIndex: 99999999 }} position="top-right" autoClose={3000} />
 
         {/* QR Code Modal */}
         <Modal

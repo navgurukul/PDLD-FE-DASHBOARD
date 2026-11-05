@@ -15,7 +15,7 @@ import {
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import ButtonCustom from "../components/ButtonCustom";
 import {
   addSymbolBtn,
@@ -28,6 +28,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import SpinnerPageOverlay from "./SpinnerPageOverlay";
+import { showApiError } from "../utils/apiError";
 
 const theme = createTheme({
   typography: {
@@ -197,7 +198,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       }
     } catch (error) {
       console.error("Error fetching students:", error);
-      toast.error("Failed to load students. Please try again later.");
+      showApiError(error, "Could not load the students. Please try again.");
       setAllStudents([]);
     } finally {
       setIsLoadingStudents(false);
@@ -282,7 +283,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       }
     } catch (error) {
       console.error("Error deleting student:", error);
-      toast.error("Failed to delete student. Please try again later.");
+      showApiError(error, "Could not remove the student. Please try again.");
     } finally {
       setIsDeleting(false);
       closeDeleteModal();
@@ -731,13 +732,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           sx={{ zIndex: 12000 }}
         />
 
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-          style={{ zIndex: 99999999 }}
-        />
       </Box>
     </ThemeProvider>
   );

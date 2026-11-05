@@ -11,11 +11,12 @@ import {
   MenuItem,
   Autocomplete,
 } from "@mui/material";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import apiInstance from "../../api";
 import ButtonCustom from "./ButtonCustom";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import mixpanel from '../utils/mixpanel';
+import { showApiError } from "../utils/apiError";
 
 export default function AddSchool({ onClose, onSave }) {
   const { schoolId } = useParams();
@@ -87,7 +88,7 @@ export default function AddSchool({ onClose, onSave }) {
       }
     } catch (error) {
       console.error("Error fetching blocks and clusters:", error);
-      toast.error("Failed to load blocks and clusters data");
+      showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
     }
   };
 
@@ -585,27 +586,7 @@ export default function AddSchool({ onClose, onSave }) {
         // Handle error cases
         console.error(schoolId ? "Error updating school:" : "Error creating school:", error);
 
-        // Show appropriate error message based on the error response
-        if (error.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
-          const errorMessage =
-            error.response.data?.error ||
-            (schoolId
-              ? "Failed to update school. Please try again."
-              : "Failed to create school. Please try again.");
-          toast.error(errorMessage);
-        } else if (error.request) {
-          // The request was made but no response was received
-          toast.error("Server did not respond. Please check your connection and try again.");
-        } else {
-          // Something happened in setting up the request that triggered an Error
-          toast.error(
-            schoolId
-              ? "An error occurred while updating the school. Please try again."
-              : "An error occurred while creating the school. Please try again."
-          );
-        }
+        showApiError(error, schoolId ? "Could not update the school. Please try again." : "Could not add the school. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -1014,13 +995,6 @@ export default function AddSchool({ onClose, onSave }) {
           />
         </div>
       </Box>
-      <ToastContainer
-        style={{ zIndex: 99999999 }}
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        closeOnClick
-      />
     </Box>
   );
 }
