@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import PieChart from "../components/testReport/charts/PieChart";
@@ -14,6 +14,7 @@ import LineChart from "../components/testReport/charts/LineChart";
 import { Chip, Box } from "@mui/material";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import DoneIcon from "@mui/icons-material/Done";
+import { showApiError } from "../utils/apiError";
 
 // Define the theme colors
 const THEME_COLOR = "#2F4F4F";
@@ -236,8 +237,7 @@ const SchoolReportPage = () => {
         }
       } catch (err) {
         console.error("Error fetching data:", err);
-        setError("Failed to load school report. Please try again later.");
-        toast.error("Failed to load school report. Please try again later.");
+        setError(showApiError(err, "Could not load the school report. Please try again."));
         setIsLoading(false);
       }
     };
@@ -588,13 +588,6 @@ const SchoolReportPage = () => {
           {activeTab === "students" && <StudentsTab />}
         </div>
 
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-          style={{ zIndex: 99999999 }}
-        />
       </div>
     </ThemeProvider>
   );

@@ -16,9 +16,10 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import apiInstance from "../../api";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ButtonCustom from "./ButtonCustom";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
+import { showApiError } from "../utils/apiError";
 
 const theme = createTheme({
   typography: {
@@ -147,7 +148,7 @@ export default function UserCreationForm() {
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
-      toast.error("Failed to load user data");
+      showApiError(error, "Could not load this user's details. Please try again.");
       navigate("/users");
     } finally {
       setIsLoading(false);
@@ -327,7 +328,7 @@ export default function UserCreationForm() {
       }
     } catch (error) {
       console.error("Error fetching blocks and clusters:", error);
-      toast.error("Failed to load blocks and clusters data");
+      showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
     }
   };
 
@@ -445,12 +446,7 @@ export default function UserCreationForm() {
       });
     } catch (error) {
       console.error(isEditMode ? "Error updating user:" : "Error creating user:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        (isEditMode
-          ? "Failed to update user. Please try again."
-          : "Failed to create user. Please try again.");
-      toast.error(errorMessage);
+      showApiError(error, isEditMode ? "Could not update the user. Please try again." : "Could not create the user. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -1029,13 +1025,6 @@ export default function UserCreationForm() {
         confirmText="Confirm"
         cancelText="Cancel"
         sx={{ zIndex: 12000 }}
-      />
-      <ToastContainer
-        style={{ zIndex: 99999999 }}
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        closeOnClick
       />
     </ThemeProvider>
   );

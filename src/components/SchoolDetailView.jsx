@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import StudentDetails from "./StudentDetails";
@@ -556,13 +556,6 @@ export default function SchoolDetailView() {
           <SchoolReport schoolId={schoolId} schoolName={school.schoolName} />
         </TabPanel>
 
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-          style={{ zIndex: 9999 }}
-        />
       </div>
     </ThemeProvider>
   );

@@ -5,12 +5,13 @@ import { ChevronDown, Trash2 } from "lucide-react";
 import ButtonCustom from "../components/ButtonCustom";
 import ModalSummary from "../components/SummaryModal";
 import ConfirmationModal from "../components/modal/ConfirmationModal";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiInstance from "../../api";
 import { Autocomplete, TextField, Paper } from "@mui/material";
 import axios from 'axios';
 import mixpanel from '../utils/mixpanel';
+import { showApiError } from "../utils/apiError";
 
 // Syllabus max score limit: 50 for primary classes (1-5), 100 for the rest. className is "Class 3" or "3"
 const maxScoreLimit = (className) => (parseInt(String(className).replace("Class ", "")) <= 5 ? 50 : 100);
@@ -104,7 +105,7 @@ const TestCreationForm = () => {
     } catch (error) {
       console.error('Error fetching class-wise subjects:', error);
       setSubjectsError(error.message);
-      toast.error('Failed to load subjects from server. Please reload the page.');
+      showApiError(error, "Could not load the subject list. Please reload the page.");
     } finally {
       setIsLoadingSubjects(false);
     }
@@ -748,7 +749,7 @@ const TestCreationForm = () => {
       }
     } catch (error) {
       console.error("Error =>", error);
-      toast.error("Something went wrong");
+      showApiError(error, editMode ? "Could not update the test. Please try again." : "Could not create the test. Please try again.");
     } finally {
       setIsSubmitting(false);
       setShowSummary(false);
@@ -1501,7 +1502,7 @@ const TestCreationForm = () => {
                         fontSize: "14px",
                       }}
                     >
-                      Max Score upper limit is 100
+                      Max Score upper limit is {maxScoreLimit(className)}
                     </div>
                   </div>
                 </div>
@@ -1772,18 +1773,6 @@ const TestCreationForm = () => {
       </form>
 
       {/* Toast container for notifications */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        style={{ zIndex: 99999999 }}
-      />
 
       {/* Summary Modal */}
       <ModalSummary

@@ -4,13 +4,14 @@ import MUIDataTable from "mui-datatables";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ButtonCustom from "../../components/ButtonCustom";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import DownloadModal from "../../components/modal/DownloadModal"; // Import the download modal
 import api from "../../../api";
 import { getCurrentAcademicYear } from "../../utils/academicYear";
+import { showApiError } from "../../utils/apiError";
 
 // Internal styles
 const styles = {
@@ -317,7 +318,7 @@ export default function SchoolReport({ schoolName }) {
       }
     } catch (error) {
       console.error("Error downloading report:", error);
-      toast.error("An error occurred while generating the report");
+      showApiError(error, "Could not create the report file. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -1272,13 +1273,6 @@ export default function SchoolReport({ schoolName }) {
         {isLoading && <SpinnerPageOverlay isLoading={isLoading} />}
 
         {/* Toast Container */}
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-          style={{ zIndex: 99999999 }}
-        />
       </div>
     </ThemeProvider>
   );

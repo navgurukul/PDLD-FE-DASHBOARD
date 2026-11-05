@@ -5,7 +5,7 @@ import { Button, TextField, CircularProgress, FormControl, InputLabel, MenuItem,
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Search } from "lucide-react";
 import "../components/TestListTable.css"; // Import the CSS for consistent table styles
@@ -15,6 +15,7 @@ import DownloadModal from "../components/modal/DownloadModal";
 import apiInstance from "../../api";
 import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import { toDisplayAcademicYear } from "../utils/academicYear";
+import { showApiError } from "../utils/apiError";
 
 const theme = createTheme({
   typography: {
@@ -190,7 +191,7 @@ export default function EnrollmentReport() {
     } catch (error) {
       if (isCancelledRequest(error) || !request.isLatest()) return;
       console.error("Error fetching enrollment data:", error);
-      toast.error("Failed to fetch enrollment data. Please try again.");
+      showApiError(error, "Could not load the enrollment report. Please try again.");
       setData([]);
       setMetadata({});
     } finally {
@@ -226,7 +227,7 @@ export default function EnrollmentReport() {
       }
     } catch (error) {
       console.error("Error fetching blocks and clusters:", error);
-      toast.error("Failed to load blocks and clusters data");
+      showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
     }
   };
 
@@ -465,7 +466,7 @@ export default function EnrollmentReport() {
       }
     } catch (error) {
       console.error("Error downloading report:", error);
-      toast.error("An error occurred while generating the report");
+      showApiError(error, "Could not create the report file. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -1439,13 +1440,6 @@ export default function EnrollmentReport() {
             </div>
           </div>
 
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            closeOnClick
-            style={{ zIndex: 99999999 }}
-          />
         </div>
 
         {/* Download Modal */}

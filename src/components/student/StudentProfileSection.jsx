@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Typography, Box, Grid, Paper, Tabs, Tab, Button, Alert, LinearProgress } from "@mui/material";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useTheme } from "@mui/material/styles";
@@ -15,6 +15,7 @@ import AcademicOverviewGraph from "../graph/AcademicOverviewGraph";
 import { Tooltip } from "@mui/material";
 import AcademicYearSelect from "../AcademicYearSelect";
 import { getAcademicYearStart, toApiAcademicYear, toDisplayAcademicYear } from "../../utils/academicYear";
+import { showApiError } from "../../utils/apiError";
 
 // Tab panel component
 function TabPanel(props) {
@@ -136,8 +137,7 @@ const StudentProfileView = () => {
       }
     } catch (error) {
       console.error("Error fetching student profile:", error);
-      toast.error("Failed to load student profile. Please try again later.");
-      setError("Error fetching student data: " + (error.message || "Unknown error"));
+      setError(showApiError(error, "Could not load the student profile. Please try again."));
     } finally {
       setIsLoading(false);
       setIsYearLoading(false);
@@ -198,7 +198,7 @@ const StudentProfileView = () => {
       }
     } catch (error) {
       console.error("Error downloading report:", error);
-      toast.error("An error occurred while generating the report");
+      showApiError(error, "Could not create the report file. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -1192,13 +1192,6 @@ const StudentProfileView = () => {
         reportLevel="student"
       />
 
-      <ToastContainer
-        style={{ zIndex: 99999999 }}
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        closeOnClick
-      />
     </Box>
   );
 };

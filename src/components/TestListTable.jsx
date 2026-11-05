@@ -9,7 +9,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import "./TestListTable.css";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
 import Tooltip from "@mui/material/Tooltip";
 
@@ -30,6 +30,7 @@ import {
   readStoredAcademicYear,
   storeAcademicYear,
 } from "../utils/academicYear";
+import { showApiError } from "../utils/apiError";
 
 const theme = createTheme({
   typography: {
@@ -243,7 +244,7 @@ export default function TestListTable() {
     } catch (error) {
       // No fallback - API-driven only
       console.error('Failed to fetch class-wise subjects:', error);
-      toast.error('Failed to load class and subject options from API');
+      showApiError(error, "Could not load the class and subject filters. Please reload the page.");
       setClassOptions([]);
       setSubjectOptions([]);
     }
@@ -382,7 +383,7 @@ export default function TestListTable() {
       // Don't leave the previous filter's rows on screen as if they were the answer
       setTests([]);
       setTotalRecords(0);
-      toast.error(error.response?.data?.error || "Could not load tests. Please try again.");
+      showApiError(error, "Could not load the tests. Please try again.");
     } finally {
       if (request.isLatest()) {
         setIsLoading(false);
@@ -1279,13 +1280,6 @@ export default function TestListTable() {
         </div>
 
         {/* Toasts and loading */}
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-          style={{ zIndex: 99999999 }}
-        />
         {/* Only show full-page spinner for non-search operations */}
         {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}
       </div>

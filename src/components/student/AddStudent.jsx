@@ -23,10 +23,11 @@ import DatePicker from "react-datepicker";
 import apiInstance from "../../../api";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ButtonCustom from "../../components/ButtonCustom";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { format } from "date-fns";
 import ConfirmationModal from "../modal/ConfirmationModal";
+import { showApiError } from "../../utils/apiError";
 
 const theme = createTheme({
   typography: {
@@ -572,7 +573,7 @@ export default function AddStudent({ isEditMode = false }) {
       }
     } catch (error) {
       console.error("Error saving student data:", error);
-      toast.error(  error.response?.data?.error || error.response?.data?.message || error.message || "Failed to save student data");
+      showApiError(error, "Could not save the student. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -1039,13 +1040,6 @@ export default function AddStudent({ isEditMode = false }) {
         />
       )}
 
-      <ToastContainer
-        style={{ zIndex: 99999999 }}
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        closeOnClick
-      />
     </ThemeProvider>
   );
 }
