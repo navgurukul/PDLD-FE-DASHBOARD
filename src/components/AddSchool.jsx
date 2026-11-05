@@ -16,7 +16,8 @@ import apiInstance from "../../api";
 import ButtonCustom from "./ButtonCustom";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import mixpanel from '../utils/mixpanel';
-import { showApiError } from "../utils/apiError";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import { showFormErrors, scrollToFirstError } from "../utils/formErrors";
 
 export default function AddSchool({ onClose, onSave }) {
   const { schoolId } = useParams();
@@ -39,12 +40,13 @@ export default function AddSchool({ onClose, onSave }) {
   const [clusterInput, setClusterInput] = useState("");
   const [allClusters, setAllClusters] = useState([]);
 
+  // The message shown under each field ("" = no problem)
   const [errors, setErrors] = useState({
-    schoolName: false,
-    udiseCode: false,
-    clusterName: false,
-    blockName: false,
-    crcCode: false,
+    schoolName: "",
+    udiseCode: "",
+    clusterName: "",
+    blockName: "",
+    crcCode: "",
   });
 
   // Fetch blocks and clusters data on component mount
@@ -178,7 +180,7 @@ export default function AddSchool({ onClose, onSave }) {
     if (value.trim()) {
       setErrors({
         ...errors,
-        [name]: false,
+        [name]: "",
       });
     }
   };
@@ -210,7 +212,7 @@ export default function AddSchool({ onClose, onSave }) {
 
       setErrors((prevErrors) => ({
         ...prevErrors,
-        blockName: false,
+        blockName: "",
       }));
     }
   };
@@ -240,7 +242,7 @@ export default function AddSchool({ onClose, onSave }) {
 
       setErrors((prevErrors) => ({
         ...prevErrors,
-        clusterName: false,
+        clusterName: "",
       }));
     }
   };
@@ -263,15 +265,15 @@ export default function AddSchool({ onClose, onSave }) {
     if (typeof newValue === "string") {
       const trimmedValue = newValue.trim();
 
-      // Check if input starts with alphabet
+      // Check if input starts with alphabet (the reason shows under the field)
       if (trimmedValue && !startsWithAlphabet(trimmedValue)) {
-        toast.error("Block name must start with an alphabet");
+        setErrors((prev) => ({ ...prev, blockName: "Block name must start with a letter" }));
         return; // Don't update state
       }
 
       // Check if input follows the valid pattern
       if (trimmedValue && !isValidName(trimmedValue)) {
-        toast.error("Block name can only contain letters, spaces, and numbers at the end");
+        setErrors((prev) => ({ ...prev, blockName: "Block name can only contain letters and spaces, with numbers only at the end" }));
         return; // Don't update state
       }
 
@@ -279,12 +281,12 @@ export default function AddSchool({ onClose, onSave }) {
       if (trimmedValue && !hasMinimumLength(trimmedValue)) {
         setErrors({
           ...errors,
-          blockName: true,
+          blockName: "Block name must be at least 2 characters",
         });
       } else {
         setErrors({
           ...errors,
-          blockName: false,
+          blockName: "",
         });
       }
 
@@ -328,7 +330,7 @@ export default function AddSchool({ onClose, onSave }) {
       setClusterInput("");
       setErrors({
         ...errors,
-        blockName: false,
+        blockName: "",
       });
     } else {
       setFormData({
@@ -347,15 +349,15 @@ export default function AddSchool({ onClose, onSave }) {
     if (typeof newValue === "string") {
       const trimmedValue = newValue.trim();
 
-      // Check if input starts with alphabet
+      // Check if input starts with alphabet (the reason shows under the field)
       if (trimmedValue && !startsWithAlphabet(trimmedValue)) {
-        toast.error("Cluster name must start with an alphabet");
+        setErrors((prev) => ({ ...prev, clusterName: "Cluster name must start with a letter" }));
         return; // Don't update state
       }
 
       // Check if input follows the valid pattern
       if (trimmedValue && !isValidName(trimmedValue)) {
-        toast.error("Cluster name can only contain letters, spaces, and numbers at the end");
+        setErrors((prev) => ({ ...prev, clusterName: "Cluster name can only contain letters and spaces, with numbers only at the end" }));
         return; // Don't update state
       }
 
@@ -363,12 +365,12 @@ export default function AddSchool({ onClose, onSave }) {
       if (trimmedValue && !hasMinimumLength(trimmedValue)) {
         setErrors({
           ...errors,
-          clusterName: true,
+          clusterName: "Cluster name must be at least 2 characters",
         });
       } else {
         setErrors({
           ...errors,
-          clusterName: false,
+          clusterName: "",
         });
       }
 
@@ -408,7 +410,7 @@ export default function AddSchool({ onClose, onSave }) {
       setClusterInput(newValue.name);
       setErrors({
         ...errors,
-        clusterName: false,
+        clusterName: "",
       });
     }
     // Handle clearing selection
@@ -426,76 +428,39 @@ export default function AddSchool({ onClose, onSave }) {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
+  // Checks the whole form at once; each problem is shown under its field
   const validateForm = () => {
+    const nameProblem = (value, kind) => {
+      if (!value.trim()) return `Enter the ${kind.toLowerCase()} name`;
+      if (!startsWithAlphabet(value)) return `${kind} name must start with a letter`;
+      if (!isValidName(value)) return `${kind} name can only contain letters and spaces, with numbers only at the end`;
+      if (!hasMinimumLength(value)) return `${kind} name must be at least 2 characters`;
+      return "";
+    };
+    const udise = formData.udiseCode.trim();
+    const crc = formData.crcCode.trim();
+
     const newErrors = {
-      schoolName: !formData.schoolName.trim(),
-      udiseCode: !formData.udiseCode.trim(),
-      blockName:
-        !formData.blockName.trim() ||
-        !hasMinimumLength(formData.blockName) ||
-        !startsWithAlphabet(formData.blockName) ||
-        !isValidName(formData.blockName),
-      clusterName:
-        !formData.clusterName.trim() ||
-        !hasMinimumLength(formData.clusterName) ||
-        !startsWithAlphabet(formData.clusterName) ||
-        !isValidName(formData.clusterName),
-        crcCode: !formData.crcCode.trim(),
+      schoolName: formData.schoolName.trim() ? "" : "Enter the school name",
+      udiseCode: !udise ? "Enter the UDISE code" : udise.length !== 11 ? `UDISE code must be 11 digits (you entered ${udise.length})` : "",
+      blockName: nameProblem(formData.blockName, "Block"),
+      clusterName: nameProblem(formData.clusterName, "Cluster"),
+      crcCode: !crc ? "Enter the CRC code" : !/^\d+$/.test(crc) ? "CRC code can only contain numbers" : crc.length !== 10 ? `CRC code must be 10 digits (you entered ${crc.length})` : "",
     };
 
-    // Specific error messages for block name
-    if (formData.blockName.trim()) {
-      if (!startsWithAlphabet(formData.blockName)) {
-        toast.error("Block name must start with an alphabet");
-        return false;
-      }
-      if (!isValidName(formData.blockName)) {
-        toast.error("Block name can only contain letters, spaces, and numbers at the end");
-        return false;
-      }
-      if (!hasMinimumLength(formData.blockName)) {
-        toast.error("Block name must be at least 2 characters long");
-        return false;
-      }
-    }
-
-    // Specific error messages for cluster name
-    if (formData.clusterName.trim()) {
-      if (!startsWithAlphabet(formData.clusterName)) {
-        toast.error("Cluster name must start with an alphabet");
-        return false;
-      }
-      if (!isValidName(formData.clusterName)) {
-        toast.error("Cluster name can only contain letters, spaces, and numbers at the end");
-        return false;
-      }
-      if (!hasMinimumLength(formData.clusterName)) {
-        toast.error("Cluster name must be at least 2 characters long");
-        return false;
-      }
-    }
-
-    // UDISE code length validation
-    if (formData.udiseCode.trim().length !== 11) {
-      newErrors.udiseCode = true;
-      toast.error("UDISE MUST BE 11 digits");
-      return false;
-    }
-
-    // CRC code validation (10 digits, numeric only)
-    if (formData.crcCode.trim().length !== 10) {
-      newErrors.crcCode = true;
-      toast.error("CRC Code must be exactly 10 digits");
-      return false;
-    }
-    if (!/^\d+$/.test(formData.crcCode.trim())) {
-      newErrors.crcCode = true;
-      toast.error("CRC Code can only contain numbers");
-      return false;
-    }
-
     setErrors(newErrors);
-    return !Object.values(newErrors).some((error) => error);
+    return !showFormErrors(newErrors);
+  };
+
+  // A problem the server found: put it on the matching field when the message names one
+  const showServerError = (error) => {
+    const message = getErrorMessage(error, schoolId ? "Could not update the school. Please try again." : "Could not add the school. Please try again.");
+    const field = /udise/i.test(message) ? "udiseCode" : /crc/i.test(message) ? "crcCode" : /cluster/i.test(message) ? "clusterName" : /block/i.test(message) ? "blockName" : /school name/i.test(message) ? "schoolName" : null;
+    if (field) {
+      setErrors((prev) => ({ ...prev, [field]: message }));
+      scrollToFirstError();
+    }
+    toast.error(message, { autoClose: 8000 });
   };
 
   const handleSubmit = async () => {
@@ -516,8 +481,8 @@ export default function AddSchool({ onClose, onSave }) {
 
         // For the update existing school case (when schoolId exists)
         if (schoolId) {
-          try {
-            // Update existing school
+          {
+            // Update existing school (a failure goes to the catch below, which shows why)
             response = await apiInstance.put(`/school/update/${schoolId}`, payload);
 
             // Success message
@@ -535,8 +500,6 @@ export default function AddSchool({ onClose, onSave }) {
                 replace: true, // Force navigation
               });
             }, 100);
-          } catch (error) {
-            console.log(error, "ERROR");
           }
         } else {
           // Create new school
@@ -586,12 +549,10 @@ export default function AddSchool({ onClose, onSave }) {
         // Handle error cases
         console.error(schoolId ? "Error updating school:" : "Error creating school:", error);
 
-        showApiError(error, schoolId ? "Could not update the school. Please try again." : "Could not add the school. Please try again.");
+        showServerError(error);
       } finally {
         setLoading(false);
       }
-    } else {
-      toast.error("Please fill all required fields");
     }
   };
 
@@ -781,7 +742,7 @@ export default function AddSchool({ onClose, onSave }) {
               value={formData.schoolName}
               onChange={handleChange}
               placeholder="Enter school name"
-              error={errors.schoolName}
+              error={!!errors.schoolName}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "8px",
@@ -795,7 +756,7 @@ export default function AddSchool({ onClose, onSave }) {
                 },
               }}
             />
-            {errors.schoolName && <FormHelperText error>School name is required</FormHelperText>}
+            {errors.schoolName && <FormHelperText error>{errors.schoolName}</FormHelperText>}
           </Box>
 
           <Box>
@@ -806,7 +767,7 @@ export default function AddSchool({ onClose, onSave }) {
               value={formData.udiseCode}
               onChange={handleChange}
               placeholder="Enter UDISE code"
-              error={errors.udiseCode}
+              error={!!errors.udiseCode}
               disabled={!!schoolId}
               type="tel"
               inputProps={{
@@ -826,7 +787,7 @@ export default function AddSchool({ onClose, onSave }) {
                 },
               }}
             />
-            {errors.udiseCode && <FormHelperText error>UDISE code is required</FormHelperText>}
+            {errors.udiseCode && <FormHelperText error>{errors.udiseCode}</FormHelperText>}
           </Box>
 
           <Box className="h-full">
@@ -845,10 +806,10 @@ export default function AddSchool({ onClose, onSave }) {
                   label="Block Name"
                   placeholder="Search or add new block"
                   required
-                  error={errors.blockName}
+                  error={!!errors.blockName}
                   helperText={
                     errors.blockName
-                      ? "Block name is required"
+                      ? errors.blockName
                       : "Type to search, or select 'Create new' option for a new block"
                   }
                   sx={{
@@ -899,10 +860,10 @@ export default function AddSchool({ onClose, onSave }) {
                   label="Cluster Name"
                   placeholder="Search or add new cluster"
                   required
-                  error={errors.clusterName}
+                  error={!!errors.clusterName}
                   helperText={
                     errors.clusterName
-                      ? "Cluster name is required"
+                      ? errors.clusterName
                       : "Type to search, or select 'Create new' option for a new cluster"
                   }
                   sx={{
@@ -948,7 +909,7 @@ export default function AddSchool({ onClose, onSave }) {
                 handleChange({ target: { name: 'crcCode', value } });
               }}
               placeholder="Enter 10-digit CRC code"
-              error={errors.crcCode}
+              error={!!errors.crcCode}
               disabled={!!schoolId}
               inputProps={{
                 maxLength: 10,
@@ -969,14 +930,7 @@ export default function AddSchool({ onClose, onSave }) {
               }}
             />
             {errors.crcCode && (
-              <FormHelperText error>
-                {formData.crcCode.trim() === "" 
-                  ? "CRC code is required" 
-                  : formData.crcCode.trim().length !== 10 
-                    ? "CRC code must be exactly 10 digits" 
-                    : "CRC code can only contain numbers"
-                }
-              </FormHelperText>
+              <FormHelperText error>{errors.crcCode}</FormHelperText>
             )}
           </Box>
         </Box>

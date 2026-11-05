@@ -27,7 +27,8 @@ import { toast } from "react-toastify";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { format } from "date-fns";
 import ConfirmationModal from "../modal/ConfirmationModal";
-import { showApiError } from "../../utils/apiError";
+import { getErrorMessage } from "../../utils/apiError";
+import { showFormErrors, scrollToFirstError } from "../../utils/formErrors";
 
 const theme = createTheme({
   typography: {
@@ -493,6 +494,8 @@ export default function AddStudent({ isEditMode = false }) {
     }
 
     setErrors(newErrors);
+    // One popup (the message, or how many fields), then scroll to the first red field
+    showFormErrors(newErrors);
     return isValid;
   };
 
@@ -501,7 +504,6 @@ export default function AddStudent({ isEditMode = false }) {
     event.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please correct the errors in the form");
       return;
     }
 
@@ -573,7 +575,13 @@ export default function AddStudent({ isEditMode = false }) {
       }
     } catch (error) {
       console.error("Error saving student data:", error);
-      showApiError(error, "Could not save the student. Please try again.");
+      // A problem the server found goes on the matching field too ("Student with Aadhar ID ... already exists")
+      const message = getErrorMessage(error, "Could not save the student. Please try again.");
+      if (/aadha?ar/i.test(message)) {
+        setErrors((prev) => ({ ...prev, aadharId: message }));
+        scrollToFirstError();
+      }
+      toast.error(message, { autoClose: 8000 });
     } finally {
       setIsSubmitting(false);
     }
@@ -610,7 +618,7 @@ export default function AddStudent({ isEditMode = false }) {
 
         <Box sx={{ py: 2 }}>
           <Paper elevation={0} sx={{ p: 0, borderRadius: "8px" }}>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <Grid container spacing={3}>
               {/* Student Name */}
               <Grid item xs={12} md={6}>
@@ -893,7 +901,7 @@ export default function AddStudent({ isEditMode = false }) {
               {/* Stream - Only for Classes 11-12 */}
               {isHigherClass && (
                 <Grid item xs={12} md={12}>
-                  <FormControl fullWidth error={!!errors.stream} required>
+                  <FormControl fullWidth error={!!errors.stream} required data-invalid={errors.stream ? "true" : undefined}>
                     <InputLabel id="stream-select-label">Stream</InputLabel>
                     <Select
                       labelId="stream-select-label"
