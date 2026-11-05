@@ -22,7 +22,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import { useNavigate } from "react-router-dom";
 import ButtonCustom from "../../ButtonCustom";
 import apiInstance from "../../../../api";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import StudentUploadStepper from "./StudentUploadStepper";
 import StudentCSVMapper from "./CSVMapper";
 import StudentSampleCSVModal from "./SampleCSVModal";
@@ -33,6 +33,7 @@ import FileDownloadSvg from "../../../assets/file_download.svg";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
+import { showApiError } from "../../../utils/apiError";
 
 const theme = createTheme({
   typography: {
@@ -236,11 +237,7 @@ export default function BulkUploadStudents() {
       }
     } catch (error) {
       // Axios error handling
-      let errorMessage = "Error uploading file";
-      if (error.response && error.response.data && error.response.data.message) {
-        errorMessage = error.response.data.message;
-      }
-      toast.error(errorMessage);
+      const errorMessage = showApiError(error, "Could not upload the file. Please try again.");
       setErrorData([
         {
           studentName: "Error",
@@ -1233,7 +1230,6 @@ export default function BulkUploadStudents() {
           />
         )}
       </Box>
-      <ToastContainer style={{ zIndex: 99999999 }} position="top-right" autoClose={4000} />
     </ThemeProvider>
   );
 }
