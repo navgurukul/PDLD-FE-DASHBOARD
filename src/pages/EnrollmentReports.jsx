@@ -15,7 +15,9 @@ import DownloadModal from "../components/modal/DownloadModal";
 import apiInstance from "../../api";
 import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import { toDisplayAcademicYear } from "../utils/academicYear";
-import { showApiError } from "../utils/apiError";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "../components/LoadError";
+import { openPrintWindow } from "../utils/printWindow";
 
 const theme = createTheme({
   typography: {
@@ -85,6 +87,7 @@ const theme = createTheme({
 
 export default function EnrollmentReport() {
   const [data, setData] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [isLoading, setIsLoading] = useState(false);
@@ -135,6 +138,7 @@ export default function EnrollmentReport() {
 
   const fetchEnrollmentData = async () => {
     const request = startRequest();
+    setLoadError(null);
     // Set appropriate loading state based on search
     if (debouncedSearchQuery) {
       setIsSearchLoading(true);
@@ -184,14 +188,15 @@ export default function EnrollmentReport() {
         }));
         
       } else {
-        toast.error(response.data.message || "Failed to fetch enrollment data");
+        setLoadError(response.data.message || "Could not load the enrollment report. Please try again.");
         setData([]);
         setMetadata({});
       }
     } catch (error) {
       if (isCancelledRequest(error) || !request.isLatest()) return;
       console.error("Error fetching enrollment data:", error);
-      showApiError(error, "Could not load the enrollment report. Please try again.");
+      // Shown in place of the table, so a failure never looks like an empty report
+      setLoadError(getErrorMessage(error, "Could not load the enrollment report. Please try again."));
       setData([]);
       setMetadata({});
     } finally {
@@ -493,7 +498,7 @@ export default function EnrollmentReport() {
   // Download report as PDF
   const handleDownloadPDF = (data) => {
     // Create a new window for printing
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
 
     // Calculate statistics for the report
     const totalRecords = data.length;
@@ -1331,7 +1336,11 @@ export default function EnrollmentReport() {
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
-            <MUIDataTable data={processedData} columns={columns} options={options} />
+            {loadError ? (
+              <LoadError title="Could not load the enrollment report" message={loadError} onRetry={fetchEnrollmentData} />
+            ) : (
+              <MUIDataTable data={processedData} columns={columns} options={options} />
+            )}
           </div>
 
           {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}

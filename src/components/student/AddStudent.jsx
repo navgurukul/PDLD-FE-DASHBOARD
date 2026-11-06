@@ -17,7 +17,9 @@ import {
   Checkbox,
   ListItemText,
   OutlinedInput,
+  Button,
 } from "@mui/material";
+import LoadError from "../LoadError";
 import { useNavigate, useLocation } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import apiInstance from "../../../api";
@@ -512,6 +514,11 @@ export default function AddStudent({ isEditMode = false }) {
       return;
     }
 
+    // Editing without the student's id must never fall through to "add" (that made duplicates)
+    if (isEditMode && !studentId) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -602,6 +609,28 @@ export default function AddStudent({ isEditMode = false }) {
     { value: "11", label: "Class 11" },
     { value: "12", label: "Class 12" },
   ];
+
+  // Opened from a saved link or a new tab: the student to edit is unknown
+  if (isEditMode && !studentId) {
+    return (
+      <ThemeProvider theme={theme}>
+        <Box sx={{ py: 3, px: 1, maxWidth: "800px", margin: "0 auto" }}>
+          <h5 className="text-lg font-bold text-[#2F4F4F]">Edit Student</h5>
+          <LoadError
+            title="Open this student again"
+            message="This page doesn't know which student to edit. This happens when it is opened from a saved link or a new tab. Go back to the student list and click Edit next to the student."
+          />
+          <Button
+            variant="contained"
+            onClick={() => originalNavigate(`/schools/schoolDetail/${extractedSchoolId}`, { state: { selectedTab: 1 } })}
+            sx={{ backgroundColor: "#2F4F4F", textTransform: "none", borderRadius: "8px" }}
+          >
+            Back to students
+          </Button>
+        </Box>
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider theme={theme}>

@@ -36,6 +36,7 @@ import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { Search } from "lucide-react";
 import { useDebounce } from "../../customHook/useDebounce";
 import { showApiError, getErrorMessage } from "../../utils/apiError";
+import { openPrintWindow } from "../../utils/printWindow";
 
 // Utility function to convert school names to Title Case
 const toTitleCase = (str) => {
@@ -916,7 +917,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   };
 
   const handleDownloadPDF = (data) => {
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
     const currentDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",

@@ -240,11 +240,10 @@ export default function BulkUploadStudents() {
       const errorMessage = showApiError(error, "Could not upload the file. Please try again.");
       setErrorData([
         {
-          studentName: "Error",
-          enrollmentId: "",
-          grade: "",
-          schoolId: "",
-          reason: errorMessage || "Failed to process upload",
+          row: "—",
+          fullName: "Whole file",
+          error: errorMessage || "Could not upload the file. Please try again.",
+          uploadedRow: {},
         },
       ]);
       setUploadResult(error.response?.data || { error: "Upload failed" });
@@ -312,47 +311,42 @@ export default function BulkUploadStudents() {
       return [];
     }
 
-    return apiErrors.map((errorItem, index) => {
+    return apiErrors.map((errorItem) => {
       const studentData = errorItem.data || {};
+      const row = typeof errorItem.row === "number" ? errorItem.row : null;
+      // The row exactly as it was uploaded (row 1 is the header), so the error file can be fixed and uploaded again
+      const uploadedRow = row && editedCsvData?.[row - 2] ? editedCsvData[row - 2] : studentData;
 
       // Return a clean object without duplication
       return {
         // All original data from the API response
         ...studentData,
         // Error details
-        error: errorItem.error || "Unknown error",
-        row: errorItem.row || index + 1,
+        error: errorItem.error || "This row could not be saved.",
+        row: row ?? "—",
+        uploadedRow,
       };
     });
   };
 
   // Add this function to your BulkUploadStudents component
   const downloadErrorsCSV = () => {
-    // Define headers for the CSV (only Row No., Student Name, Error Reason)
-    const csvHeaders = [
-      { id: "row", label: "Row No." },
-      { id: "fullName", label: "Student Name" },
-      { id: "error", label: "Error Reason" },
-    ];
-
-    // Rest of the function remains the same...
-    // Create CSV header row
-    const csvHeader = csvHeaders.map((header) => header.label).join(",");
-
-    // Create CSV rows from error data
-    const csvRows = errorData.map((error) => {
-      return csvHeaders
-        .map((header) => {
-          let value = error[header.id] !== undefined ? error[header.id] : "";
-
-          // Handle commas and quotes in CSV properly
-          if (typeof value === "string" && (value.includes(",") || value.includes('"'))) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-          return value;
-        })
-        .join(",");
+    // The failed rows with every column as uploaded, plus why each failed: fix the rows and upload this file again
+    const csvCell = (value) => {
+      const text = value === undefined || value === null ? "" : String(value);
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const columns = [];
+    errorData.forEach((error) => {
+      Object.keys(error.uploadedRow || {}).forEach((key) => {
+        if (key !== "schoolId" && !columns.includes(key)) columns.push(key);
+      });
     });
+
+    const csvHeader = [...columns, "Error Reason"].map(csvCell).join(",");
+    const csvRows = errorData.map((error) =>
+      [...columns.map((key) => error.uploadedRow?.[key]), error.error].map(csvCell).join(",")
+    );
 
     // Combine header and rows
     const csvContent = [csvHeader, ...csvRows].join("\n");

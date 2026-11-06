@@ -49,7 +49,7 @@ export default function UploadSummary() {
 		} else {
 			// If no data is available, redirect to the upload page
 			toast.error("No upload data available");
-			navigate("/bulk-upload-schools");
+			navigate("/schools/bulk-upload", { replace: true });
 		}
 
 		if (location.state?.totalUploadCount) {

@@ -147,7 +147,8 @@ const StudentErrorDetailsDialog = ({ open, onClose, errorData }) => {
                     {displayHeaders.map((header, colIdx) => (
                       <TableCell key={`${index}-${header.id}`} sx={{ py: 2 }}>
                         {header.id === "row" ? (
-                          (page - 1) * rowsPerPage + index + 1
+                          // Same row number as the summary: the row in the uploaded file
+                          error.row ?? (page - 1) * rowsPerPage + index + 1
                         ) : header.id === "class" ? (
                           error[header.id] ? (
                             `Class ${error[header.id]}`
