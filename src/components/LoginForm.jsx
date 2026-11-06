@@ -1,9 +1,10 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { TextField, Paper, Typography, Box } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../App"; // Import the AuthContext
-import apiInstance from "../../api"; // Import your API instance
+import apiInstance, { SESSION_EXPIRED_KEY, RETURN_TO_KEY } from "../../api"; // Import your API instance
+import { getErrorMessage } from "../utils/apiError";
 import { Eye, EyeOff } from "lucide-react";
 import ButtonCustom from "./ButtonCustom";
 import mixpanel from '../utils/mixpanel';
@@ -58,6 +59,26 @@ const theme = createTheme({
 	},
 });
 
+// Why sign-in failed, in words the user can act on
+function loginErrorMessage(error, wrongDetails) {
+	const status = error?.response?.status;
+	const serverText = String(error?.response?.data?.error || "");
+	if (status === 401 && /inactive/i.test(serverText)) {
+		return "This account has been turned off. Ask your district office to turn it on again.";
+	}
+	if (status === 401) return wrongDetails;
+	if (status >= 500) return "The server could not sign you in right now. Please try again in a minute.";
+	return getErrorMessage(error, "Could not sign in. Please try again.");
+}
+
+// The page they were on when the session expired, if it belongs to this kind of login
+function takeReturnPath(isSchool) {
+	const path = sessionStorage.getItem(RETURN_TO_KEY);
+	sessionStorage.removeItem(RETURN_TO_KEY);
+	if (!path || !path.startsWith("/") || path.startsWith("//") || path.startsWith("/login")) return null;
+	return isSchool === path.startsWith("/my-school") ? path : null;
+}
+
 export default function LoginForm({ onLogin }) {
 	const navigate = useNavigate();
 	const { login } = useContext(AuthContext);
@@ -72,6 +93,11 @@ export default function LoginForm({ onLogin }) {
 
 	const [errors, setErrors] = useState({});
 	const [isLoading, setIsLoading] = useState(false);
+	// The API sets this when a saved login stops working; cleared after it is shown once
+	const [sessionExpired] = useState(() => sessionStorage.getItem(SESSION_EXPIRED_KEY) === "1");
+	useEffect(() => {
+		sessionStorage.removeItem(SESSION_EXPIRED_KEY);
+	}, []);
 
 	const handleInputChange = (event) => {
 		const { name, value } = event.target;
@@ -128,13 +154,9 @@ export default function LoginForm({ onLogin }) {
 					// analytics must not block sign-in
 				}
 				login(token, userData);
-				navigate("/my-school");
+				navigate(takeReturnPath(true) || "/my-school");
 			} catch (error) {
-				if (error.response && error.response.status === 401) {
-					setErrors({ general: "Wrong UDISE code or password. Please try again." });
-				} else {
-					setErrors({ general: "Connection error. Please try again later." });
-				}
+				setErrors({ general: loginErrorMessage(error, "Wrong UDISE code or password. Please try again.") });
 			} finally {
 				setIsLoading(false);
 			}
@@ -199,21 +221,14 @@ export default function LoginForm({ onLogin }) {
 				// Pass the token to the login function from AuthContext
 				login(token, userData);
 
-				// Navigate to allTest route
-				navigate("/allTest");
+				// Back to the page they were on when the session expired, otherwise the tests list
+				navigate(takeReturnPath(false) || "/allTest");
 			} else {
 				// Handle case where response is successful but doesn't indicate success
-				setErrors({ general: "Login failed. Please try again." });
+				setErrors({ general: "Could not sign in. Please try again." });
 			}
 		} catch (error) {
-			// Removed console.error for general login errors
-			if (error.response && error.response.status === 401) {
-				setErrors({ general: "Invalid username or password. Please try again." });
-			} else if (error.response && error.response.data && error.response.data.message) {
-				setErrors({ general: error.response.data.message });
-			} else {
-				setErrors({ general: "Connection error. Please try again later." });
-			}
+			setErrors({ general: loginErrorMessage(error, "Wrong username or password. Please try again.") });
 		} finally {
 			setIsLoading(false);
 		}
@@ -349,6 +364,12 @@ export default function LoginForm({ onLogin }) {
 								}}
 							/>
 						</Box>
+
+						{sessionExpired && !errors.general && (
+							<Typography variant="body2" align="center" sx={{ mb: 2, color: "#8A5A00", backgroundColor: "#FFF4E0", borderRadius: "8px", p: 1.5 }} role="status">
+								Your session expired. Please sign in again to continue where you left off.
+							</Typography>
+						)}
 
 						{errors.general && (
 							<Typography color="error" variant="body2" align="center" sx={{ mb: 2 }}>
