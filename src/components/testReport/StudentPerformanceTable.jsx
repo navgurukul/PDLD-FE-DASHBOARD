@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import DownloadModal from "../modal/DownloadModal";
 import { Search } from "lucide-react";
 import { toast } from "react-toastify";
+import { openPrintWindow } from "../../utils/printWindow";
 
 const theme = createTheme({
   typography: {
@@ -456,7 +457,7 @@ const StudentPerformanceTable = ({
   };
 
   const handleDownloadPDF = (data) => {
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
     const currentDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",

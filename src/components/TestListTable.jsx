@@ -30,7 +30,8 @@ import {
   readStoredAcademicYear,
   storeAcademicYear,
 } from "../utils/academicYear";
-import { showApiError } from "../utils/apiError";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "./LoadError";
 
 const theme = createTheme({
   typography: {
@@ -133,6 +134,7 @@ const theme = createTheme({
 
 export default function TestListTable() {
   const [tests, setTests] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState([null, null]);
   const [startDate, endDate] = dateRange;
@@ -342,6 +344,7 @@ export default function TestListTable() {
     } else {
       setIsLoading(true);
     }
+    setLoadError(null);
 
     try {
       let startDateFormatted;
@@ -383,7 +386,8 @@ export default function TestListTable() {
       // Don't leave the previous filter's rows on screen as if they were the answer
       setTests([]);
       setTotalRecords(0);
-      showApiError(error, "Could not load the tests. Please try again.");
+      // Shown in place of the table, so a failure never looks like "no tests"
+      setLoadError(getErrorMessage(error, "Could not load the tests. Please try again."));
     } finally {
       if (request.isLatest()) {
         setIsLoading(false);
@@ -1182,7 +1186,11 @@ export default function TestListTable() {
 
         {/* Data Table */}
         <div className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto">
-          <MUIDataTable data={tableData} columns={columns} options={options} />
+          {loadError ? (
+            <LoadError title="Could not load the tests" message={loadError} onRetry={fetchData} />
+          ) : (
+            <MUIDataTable data={tableData} columns={columns} options={options} />
+          )}
         </div>
 
         {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}

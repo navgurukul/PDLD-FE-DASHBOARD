@@ -16,6 +16,7 @@ import { Tooltip } from "@mui/material";
 import AcademicYearSelect from "../AcademicYearSelect";
 import { getAcademicYearStart, toApiAcademicYear, toDisplayAcademicYear } from "../../utils/academicYear";
 import { showApiError } from "../../utils/apiError";
+import { openPrintWindow } from "../../utils/printWindow";
 
 // Tab panel component
 function TabPanel(props) {
@@ -441,7 +442,7 @@ const StudentProfileView = () => {
 
   // Download report as PDF
   const handleDownloadPDF = (reportType) => {
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
     const currentDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",

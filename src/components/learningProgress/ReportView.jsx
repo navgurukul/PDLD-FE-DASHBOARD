@@ -645,6 +645,7 @@ export default function ReportView({ audience = "public", schoolMode = false, on
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [toast, setToast] = useState(null);
+	const [retry, setRetry] = useState(0);
 	const latest = useRef(0);
 	const view = params.view === "fln" ? "fln" : "tests";
 
@@ -675,7 +676,10 @@ export default function ReportView({ audience = "public", schoolMode = false, on
 			})
 			.finally(() => { if (id === latest.current) setLoading(false); });
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [audience, searchParams.toString()]);
+	}, [audience, searchParams.toString(), retry]);
+
+	// Figures for other filters are only shown faded while the new ones load, never as the answer
+	const stale = !loading && shownKey !== paramsKey;
 
 	const set = (patch) => {
 		const next = new URLSearchParams(searchParams);
@@ -742,7 +746,7 @@ export default function ReportView({ audience = "public", schoolMode = false, on
 
 			<Filters data={data} params={params} set={set} audience={audience} schoolMode={schoolMode} />
 
-			{data && (
+			{data && !stale && (
 				<p className="lp-noprint" style={{ margin: "0 0 18px", fontSize: 15, color: MUTED }}>
 					{view === "tests" && data.summary ? (
 						data.summary.eligible
@@ -754,10 +758,17 @@ export default function ReportView({ audience = "public", schoolMode = false, on
 				</p>
 			)}
 
-			{error && <div role="alert" style={{ ...card, borderColor: "#F44336", color: "#a12d23", marginBottom: 16 }}>{error}</div>}
+			{error && (
+				<div role="alert" style={{ ...card, borderColor: "#F44336", color: "#a12d23", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+					<span>{error}</span>
+					<button type="button" className="lp-noprint" onClick={() => setRetry((n) => n + 1)} disabled={loading} style={{ background: "#2F4F4F", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 14, cursor: "pointer" }}>
+						{loading ? "Trying…" : "Try again"}
+					</button>
+				</div>
+			)}
 			{loading && !data && <Empty>Loading the report…</Empty>}
 
-			{data && (
+			{data && !stale && (
 				<div style={{ opacity: loading && shownKey !== paramsKey ? 0.5 : 1, transition: "opacity .2s" }} aria-busy={loading && shownKey !== paramsKey}>
 					{view === "tests" ? (
 						<>

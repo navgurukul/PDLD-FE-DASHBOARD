@@ -14,7 +14,6 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import StudentDetails from "./StudentDetails";
@@ -22,6 +21,9 @@ import SchoolReport from "../components/school/SchoolReport";
 import ButtonCustom from "./ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentAcademicYear } from "../utils/academicYear";
+import apiInstance from "../../api";
+import { getErrorMessage } from "../utils/apiError";
+import LoadError from "./LoadError";
 
 const theme = createTheme({
   typography: {
@@ -75,62 +77,114 @@ function TabPanel(props) {
   );
 }
 
+// The school's login password must never be kept in the browser
+const withoutPassword = (school) => {
+  const copy = { ...(school || {}) };
+  delete copy.passwordHash;
+  delete copy.password;
+  return copy;
+};
+
+// Saved data belongs to the school in the address bar. Data passed with a click may have no id (trusted then).
+const isSameSchool = (school, schoolId, trustMissingId) => {
+  const id = school?.id ?? school?.schoolId;
+  if (id === undefined || id === null || id === "") return trustMissingId;
+  return String(id) === String(schoolId);
+};
+
+// The school's details when the page was not opened from the school list
+async function loadSchoolFromServer(schoolId) {
+  const res = await apiInstance.get(`/student/school/${schoolId}`);
+  const summary = res.data?.data?.data;
+  if (!summary?.udiseCode) throw new Error("This school was not found. It may have been deleted.");
+  let full = {};
+  try {
+    const byUdise = await apiInstance.get(`/school/udise/${encodeURIComponent(summary.udiseCode)}`);
+    full = byUdise.data?.data || {};
+  } catch (error) {
+    console.error("Could not load the full school record; showing the summary", error);
+  }
+  const schoolData = {
+    ...full,
+    id: schoolId,
+    schoolName: summary.schoolName ?? full.schoolName,
+    udiseCode: summary.udiseCode,
+    blockName: summary.blockName ?? full.blockName,
+    clusterName: summary.clusterName ?? full.clusterName,
+    assignedCAC: summary.assignedCAC ?? full.assignedCAC,
+    assignedCP: summary.assignedCP ?? full.assignedCP,
+  };
+  return { schoolData, academicYear: summary.academicYear };
+}
+
 export default function SchoolDetailView() {
   const { schoolId } = useParams();
   const navigate = useNavigate();
   const [school, setSchool] = useState(null);
   const [academicYear, setAcademicYear] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const { state } = useLocation();
   const [tabValue, setTabValue] = useState(state?.selectedTab || 0); // Default to Schoool Details tab if no state provided
 
   const theme = useTheme();
 
   useEffect(() => {
-    let schoolData = null;
-    let apiAcademicYear = null;
-
-    // First, check if we have data in location state
-    if (state && state.schoolData) {
-      schoolData = state.schoolData;
-      // Check if academic year is available in state (from API response)
-      apiAcademicYear = state.academicYear;
-      // Store in localStorage for persistence
-      localStorage.setItem("currentSchoolData", JSON.stringify(schoolData));
+    let cancelled = false;
+    const show = (schoolData, apiAcademicYear) => {
+      if (cancelled) return;
+      const safe = withoutPassword(schoolData);
+      setSchool(safe);
+      setAcademicYear(apiAcademicYear || null);
+      setLoadError(null);
+      setIsLoading(false);
+      // Kept for a page reload; only ever used again for this same school
+      localStorage.setItem("currentSchoolData", JSON.stringify(safe));
+      if (safe.schoolName) localStorage.setItem("currentSchoolName", safe.schoolName);
       if (apiAcademicYear) {
         localStorage.setItem("currentAcademicYear", apiAcademicYear);
+      } else {
+        localStorage.removeItem("currentAcademicYear");
       }
-    }
-    // If not in state, try localStorage
-    else {
-      const storedData = localStorage.getItem("currentSchoolData");
-      const storedAcademicYear = localStorage.getItem("currentAcademicYear");
-      if (storedData) {
-        try {
-          schoolData = JSON.parse(storedData);
-          apiAcademicYear = storedAcademicYear;
-        } catch (e) {
-          console.error("Error parsing stored school data", e);
-        }
-      }
-    }
+    };
 
-    if (schoolData) {
-      setSchool(schoolData);
-      setAcademicYear(apiAcademicYear);
-      setIsLoading(false);
+    // 1. Opened from the school list: the school came with the click
+    if (state?.schoolData && isSameSchool(state.schoolData, schoolId, true)) {
+      show(state.schoolData, state.academicYear);
     } else {
-      // In a real app, you would fetch the data from API using the schoolId
-      // For now, we'll show an error
-      toast.error("School data not available");
-      setIsLoading(false);
+      // 2. A reload of the same school
+      let stored = null;
+      try {
+        stored = JSON.parse(localStorage.getItem("currentSchoolData") || "null");
+      } catch (e) {
+        console.error("Error parsing stored school data", e);
+      }
+      if (stored && isSameSchool(stored, schoolId, false)) {
+        show(stored, localStorage.getItem("currentAcademicYear"));
+      } else {
+        // 3. A link, a new tab, or back from a student page: ask the server, never show the last school viewed
+        setIsLoading(true);
+        loadSchoolFromServer(schoolId)
+          .then(({ schoolData, academicYear: year }) => show(schoolData, year))
+          .catch((error) => {
+            if (cancelled) return;
+            console.error("Error loading school", error);
+            setSchool(null);
+            setLoadError(getErrorMessage(error, "Could not load this school. Please try again."));
+            setIsLoading(false);
+          });
+      }
     }
 
     // Store the schoolId in localStorage for breadcrumb use
     if (schoolId) {
       localStorage.setItem("lastSchoolId", schoolId);
     }
-  }, [state, schoolId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [state, schoolId, reloadKey]);
 
   useEffect(() => {
     // Agar schoolData ya schoolName state me ho to localStorage me save karo
@@ -187,6 +241,19 @@ export default function SchoolDetailView() {
   // Render loading state
   if (isLoading) {
     return <SpinnerPageOverlay isLoading={isLoading} />;
+  }
+
+  if (loadError) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <LoadError
+          title="Could not load this school"
+          message={loadError}
+          onRetry={() => setReloadKey((k) => k + 1)}
+        />
+        <ButtonCustom text={"Back to Schools"} startIcon={<ArrowBackIcon />} variant="contained" onClick={handleBack} />
+      </Box>
+    );
   }
 
   // Render error state if school not found

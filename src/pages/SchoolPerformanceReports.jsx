@@ -35,7 +35,9 @@ import {
   readStoredAcademicYear,
   storeAcademicYear,
 } from "../utils/academicYear";
-import { showApiError } from "../utils/apiError";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "../components/LoadError";
+import { openPrintWindow } from "../utils/printWindow";
 
 // Utility function to convert text to title case
 const toTitleCase = (str) => {
@@ -179,6 +181,7 @@ const Reports = () => {
   const [totalRecords, setTotalRecords] = useState(0);
   const [schools, setSchools] = useState([]);
   const [reportData, setReportData] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [selectedBlock, setSelectedBlock] = useState("");
   const [selectedCluster, setSelectedCluster] = useState("");
   const [classModalOpen, setClassModalOpen] = useState(false);
@@ -311,6 +314,7 @@ useEffect(() => {
 
   const fetchSchoolsData = async () => {
     const request = startRequest();
+    setLoadError(null);
     // Set appropriate loading state based on search
     if (debouncedSearchQuery) {
       setIsSearchLoading(true);
@@ -347,7 +351,7 @@ useEffect(() => {
       } else {
         setReportData([]);
         setTotalRecords(0);
-        toast.error("Failed to fetch report data");
+        setLoadError("The server sent an answer the page could not read. Please try again.");
       }
     } catch (error) {
       if (isCancelledRequest(error) || !request.isLatest()) return;
@@ -355,7 +359,8 @@ useEffect(() => {
       // Don't leave the previous filter's rows on screen as if they were the answer
       setReportData([]);
       setTotalRecords(0);
-      showApiError(error, "Could not load the report. Please try again.");
+      // Shown in place of the table, so a failure never looks like an empty report
+      setLoadError(getErrorMessage(error, "Could not load the report. Please try again."));
     } finally {
       if (request.isLatest()) {
         setIsLoading(false);
@@ -770,7 +775,7 @@ useEffect(() => {
   // Download report as PDF
   const handleDownloadPDF = (data) => {
     // Create a new window for printing
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
 
     // Calculate statistics for the report
     const totalSchools = data.length;
@@ -1556,7 +1561,11 @@ useEffect(() => {
 
         {/* Report Table */}
         <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
-          <CustomTable data={filteredData} />
+          {loadError ? (
+            <LoadError title="Could not load the report" message={loadError} onRetry={fetchSchoolsData} />
+          ) : (
+            <CustomTable data={filteredData} />
+          )}
         </div>
 
         {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}

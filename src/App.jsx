@@ -1,6 +1,6 @@
 import "./App.css";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Layout from "./layout/index";
 import Users from "./pages/Users";
 import Reportcards from "./pages/Reportcards";
@@ -16,7 +16,8 @@ import UserCreationForm from "./components/UserCreationForm";
 import LoginForm from "./components/LoginForm";
 import AddStudent from "./components/student/AddStudent";
 import StudentReportPage from "./components/student/StudentReportPage";
-import SchoolPerformance from "./components/school/SchoolPerformance";
+import { RouteErrorBoundary } from "./components/ErrorBoundary";
+import { RETURN_TO_KEY } from "../api";
 import LegalTerms from "./pages/LegalTerm";
 import EnrollmentReports from "./pages/EnrollmentReports";
 import SchoolPerformanceReports from "./pages/SchoolPerformanceReports";
@@ -46,12 +47,14 @@ function App() {
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
 	const [user, setUser] = useState(null);
 	const [authChecked, setAuthChecked] = useState(false);
+	const wasSignedIn = useRef(false);
 
 	useEffect(() => {
 		const token = localStorage.getItem("authToken");
 		const userData = localStorage.getItem("userData");
 
 		if (token) {
+			wasSignedIn.current = true;
 			setIsAuthenticated(true);
 			if (userData) {
 				setUser(JSON.parse(userData));
@@ -63,6 +66,7 @@ function App() {
 	// Login function to be passed to login form
 	const login = (token, userData) => {
 		localStorage.setItem("authToken", token);
+		wasSignedIn.current = true;
 		setIsAuthenticated(true);
 		setUser(userData);
 	};
@@ -93,6 +97,10 @@ function App() {
 	// Protected route component
 	const ProtectedRoute = ({ children }) => {
 		if (!isAuthenticated) {
+			// A link opened while signed out comes back here after signing in (not after a manual logout)
+			if (!wasSignedIn.current) {
+				sessionStorage.setItem(RETURN_TO_KEY, window.location.pathname + window.location.search);
+			}
 			return <Navigate to="/login" replace />;
 		}
 		return children;
@@ -105,6 +113,7 @@ function App() {
 	return (
 		<AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
 			<Router>
+				<RouteErrorBoundary>
 				<Routes>
 					{/* Public route for login */}
 					<Route
@@ -176,9 +185,10 @@ function App() {
 						<Route path="/help" element={<HelpAndSupport />} />
 						{/* <Route path="/schools/schoolPerformance/:schoolId" element={<SchoolPerformance />} /> */}
 
+						{/* The old page here showed made-up marks; the school page has the real report */}
 						<Route
 							path="/schools/schoolDetail/:schoolId/schoolPerformance"
-							element={<SchoolPerformance />}
+							element={<Navigate to=".." relative="path" replace />}
 						/>
 						<Route
 							path="/schools/schoolDetail/:schoolId/studentReport/:studentId"
@@ -197,6 +207,7 @@ function App() {
 						<Route path="*" element={<PageNotFound />} />
 					</Route>
 				</Routes>
+				</RouteErrorBoundary>
 			</Router>
 			{/* The only popup area: one per app, so a message never appears twice */}
 			<ToastContainer position="top-right" autoClose={3000} newestOnTop limit={3} style={{ zIndex: 99999999 }} />

@@ -26,7 +26,8 @@ import { Select } from "@mui/material";
 import { InputLabel } from "@mui/material";
 import { Typography } from "@mui/material";
 import { Search } from "lucide-react";
-import { showApiError } from "../utils/apiError";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "../components/LoadError";
 const theme = createTheme({
   typography: {
     fontFamily: "'Karla', sans-serif",
@@ -113,6 +114,7 @@ export default function SchoolList() {
   // Then in your component
   const location = useLocation();
   const [schools, setSchools] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [academicYear, setAcademicYear] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
@@ -147,6 +149,7 @@ export default function SchoolList() {
   const fetchSchools = async () => {
     const isSearching = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
     const request = startRequest();
+    setLoadError(null);
     
     // Use different loading states for search vs other operations
     if (isSearching) {
@@ -225,13 +228,14 @@ export default function SchoolList() {
         }
       } else {
         setSchools([]);
-        toast.error("Failed to fetch schools");
+        setLoadError("The server sent an answer the page could not read. Please try again.");
       }
     } catch (error) {
       if (isCancelledRequest(error) || !request.isLatest()) return;
       // Don't leave the previous filter's rows on screen as if they were the answer
       setSchools([]);
-      showApiError(error, "Could not load the schools. Please try again.");
+      // Shown in place of the table, so a failure never looks like "no schools"
+      setLoadError(getErrorMessage(error, "Could not load the schools. Please try again."));
     } finally {
       if (request.isLatest()) {
         setIsLoading(false);
@@ -992,7 +996,11 @@ export default function SchoolList() {
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
-            <MUIDataTable data={tableData} columns={columns} options={options} />
+            {loadError ? (
+              <LoadError title="Could not load the schools" message={loadError} onRetry={fetchSchools} />
+            ) : (
+              <MUIDataTable data={tableData} columns={columns} options={options} />
+            )}
           </div>
 
           <div

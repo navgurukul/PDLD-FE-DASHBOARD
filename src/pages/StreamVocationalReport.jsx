@@ -15,7 +15,9 @@ import apiInstance from "../../api";
 import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import mixpanel from '../utils/mixpanel';
 import { getCurrentAcademicYear } from "../utils/academicYear";
-import { showApiError } from "../utils/apiError";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "../components/LoadError";
+import { openPrintWindow } from "../utils/printWindow";
 
 const theme = createTheme({
     typography: {
@@ -68,6 +70,7 @@ const theme = createTheme({
 
 export default function StreamVocationalReport() {
     const [data, setData] = useState([]);
+    const [loadError, setLoadError] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const debouncedSearchQuery = useDebounce(searchQuery, 400);
     const [isLoading, setIsLoading] = useState(false);
@@ -109,6 +112,7 @@ export default function StreamVocationalReport() {
     // Fetch stream and vocational data from API
     const fetchStreamData = useCallback(async () => {
         const request = startRequest();
+        setLoadError(null);
         // Only show search loading if there's actual search query text
         if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
             setIsSearchLoading(true);
@@ -183,9 +187,9 @@ export default function StreamVocationalReport() {
                         totalPages: responsePagination?.totalPages || 1,
                     }));
                 } else {
-                    const errorMessage = response.data.message || "Failed to fetch stream data";
+                    const errorMessage = response.data.message || "Could not load the stream report. Please try again.";
                     console.error("API error:", errorMessage);
-                    toast.error(errorMessage);
+                    setLoadError(errorMessage);
                     setData([]);
                     setMetadata({});
                     setPagination(prev => ({
@@ -198,7 +202,8 @@ export default function StreamVocationalReport() {
                 if (isCancelledRequest(apiError) || !request.isLatest()) return;
                 // Handle API errors
                 console.error("API request failed:", apiError);
-                showApiError(apiError, "Could not load the stream report. Please try again.");
+                // Shown in place of the table, so a failure never looks like an empty report
+                setLoadError(getErrorMessage(apiError, "Could not load the stream report. Please try again."));
                 setData([]);
                 setMetadata({});
                 setPagination(prev => ({
@@ -209,7 +214,7 @@ export default function StreamVocationalReport() {
             }
         } catch (error) {
             console.error("Unexpected error fetching stream data:", error);
-            showApiError(error, "Could not load the stream report. Please try again.");
+            setLoadError(getErrorMessage(error, "Could not load the stream report. Please try again."));
             setData([]);
             setMetadata({});
             setPagination(prev => ({
@@ -652,7 +657,7 @@ export default function StreamVocationalReport() {
                 return;
             }
 
-            const printWindow = window.open("", "_blank");
+            const printWindow = openPrintWindow();
 
             if (!printWindow) {
                 toast.error("Pop-up blocked. Please allow pop-ups for this site.");
@@ -1498,7 +1503,11 @@ export default function StreamVocationalReport() {
                     }}
                         className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
                     >
-                        <MUIDataTable data={data} columns={columns} options={options} />
+                        {loadError ? (
+                            <LoadError title="Could not load the stream report" message={loadError} onRetry={fetchStreamData} />
+                        ) : (
+                            <MUIDataTable data={data} columns={columns} options={options} />
+                        )}
                     </div>
 
                     {/* Pagination with Rows Per Page */}

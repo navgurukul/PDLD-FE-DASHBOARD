@@ -11,7 +11,9 @@ import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import DownloadModal from "../../components/modal/DownloadModal"; // Import the download modal
 import api from "../../../api";
 import { getCurrentAcademicYear } from "../../utils/academicYear";
-import { showApiError } from "../../utils/apiError";
+import { showApiError, getErrorMessage } from "../../utils/apiError";
+import LoadError from "../LoadError";
+import { openPrintWindow } from "../../utils/printWindow";
 
 // Internal styles
 const styles = {
@@ -112,6 +114,7 @@ export default function SchoolReport({ schoolName }) {
   const [academicYear, setAcademicYear] = useState(null);
   const [selectedClass, setSelectedClass] = useState(""); 
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [availableClasses, setAvailableClasses] = useState([]);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false); 
   const navigate = useNavigate();
@@ -122,6 +125,7 @@ export default function SchoolReport({ schoolName }) {
   // Function to fetch all reports data from API
   const fetchAllReportsData = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       // Use the API instance with the schoolId from URL params
       const result = await api.get(`/report/class/${schoolId}/all`);
@@ -152,12 +156,15 @@ export default function SchoolReport({ schoolName }) {
         setAvailableClasses(uniqueClasses);
       } else {
         console.error("API Error:", result.data?.error);
+        setLoadError("The server sent an answer the page could not read. Please try again.");
         setSyllabusTests([]);
         setRemedialTests([]);
         setSchoolData(null);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
+      // Without this the tab showed empty tables, as if the school had no results
+      setLoadError(getErrorMessage(error, "Could not load this school's reports. Please try again."));
       setSyllabusTests([]);
       setRemedialTests([]);
       setSchoolData(null);
@@ -414,7 +421,7 @@ export default function SchoolReport({ schoolName }) {
   // Download report as PDF
   const handleDownloadPDF = ({ syllabusData, remedialData }) => {
     // Create a new window for printing
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
 
     const classTitle =
       selectedClass === "" ? "All Classes" : `Class ${selectedClass}`;
@@ -1119,6 +1126,9 @@ export default function SchoolReport({ schoolName }) {
   return (
     <ThemeProvider theme={theme}>
       <div>
+        {loadError && (
+          <LoadError title="Could not load the reports" message={loadError} onRetry={fetchAllReportsData} />
+        )}
         {/* Filters and Action Button Row */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
           {/* Class Dropdown */}

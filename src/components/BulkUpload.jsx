@@ -237,10 +237,7 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    // link.setAttribute(
-    //   "download",
-    //   `error_rows_${loginDetails.name}_${new Date().toISOString().slice(0, 10)}.csv`
-    // );
+    link.setAttribute("download", `school_upload_errors_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -365,7 +362,8 @@ const ErrorDetailsDialog = ({ open, onClose, errorData, headers }) => {
                     }}
                   >
                     <TableCell>
-                      {(page - 1) * rowsPerPage + index + 1}
+                      {/* Same row number as the summary preview */}
+                      {row.rowIndex ?? row.rowNo ?? (page - 1) * rowsPerPage + index + 1}
                     </TableCell>
                     <TableCell>{row.schoolName || ""}</TableCell>
                     <TableCell>{row.udiseCode || ""}</TableCell>
@@ -703,7 +701,7 @@ export default function BulkUploadSchools() {
       }
     } catch (error) {
       console.error("Error uploading file:", error);
-      showApiError(error, "Could not upload the file. Please try again.");
+      const uploadErrorMessage = showApiError(error, "Could not upload the file. Please try again.");
 
       // Check if the error response contains error rows in the expected format
       if (error.response?.data?.data?.errors?.length > 0) {
@@ -714,12 +712,13 @@ export default function BulkUploadSchools() {
         // If no structured errors are available, create a generic one
         setErrorData([
           {
-            schoolName: "Error",
+            rowIndex: "—",
+            schoolName: "Whole file",
             udiseCode: "",
             blockName: "",
             clusterName: "",
             crcCode: "",
-            reason: error.response?.data?.message || "Failed to process upload",
+            reason: uploadErrorMessage,
           },
         ]);
       }

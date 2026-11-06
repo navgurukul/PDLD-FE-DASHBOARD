@@ -36,7 +36,8 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import { Search } from "lucide-react";
 import { getRole } from "../customHook/useAuth"; // Import getRole to get current user's role
-import { showApiError } from "../utils/apiError";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "../components/LoadError";
 
 const theme = createTheme({
   typography: {
@@ -122,6 +123,7 @@ const theme = createTheme({
 
 export default function Users() {
   const [users, setUsers] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [totalRecords, setTotalRecords] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -286,6 +288,7 @@ export default function Users() {
   const fetchData = async () => {
     const isSearching = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
     const request = startRequest();
+    setLoadError(null);
     
     // Use different loading states for search vs other operations
     if (isSearching) {
@@ -338,7 +341,7 @@ export default function Users() {
       } else {
         setUsers([]);
         setTotalRecords(0);
-        toast.error("Failed to fetch users");
+        setLoadError("The server sent an answer the page could not read. Please try again.");
       }
     } catch (error) {
       if (isCancelledRequest(error) || !request.isLatest()) return;
@@ -346,7 +349,8 @@ export default function Users() {
       // Don't leave the previous filter's rows on screen as if they were the answer
       setUsers([]);
       setTotalRecords(0);
-      showApiError(error, "Could not load the users. Please try again.");
+      // Shown in place of the table, so a failure never looks like "no users"
+      setLoadError(getErrorMessage(error, "Could not load the users. Please try again."));
     } finally {
       if (request.isLatest()) {
         setIsLoading(false);
@@ -1086,7 +1090,11 @@ export default function Users() {
         </div>
 
         <div className="rounded-lg overflow-hidden border border-gray-200">
-          <MUIDataTable data={tableData} columns={columns} options={options} />
+          {loadError ? (
+            <LoadError title="Could not load the users" message={loadError} onRetry={fetchData} />
+          ) : (
+            <MUIDataTable data={tableData} columns={columns} options={options} />
+          )}
         </div>
 
         {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
