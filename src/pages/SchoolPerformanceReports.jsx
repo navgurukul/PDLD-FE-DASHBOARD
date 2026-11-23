@@ -28,11 +28,10 @@ import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
 import mixpanel from '../utils/mixpanel';
 import AcademicYearSelect from "../components/AcademicYearSelect";
+import { getGlobalYear, setGlobalYear, useFollowGlobalYear } from "../utils/academicYearStore";
 import {
-  getAcademicYearStart,
   toApiAcademicYear,
   toDisplayAcademicYear,
-  readStoredAcademicYear,
   storeAcademicYear,
 } from "../utils/academicYear";
 import { showApiError, getErrorMessage } from "../utils/apiError";
@@ -187,7 +186,7 @@ const Reports = () => {
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [selectedClassData, setSelectedClassData] = useState(null);
   // Year the report covers (start year, 2026 = 2026-27); current by default, remembered for this tab
-  const [selectedYearStart, setSelectedYearStart] = useState(() => readStoredAcademicYear("schoolPerformance", getAcademicYearStart()));
+  const [selectedYearStart, setSelectedYearStart] = useState(() => getGlobalYear());
   const academicYear = toDisplayAcademicYear(String(selectedYearStart));
   const [subjects, setSubjects] = useState([]); // Dynamic subjects from API
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
@@ -307,8 +306,10 @@ useEffect(() => {
   const handleYearChange = (year) => {
     setSelectedYearStart(year);
     storeAcademicYear("schoolPerformance", year);
+    setGlobalYear(year);
     setCurrentPage(1);
   };
+  useFollowGlobalYear((year) => handleYearChange(year));
 
   const startRequest = useLatestRequest();
 
