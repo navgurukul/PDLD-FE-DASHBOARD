@@ -97,18 +97,6 @@ const Sidebar = () => {
       ),
       active: inLearning,
     },
-    {
-      to: "/help",
-      label: "Help & Support",
-      icon: (
-        <LineIcon>
-          <circle cx="12" cy="12" r="9" />
-          <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7" />
-          <path d="M12 17h.01" />
-        </LineIcon>
-      ),
-      active: path.startsWith("/help"),
-    },
   ];
 
   const itemClass = (active) =>

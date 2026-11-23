@@ -7,7 +7,7 @@ const slug = (s) => String(s || "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_
 
 export const fileBase = (data) => {
 	const place = data.place?.level === "school" ? data.place.school?.udise : placeName(data.place).replace(/ (block|cluster|district)$/, "");
-	const what = data.view === "fln" ? `FLN_${data.from || ""}-${data.to || ""}` : data.test;
+	const what = data.view === "fln" ? `FLN_${data.from || ""}-${data.to || ""}` : data.test || (data.range ? `${data.range.fromDate || ""}_${data.range.toDate || ""}` : "");
 	return [slug(place), slug(what), slug(data.year)].filter(Boolean).join("_");
 };
 
@@ -23,7 +23,8 @@ function testSheets(data) {
 		columns: [{ header: "Item", width: 34 }, { header: "Value", width: 40 }],
 		rows: [
 			["Place", placeName(data.place)],
-			["Academic year", data.year],
+			...(data.place?.students != null ? [["Schools in this place", data.place.level === "school" ? "" : num(data.place.schools)], ["Children on roll", num(data.place.students)]] : []),
+			["Academic year", data.range ? "" : data.year],
 			["Test", data.testLabel || data.test],
 			["Classes", classLabel(data.classes)],
 			["Subject", data.subject === "all" ? "All subjects" : data.subject],
@@ -68,8 +69,9 @@ export function unitSheet(data) {
 			{ header: unitWord[level][0], width: 36 },
 			...(isSchool ? [{ header: "UDISE", width: 14 }, { header: "Block", width: 14 }, { header: "Cluster", width: 18 }] : level === "cluster" ? [{ header: "Block", width: 14 }] : []),
 			{ header: "Grade", width: 8 }, { header: "Grade points", width: 12 }, { header: "Average %", width: 11 }, { header: "Passed %", width: 10 },
-			{ header: "Children", width: 10 }, { header: isSchool ? "Class-subjects entered" : "Schools entered", width: 18 }, { header: isSchool ? "Class-subjects due" : "Schools due", width: 14 },
+			{ header: "Children assessed", width: 15 }, { header: isSchool ? "Class-subjects entered" : "Schools entered", width: 18 }, { header: isSchool ? "Class-subjects due" : "Schools due", width: 14 },
 			{ header: `Average % in ${data.summary?.prevTag || "previous test"}`, width: 22 },
+			...(isSchool ? [] : [{ header: "Schools", width: 9 }]), { header: "Children on roll", width: 15 },
 		],
 		rows: (data.units || []).map((u) => [
 			isSchool ? u.name : titleCase(u.name),
@@ -77,6 +79,7 @@ export function unitSheet(data) {
 			gradeOf(u.now), num(u.now?.points), num(u.now?.avgPct), num(u.now?.passPct), num(u.now?.present),
 			isSchool ? num(u.marks?.entered) : num(u.entered), isSchool ? num(u.marks?.due) : num(u.eligible),
 			num(u.prev?.avgPct),
+			...(isSchool ? [] : [num(u.schools)]), num(u.students),
 		]),
 	};
 }
@@ -91,26 +94,33 @@ export function pendingSheet(data) {
 
 // Sheets for the reading and maths levels view
 function flnSheets(data) {
+	// "From" and "To" can be the same test (only one held so far): then there is one grade column, not two
+	const same = data.from === data.to;
 	const sheets = [{
 		name: "Levels",
 		columns: [{ header: "Subject", width: 10 }, { header: "Test", width: 12 }, { header: "Level", width: 18 }, { header: "Children", width: 10 }, { header: "Share %", width: 10 }, { header: "Subject grade", width: 13 }, { header: "Average level", width: 13 }],
-		rows: (data.subjects || []).flatMap((s) => [["from", data.from], ["to", data.to]].filter(([, tag]) => tag).flatMap(([side, tag]) => {
-			const st = s[side];
-			if (!st || st.hidden) return [[s.subject, tag, "", "", "", gradeOf(st), ""]];
-			return s.levels.map((l) => [s.subject, tag, levelName(l), st.counts[l], st.shares[l], st.grade, st.avgLevel]);
-		})),
+		// Every test once. Older answers have no list of tests, only from and to; when both are the same test it is listed once
+		rows: (data.subjects || []).flatMap((s) => {
+			const stages = s.stages?.length
+				? s.stages.map((x) => [x.label, x.stats])
+				: [["from", data.from], ["to", data.to]].filter(([, tag], i, all) => tag && all.findIndex(([, t]) => t === tag) === i).map(([side, tag]) => [tag, s[side]]);
+			return stages.flatMap(([tag, st]) => {
+				if (!st || st.hidden) return [[s.subject, tag, "", "", "", gradeOf(st), ""]];
+				return s.levels.map((l) => [s.subject, tag, levelName(l), st.counts[l], st.shares[l], st.grade, st.avgLevel]);
+			});
+		}),
 	}];
 	sheets.push({
 		name: "By class",
-		columns: [{ header: "Class", width: 10 }, ...["Hindi", "English", "Maths"].flatMap((s) => [{ header: `${s} ${data.from || ""}`, width: 14 }, { header: `${s} ${data.to || ""}`, width: 14 }, { header: `${s} top two levels %`, width: 20 }])],
-		rows: (data.byClass || []).map((c) => [`Class ${c.cls}`, ...["Hindi", "English", "Maths"].flatMap((s) => [gradeOf(c.subjects[s]?.from), gradeOf(c.subjects[s]?.to), num(c.subjects[s]?.to?.topSharePct)])]),
+		columns: [{ header: "Class", width: 10 }, ...["Hindi", "English", "Maths"].flatMap((s) => [...(same ? [] : [{ header: `${s} ${data.from || ""}`, width: 14 }]), { header: `${s} ${data.to || ""}`, width: 14 }, { header: `${s} top two levels %`, width: 20 }])],
+		rows: (data.byClass || []).map((c) => [`Class ${c.cls}`, ...["Hindi", "English", "Maths"].flatMap((s) => [...(same ? [] : [gradeOf(c.subjects[s]?.from)]), gradeOf(c.subjects[s]?.to), num(c.subjects[s]?.to?.topSharePct)])]),
 	});
 	if (data.compareBy) {
 		const isSchool = data.compareBy === "school";
 		sheets.push({
 			name: unitWord[data.compareBy][1],
-			columns: [{ header: unitWord[data.compareBy][0], width: 36 }, ...(isSchool ? [{ header: "UDISE", width: 14 }] : []), ...["Hindi", "English", "Maths"].flatMap((s) => [{ header: `${s} ${data.from || ""}`, width: 14 }, { header: `${s} ${data.to || ""}`, width: 14 }, { header: `${s} children`, width: 12 }])],
-			rows: (data.units || []).map((u) => [isSchool ? u.name : titleCase(u.name), ...(isSchool ? [u.udise] : []), ...["Hindi", "English", "Maths"].flatMap((s) => [gradeOf(u.subjects[s]?.from), gradeOf(u.subjects[s]?.to), num(u.subjects[s]?.to?.present)])]),
+			columns: [{ header: unitWord[data.compareBy][0], width: 36 }, ...(isSchool ? [{ header: "UDISE", width: 14 }] : []), { header: "Children on roll", width: 15 }, ...["Hindi", "English", "Maths"].flatMap((s) => [...(same ? [] : [{ header: `${s} ${data.from || ""}`, width: 14 }]), { header: `${s} ${data.to || ""}`, width: 14 }, { header: `${s} children`, width: 12 }])],
+			rows: (data.units || []).map((u) => [isSchool ? u.name : titleCase(u.name), ...(isSchool ? [u.udise] : []), num(u.students), ...["Hindi", "English", "Maths"].flatMap((s) => [...(same ? [] : [gradeOf(u.subjects[s]?.from)]), gradeOf(u.subjects[s]?.to), num(u.subjects[s]?.to?.present)])]),
 		});
 	}
 	return sheets;

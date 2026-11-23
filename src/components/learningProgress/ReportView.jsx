@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import PropTypes from "prop-types";
 import { Link, useSearchParams } from "react-router-dom";
 import badge from "../../assets/pdld-badge.svg";
 import {
@@ -158,7 +159,7 @@ function Matrix({ data }) {
 	return (
 		<Section
 			title="Class × subject"
-			subtitle={`${placeName(data.place)}, ${data.testLabel} ${data.year}. Hover a cell for the number of children.`}
+			subtitle={`${placeName(data.place)}, ${data.testLabel}${data.range ? "" : ` ${data.year}`}. Hover a cell for the number of children.`}
 			action={
 				<div role="group" aria-label="Show" style={{ display: "flex", border: "1px solid #C4CDCD", borderRadius: 10, overflow: "hidden", height: 42 }}>
 					{[["grade", "Grade"], ["avg", "Average %"], ["pass", "Pass rate"]].map(([k, l]) => (
@@ -248,7 +249,7 @@ function Units({ data, audience, onDrill, onDownload }) {
 	return (
 		<Section
 			title={`${unitWord[level][1]} in ${placeName(data.place)}`}
-			subtitle={`${data.testLabel} ${data.year}. Lowest grade first.${audience === "public" || isSchool ? "" : " Open one to see it on its own."}`}
+			subtitle={`${data.testLabel}${data.range ? "" : ` ${data.year}`}. Lowest grade first.${audience === "public" || isSchool ? "" : " Open one to see it on its own."}`}
 			action={onDownload && <SmallDownload onExcel={() => onDownload("xlsx")} onCsv={() => onDownload("csv")} />}
 		>
 			<div style={{ overflowX: "auto" }}>
@@ -278,6 +279,7 @@ function Units({ data, audience, onDrill, onDownload }) {
 									<td style={td}>
 										{onDrill ? <button type="button" style={linkButton} onClick={() => onDrill(level, u)}>{isSchool ? u.name : titleCase(u.name)}</button> : <b>{isSchool ? u.name : titleCase(u.name)}</b>}
 										{isSchool && <div style={{ fontSize: 13, color: MUTED }}>UDISE {u.udise}</div>}
+										<RollText u={u} />
 										{u.early && <span style={{ marginLeft: 8, fontSize: 13, color: WARN_FG, background: WARN_BG, borderRadius: 10, padding: "2px 9px" }}>early result</span>}
 									</td>
 									{isSchool && <td style={{ ...td, color: MUTED }}>{titleCase(u.cluster)}</td>}
@@ -524,6 +526,7 @@ function FlnView({ data, audience, onDrill, onDownload }) {
 										<td style={td}>
 											{onDrill ? <button type="button" style={linkButton} onClick={() => onDrill(unitLevel, u)}>{unitLevel === "school" ? u.name : titleCase(u.name)}</button> : <b>{titleCase(u.name)}</b>}
 											{u.udise && <div style={{ fontSize: 13, color: MUTED }}>UDISE {u.udise}</div>}
+											<RollText u={u} />
 										</td>
 										{["Hindi", "English", "Maths"].map((s) => {
 											const x = u.subjects[s] || {};
@@ -552,6 +555,28 @@ function FlnView({ data, audience, onDrill, onDownload }) {
 
 // ---------- filters and downloads ----------
 
+// "12 schools · 1,340 children on roll" under an area's name (a school: just its roll)
+function RollText({ u }) {
+	if (u?.students == null) return null;
+	return (
+		<div data-testid="roll-text" style={{ fontSize: 13, color: MUTED }}>
+			{u.schools > 1 || (u.schools === 1 && !u.udise) ? `${fmt(u.schools)} school${u.schools === 1 ? "" : "s"} · ` : ""}{fmt(u.students)} children on roll
+		</div>
+	);
+}
+RollText.propTypes = { u: PropTypes.object };
+
+// The size of the place being looked at: how many schools and how many children are on their rolls
+function ScopeLine({ place }) {
+	if (!place || place.students == null) return null;
+	return (
+		<p className="lp-noprint" data-testid="scope-line" style={{ margin: "0 0 6px", fontSize: 15, color: MUTED }}>
+			<b style={{ color: INK }}>{placeName(place)}</b>: {place.level === "school" ? "" : `${fmt(place.schools)} school${place.schools === 1 ? "" : "s"} · `}<b style={{ color: INK }}>{fmt(place.students)}</b> children on roll. “Children assessed” below counts those who took the test.
+		</p>
+	);
+}
+ScopeLine.propTypes = { place: PropTypes.object };
+
 function Filters({ data, params, set, audience, schoolMode }) {
 	const o = data?.options || {};
 	const fln = (params.view || "tests") === "fln";
@@ -562,7 +587,7 @@ function Filters({ data, params, set, audience, schoolMode }) {
 	// Every test that has marks, from any year (older API: just this year's tests)
 	const testChoices = (o.tests && o.tests.length) ? o.tests : (data?.tags || []).map((t) => ({ year: data.year, tag: t.tag, label: t.label, date: t.date }));
 	// A date range is active: the tests come from the dates, not from the test boxes
-	const dated = fln && !!(params.fromDate || params.toDate);
+	const dated = !!(params.fromDate || params.toDate);
 	// Earliest and latest test dates, so the date boxes open on the right months
 	const dateBounds = (() => {
 		const d = (o.tests || []).map((t) => String(t.date).slice(0, 10)).sort();
@@ -612,7 +637,7 @@ function Filters({ data, params, set, audience, schoolMode }) {
 			)}
 			{!fln ? (
 				<label style={labelStyle}>Test
-					<select style={{ ...selectStyle, minWidth: 200 }} disabled={disabled || !yearTests.length} value={yearTests.some((t) => testKey(t) === currentTest) ? currentTest : ""} onChange={(e) => set({ test: e.target.value.split("|")[1], from: "", to: "" })}>
+					<select style={{ ...selectStyle, minWidth: 200 }} disabled={disabled || dated || !yearTests.length} value={yearTests.some((t) => testKey(t) === currentTest) ? currentTest : ""} onChange={(e) => set({ test: e.target.value.split("|")[1], from: "", to: "" })}>
 						{!yearTests.length && <option value="">No marks yet</option>}
 						{yearTests.map((t) => <option key={testKey(t)} value={testKey(t)}>{testText(t)}</option>)}
 					</select>
@@ -629,22 +654,6 @@ function Filters({ data, params, set, audience, schoolMode }) {
 							{(data?.tags || []).map((t) => <option key={t.tag} value={t.tag}>{t.label}</option>)}
 						</select>
 					</label>
-					<label style={labelStyle}>From date
-						<input type="date" data-testid="from-date" style={selectStyle} disabled={disabled} min={dateBounds.min} max={params.toDate || dateBounds.max} value={params.fromDate || ""} onChange={(e) => set({ fromDate: e.target.value, from: "", to: "" })} />
-					</label>
-					<label style={labelStyle}>To date
-						<input type="date" data-testid="to-date" style={selectStyle} disabled={disabled} min={params.fromDate || dateBounds.min} max={dateBounds.max} value={params.toDate || ""} onChange={(e) => set({ toDate: e.target.value, from: "", to: "" })} />
-					</label>
-					{dated && (
-						<button type="button" data-testid="clear-dates" onClick={() => set({ fromDate: "", toDate: "" })} style={{ ...linkButton, height: 44, fontWeight: 700 }}>Clear dates</button>
-					)}
-					{dated && (
-						<div role="note" data-testid="range-note" style={{ flexBasis: "100%", fontSize: 14, color: MUTED }}>
-							{(data?.tags || []).length
-								? `Showing the ${data.tags.length === 1 ? "test" : `${data.tags.length} tests`} held in this date range: ${data.tags.map((t) => t.label).join(", ")}.`
-								: "No reading and maths level tests were held between these dates."}
-						</div>
-					)}
 					{!dated && (data?.tags || []).length === 1 && (
 						<div role="note" data-testid="one-test-note" style={{ flexBasis: "100%", fontSize: 14, color: MUTED }}>
 							Only {data.tags[0].label} has been held in {data.year}. Choose another year to compare Baseline, Midline and Endline.
@@ -652,6 +661,22 @@ function Filters({ data, params, set, audience, schoolMode }) {
 					)}
 				</>
 			)}
+				<label style={labelStyle}>From date
+					<input type="date" data-testid="from-date" style={selectStyle} disabled={disabled} min={dateBounds.min} max={params.toDate || dateBounds.max} value={params.fromDate || ""} onChange={(e) => set({ fromDate: e.target.value, from: "", to: "", test: "" })} />
+				</label>
+				<label style={labelStyle}>To date
+					<input type="date" data-testid="to-date" style={selectStyle} disabled={disabled} min={params.fromDate || dateBounds.min} max={dateBounds.max} value={params.toDate || ""} onChange={(e) => set({ toDate: e.target.value, from: "", to: "", test: "" })} />
+				</label>
+				{dated && (
+					<button type="button" data-testid="clear-dates" onClick={() => set({ fromDate: "", toDate: "" })} style={{ ...linkButton, height: 44, fontWeight: 700 }}>Clear dates</button>
+				)}
+				{dated && (
+					<div role="note" data-testid="range-note" style={{ flexBasis: "100%", fontSize: 14, color: MUTED }}>
+						{(data?.tags || []).length
+							? `Showing the ${data.tags.length === 1 ? "test" : `${data.tags.length} tests`} held in this date range: ${data.tags.map((t) => t.label).join(", ")}.${fln ? "" : " The figures cover them together; each test is also listed under Compare tests."}`
+							: `No ${fln ? "reading and maths level" : "class"} tests were held between these dates.`}
+					</div>
+				)}
 			<label style={labelStyle}>Classes
 				<select style={selectStyle} disabled={disabled} value={data?.classes || params.classes || "1-8"} onChange={(e) => set({ classes: e.target.value, subject: "" })}>
 					{CLASS_OPTIONS.map((c) => <option key={c} value={c}>{classLabel(c)}</option>)}
@@ -861,6 +886,7 @@ export default function ReportView({ audience = "public", schoolMode = false, on
 
 			<Filters data={data} params={params} set={set} audience={audience} schoolMode={schoolMode} />
 
+			{data && !stale && <ScopeLine place={data.place} />}
 			{data && !stale && (
 				<p className="lp-noprint" style={{ margin: "0 0 18px", fontSize: 15, color: MUTED }}>
 					{view === "tests" && data.summary ? (

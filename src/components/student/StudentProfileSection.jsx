@@ -14,7 +14,8 @@ import apiInstance from "../../../api";
 import AcademicOverviewGraph from "../graph/AcademicOverviewGraph";
 import { Tooltip } from "@mui/material";
 import AcademicYearSelect from "../AcademicYearSelect";
-import { getAcademicYearStart, toApiAcademicYear, toDisplayAcademicYear } from "../../utils/academicYear";
+import { getGlobalYear, setGlobalYear, useFollowGlobalYear } from "../../utils/academicYearStore";
+import { toApiAcademicYear, toDisplayAcademicYear } from "../../utils/academicYear";
 import { showApiError } from "../../utils/apiError";
 import { openPrintWindow } from "../../utils/printWindow";
 
@@ -47,7 +48,8 @@ const StudentProfileView = () => {
   const [udiseCode, setUdiseCode] = useState("");
   const [error, setError] = useState(null);
   // Academic year shown on the profile (start year, e.g. 2026 for 2026-27); defaults to the current one
-  const [selectedYearStart, setSelectedYearStart] = useState(getAcademicYearStart());
+  const [selectedYearStart, setSelectedYearStart] = useState(getGlobalYear());
+  useFollowGlobalYear(setSelectedYearStart);
   // Year switches reload in place (the page stays visible) instead of the full-page spinner
   const [isYearLoading, setIsYearLoading] = useState(false);
 
@@ -950,7 +952,7 @@ const StudentProfileView = () => {
             >
               <AcademicYearSelect
                 value={selectedYearStart}
-                onChange={setSelectedYearStart}
+                onChange={(year) => { setSelectedYearStart(year); setGlobalYear(year); }}
                 disabled={isYearLoading}
               />
             </Box>

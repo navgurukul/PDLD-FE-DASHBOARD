@@ -24,6 +24,7 @@ import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import Paper from "@mui/material/Paper";
 import { Search } from "lucide-react";
 import AcademicYearSelect, { ALL_YEARS, CUSTOM_DATES } from "./AcademicYearSelect";
+import { getGlobalYear, setGlobalYear, useFollowGlobalYear } from "../utils/academicYearStore";
 import {
   getAcademicYearStart,
   getAcademicYearDateRange,
@@ -140,7 +141,8 @@ export default function TestListTable() {
   const [startDate, endDate] = dateRange;
   // Academic year shown (start year, ALL_YEARS, or CUSTOM_DATES while a date range is picked);
   // defaults to the current year and is remembered for this browser tab
-  const [selectedYear, setSelectedYear] = useState(() => readStoredAcademicYear("tests", getAcademicYearStart()));
+  const [selectedYear, setSelectedYear] = // "All years" is this page's own choice; otherwise the year chosen in the header
+  useState(() => (readStoredAcademicYear("tests", null) === ALL_YEARS ? ALL_YEARS : getGlobalYear()));
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [userRole, setUserRole] = useState("");
@@ -699,9 +701,11 @@ export default function TestListTable() {
   const handleYearChange = (year) => {
     setSelectedYear(year);
     storeAcademicYear("tests", year);
+    if (typeof year === "number") setGlobalYear(year);
     setDateRange([null, null]);
     setCurrentPage(1);
   };
+  useFollowGlobalYear((year) => handleYearChange(year));
 
   const handleDateRangeChange = (dates) => {
     setDateRange(dates);
