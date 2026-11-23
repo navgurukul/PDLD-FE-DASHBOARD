@@ -11,14 +11,17 @@ import {
   Typography,
   Paper,
   Tooltip,
+  FormHelperText,
 } from "@mui/material";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import apiInstance from "../../api";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ButtonCustom from "./ButtonCustom";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import { showFormErrors, scrollToFirstError, withoutError } from "../utils/formErrors";
 
 const theme = createTheme({
   typography: {
@@ -41,7 +44,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: "0.5rem",
-          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+          // A field with a problem stays red while focused
+          "&.Mui-focused:not(.Mui-error) .MuiOutlinedInput-notchedOutline": {
             borderColor: "#2F4F4F",
           },
         },
@@ -50,7 +54,7 @@ const theme = createTheme({
     MuiInputLabel: {
       styleOverrides: {
         root: {
-          "&.Mui-focused": {
+          "&.Mui-focused:not(.Mui-error)": {
             color: "#2F4F4F",
           },
         },
@@ -68,6 +72,9 @@ export default function UserCreationForm() {
   // Check if we're in edit mode
   const isEditMode = !!userId;
   const [isLoading, setIsLoading] = useState(false);
+  // Problems shown on the fields: { fullName, email, role, block, cluster }
+  const [errors, setErrors] = useState({});
+  const clearError = (key) => setErrors((prev) => withoutError(prev, key));
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -147,7 +154,7 @@ export default function UserCreationForm() {
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
-      toast.error("Failed to load user data");
+      showApiError(error, "Could not load this user's details. Please try again.");
       navigate("/users");
     } finally {
       setIsLoading(false);
@@ -239,51 +246,39 @@ export default function UserCreationForm() {
     }
   };
 
-  // Validation function - returns true if valid, false if invalid
+  // Checks the whole form at once; every problem is shown on its field
   const validateForm = () => {
-    // Validate full name
-    if (!formData.fullName.trim()) {
-      toast.error("Full name is required");
-      return false;
-    } else if (formData.fullName.trim().length < 3) {
-      toast.error("Full name must be at least 3 characters");
-      return false;
-    } else if (!/^[a-zA-Z\s]+$/.test(formData.fullName.trim())) {
-      toast.error("Full name should only contain letters and spaces");
-      return false;
-    }
+    const found = {};
+    const name = formData.fullName.trim();
+    if (!name) found.fullName = "Enter the full name";
+    else if (name.length < 3) found.fullName = "Full name must be at least 3 characters";
+    else if (!/^[a-zA-Z\s]+$/.test(name)) found.fullName = "Use only letters and spaces";
 
-    // Validate email if provided
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      toast.error("Please enter a valid email address");
-      return false;
-    }
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) found.email = "Enter a valid email address, like name@example.com";
+    if (!formData.role) found.role = "Select a role";
+    if (hierarchyFields.showBlock && !formData.block) found.block = "Select a block";
+    if (hierarchyFields.showCluster && formData.block && !selectedEntities.clusters) found.cluster = "Select a cluster";
 
-    // Validate role
-    if (!formData.role) {
-      toast.error("Please select a role");
-      return false;
-    }
+    setErrors(found);
+    return !showFormErrors(found);
+  };
 
-    // Validate block selection for roles that require it
-    if (hierarchyFields.showBlock && !formData.block) {
-      toast.error("Please select a block");
-      return false;
+  // A problem the server found: put it on the matching field when the message names one
+  const showServerError = (error) => {
+    const message = getErrorMessage(error, isEditMode ? "Could not update the user. Please try again." : "Could not create the user. Please try again.");
+    const field = /cluster/i.test(message) ? "cluster" : /email/i.test(message) ? "email" : /^name /i.test(message) ? "fullName" : null;
+    if (field) {
+      setErrors({ [field]: message });
+      scrollToFirstError();
     }
-
-    // Validate cluster selection for roles that require it
-    if (hierarchyFields.showCluster && !selectedEntities.clusters) {
-      toast.error("Please select a cluster");
-      return false;
-    }
-
-    return true;
+    toast.error(message, { autoClose: 8000 });
   };
 
   // Handle role change to determine which fields to show
   const handleRoleChange = (event) => {
     const role = event.target.value;
     setFormData({ ...formData, role, block: "" });
+    setErrors((prev) => withoutError(withoutError(withoutError(prev, "role"), "block"), "cluster"));
 
     // Reset selections when role changes
     setSelectedEntities({
@@ -327,13 +322,14 @@ export default function UserCreationForm() {
       }
     } catch (error) {
       console.error("Error fetching blocks and clusters:", error);
-      toast.error("Failed to load blocks and clusters data");
+      showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
     }
   };
 
   const handleClusterChange = (event) => {
     // For single select, event.target.value will be a string
     const selectedCluster = event.target.value;
+    clearError("cluster");
 
     setSelectedEntities({
       ...selectedEntities,
@@ -344,6 +340,7 @@ export default function UserCreationForm() {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
+    clearError(name);
     setFormData({ ...formData, [name]: value });
   };
 
@@ -445,12 +442,7 @@ export default function UserCreationForm() {
       });
     } catch (error) {
       console.error(isEditMode ? "Error updating user:" : "Error creating user:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        (isEditMode
-          ? "Failed to update user. Please try again."
-          : "Failed to create user. Please try again.");
-      toast.error(errorMessage);
+      showServerError(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -559,6 +551,7 @@ export default function UserCreationForm() {
   // Updated handleBlockChange function with modal confirmation
   const handleBlockChange = (event) => {
     const selectedBlockName = event.target.value; // This should be exact blockName
+    clearError("block");
     const previousBlock = formData.block;
 
     // Check if we have selected cluster that will be lost
@@ -717,7 +710,7 @@ export default function UserCreationForm() {
             : "Create a new user with a specific role and map them to schools"}
         </Typography>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <div className="mt-4">
             <TextField
               label="Full Name"
@@ -728,6 +721,8 @@ export default function UserCreationForm() {
               fullWidth
               placeholder="Enter full name"
               variant="outlined"
+              error={!!errors.fullName}
+              helperText={errors.fullName}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   height: "48px",
@@ -765,6 +760,8 @@ export default function UserCreationForm() {
               fullWidth
               placeholder="Enter email"
               variant="outlined"
+              error={!!errors.email}
+              helperText={errors.email}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   height: "48px",
@@ -773,8 +770,8 @@ export default function UserCreationForm() {
             />
           </div>
 
-          <div className="mb-6">
-            <FormControl fullWidth required>
+          <div className="mb-6" data-invalid={errors.role ? "true" : undefined}>
+            <FormControl fullWidth required error={!!errors.role}>
               <InputLabel id="role-select-label">Role</InputLabel>
               <Select
                 labelId="role-select-label"
@@ -797,12 +794,13 @@ export default function UserCreationForm() {
                   </MenuItem>
                 ))}
               </Select>
+              {errors.role && <FormHelperText>{errors.role}</FormHelperText>}
             </FormControl>
           </div>
 
           {hierarchyFields.showBlock && (
-            <div className="mb-6">
-              <FormControl fullWidth required>
+            <div className="mb-6" data-invalid={errors.block ? "true" : undefined}>
+              <FormControl fullWidth required error={!!errors.block}>
                 <InputLabel>Select Block</InputLabel>
                 <Select
                   sx={{
@@ -845,6 +843,7 @@ export default function UserCreationForm() {
                     </MenuItem>
                   ))}
                 </Select>
+                {errors.block && <FormHelperText>{errors.block}</FormHelperText>}
               </FormControl>
             </div>
           )}
@@ -874,7 +873,7 @@ export default function UserCreationForm() {
                     </Button>
                   )}
                 </div>
-                <FormControl fullWidth required>
+                <FormControl fullWidth required error={!!errors.cluster} data-invalid={errors.cluster ? "true" : undefined}>
                   <InputLabel>Select Cluster in {formData.block}</InputLabel>
                   <Select
                     sx={{
@@ -956,6 +955,7 @@ export default function UserCreationForm() {
                       );
                     })}
                   </Select>
+                  {errors.cluster && <FormHelperText>{errors.cluster}</FormHelperText>}
                 </FormControl>
               </div>
             </>
@@ -1029,13 +1029,6 @@ export default function UserCreationForm() {
         confirmText="Confirm"
         cancelText="Cancel"
         sx={{ zIndex: 12000 }}
-      />
-      <ToastContainer
-        style={{ zIndex: 99999999 }}
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        closeOnClick
       />
     </ThemeProvider>
   );

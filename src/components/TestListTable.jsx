@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useDebounce } from "../customHook/useDebounce";
 import MUIDataTable from "mui-datatables";
 import { addSymbolBtn, EditPencilIcon, DocScanner } from "../utils/imagePath";
@@ -9,11 +9,12 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import "./TestListTable.css";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
 import Tooltip from "@mui/material/Tooltip";
 
 import apiInstance from "../../api";
+import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import ButtonCustom from "./ButtonCustom";
 import SpinnerPageOverlay from "./SpinnerPageOverlay";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -22,6 +23,16 @@ import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import Paper from "@mui/material/Paper";
 import { Search } from "lucide-react";
+import AcademicYearSelect, { ALL_YEARS, CUSTOM_DATES } from "./AcademicYearSelect";
+import { getGlobalYear, setGlobalYear, useFollowGlobalYear } from "../utils/academicYearStore";
+import {
+  getAcademicYearStart,
+  getAcademicYearDateRange,
+  readStoredAcademicYear,
+  storeAcademicYear,
+} from "../utils/academicYear";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "./LoadError";
 
 const theme = createTheme({
   typography: {
@@ -124,9 +135,14 @@ const theme = createTheme({
 
 export default function TestListTable() {
   const [tests, setTests] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState([null, null]);
   const [startDate, endDate] = dateRange;
+  // Academic year shown (start year, ALL_YEARS, or CUSTOM_DATES while a date range is picked);
+  // defaults to the current year and is remembered for this browser tab
+  const [selectedYear, setSelectedYear] = // "All years" is this page's own choice; otherwise the year chosen in the header
+  useState(() => (readStoredAcademicYear("tests", null) === ALL_YEARS ? ALL_YEARS : getGlobalYear()));
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [userRole, setUserRole] = useState("");
@@ -232,7 +248,7 @@ export default function TestListTable() {
     } catch (error) {
       // No fallback - API-driven only
       console.error('Failed to fetch class-wise subjects:', error);
-      toast.error('Failed to load class and subject options from API');
+      showApiError(error, "Could not load the class and subject filters. Please reload the page.");
       setClassOptions([]);
       setSubjectOptions([]);
     }
@@ -317,39 +333,33 @@ export default function TestListTable() {
   // Debounced searchQuery for API calls
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
-  // Fetch data from API (switches to /tests/search for test name search)
+  const startRequest = useLatestRequest();
+
+  // Fetch one page of tests: the search text is sent together with every other filter
   const fetchData = async () => {
     const isSearching = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
-    
+    const request = startRequest();
+
     // Use different loading states for search vs other operations
     if (isSearching) {
       setIsSearchLoading(true);
     } else {
       setIsLoading(true);
     }
-    
-    try {
-      // If actively searching, use /tests/search
-      if (isSearching) {
-        // Only test name search, ignore other filters for now
-        let url = `/tests/search?page=${currentPage}&pageSize=${pageSize}&query=${encodeURIComponent(debouncedSearchQuery)}`;
-        const response = await apiInstance.get(url);
-        if (response.data && response.data.data) {
-          setTests(response.data.data.data || []);
-          setTotalRecords(response.data.data.pagination.totalTests || 1);
-        }
-        return;
-      }
+    setLoadError(null);
 
-      // For all other cases (cleared search or regular filters)
+    try {
       let startDateFormatted;
       let endDateFormatted;
       if (startDate && endDate) {
         startDateFormatted = formatDate(startDate);
         endDateFormatted = formatDate(endDate);
-      } else {
+      } else if (selectedYear === ALL_YEARS || selectedYear === CUSTOM_DATES) {
+        // Every test, including ones scheduled up to the end of next year
         startDateFormatted = "01-02-2020";
-        endDateFormatted = "01-02-2026";
+        endDateFormatted = `31-12-${new Date().getFullYear() + 1}`;
+      } else {
+        ({ startDate: startDateFormatted, endDate: endDateFormatted } = getAcademicYearDateRange(selectedYear));
       }
       let url = `/test/filter?startDate=${startDateFormatted}&endDate=${endDateFormatted}&pageSize=${pageSize}`;
       if (selectedClass.length > 0) {
@@ -359,37 +369,50 @@ export default function TestListTable() {
       }
       if (selectedSubject.length > 0) {
         selectedSubject.forEach((s) => {
-          let apiSubjectName = s;
-          url += `&subject=${encodeURIComponent(apiSubjectName)}`;
+          url += `&subject=${encodeURIComponent(s)}`;
         });
       }
       if (selectedStatus) {
         url += `&testStatus=${selectedStatus}`;
       }
-      url += `&page=${currentPage}`;
-      const response = await apiInstance.get(url);
-      if (response.data && response.data.data) {
-        setTests(response.data.data.data);
-        setTotalRecords(response.data.data.pagination.totalTests);
+      if (isSearching) {
+        url += `&search=${encodeURIComponent(debouncedSearchQuery.trim())}`;
       }
+      url += `&page=${currentPage}`;
+      const response = await apiInstance.get(url, { signal: request.signal });
+      if (!request.isLatest()) return;
+      setTests(response.data?.data?.data || []);
+      setTotalRecords(response.data?.data?.pagination?.totalTests || 0);
     } catch (error) {
-      // Error fetching data, do nothing (no debug log)
+      if (isCancelledRequest(error) || !request.isLatest()) return;
+      // Don't leave the previous filter's rows on screen as if they were the answer
+      setTests([]);
+      setTotalRecords(0);
+      // Shown in place of the table, so a failure never looks like "no tests"
+      setLoadError(getErrorMessage(error, "Could not load the tests. Please try again."));
     } finally {
-      setIsLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setIsLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
-  // Re-fetch data whenever any filter or search changes (debounced for search)
+  // One request per change: a filter or search change goes back to page 1 first (and loads
+  // there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([selectedClass, selectedSubject, selectedStatus, startDate, endDate, selectedYear, debouncedSearchQuery.trim()]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
-    // Check if search is being cleared (searchQuery empty but debouncedSearchQuery still has value)
-    const isSearchClearing = searchQuery === "" && debouncedSearchQuery !== "";
-
-    // When clearing search, only react to the debounced value update, not the immediate searchQuery change
-    if (!isSearchClearing && ((startDate && endDate) || (!startDate && !endDate) || (debouncedSearchQuery && debouncedSearchQuery.trim() !== ""))) {
-      fetchData();
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1);
+      return;
     }
-  }, [selectedClass, selectedSubject, selectedStatus, startDate, endDate, currentPage, pageSize, debouncedSearchQuery, searchQuery]);
+    // Wait until both ends of a custom date range are picked
+    if (startDate && !endDate) return;
+    fetchData();
+  }, [filterKey, currentPage, pageSize]);
 
   // Remove local filtering: tests are already filtered by backend
   const filteredTests = tests;
@@ -429,6 +452,7 @@ export default function TestListTable() {
     selectedSubject.length > 0 ||
     selectedStatus ||
     (startDate && endDate) ||
+    selectedYear !== getAcademicYearStart() ||
     searchQuery;
 
   const [classFocused, setClassFocused] = useState(false);
@@ -673,11 +697,34 @@ export default function TestListTable() {
     },
   };
 
+  // Picking a year replaces any custom date range; picking a full date range replaces the year
+  const handleYearChange = (year) => {
+    setSelectedYear(year);
+    storeAcademicYear("tests", year);
+    if (typeof year === "number") setGlobalYear(year);
+    setDateRange([null, null]);
+    setCurrentPage(1);
+  };
+  useFollowGlobalYear((year) => handleYearChange(year));
+
+  const handleDateRangeChange = (dates) => {
+    setDateRange(dates);
+    if (dates[0] && dates[1]) {
+      setSelectedYear(CUSTOM_DATES);
+      setCurrentPage(1);
+    }
+  };
+
+  const clearDateRange = () => {
+    setDateRange([null, null]);
+    if (selectedYear === CUSTOM_DATES) handleYearChange(getAcademicYearStart());
+  };
+
   const resetFilters = () => {
     setSelectedClass([]);
     setSelectedSubject([]);
     setSelectedStatus("");
-    setDateRange([null, null]);
+    handleYearChange(getAcademicYearStart());
     setSearchQuery("");
     setCurrentPage(1);
   };
@@ -686,14 +733,26 @@ export default function TestListTable() {
     <ThemeProvider theme={theme}>
       {/* Main container with responsive adjustments */}
       <div className="main-page-wrapper px-3 sm:px-4">
-        <h5 className="text-lg font-bold text-[#2F4F4F] mt-5">All Tests</h5>
+        {/* Title and Create Test button */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mt-5">
+          <h5 className="text-lg font-bold text-[#2F4F4F]">All Tests</h5>
+          {userRole === "DISTRICT_OFFICER" && (
+            <div className="shrink-0">
+              <ButtonCustom
+                imageName={addSymbolBtn}
+                text={"Create Test"}
+                onClick={handleCreateTest}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Filters and Action Button - Responsive Row */}
         <div className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 flex-wrap mb-4 mt-6">
           {/* Filters Group */}
           <div className="flex flex-wrap gap-2 items-center">
             {/* Search bar */}
-            <div className="w-full lg:w-[360px]">
+            <div className="w-full lg:w-[220px]">
               <TextField
                 variant="outlined"
                 placeholder="Search by Test Name"
@@ -1039,8 +1098,11 @@ export default function TestListTable() {
                 }}
               />
             </div>
+            {/* Academic Year */}
+            <AcademicYearSelect value={selectedYear} onChange={handleYearChange} includeAll minWidth={210} />
+
             {/* Date Range Picker */}
-            <div className="w-full lg:w-[280px]">
+            <div className="w-full lg:w-[220px]">
               <div
                 style={{
                   border: dateFocused ? "2px solid #2F4F4F" : "1px solid lightgrey",
@@ -1069,14 +1131,14 @@ export default function TestListTable() {
                     endDate={endDate}
                     shouldCloseOnSelect={false}
                     isClearable={false}
-                    onChange={(dates) => setDateRange(dates)}
+                    onChange={handleDateRangeChange}
                     placeholderText="Date Range"
                     dateFormat="dd/MM/yyyy"
                   />
                   {(startDate || endDate) && (
                     <span
                       className="datepicker-clear"
-                      onClick={() => setDateRange([null, null])}
+                      onClick={clearDateRange}
                       style={{
                         position: "absolute",
                         right: 10,
@@ -1124,21 +1186,15 @@ export default function TestListTable() {
             )}
           </div>
 
-          {/* Create Test Button */}
-          {userRole === "DISTRICT_OFFICER" && (
-            <div className="shrink-0">
-              <ButtonCustom
-                imageName={addSymbolBtn}
-                text={"Create Test"}
-                onClick={handleCreateTest}
-              />
-            </div>
-          )}
         </div>
 
         {/* Data Table */}
         <div className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto">
-          <MUIDataTable data={tableData} columns={columns} options={options} />
+          {loadError ? (
+            <LoadError title="Could not load the tests" message={loadError} onRetry={fetchData} />
+          ) : (
+            <MUIDataTable data={tableData} columns={columns} options={options} />
+          )}
         </div>
 
         {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
@@ -1236,13 +1292,6 @@ export default function TestListTable() {
         </div>
 
         {/* Toasts and loading */}
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-          style={{ zIndex: 99999999 }}
-        />
         {/* Only show full-page spinner for non-search operations */}
         {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}
       </div>

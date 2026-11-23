@@ -4,7 +4,7 @@ import MUIDataTable from "mui-datatables";
 import { Button, TextField, CircularProgress, FormControl, InputLabel, MenuItem, Select, Tooltip, Typography, Chip } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination, PaginationItem } from "@mui/material";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Search } from "lucide-react";
 import "../components/TestListTable.css";
@@ -12,7 +12,12 @@ import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import DownloadModal from "../components/modal/DownloadModal";
 import apiInstance from "../../api";
+import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import mixpanel from '../utils/mixpanel';
+import { getCurrentAcademicYear } from "../utils/academicYear";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "../components/LoadError";
+import { openPrintWindow } from "../utils/printWindow";
 
 const theme = createTheme({
     typography: {
@@ -65,6 +70,7 @@ const theme = createTheme({
 
 export default function StreamVocationalReport() {
     const [data, setData] = useState([]);
+    const [loadError, setLoadError] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const debouncedSearchQuery = useDebounce(searchQuery, 400);
     const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +93,7 @@ export default function StreamVocationalReport() {
 
     // Ref to prevent double API calls
     const hasFetchedOnMount = useRef(false);
-    const isClearingFilters = useRef(false);
+    const startRequest = useLatestRequest();
 
     // Class options - only 11 and 12
     const classOptions = [
@@ -105,6 +111,8 @@ export default function StreamVocationalReport() {
 
     // Fetch stream and vocational data from API
     const fetchStreamData = useCallback(async () => {
+        const request = startRequest();
+        setLoadError(null);
         // Only show search loading if there's actual search query text
         if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
             setIsSearchLoading(true);
@@ -145,7 +153,8 @@ export default function StreamVocationalReport() {
                 //     summary: { totalStudents, withStream, withoutStream, withVocationalSubject }
                 //   }
                 // }
-                const response = await apiInstance.get(`/report/stream-vocational?${params.toString()}`);
+                const response = await apiInstance.get(`/report/stream-vocational?${params.toString()}`, { signal: request.signal });
+                if (!request.isLatest()) return;
 
                 if (response.data.success) {
                     const responseData = response.data.data;
@@ -166,7 +175,7 @@ export default function StreamVocationalReport() {
                     setData(mappedStudents);
                     setMetadata({
                         reportType: "Stream & Vocational Tracking",
-                        academicYear: "2024-25",
+                        academicYear: getCurrentAcademicYear(),
                         lastUpdatedOn: response.data.timestamp,
                         ...summary
                     });
@@ -178,9 +187,9 @@ export default function StreamVocationalReport() {
                         totalPages: responsePagination?.totalPages || 1,
                     }));
                 } else {
-                    const errorMessage = response.data.message || "Failed to fetch stream data";
+                    const errorMessage = response.data.message || "Could not load the stream report. Please try again.";
                     console.error("API error:", errorMessage);
-                    toast.error(errorMessage);
+                    setLoadError(errorMessage);
                     setData([]);
                     setMetadata({});
                     setPagination(prev => ({
@@ -190,10 +199,11 @@ export default function StreamVocationalReport() {
                     }));
                 }
             } catch (apiError) {
+                if (isCancelledRequest(apiError) || !request.isLatest()) return;
                 // Handle API errors
                 console.error("API request failed:", apiError);
-                const errorMessage = apiError.response?.data?.message || apiError.message || "Unable to connect to server. Please check your connection.";
-                toast.error(errorMessage);
+                // Shown in place of the table, so a failure never looks like an empty report
+                setLoadError(getErrorMessage(apiError, "Could not load the stream report. Please try again."));
                 setData([]);
                 setMetadata({});
                 setPagination(prev => ({
@@ -204,7 +214,7 @@ export default function StreamVocationalReport() {
             }
         } catch (error) {
             console.error("Unexpected error fetching stream data:", error);
-            toast.error("An unexpected error occurred. Please try again.");
+            setLoadError(getErrorMessage(error, "Could not load the stream report. Please try again."));
             setData([]);
             setMetadata({});
             setPagination(prev => ({
@@ -213,10 +223,12 @@ export default function StreamVocationalReport() {
                 totalPages: 0,
             }));
         } finally {
-            setIsLoading(false);
-            setIsSearchLoading(false);
+            if (request.isLatest()) {
+                setIsLoading(false);
+                setIsSearchLoading(false);
+            }
         }
-    }, [debouncedSearchQuery, pagination.currentPage, pagination.pageSize, selectedBlock, selectedCluster, selectedClass, selectedStreamFilter]);
+    }, [debouncedSearchQuery, pagination.currentPage, pagination.pageSize, selectedBlock, selectedCluster, selectedClass, selectedStreamFilter, startRequest]);
 
     // Fetch blocks and clusters for filter dropdowns
     const fetchGlobalBlocksAndClusters = async () => {
@@ -241,7 +253,7 @@ export default function StreamVocationalReport() {
             }
         } catch (error) {
             console.error("Error fetching blocks and clusters:", error);
-            toast.error("Failed to load blocks and clusters data");
+            showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
         }
     };
 
@@ -262,24 +274,20 @@ export default function StreamVocationalReport() {
         }
     }, []);
 
-    // Fetch data when filters, search, or pagination changes
+    // One request per change: a filter or search change goes back to page 1 first (and loads
+    // there); a page or rows-per-page change loads that page
+    const filterKey = JSON.stringify([debouncedSearchQuery.trim(), selectedBlock, selectedCluster, selectedClass, selectedStreamFilter]);
+    const lastFilterKey = useRef(filterKey);
     useEffect(() => {
-        if (hasFetchedOnMount.current && !isClearingFilters.current) {
-            fetchStreamData();
-        }
-    }, [fetchStreamData]);
-
-    // Reset to page 1 when filters or search changes (but not pagination itself)
-    useEffect(() => {
-        // Skip on initial mount or when clearing filters (already handled)
-        if (!hasFetchedOnMount.current || isClearingFilters.current) return;
-
-        // Only reset the page if we're not already on page 1
-        if (pagination.currentPage !== 1) {
+        const filtersChanged = lastFilterKey.current !== filterKey;
+        lastFilterKey.current = filterKey;
+        if (filtersChanged && pagination.currentPage !== 1) {
             setPagination(prev => ({ ...prev, currentPage: 1 }));
+            return;
         }
+        fetchStreamData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [debouncedSearchQuery, selectedBlock, selectedCluster, selectedClass, selectedStreamFilter]);
+    }, [filterKey, pagination.currentPage, pagination.pageSize]);
 
     // Column definitions for the table
     const columns = [
@@ -476,10 +484,7 @@ export default function StreamVocationalReport() {
             return;
         }
 
-        // Mark that we're clearing to batch all state updates
-        isClearingFilters.current = true;
-
-        // Batch all state updates together in a single render cycle
+        // All state updates land in one render; the effect above then loads page 1 without filters
         setSelectedBlock("");
         setSelectedCluster("");
         setSelectedClass("all");
@@ -495,14 +500,7 @@ export default function StreamVocationalReport() {
             const uniqueClusters = [...new Set(allClusterNames)].filter(Boolean).sort();
             setClusters(uniqueClusters);
         }
-
-        // Allow the next render to process the fetch
-        setTimeout(() => {
-            isClearingFilters.current = false;
-            // Manually trigger fetch after all states are cleared
-            fetchStreamData();
-        }, 50);
-    }, [fetchStreamData, selectedBlock, selectedCluster, selectedClass, selectedStreamFilter, searchQuery, pagination.currentPage]);
+    }, [blockClusterData, selectedBlock, selectedCluster, selectedClass, selectedStreamFilter, searchQuery, pagination.currentPage]);
 
     const handleDownload = async ({ format, rows, count }) => {
         console.log("Download initiated:", { format, rows, count, currentDataLength: data.length });
@@ -566,7 +564,7 @@ export default function StreamVocationalReport() {
                     }
                 } catch (apiError) {
                     console.error("API error during download:", apiError);
-                    toast.error("Unable to fetch all data. Downloading current page only.");
+                    toast.error("Could not load all records, so only this page will be downloaded.", { autoClose: 8000 });
                     dataToDownload = data;
                 }
             }
@@ -590,7 +588,7 @@ export default function StreamVocationalReport() {
             }
         } catch (error) {
             console.error("Error downloading report:", error);
-            toast.error("An error occurred while generating the report");
+            showApiError(error, "Could not create the report file. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -646,7 +644,7 @@ export default function StreamVocationalReport() {
             toast.success(`CSV downloaded successfully! (${downloadData.length} students)`);
         } catch (error) {
             console.error("Error in handleDownloadCSV:", error);
-            toast.error("Failed to download CSV");
+            showApiError(error, "Could not download the CSV file. Please try again.");
         }
     };
 
@@ -659,7 +657,7 @@ export default function StreamVocationalReport() {
                 return;
             }
 
-            const printWindow = window.open("", "_blank");
+            const printWindow = openPrintWindow();
 
             if (!printWindow) {
                 toast.error("Pop-up blocked. Please allow pop-ups for this site.");
@@ -884,7 +882,7 @@ export default function StreamVocationalReport() {
         <div class="container">
           <div class="header">
             <h1>Stream & Vocational Report</h1>
-            <p class="subtitle">Academic Year: ${metadata.academicYear || "2024-25"}</p>
+            <p class="subtitle">Academic Year: ${metadata.academicYear || getCurrentAcademicYear()}</p>
             <p class="date">Generated on: ${currentDate}</p>
           </div>
           
@@ -952,7 +950,7 @@ export default function StreamVocationalReport() {
           </div>
           
           <div class="footer">
-            <p>© 2024-25 PDLD Dashboard - Stream & Vocational Tracking Report</p>
+            <p>© ${metadata.academicYear || getCurrentAcademicYear()} PDLD Dashboard - Stream & Vocational Tracking Report</p>
             <p>This report is generated electronically and contains confidential information.</p>
           </div>
         </div>
@@ -969,19 +967,13 @@ export default function StreamVocationalReport() {
             }, 250);
         } catch (error) {
             console.error("Error in handleDownloadPDF:", error);
-            toast.error("Failed to download PDF");
+            showApiError(error, "Could not download the PDF file. Please try again.");
         }
     };
 
     return (
         <ThemeProvider theme={theme}>
             <div style={{ padding: "20px", backgroundColor: "#FAFAFA", minHeight: "100vh" }}>
-                <ToastContainer
-                    position="top-right"
-                    autoClose={3000}
-                    style={{ zIndex: 99999 }}
-                    toastStyle={{ zIndex: 99999 }}
-                />
                 {isLoading && !isSearchLoading && <SpinnerPageOverlay />}
 
                 {/* Header - Compact */}
@@ -1511,7 +1503,11 @@ export default function StreamVocationalReport() {
                     }}
                         className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
                     >
-                        <MUIDataTable data={data} columns={columns} options={options} />
+                        {loadError ? (
+                            <LoadError title="Could not load the stream report" message={loadError} onRetry={fetchStreamData} />
+                        ) : (
+                            <MUIDataTable data={data} columns={columns} options={options} />
+                        )}
                     </div>
 
                     {/* Pagination with Rows Per Page */}
@@ -1635,13 +1631,6 @@ export default function StreamVocationalReport() {
                     reportName="Stream & Vocational Report"
                 />
 
-                <ToastContainer
-                    position="top-right"
-                    autoClose={3000}
-                    hideProgressBar={false}
-                    closeOnClick
-                    style={{ zIndex: 99999999 }}
-                />
 
                 {/* Page level loading overlay - only for non-search operations */}
                 {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}

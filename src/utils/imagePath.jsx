@@ -6,7 +6,7 @@ import EditPencilIcon from "../assets/edit.svg";
 import HideSidebar from "../assets/hide-sidebar-horiz-svgrepo-com 1.svg";
 import ExamMultiple from "../assets/i-exam-multiple-choice-svgrepo-com 1.svg";
 import Notification from "../assets/notifications.svg";
-import PDLDLogo from "../assets/pdld-logo.webp";
+import PDLDLogo from "../assets/pdld-badge.svg";
 import UserImg from "../assets/userImage.svg";
 import UserGroup from "../assets/users-group-two-rounded-svgrepo-com 1.svg"
 import CloseSidebarIcon from "../assets/CloseSidebarIcon.svg"

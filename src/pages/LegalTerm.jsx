@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import pdldLogo from "../assets/pdld-logo.webp";
+import pdldLogo from "../assets/pdld-badge.svg";
 
 const LegalTerms = () => {
   return (

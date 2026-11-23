@@ -1,8 +1,8 @@
 //student profile page inside school flow
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { Typography, Box, Grid, Paper, Tabs, Tab, Button, Alert } from "@mui/material";
-import { toast, ToastContainer } from "react-toastify";
+import { Typography, Box, Grid, Paper, Tabs, Tab, Button, Alert, LinearProgress } from "@mui/material";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useTheme } from "@mui/material/styles";
@@ -13,6 +13,11 @@ import DownloadModal from "../../components/modal/DownloadModal";
 import apiInstance from "../../../api";
 import AcademicOverviewGraph from "../graph/AcademicOverviewGraph";
 import { Tooltip } from "@mui/material";
+import AcademicYearSelect from "../AcademicYearSelect";
+import { getGlobalYear, setGlobalYear, useFollowGlobalYear } from "../../utils/academicYearStore";
+import { toApiAcademicYear, toDisplayAcademicYear } from "../../utils/academicYear";
+import { showApiError } from "../../utils/apiError";
+import { openPrintWindow } from "../../utils/printWindow";
 
 // Tab panel component
 function TabPanel(props) {
@@ -42,6 +47,11 @@ const StudentProfileView = () => {
   const [schoolName, setSchoolName] = useState("");
   const [udiseCode, setUdiseCode] = useState("");
   const [error, setError] = useState(null);
+  // Academic year shown on the profile (start year, e.g. 2026 for 2026-27); defaults to the current one
+  const [selectedYearStart, setSelectedYearStart] = useState(getGlobalYear());
+  useFollowGlobalYear(setSelectedYearStart);
+  // Year switches reload in place (the page stays visible) instead of the full-page spinner
+  const [isYearLoading, setIsYearLoading] = useState(false);
 
   // Download modal states
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
@@ -82,7 +92,9 @@ const StudentProfileView = () => {
 
   // Fetch student profile data
   const fetchStudentProfile = async () => {
-    setIsLoading(true);
+    const isYearSwitch = student?.id === studentId;
+    if (isYearSwitch) setIsYearLoading(true);
+    else setIsLoading(true);
     setError(null);
     try {
       // Get contextual school information from location state if available
@@ -92,7 +104,9 @@ const StudentProfileView = () => {
       }
 
       // Fetch student profile data using the API
-      const response = await apiInstance.get(`/student/profile/${studentId}`);
+      const response = await apiInstance.get(
+        `/student/profile/${studentId}?year=${toApiAcademicYear(selectedYearStart)}`
+      );
 
       if (response.data && response.data.success) {
         const profileData = response.data.data;
@@ -108,7 +122,7 @@ const StudentProfileView = () => {
           gender: profileData.gender,
           class: profileData.class,
           // Include academic data if available
-          academic: profileData.academic || { year: "2025-2026", months: [] },
+          academic: profileData.academic || { year: toApiAcademicYear(selectedYearStart), months: [] },
           // Any missing fields that the UI might expect
           aparId: profileData.aparId || "N/A",
           aadharId: profileData.aadharId || "N/A",
@@ -126,10 +140,10 @@ const StudentProfileView = () => {
       }
     } catch (error) {
       console.error("Error fetching student profile:", error);
-      toast.error("Failed to load student profile. Please try again later.");
-      setError("Error fetching student data: " + (error.message || "Unknown error"));
+      setError(showApiError(error, "Could not load the student profile. Please try again."));
     } finally {
       setIsLoading(false);
+      setIsYearLoading(false);
     }
   };
 
@@ -140,7 +154,7 @@ const StudentProfileView = () => {
       setIsLoading(false);
       setError("No student ID provided. Unable to fetch student information.");
     }
-  }, [studentId]); // Re-fetch when studentId changes
+  }, [studentId, selectedYearStart]); // Re-fetch when the student or the selected year changes
 
   useEffect(() => {
     if (student?.fullName) {
@@ -187,7 +201,7 @@ const StudentProfileView = () => {
       }
     } catch (error) {
       console.error("Error downloading report:", error);
-      toast.error("An error occurred while generating the report");
+      showApiError(error, "Could not create the report file. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -320,7 +334,7 @@ const StudentProfileView = () => {
     csvContent += `Father's Name,${student.fatherName || "N/A"}\n`;
     csvContent += `Mother's Name,${student.motherName || "N/A"}\n`;
     csvContent += `Date of Birth,${formatDate(student.dob)}\n`;
-    csvContent += `Academic Year,${student.academic?.year || "2024-25"}\n\n`;
+    csvContent += `Academic Year,${toDisplayAcademicYear(student.academic?.year)}\n\n`;
 
     // Handle different report types
     const includeAggregate = reportType === "aggregate" || reportType === "comprehensive" || reportType === "aggregate+remedial";
@@ -430,7 +444,7 @@ const StudentProfileView = () => {
 
   // Download report as PDF
   const handleDownloadPDF = (reportType) => {
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
     const currentDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -784,14 +798,14 @@ const StudentProfileView = () => {
             <h3>Report Summary</h3>
             <div class="summary-grid">
               <div class="summary-item"><strong>Report Type:</strong>${reportTypeText}</div>
-              <div class="summary-item"><strong>Academic Year:</strong>${student.academic?.year || "2024-25"}</div>
+              <div class="summary-item"><strong>Academic Year:</strong>${toDisplayAcademicYear(student.academic?.year)}</div>
               <div class="summary-item"><strong>Generated:</strong>${currentDate}</div>
             </div>
           </div>
           
           <div class="footer">
             <p>This report is generated automatically from the School Performance System</p>
-            <p>© ${student.academic?.year || "2024-25"} Academic Performance Tracking System</p>
+            <p>© ${toDisplayAcademicYear(student.academic?.year)} Academic Performance Tracking System</p>
           </div>
         </div>
       </body>
@@ -930,22 +944,18 @@ const StudentProfileView = () => {
         {/* Show Academic Year and Download Report button based on tab */}
         {student.academic && (
           <div className="flex" style={{ flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-            <Typography
-              variant="subtitle1"
+            <Box
               sx={{
-                bgcolor: theme.palette.secondary.light,
-                color: theme.palette.primary,
-                padding: "4px 16px",
-                borderRadius: "8px",
-                height: "48px",
-                display: "flex",
-                alignItems: "center",
                 marginRight: { xs: 0, md: tabValue === 1 ? "16px" : 0 },
-                marginBottom: { xs: tabValue === 1 ? "8px" : 0, md: 0 }
+                marginBottom: { xs: tabValue === 1 ? "8px" : 0, md: 0 },
               }}
             >
-              Academic Year {student.academic.year || "2024-25"}
-            </Typography>
+              <AcademicYearSelect
+                value={selectedYearStart}
+                onChange={(year) => { setSelectedYearStart(year); setGlobalYear(year); }}
+                disabled={isYearLoading}
+              />
+            </Box>
             {tabValue === 1 && (
               <ButtonCustom text={"Download Report"} onClick={handleDownloadClick} btnWidth={200} />
             )}
@@ -959,6 +969,7 @@ const StudentProfileView = () => {
           <Tab label="Overview" />
           <Tab label="Academics" />
         </Tabs>
+        {isYearLoading && <LinearProgress aria-label="Loading academic year" />}
       </Box>
 
       {/* Overview tab content */}
@@ -1184,13 +1195,6 @@ const StudentProfileView = () => {
         reportLevel="student"
       />
 
-      <ToastContainer
-        style={{ zIndex: 99999999 }}
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        closeOnClick
-      />
     </Box>
   );
 };

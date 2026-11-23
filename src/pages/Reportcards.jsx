@@ -4,11 +4,18 @@ import { Card, CardContent, Typography, Box } from "@mui/material";
 import SchoolIcon from "@mui/icons-material/School";
 import PeopleIcon from "@mui/icons-material/People";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import InsightsIcon from "@mui/icons-material/Insights";
 
 const Reportcards = () => {
   const navigate = useNavigate();
 
   const cardData = [
+    {
+      title: "Learning Progress",
+      description: "Class × subject results, comparisons, remedial levels and missing marks in one place.",
+      icon: <InsightsIcon sx={{ fontSize: 40 }} />,
+      route: "/reports/learning-progress",
+    },
     {
       title: "School Performance Reports",
       description: "Click to view school performance reports.",

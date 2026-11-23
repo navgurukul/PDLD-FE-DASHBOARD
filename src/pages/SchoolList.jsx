@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDebounce } from "../customHook/useDebounce";
 import MUIDataTable from "mui-datatables";
 import { Button, TextField, CircularProgress } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -17,6 +17,7 @@ import ButtonCustom from "../components/ButtonCustom";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
 import { addSymbolBtn, DocScanner, EditPencilIcon, trash } from "../utils/imagePath";
 import apiInstance from "../../api";
+import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import { MenuItem } from "@mui/material";
 import { useLocation } from "react-router-dom";
@@ -25,6 +26,8 @@ import { Select } from "@mui/material";
 import { InputLabel } from "@mui/material";
 import { Typography } from "@mui/material";
 import { Search } from "lucide-react";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "../components/LoadError";
 const theme = createTheme({
   typography: {
     fontFamily: "'Karla', sans-serif",
@@ -111,6 +114,7 @@ export default function SchoolList() {
   // Then in your component
   const location = useLocation();
   const [schools, setSchools] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [academicYear, setAcademicYear] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
@@ -140,8 +144,12 @@ export default function SchoolList() {
   const [blockClusterData, setBlockClusterData] = useState([]); // Store the full block/cluster data
 
   // Fetch schools from API (uses /schools/search for searchQuery, /school/all otherwise)
+  const startRequest = useLatestRequest();
+
   const fetchSchools = async () => {
     const isSearching = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
+    const request = startRequest();
+    setLoadError(null);
     
     // Use different loading states for search vs other operations
     if (isSearching) {
@@ -174,7 +182,8 @@ export default function SchoolList() {
         url = `/school/all?page=${currentPage}&pageSize=${pageSize}`;
       }
 
-      const response = await apiInstance.get(url);
+      const response = await apiInstance.get(url, { signal: request.signal });
+      if (!request.isLatest()) return;
 
       if (response.data.success) {
         const schoolsArr = response.data.data.schools || [];
@@ -197,7 +206,7 @@ export default function SchoolList() {
           setPagination({
             currentPage: apiPagination.currentPage || 1,
             pageSize: apiPagination.pageSize || pageSize,
-            totalCount: apiPagination.totalCount || schoolsArr.length,
+            totalCount: apiPagination.totalCount ?? apiPagination.totalSchools ?? schoolsArr.length,
             totalPages: calculatedTotalPages,
             hasNextPage: apiPagination.hasNextPage || false,
             hasPreviousPage: apiPagination.hasPreviousPage || false
@@ -218,14 +227,20 @@ export default function SchoolList() {
           setAcademicYear(response.data.data.academicYear);
         }
       } else {
-        toast.error("Failed to fetch schools");
+        setSchools([]);
+        setLoadError("The server sent an answer the page could not read. Please try again.");
       }
     } catch (error) {
-      // Error handling via toast
-      toast.error(error.response?.data?.message || "Error fetching schools");
+      if (isCancelledRequest(error) || !request.isLatest()) return;
+      // Don't leave the previous filter's rows on screen as if they were the answer
+      setSchools([]);
+      // Shown in place of the table, so a failure never looks like "no schools"
+      setLoadError(getErrorMessage(error, "Could not load the schools. Please try again."));
     } finally {
-      setIsLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setIsLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
@@ -234,10 +249,19 @@ export default function SchoolList() {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  // Load schools on component mount and when page/search changes
+  // One request per change: a search or filter change goes back to page 1 first (and loads
+  // there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([debouncedSearchQuery.trim(), selectedBlock, selectedCluster]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1);
+      return;
+    }
     fetchSchools();
-  }, [currentPage, pageSize, debouncedSearchQuery, selectedBlock, selectedCluster]);
+  }, [filterKey, currentPage, pageSize]);
 
   // Add this in your SchoolList component, in the useEffect section
   useEffect(() => {
@@ -249,14 +273,6 @@ export default function SchoolList() {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location]);
-
-  // Reset to page 1 when search query or filters change
-  useEffect(() => {
-    // Only reset the page if we're not already on page 1
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    }
-  }, [debouncedSearchQuery, selectedBlock, selectedCluster]);
 
   //  Add a new function to fetch global blocks and clusters
   const fetchGlobalBlocksAndClusters = async () => {
@@ -283,7 +299,7 @@ export default function SchoolList() {
       }
     } catch (error) {
       // Error handling via toast
-      toast.error("Failed to load blocks and clusters data");
+      showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
     }
   };
 
@@ -397,7 +413,7 @@ export default function SchoolList() {
       }
     } catch (error) {
       // Error handling via toast
-      toast.error(error.response?.data?.message || "Error deleting school");
+      showApiError(error, "Could not delete the school. Please try again.");
     } finally {
       setIsDeleting(false);
       closeDeleteModal();
@@ -980,7 +996,11 @@ export default function SchoolList() {
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
-            <MUIDataTable data={tableData} columns={columns} options={options} />
+            {loadError ? (
+              <LoadError title="Could not load the schools" message={loadError} onRetry={fetchSchools} />
+            ) : (
+              <MUIDataTable data={tableData} columns={columns} options={options} />
+            )}
           </div>
 
           <div
@@ -1094,13 +1114,6 @@ export default function SchoolList() {
             </div>
           </div>
 
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            closeOnClick
-            style={{ zIndex: 99999999 }}
-          />
 
           {/* Delete Confirmation Modal */}
           <GenericConfirmationModal

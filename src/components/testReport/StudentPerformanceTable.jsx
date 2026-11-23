@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import DownloadModal from "../modal/DownloadModal";
 import { Search } from "lucide-react";
 import { toast } from "react-toastify";
+import { openPrintWindow } from "../../utils/printWindow";
 
 const theme = createTheme({
   typography: {
@@ -360,6 +361,7 @@ const StudentPerformanceTable = ({
   }, [tableData, currentPage, pageSize]);
 
   const resetFilters = () => {
+    setCurrentPage(1);
     setSearchQuery("");
     setFilterStatus("");
     setSortConfig({ key: null, direction: "asc" });
@@ -455,7 +457,7 @@ const StudentPerformanceTable = ({
   };
 
   const handleDownloadPDF = (data) => {
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
     const currentDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -859,7 +861,11 @@ const StudentPerformanceTable = ({
                     placeholder="Search by Student Name"
                     size="small"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      // A new search starts at the first page of its results
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     InputProps={{
                       startAdornment: (
                         <div className="pr-2">

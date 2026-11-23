@@ -1,6 +1,6 @@
 import "./App.css";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Layout from "./layout/index";
 import Users from "./pages/Users";
 import Reportcards from "./pages/Reportcards";
@@ -16,11 +16,29 @@ import UserCreationForm from "./components/UserCreationForm";
 import LoginForm from "./components/LoginForm";
 import AddStudent from "./components/student/AddStudent";
 import StudentReportPage from "./components/student/StudentReportPage";
-import SchoolPerformance from "./components/school/SchoolPerformance";
+import { RouteErrorBoundary } from "./components/ErrorBoundary";
+import { RETURN_TO_KEY } from "../api";
+import PropTypes from "prop-types";
+import { peekReturnPath, clearReturnPath } from "./utils/returnPath";
+
+// Where a signed-in visitor on /login goes: back to the page they were heading to, else home. This
+// is the only place that decides it, so the login form and this redirect cannot disagree.
+function AfterLogin({ isSchool, home }) {
+	const [target] = useState(() => peekReturnPath(isSchool) || home);
+	useEffect(() => {
+		clearReturnPath();
+	}, []);
+	return <Navigate to={target} replace />;
+}
+AfterLogin.propTypes = { isSchool: PropTypes.bool.isRequired, home: PropTypes.string.isRequired };
 import LegalTerms from "./pages/LegalTerm";
 import EnrollmentReports from "./pages/EnrollmentReports";
 import SchoolPerformanceReports from "./pages/SchoolPerformanceReports";
 import StreamVocationalReport from "./pages/StreamVocationalReport";
+import LearningProgressReport from "./pages/LearningProgressReport";
+import MySchoolReport from "./pages/MySchoolReport";
+import PublicHome from "./pages/public/PublicHome";
+import PublicLearningProgress from "./pages/public/PublicLearningProgress";
 
 // Auth context to manage authentication state
 import { createContext } from "react";
@@ -32,6 +50,9 @@ import StudentProfileView from "./components/student/StudentProfileSection";
 import SchoolPerformanceTable from "./components/testReport/SchoolPerformanceTable";
 import QRLogin from "./pages/QRLogin";
 import mixpanel from './utils/mixpanel';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "./utils/toastSetup";
 
 export const AuthContext = createContext(null);
 
@@ -39,12 +60,14 @@ function App() {
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
 	const [user, setUser] = useState(null);
 	const [authChecked, setAuthChecked] = useState(false);
+	const wasSignedIn = useRef(false);
 
 	useEffect(() => {
 		const token = localStorage.getItem("authToken");
 		const userData = localStorage.getItem("userData");
 
 		if (token) {
+			wasSignedIn.current = true;
 			setIsAuthenticated(true);
 			if (userData) {
 				setUser(JSON.parse(userData));
@@ -56,6 +79,7 @@ function App() {
 	// Login function to be passed to login form
 	const login = (token, userData) => {
 		localStorage.setItem("authToken", token);
+		wasSignedIn.current = true;
 		setIsAuthenticated(true);
 		setUser(userData);
 	};
@@ -79,9 +103,17 @@ function App() {
 		setUser(null);
 	};
 
+	// A school (headmaster) login only has its own school's report; officers have the dashboard
+	const isSchool = String(user?.role || "").toUpperCase() === "SCHOOL";
+	const homeAfterLogin = isSchool ? "/my-school" : "/allTest";
+
 	// Protected route component
 	const ProtectedRoute = ({ children }) => {
 		if (!isAuthenticated) {
+			// A link opened while signed out comes back here after signing in (not after a manual logout)
+			if (!wasSignedIn.current) {
+				sessionStorage.setItem(RETURN_TO_KEY, window.location.pathname + window.location.search);
+			}
 			return <Navigate to="/login" replace />;
 		}
 		return children;
@@ -94,11 +126,24 @@ function App() {
 	return (
 		<AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
 			<Router>
+				<RouteErrorBoundary>
 				<Routes>
 					{/* Public route for login */}
 					<Route
 						path="/login"
-						element={isAuthenticated ? <Navigate to="/allTest" /> : <LoginForm onLogin={login} />}
+						element={isAuthenticated ? <AfterLogin isSchool={isSchool} home={homeAfterLogin} /> : <LoginForm onLogin={login} />}
+					/>
+					{/* Public website: landing page and the Learning Progress report, no login */}
+					<Route path="/" element={<PublicHome />} />
+					<Route path="/learning-progress" element={<PublicLearningProgress />} />
+					{/* Headmaster: own school's report */}
+					<Route
+						path="/my-school"
+						element={
+							<ProtectedRoute>
+								{isSchool ? <MySchoolReport /> : <Navigate to="/reports/learning-progress" replace />}
+							</ProtectedRoute>
+						}
 					/>
 					{/* Privacy Policy route */}
 					<Route
@@ -114,16 +159,12 @@ function App() {
 
 					{/* Protected routes under Layout */}
 					<Route
-						path="/"
 						element={
 							<ProtectedRoute>
-								<Layout onLogout={logout} />
+								{isSchool ? <Navigate to="/my-school" replace /> : <Layout onLogout={logout} />}
 							</ProtectedRoute>
 						}
 					>
-						{/* Default Route - redirect to allTest */}
-						<Route index element={<Navigate to="/allTest" replace />} />
-
 						{/* Nested Routes within Layout */}
 						<Route path="/allTest" element={<TableList />} />
 						<Route path="/users" element={<Users />} />
@@ -157,9 +198,10 @@ function App() {
 						<Route path="/help" element={<HelpAndSupport />} />
 						{/* <Route path="/schools/schoolPerformance/:schoolId" element={<SchoolPerformance />} /> */}
 
+						{/* The old page here showed made-up marks; the school page has the real report */}
 						<Route
 							path="/schools/schoolDetail/:schoolId/schoolPerformance"
-							element={<SchoolPerformance />}
+							element={<Navigate to=".." relative="path" replace />}
 						/>
 						<Route
 							path="/schools/schoolDetail/:schoolId/studentReport/:studentId"
@@ -172,20 +214,16 @@ function App() {
 						<Route path="/reports/EnrollmentReports" element={<EnrollmentReports />} />
 						<Route path="/reports/SchoolPerformanceReports" element={<SchoolPerformanceReports />} />
 						<Route path="/reports/StreamVocationalReport" element={<StreamVocationalReport />} />
+						<Route path="/reports/learning-progress" element={<LearningProgressReport />} />
 
-						{/* Fallback Route */}
+						{/* Fallback Route (signed-out visitors are sent to the login page) */}
 						<Route path="*" element={<PageNotFound />} />
 					</Route>
-
-					{/* Redirect to allTest if logged in, otherwise redirect to login */}
-					<Route
-						path="*"
-						element={
-							isAuthenticated ? <Navigate to="/allTest" replace /> : <Navigate to="/login" replace />
-						}
-					/>
 				</Routes>
+				</RouteErrorBoundary>
 			</Router>
+			{/* The only popup area: one per app, so a message never appears twice */}
+			<ToastContainer position="top-right" autoClose={3000} newestOnTop limit={3} style={{ zIndex: 99999999 }} />
 		</AuthContext.Provider>
 	);
 }

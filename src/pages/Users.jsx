@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDebounce } from "../customHook/useDebounce";
 import QRCode from "react-qr-code";
 import MUIDataTable from "mui-datatables";
@@ -25,8 +25,9 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import apiInstance from "../../api";
+import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import GenericConfirmationModal from "../components/DeleteConfirmationModal";
@@ -35,6 +36,8 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import { Search } from "lucide-react";
 import { getRole } from "../customHook/useAuth"; // Import getRole to get current user's role
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "../components/LoadError";
 
 const theme = createTheme({
   typography: {
@@ -120,6 +123,7 @@ const theme = createTheme({
 
 export default function Users() {
   const [users, setUsers] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [totalRecords, setTotalRecords] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -209,11 +213,11 @@ export default function Users() {
         const uniqueBlocks = blocksData.map((block) => block.blockName).filter(Boolean).sort();
         setAvailableBlocks(uniqueBlocks);
       } else {
-        console.error("Failed to fetch blocks and roles:", response.data?.message);
+        console.error("Failed to fetch blocks and roles:", response.data?.error);
       }
     } catch (error) {
       console.error("Error fetching blocks and roles:", error);
-      toast.error("Failed to load blocks and roles data");
+      showApiError(error, "Could not load the blocks and roles. Please reload the page.");
     }
   };
 
@@ -279,8 +283,12 @@ export default function Users() {
   };
 
   // Updated fetchData function with global search implementation
+  const startRequest = useLatestRequest();
+
   const fetchData = async () => {
     const isSearching = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
+    const request = startRequest();
+    setLoadError(null);
     
     // Use different loading states for search vs other operations
     if (isSearching) {
@@ -313,7 +321,8 @@ export default function Users() {
         url = `/users?page=${currentPage}&pageSize=${pageSize}`;
       }
 
-      const response = await apiInstance.get(url);
+      const response = await apiInstance.get(url, { signal: request.signal });
+      if (!request.isLatest()) return;
 
       if (response.data?.success && response.data?.data) {
         // Extract users array from response
@@ -330,21 +339,39 @@ export default function Users() {
         });
         setTotalRecords(paginationData.totalUsers || usersData.length);
       } else {
-        toast.error("Failed to fetch users");
+        setUsers([]);
+        setTotalRecords(0);
+        setLoadError("The server sent an answer the page could not read. Please try again.");
       }
     } catch (error) {
+      if (isCancelledRequest(error) || !request.isLatest()) return;
       console.error("Error fetching users:", error);
-      toast.error(error.response?.data?.message || "Error fetching users");
+      // Don't leave the previous filter's rows on screen as if they were the answer
+      setUsers([]);
+      setTotalRecords(0);
+      // Shown in place of the table, so a failure never looks like "no users"
+      setLoadError(getErrorMessage(error, "Could not load the users. Please try again."));
     } finally {
-      setIsLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setIsLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
-  // Updated useEffect to use the new fetchData function
+  // One request per change: a search or filter change goes back to page 1 first (and loads
+  // there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([debouncedSearchQuery.trim(), selectedRole, selectedBlock]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1);
+      return;
+    }
     fetchData();
-  }, [currentPage, pageSize, debouncedSearchQuery, selectedRole, selectedBlock]);
+  }, [filterKey, currentPage, pageSize]);
 
   // Open delete confirmation modal
   const openDeleteModal = (user) => {
@@ -390,7 +417,7 @@ export default function Users() {
       }
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast.error(error.response?.data?.message || "Error deleting user");
+      showApiError(error, "Could not delete the user. Please try again.");
     } finally {
       setIsDeleting(false);
       closeDeleteModal();
@@ -1063,7 +1090,11 @@ export default function Users() {
         </div>
 
         <div className="rounded-lg overflow-hidden border border-gray-200">
-          <MUIDataTable data={tableData} columns={columns} options={options} />
+          {loadError ? (
+            <LoadError title="Could not load the users" message={loadError} onRetry={fetchData} />
+          ) : (
+            <MUIDataTable data={tableData} columns={columns} options={options} />
+          )}
         </div>
 
         {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
@@ -1177,7 +1208,6 @@ export default function Users() {
           sx={{ zIndex: 12000 }}
         />
 
-        <ToastContainer style={{ zIndex: 99999999 }} position="top-right" autoClose={3000} />
 
         {/* QR Code Modal */}
         <Modal

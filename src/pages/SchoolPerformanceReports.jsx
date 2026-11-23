@@ -18,14 +18,25 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FormControl, InputLabel } from "@mui/material";
 import { Pagination, PaginationItem } from "@mui/material";
 import { Search, X as CloseIcon, RefreshCw } from "lucide-react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import apiInstance from "../../api"; // Updated import path
+import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
 import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
 import mixpanel from '../utils/mixpanel';
+import AcademicYearSelect from "../components/AcademicYearSelect";
+import { getGlobalYear, setGlobalYear, useFollowGlobalYear } from "../utils/academicYearStore";
+import {
+  toApiAcademicYear,
+  toDisplayAcademicYear,
+  storeAcademicYear,
+} from "../utils/academicYear";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "../components/LoadError";
+import { openPrintWindow } from "../utils/printWindow";
 
 // Utility function to convert text to title case
 const toTitleCase = (str) => {
@@ -169,11 +180,14 @@ const Reports = () => {
   const [totalRecords, setTotalRecords] = useState(0);
   const [schools, setSchools] = useState([]);
   const [reportData, setReportData] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [selectedBlock, setSelectedBlock] = useState("");
   const [selectedCluster, setSelectedCluster] = useState("");
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [selectedClassData, setSelectedClassData] = useState(null);
-  const [academicYear, setAcademicYear] = useState("2024-25");
+  // Year the report covers (start year, 2026 = 2026-27); current by default, remembered for this tab
+  const [selectedYearStart, setSelectedYearStart] = useState(() => getGlobalYear());
+  const academicYear = toDisplayAcademicYear(String(selectedYearStart));
   const [subjects, setSubjects] = useState([]); // Dynamic subjects from API
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
   const subjectsFetched = useRef(false); // Track if subjects have been fetched
@@ -215,7 +229,7 @@ const Reports = () => {
       } else {
         // Fallback to hardcoded subjects if API fails
         console.warn('Failed to fetch subjects from API, using fallback');
-        const fallbackSubjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
+        const fallbackSubjects = ["Hindi", "English", "Maths", "EVS", "Science", "Social Science"];
         setSubjects(fallbackSubjects);
         if (!fallbackSubjects.includes(selectedSubject)) {
           setSelectedSubject(fallbackSubjects[0]);
@@ -224,13 +238,13 @@ const Reports = () => {
     } catch (error) {
       console.error('Error fetching subjects:', error);
       // Fallback to hardcoded subjects if API fails
-      const fallbackSubjects = ["English", "Hindi", "Mathematics", "Science", "Social Science"];
+      const fallbackSubjects = ["Hindi", "English", "Maths", "EVS", "Science", "Social Science"];
       setSubjects(fallbackSubjects);
       if (!fallbackSubjects.includes(selectedSubject)) {
         setSelectedSubject(fallbackSubjects[0]);
       }
       // Only show toast once and only if we haven't shown it before
-      toast.error('Failed to load subjects, using default list');
+      showApiError(error, "Could not load the subject list, so the default subjects are shown.");
     } finally {
       setIsLoadingSubjects(false);
     }
@@ -262,7 +276,7 @@ const Reports = () => {
     }
   } catch (error) {
     console.error("Error fetching blocks and clusters:", error);
-    toast.error("Failed to load blocks and clusters data");
+    showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
   }
 };
 
@@ -275,17 +289,33 @@ useEffect(() => {
     fetchSubjects();
   }, []);
 
-  // Fetch schools data from API
+  // One request per change: a subject, year, filter or search change goes back to page 1 first
+  // (and loads there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([selectedSubject, selectedBlock, selectedCluster, debouncedSearchQuery.trim(), selectedYearStart]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1);
+      return;
+    }
     fetchSchoolsData();
-  }, [currentPage, selectedSubject, selectedBlock, selectedCluster, pageSize, debouncedSearchQuery]);
+  }, [filterKey, currentPage, pageSize]);
 
-  useEffect(() => {
-    // Reset to first page when search query changes
+  const handleYearChange = (year) => {
+    setSelectedYearStart(year);
+    storeAcademicYear("schoolPerformance", year);
+    setGlobalYear(year);
     setCurrentPage(1);
-  }, [searchQuery]);
+  };
+  useFollowGlobalYear((year) => handleYearChange(year));
+
+  const startRequest = useLatestRequest();
 
   const fetchSchoolsData = async () => {
+    const request = startRequest();
+    setLoadError(null);
     // Set appropriate loading state based on search
     if (debouncedSearchQuery) {
       setIsSearchLoading(true);
@@ -295,39 +325,48 @@ useEffect(() => {
     
     try {
       // Updated to use dynamic pageSize
-      let url = `/report/subject-performance/${selectedSubject}?page=${currentPage}&pageSize=${pageSize}`;
+      let url = `/report/subject-performance/${encodeURIComponent(selectedSubject)}?page=${currentPage}&pageSize=${pageSize}&academicYear=${toApiAcademicYear(selectedYearStart)}`;
 
       // Add block and cluster filters if selected - updated parameter names
       if (selectedBlock) {
-        url += `&blockName=${selectedBlock}`;
+        url += `&blockName=${encodeURIComponent(selectedBlock)}`;
       }
 
       if (selectedCluster) {
-        url += `&clusterName=${selectedCluster}`;
+        url += `&clusterName=${encodeURIComponent(selectedCluster)}`;
       }
 
       // Add search query parameter
-      if (debouncedSearchQuery) {
-        url += `&query=${encodeURIComponent(debouncedSearchQuery)}`;
+      if (debouncedSearchQuery.trim()) {
+        url += `&query=${encodeURIComponent(debouncedSearchQuery.trim())}`;
       }
 
-      const response = await apiInstance.get(url);
+      const response = await apiInstance.get(url, { signal: request.signal });
+      if (!request.isLatest()) return;
 
       if (response.data.success) {
-        const { schools, pagination, academicYear } = response.data.data;
+        const { schools, pagination } = response.data.data;
         setReportData(schools);
         setTotalRecords(pagination.totalSchools);
         setTotalPages(pagination.totalPages);
-        if (academicYear) setAcademicYear(academicYear);
       } else {
-        toast.error("Failed to fetch report data");
+        setReportData([]);
+        setTotalRecords(0);
+        setLoadError("The server sent an answer the page could not read. Please try again.");
       }
     } catch (error) {
+      if (isCancelledRequest(error) || !request.isLatest()) return;
       console.error("Error fetching data:", error);
-      toast.error("An error occurred while fetching the report data");
+      // Don't leave the previous filter's rows on screen as if they were the answer
+      setReportData([]);
+      setTotalRecords(0);
+      // Shown in place of the table, so a failure never looks like an empty report
+      setLoadError(getErrorMessage(error, "Could not load the report. Please try again."));
     } finally {
-      setIsLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setIsLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
@@ -668,28 +707,27 @@ useEffect(() => {
       } else {
         // For non-current options, fetch from API with proper parameters
         // Fetch more data from API
-        let url = `/report/subject-performance/${selectedSubject}?page=1&pageSize=${
-          count === totalRecords ? totalRecords : count
-        }`;
+        // Download mode returns every matching school (a page is capped at 100); trimmed to the
+        // chosen count below
+        let url = `/report/subject-performance/${encodeURIComponent(selectedSubject)}?mode=download&academicYear=${toApiAcademicYear(selectedYearStart)}`;
 
         // Important: Include the same filters as current view
         if (selectedBlock) {
-          url += `&blockName=${selectedBlock}`;
+          url += `&blockName=${encodeURIComponent(selectedBlock)}`;
         }
         if (selectedCluster) {
-          url += `&clusterName=${selectedCluster}`;
+          url += `&clusterName=${encodeURIComponent(selectedCluster)}`;
         }
-        if (debouncedSearchQuery) {
-          url += `&query=${encodeURIComponent(debouncedSearchQuery)}`;
+        if (debouncedSearchQuery.trim()) {
+          url += `&query=${encodeURIComponent(debouncedSearchQuery.trim())}`;
         }
 
         const response = await apiInstance.get(url);
         if (response.data.success) {
           const apiData = response.data.data.schools;
           
-          // Additional safety check for API response
-          if (apiData.length > count && count !== totalRecords) {
-            // Slice to exact count if API returned more than expected
+          // Keep only the number of schools asked for
+          if (apiData.length > count) {
             apiData.splice(count);
           }
           dataToDownload = apiData.map((school) => {
@@ -729,7 +767,7 @@ useEffect(() => {
       }
     } catch (error) {
       console.error("Error downloading report:", error);
-      toast.error("An error occurred while generating the report");
+      showApiError(error, "Could not create the report file. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -738,7 +776,7 @@ useEffect(() => {
   // Download report as PDF
   const handleDownloadPDF = (data) => {
     // Create a new window for printing
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
 
     // Calculate statistics for the report
     const totalSchools = data.length;
@@ -1224,22 +1262,7 @@ useEffect(() => {
           </div>
 
           <Box sx={{ flexShrink: 0 }}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                bgcolor: theme.palette.secondary.light,
-                color: theme.palette.primary.main,
-                padding: "4px 16px",
-                borderRadius: "8px",
-                height: "48px",
-                display: "flex",
-                alignItems: "center",
-                whiteSpace: "nowrap",
-                minWidth: "fit-content"
-              }}
-            >
-              Academic Year {academicYear}
-            </Typography>
+            <AcademicYearSelect value={selectedYearStart} onChange={handleYearChange} disabled={isLoading} />
           </Box>
         </Box>
 
@@ -1270,7 +1293,6 @@ useEffect(() => {
                       vertical: "top",
                       horizontal: "left",
                     },
-                    getContentAnchorEl: null, // Prevents automatic positioning
                   }}
                   sx={{
                     height: "48px",
@@ -1403,7 +1425,6 @@ useEffect(() => {
                     vertical: "top",
                     horizontal: "left",
                   },
-                  getContentAnchorEl: null, // Prevents automatic positioning
                 }}
                 sx={{
                   height: "48px",
@@ -1466,7 +1487,6 @@ useEffect(() => {
                     vertical: "top",
                     horizontal: "left",
                   },
-                  getContentAnchorEl: null, // Prevents automatic positioning
                 }}
                 sx={{
                   height: "48px",
@@ -1542,7 +1562,11 @@ useEffect(() => {
 
         {/* Report Table */}
         <div className="rounded-lg overflow-hidden border border-gray-200 mb-4">
-          <CustomTable data={filteredData} />
+          {loadError ? (
+            <LoadError title="Could not load the report" message={loadError} onRetry={fetchSchoolsData} />
+          ) : (
+            <CustomTable data={filteredData} />
+          )}
         </div>
 
         {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
@@ -1824,13 +1848,6 @@ useEffect(() => {
         {/* Loading Indicator - only for non-search operations */}
         {isLoading && !isSearchLoading && <SpinnerPageOverlay isLoading={isLoading} />}
 
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-          style={{ zIndex: 99999999 }}
-        />
       </div>
     </ThemeProvider>
   );

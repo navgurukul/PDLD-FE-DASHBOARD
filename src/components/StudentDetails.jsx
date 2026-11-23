@@ -15,7 +15,7 @@ import {
 import DeleteConfirmationModal from "../components/DeleteConfirmationModal";
 import MUIDataTable from "mui-datatables";
 import SearchIcon from "@mui/icons-material/Search";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import ButtonCustom from "../components/ButtonCustom";
 import {
   addSymbolBtn,
@@ -28,6 +28,8 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import SpinnerPageOverlay from "./SpinnerPageOverlay";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "./LoadError";
 
 const theme = createTheme({
   typography: {
@@ -118,6 +120,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
   const [selectedClass, setSelectedClass] = useState(""); // Empty string for "All Classes"
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [allStudents, setAllStudents] = useState([]); // Store all students
   const [availableClasses, setAvailableClasses] = useState([]); // Store unique classes
   const [schoolInfo, setSchoolInfo] = useState({
@@ -147,6 +150,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
   // Fetch all students from the API
   const fetchStudents = async () => {
     setIsLoadingStudents(true);
+    setLoadError(null);
     try {
       // Fetch all students without pagination
       const response = await apiInstance.get(`/student/school/${schoolId}`);
@@ -197,7 +201,8 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       }
     } catch (error) {
       console.error("Error fetching students:", error);
-      toast.error("Failed to load students. Please try again later.");
+      // Shown in place of the table, so a failure never looks like an empty school
+      setLoadError(getErrorMessage(error, "Could not load the students. Please try again."));
       setAllStudents([]);
     } finally {
       setIsLoadingStudents(false);
@@ -282,7 +287,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
       }
     } catch (error) {
       console.error("Error deleting student:", error);
-      toast.error("Failed to delete student. Please try again later.");
+      showApiError(error, "Could not remove the student. Please try again.");
     } finally {
       setIsDeleting(false);
       closeDeleteModal();
@@ -303,6 +308,21 @@ const StudentDetails = ({ schoolId, schoolName }) => {
 
     return matchesSearch && matchesClass;
   });
+
+  // Students per class, for the heading and the class dropdown
+  const classCounts = allStudents.reduce((counts, student) => {
+    const key = student.class?.toString();
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
+  const selectedClassCount = selectedClass === "" ? allStudents.length : classCounts[selectedClass] || 0;
+  const studentWord = (n) => (n === 1 ? "student" : "students");
+
+  const noMatchText = searchQuery
+    ? `No students match "${searchQuery}"${selectedClass ? ` in Class ${selectedClass}` : ""}.`
+    : selectedClass
+      ? `No students in Class ${selectedClass} yet.`
+      : "No students yet. Click \"Add Student\" to add one.";
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -543,6 +563,7 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     pagination: false,
     selectableRows: "none",
     responsive: "standard",
+    textLabels: { body: { noMatch: noMatchText } },
   };
 
   const handleBulkUploadStudent = () => {
@@ -564,10 +585,22 @@ const StudentDetails = ({ schoolId, schoolName }) => {
     <ThemeProvider theme={theme}>
       <Box>
         <div className="flex justify-between items-center mb-2">
-          <Typography variant="h6" className="text-xl font-bold">
-            <span>
-              Total Student Count ({schoolInfo.totalStudentsInSchool})
-            </span>
+          <Typography variant="h6" className="text-xl font-bold" data-testid="student-count">
+            {selectedClass === "" ? (
+              <span>Total Student Count ({schoolInfo.totalStudentsInSchool})</span>
+            ) : (
+              <span>
+                Class {selectedClass}: {selectedClassCount} {studentWord(selectedClassCount)}
+                <span className="font-normal text-gray-500" style={{ fontSize: "16px" }}>
+                  {" "}· School total {schoolInfo.totalStudentsInSchool}
+                </span>
+              </span>
+            )}
+            {searchQuery && !isLoadingStudents && (
+              <span className="font-normal text-gray-500" style={{ fontSize: "16px" }}>
+                {" "}· {filteredStudents.length} {filteredStudents.length === 1 ? "matches" : "match"} your search
+              </span>
+            )}
           </Typography>
         </div>
 
@@ -631,10 +664,10 @@ const StudentDetails = ({ schoolId, schoolName }) => {
                   },
                 }}
               >
-                <MenuItem value="">All Classes</MenuItem>
+                <MenuItem value="">All Classes ({allStudents.length})</MenuItem>
                 {availableClasses.map((classNum) => (
                   <MenuItem key={classNum} value={classNum.toString()}>
-                    Class {classNum}
+                    Class {classNum} ({classCounts[classNum.toString()] || 0})
                   </MenuItem>
                 ))}
               </Select>
@@ -675,6 +708,8 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           <Box sx={{ display: "flex", justifyContent: "center" }}>
             <SpinnerPageOverlay isLoading={isLoadingStudents} />
           </Box>
+        ) : loadError ? (
+          <LoadError title="Could not load the students" message={loadError} onRetry={fetchStudents} />
         ) : (
           <div
             style={{
@@ -731,13 +766,6 @@ const StudentDetails = ({ schoolId, schoolName }) => {
           sx={{ zIndex: 12000 }}
         />
 
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-          style={{ zIndex: 99999999 }}
-        />
       </Box>
     </ThemeProvider>
   );

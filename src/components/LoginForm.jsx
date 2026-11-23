@@ -1,9 +1,9 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { TextField, Paper, Typography, Box } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../App"; // Import the AuthContext
-import apiInstance from "../../api"; // Import your API instance
+import apiInstance, { SESSION_EXPIRED_KEY } from "../../api"; // Import your API instance
+import { getErrorMessage } from "../utils/apiError";
 import { Eye, EyeOff } from "lucide-react";
 import ButtonCustom from "./ButtonCustom";
 import mixpanel from '../utils/mixpanel';
@@ -58,10 +58,23 @@ const theme = createTheme({
 	},
 });
 
+// Why sign-in failed, in words the user can act on
+function loginErrorMessage(error, wrongDetails) {
+	const status = error?.response?.status;
+	const serverText = String(error?.response?.data?.error || "");
+	if (status === 401 && /inactive/i.test(serverText)) {
+		return "This account has been turned off. Ask your district office to turn it on again.";
+	}
+	if (status === 401) return wrongDetails;
+	if (status >= 500) return "The server could not sign you in right now. Please try again in a minute.";
+	return getErrorMessage(error, "Could not sign in. Please try again.");
+}
+
 export default function LoginForm({ onLogin }) {
-	const navigate = useNavigate();
 	const { login } = useContext(AuthContext);
 	const [showPassword, setShowPassword] = useState(false);
+	// "officer": username login; "school": a headmaster signs in with the school's UDISE code
+	const [mode, setMode] = useState("officer");
 
 	const [formData, setFormData] = useState({
 		username: "",
@@ -70,6 +83,11 @@ export default function LoginForm({ onLogin }) {
 
 	const [errors, setErrors] = useState({});
 	const [isLoading, setIsLoading] = useState(false);
+	// The API sets this when a saved login stops working; cleared after it is shown once
+	const [sessionExpired] = useState(() => sessionStorage.getItem(SESSION_EXPIRED_KEY) === "1");
+	useEffect(() => {
+		sessionStorage.removeItem(SESSION_EXPIRED_KEY);
+	}, []);
 
 	const handleInputChange = (event) => {
 		const { name, value } = event.target;
@@ -85,7 +103,7 @@ export default function LoginForm({ onLogin }) {
 		const newErrors = {};
 
 		if (!formData.username.trim()) {
-			newErrors.username = "Username is required";
+			newErrors.username = mode === "school" ? "UDISE code is required" : "Username is required";
 		}
 
 		if (!formData.password) {
@@ -104,6 +122,36 @@ export default function LoginForm({ onLogin }) {
 		}
 
 		setIsLoading(true);
+
+		if (mode === "school") {
+			try {
+				const response = await apiInstance.post("/auth/school-login", {
+					udiseCode: formData.username.trim(),
+					password: formData.password,
+				});
+				const { token, data: school } = response.data.data;
+				const userData = {
+					role: "SCHOOL",
+					schoolId: school.id,
+					schoolName: school.schoolName,
+					udiseCode: school.udiseCode,
+					name: school.schoolName,
+				};
+				localStorage.setItem("userData", JSON.stringify(userData));
+				try {
+					mixpanel.track("Login", { role: "SCHOOL", udiseCode: school.udiseCode, loginTime: new Date().toISOString() });
+				} catch {
+					// analytics must not block sign-in
+				}
+				// The /login route sends them on: back to the page they were heading to, else their home
+				login(token, userData);
+			} catch (error) {
+				setErrors({ general: loginErrorMessage(error, "Wrong UDISE code or password. Please try again.") });
+			} finally {
+				setIsLoading(false);
+			}
+			return;
+		}
 
 		try {
 			// Call your authentication API here
@@ -163,21 +211,12 @@ export default function LoginForm({ onLogin }) {
 				// Pass the token to the login function from AuthContext
 				login(token, userData);
 
-				// Navigate to allTest route
-				navigate("/allTest");
 			} else {
 				// Handle case where response is successful but doesn't indicate success
-				setErrors({ general: "Login failed. Please try again." });
+				setErrors({ general: "Could not sign in. Please try again." });
 			}
 		} catch (error) {
-			// Removed console.error for general login errors
-			if (error.response && error.response.status === 401) {
-				setErrors({ general: "Invalid username or password. Please try again." });
-			} else if (error.response && error.response.data && error.response.data.message) {
-				setErrors({ general: error.response.data.message });
-			} else {
-				setErrors({ general: "Connection error. Please try again later." });
-			}
+			setErrors({ general: loginErrorMessage(error, "Wrong username or password. Please try again.") });
 		} finally {
 			setIsLoading(false);
 		}
@@ -220,6 +259,27 @@ export default function LoginForm({ onLogin }) {
 						Enter your credentials to access your account
 					</Typography>
 
+					<div
+						role="group"
+						aria-label="Sign in as"
+						style={{ display: "grid", gridTemplateColumns: "1fr 1fr", background: "#EFF3F9", borderRadius: 10, padding: 4, marginBottom: 20 }}
+					>
+						{[["officer", "Officer"], ["school", "School (headmaster)"]].map(([key, label]) => (
+							<button
+								key={key}
+								type="button"
+								aria-pressed={mode === key}
+								onClick={() => { setMode(key); setErrors({}); }}
+								style={{
+									minHeight: 44, border: "none", borderRadius: 8, cursor: "pointer", font: "inherit", fontWeight: mode === key ? 700 : 500,
+									background: mode === key ? "#2F4F4F" : "transparent", color: mode === key ? "#ffffff" : "#2F4F4F",
+								}}
+							>
+								{label}
+							</button>
+						))}
+					</div>
+
 					<form onSubmit={handleSubmit}>
 						<Box sx={{ mb: 2, position: "relative" }}>
 							<Typography
@@ -231,7 +291,7 @@ export default function LoginForm({ onLogin }) {
 									fontWeight: 500,
 								}}
 							>
-								Username*
+								{mode === "school" ? "School UDISE code*" : "Username*"}
 							</Typography>
 							<TextField
 								id="username"
@@ -240,7 +300,8 @@ export default function LoginForm({ onLogin }) {
 								onChange={handleInputChange}
 								fullWidth
 								variant="outlined"
-								placeholder="Enter your username"
+								placeholder={mode === "school" ? "11-digit UDISE code" : "Enter your username"}
+								inputMode={mode === "school" ? "numeric" : undefined}
 								error={!!errors.username}
 								helperText={errors.username}
 								InputProps={{
@@ -291,6 +352,12 @@ export default function LoginForm({ onLogin }) {
 								}}
 							/>
 						</Box>
+
+						{sessionExpired && !errors.general && (
+							<Typography variant="body2" align="center" sx={{ mb: 2, color: "#8A5A00", backgroundColor: "#FFF4E0", borderRadius: "8px", p: 1.5 }} role="status">
+								Your session expired. Please sign in again to continue where you left off.
+							</Typography>
+						)}
 
 						{errors.general && (
 							<Typography color="error" variant="body2" align="center" sx={{ mb: 2 }}>

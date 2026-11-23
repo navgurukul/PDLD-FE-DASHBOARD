@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useDebounce } from "../customHook/useDebounce";
 import MUIDataTable from "mui-datatables";
 import { Button, TextField, CircularProgress, FormControl, InputLabel, MenuItem, Select, Tooltip, Typography } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Search } from "lucide-react";
 import "../components/TestListTable.css"; // Import the CSS for consistent table styles
@@ -13,6 +13,11 @@ import ButtonCustom from "../components/ButtonCustom";
 import SpinnerPageOverlay from "../components/SpinnerPageOverlay";
 import DownloadModal from "../components/modal/DownloadModal";
 import apiInstance from "../../api";
+import { useLatestRequest, isCancelledRequest } from "../customHook/useLatestRequest";
+import { toDisplayAcademicYear } from "../utils/academicYear";
+import { showApiError, getErrorMessage } from "../utils/apiError";
+import LoadError from "../components/LoadError";
+import { openPrintWindow } from "../utils/printWindow";
 
 const theme = createTheme({
   typography: {
@@ -82,6 +87,7 @@ const theme = createTheme({
 
 export default function EnrollmentReport() {
   const [data, setData] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [isLoading, setIsLoading] = useState(false);
@@ -128,7 +134,11 @@ export default function EnrollmentReport() {
   };
 
   // Fetch enrollment data from API
+  const startRequest = useLatestRequest();
+
   const fetchEnrollmentData = async () => {
+    const request = startRequest();
+    setLoadError(null);
     // Set appropriate loading state based on search
     if (debouncedSearchQuery) {
       setIsSearchLoading(true);
@@ -144,35 +154,17 @@ export default function EnrollmentReport() {
         sortBy: "totalStudents"
       });
 
-      // Smart parameter handling - detect search intent and use appropriate parameter
+      // The server matches the text against the names at the chosen level (block, cluster, school)
       if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
-        const searchLower = debouncedSearchQuery.toLowerCase().trim();
-        
-        // Check if search matches any block (case-insensitive, partial match)
-        const matchingBlock = blocks.find(block => 
-          block.toLowerCase().includes(searchLower)
-        );
-        
-        // Check if search matches any cluster (case-insensitive, partial match)
-        const matchingCluster = clusters.find(cluster => 
-          cluster.toLowerCase().includes(searchLower)
-        );
-        
-        // Use specific parameter based on what was found
-        if (matchingBlock) {
-          params.append("block", matchingBlock);
-        } else if (matchingCluster) {
-          params.append("cluster", matchingCluster);
-        } else {
-          params.append("query", debouncedSearchQuery);
-        }
+        params.append("query", debouncedSearchQuery.trim());
       }
 
       // Add dropdown-selected filters (these work independently of search)
       if (selectedBlock) params.append("block", selectedBlock);
       if (selectedCluster) params.append("cluster", selectedCluster);
 
-      const response = await apiInstance.get(`/report/enrollment?${params.toString()}`);
+      const response = await apiInstance.get(`/report/enrollment?${params.toString()}`, { signal: request.signal });
+      if (!request.isLatest()) return;
       
       if (response.data.success) {
         const responseData = response.data.data;
@@ -196,18 +188,22 @@ export default function EnrollmentReport() {
         }));
         
       } else {
-        toast.error(response.data.message || "Failed to fetch enrollment data");
+        setLoadError(response.data.message || "Could not load the enrollment report. Please try again.");
         setData([]);
         setMetadata({});
       }
     } catch (error) {
+      if (isCancelledRequest(error) || !request.isLatest()) return;
       console.error("Error fetching enrollment data:", error);
-      toast.error("Failed to fetch enrollment data. Please try again.");
+      // Shown in place of the table, so a failure never looks like an empty report
+      setLoadError(getErrorMessage(error, "Could not load the enrollment report. Please try again."));
       setData([]);
       setMetadata({});
     } finally {
-      setIsLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setIsLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
@@ -236,7 +232,7 @@ export default function EnrollmentReport() {
       }
     } catch (error) {
       console.error("Error fetching blocks and clusters:", error);
-      toast.error("Failed to load blocks and clusters data");
+      showApiError(error, "Could not load the blocks and clusters. Please reload the page.");
     }
   };
 
@@ -245,21 +241,19 @@ export default function EnrollmentReport() {
     fetchGlobalBlocksAndClusters();
   }, []);
 
+  // One request per change: a search, filter or level change goes back to page 1 first (and
+  // loads there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([debouncedSearchQuery.trim(), selectedBlock, selectedCluster, selectedGrouping, selectedClassGroup]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && pagination.currentPage !== 1) {
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
+      return;
+    }
     fetchEnrollmentData();
-  }, [
-    debouncedSearchQuery, 
-    pagination.currentPage, 
-    pagination.pageSize, 
-    selectedBlock, 
-    selectedCluster, 
-    selectedGrouping
-  ]);
-
-  useEffect(() => {
-    // Reset to first page when filters or class group changes
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-  }, [selectedClassGroup, selectedBlock, selectedCluster, searchQuery, selectedGrouping]);
+  }, [filterKey, pagination.currentPage, pagination.pageSize]);
 
   useEffect(() => {
     // Clear cluster filter when level changes to "block"
@@ -422,28 +416,9 @@ export default function EnrollmentReport() {
           params.append("pageSize", Math.min(count, 100).toString()); // Cap pageSize at 100
         }
 
-        // Important: Include the same filters as current view using smart parameter detection
+        // Important: Include the same filters as current view
         if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
-          const searchLower = debouncedSearchQuery.toLowerCase().trim();
-          
-          // Check if search matches any block (case-insensitive, partial match)
-          const matchingBlock = blocks.find(block => 
-            block.toLowerCase().includes(searchLower)
-          );
-          
-          // Check if search matches any cluster (case-insensitive, partial match) 
-          const matchingCluster = clusters.find(cluster => 
-            cluster.toLowerCase().includes(searchLower)
-          );
-          
-          // Use specific parameter based on what was found
-          if (matchingBlock) {
-            params.append("block", matchingBlock);
-          } else if (matchingCluster) {
-            params.append("cluster", matchingCluster);
-          } else {
-            params.append("query", debouncedSearchQuery);
-          }
+          params.append("query", debouncedSearchQuery.trim());
         }
         
         // Add dropdown-selected filters
@@ -496,7 +471,7 @@ export default function EnrollmentReport() {
       }
     } catch (error) {
       console.error("Error downloading report:", error);
-      toast.error("An error occurred while generating the report");
+      showApiError(error, "Could not create the report file. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -523,7 +498,7 @@ export default function EnrollmentReport() {
   // Download report as PDF
   const handleDownloadPDF = (data) => {
     // Create a new window for printing
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
 
     // Calculate statistics for the report
     const totalRecords = data.length;
@@ -759,7 +734,7 @@ export default function EnrollmentReport() {
         <div class="container">
           <div class="header">
             <h1>Student Enrollment Analytics</h1>
-            <div class="subtitle">Academic Year ${metadata.academicYear || new Date().getFullYear()}</div>
+            <div class="subtitle">Academic Year ${toDisplayAcademicYear(metadata.academicYear)}</div>
             <div class="date">Generated on: ${currentDate}</div>
             ${metadata.lastUpdatedOn ? `<div class="date">Last Updated: ${new Date(metadata.lastUpdatedOn).toLocaleString('en-IN', {
               year: 'numeric',
@@ -818,7 +793,7 @@ export default function EnrollmentReport() {
           
           <div class="footer">
             <p>This report is generated automatically from the Student Enrollment System</p>
-            <p>© ${metadata.academicYear || new Date().getFullYear()} Academic Performance Tracking System</p>
+            <p>© ${toDisplayAcademicYear(metadata.academicYear)} Academic Performance Tracking System</p>
           </div>
         </div>
       </body>
@@ -888,7 +863,7 @@ export default function EnrollmentReport() {
 
     // Header Information
     csvContent += `"Student Enrollment Analytics"\n`;
-    csvContent += `"Academic Year ${metadata.academicYear || new Date().getFullYear()}"\n`;
+    csvContent += `"Academic Year ${toDisplayAcademicYear(metadata.academicYear)}"\n`;
     csvContent += `"Generated on: ${currentDate}"\n`;
     if (metadata.lastUpdatedOn) {
       csvContent += `"Last Updated: ${new Date(metadata.lastUpdatedOn).toLocaleString('en-IN', {
@@ -977,7 +952,7 @@ export default function EnrollmentReport() {
               </p>
               {metadata.academicYear && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Academic Year: {metadata.academicYear} | Report Type: {metadata.reportType || selectedGrouping}
+                  Academic Year: {toDisplayAcademicYear(metadata.academicYear)} | Report Type: {metadata.reportType || selectedGrouping}
                   {metadata.lastUpdatedOn && (
                     <span className="ml-2">
                       | Last Updated: {new Date(metadata.lastUpdatedOn).toLocaleString('en-IN', {
@@ -1361,7 +1336,11 @@ export default function EnrollmentReport() {
             }}
             className="rounded-lg overflow-hidden border border-gray-200 overflow-x-auto"
           >
-            <MUIDataTable data={processedData} columns={columns} options={options} />
+            {loadError ? (
+              <LoadError title="Could not load the enrollment report" message={loadError} onRetry={fetchEnrollmentData} />
+            ) : (
+              <MUIDataTable data={processedData} columns={columns} options={options} />
+            )}
           </div>
 
           {/* Updated Pagination with Rows Per Page - Same layout as SchoolList */}
@@ -1470,13 +1449,6 @@ export default function EnrollmentReport() {
             </div>
           </div>
 
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            closeOnClick
-            style={{ zIndex: 99999999 }}
-          />
         </div>
 
         {/* Download Modal */}

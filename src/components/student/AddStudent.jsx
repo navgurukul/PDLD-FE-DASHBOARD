@@ -17,16 +17,20 @@ import {
   Checkbox,
   ListItemText,
   OutlinedInput,
+  Button,
 } from "@mui/material";
+import LoadError from "../LoadError";
 import { useNavigate, useLocation } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import apiInstance from "../../../api";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ButtonCustom from "../../components/ButtonCustom";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { format } from "date-fns";
 import ConfirmationModal from "../modal/ConfirmationModal";
+import { getErrorMessage } from "../../utils/apiError";
+import { showFormErrors, scrollToFirstError } from "../../utils/formErrors";
 
 const theme = createTheme({
   typography: {
@@ -492,6 +496,8 @@ export default function AddStudent({ isEditMode = false }) {
     }
 
     setErrors(newErrors);
+    // One popup (the message, or how many fields), then scroll to the first red field
+    showFormErrors(newErrors);
     return isValid;
   };
 
@@ -500,12 +506,16 @@ export default function AddStudent({ isEditMode = false }) {
     event.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please correct the errors in the form");
       return;
     }
 
     if (!extractedSchoolId) {
       toast.error("School ID not found");
+      return;
+    }
+
+    // Editing without the student's id must never fall through to "add" (that made duplicates)
+    if (isEditMode && !studentId) {
       return;
     }
 
@@ -572,7 +582,13 @@ export default function AddStudent({ isEditMode = false }) {
       }
     } catch (error) {
       console.error("Error saving student data:", error);
-      toast.error(  error.response?.data?.error || error.response?.data?.message || error.message || "Failed to save student data");
+      // A problem the server found goes on the matching field too ("Student with Aadhar ID ... already exists")
+      const message = getErrorMessage(error, "Could not save the student. Please try again.");
+      if (/aadha?ar/i.test(message)) {
+        setErrors((prev) => ({ ...prev, aadharId: message }));
+        scrollToFirstError();
+      }
+      toast.error(message, { autoClose: 8000 });
     } finally {
       setIsSubmitting(false);
     }
@@ -594,6 +610,28 @@ export default function AddStudent({ isEditMode = false }) {
     { value: "12", label: "Class 12" },
   ];
 
+  // Opened from a saved link or a new tab: the student to edit is unknown
+  if (isEditMode && !studentId) {
+    return (
+      <ThemeProvider theme={theme}>
+        <Box sx={{ py: 3, px: 1, maxWidth: "800px", margin: "0 auto" }}>
+          <h5 className="text-lg font-bold text-[#2F4F4F]">Edit Student</h5>
+          <LoadError
+            title="Open this student again"
+            message="This page doesn't know which student to edit. This happens when it is opened from a saved link or a new tab. Go back to the student list and click Edit next to the student."
+          />
+          <Button
+            variant="contained"
+            onClick={() => originalNavigate(`/schools/schoolDetail/${extractedSchoolId}`, { state: { selectedTab: 1 } })}
+            sx={{ backgroundColor: "#2F4F4F", textTransform: "none", borderRadius: "8px" }}
+          >
+            Back to students
+          </Button>
+        </Box>
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider theme={theme}>
       {isLoading && <SpinnerPageOverlay />}
@@ -609,7 +647,7 @@ export default function AddStudent({ isEditMode = false }) {
 
         <Box sx={{ py: 2 }}>
           <Paper elevation={0} sx={{ p: 0, borderRadius: "8px" }}>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <Grid container spacing={3}>
               {/* Student Name */}
               <Grid item xs={12} md={6}>
@@ -892,7 +930,7 @@ export default function AddStudent({ isEditMode = false }) {
               {/* Stream - Only for Classes 11-12 */}
               {isHigherClass && (
                 <Grid item xs={12} md={12}>
-                  <FormControl fullWidth error={!!errors.stream} required>
+                  <FormControl fullWidth error={!!errors.stream} required data-invalid={errors.stream ? "true" : undefined}>
                     <InputLabel id="stream-select-label">Stream</InputLabel>
                     <Select
                       labelId="stream-select-label"
@@ -1039,13 +1077,6 @@ export default function AddStudent({ isEditMode = false }) {
         />
       )}
 
-      <ToastContainer
-        style={{ zIndex: 99999999 }}
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        closeOnClick
-      />
     </ThemeProvider>
   );
 }

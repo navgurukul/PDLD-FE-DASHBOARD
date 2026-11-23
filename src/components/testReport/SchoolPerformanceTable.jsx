@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 
 import {
   Button,
@@ -23,17 +23,20 @@ import DoneIcon from "@mui/icons-material/Done";
 import PendingIcon from "@mui/icons-material/Pending";
 import { FileText } from "lucide-react";
 import apiInstance from "../../../api";
+import { useLatestRequest, isCancelledRequest } from "../../customHook/useLatestRequest";
 import axios from "axios"; // Keep axios as fallback
 import { useParams, useLocation, Navigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import OutlinedButton from "../../components/button/OutlinedButton";
 import FolderEmptyImg from "../../assets/Folder Empty 1.svg";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DownloadModal from "../../components/modal/DownloadModal";
 import SpinnerPageOverlay from "../../components/SpinnerPageOverlay";
 import { Search } from "lucide-react";
 import { useDebounce } from "../../customHook/useDebounce";
+import { showApiError, getErrorMessage } from "../../utils/apiError";
+import { openPrintWindow } from "../../utils/printWindow";
 
 // Utility function to convert school names to Title Case
 const toTitleCase = (str) => {
@@ -384,7 +387,22 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     return "-";
   };
 
+  const startRequest = useLatestRequest();
+
+  // Block, cluster and district rows count schools: how many are due, how many submitted, how many are pending
+  const schoolCountsOf = (row) => {
+    if (level === "school") return {};
+    const total = Number(row.totalSchools);
+    const submitted = Number(row.submittedSchools);
+    if (row.totalSchools == null || row.submittedSchools == null || !Number.isFinite(total) || !Number.isFinite(submitted)) {
+      return { totalSchools: "-", submittedSchools: "-", pendingSchools: "-" };
+    }
+    return { totalSchools: total, submittedSchools: submitted, pendingSchools: Math.max(total - submitted, 0) };
+  };
+
   const fetchData = async (page = 1, size = pageSize, selectedLevel = level, searchValue = searchQuery.trim(), selectedStatus = statusFilter) => {
+    const request = startRequest();
+    setError(null);
     // Use different loading states for search vs regular data loading
     const isSearching = searchValue && searchValue.trim() !== "";
     if (isSearching) {
@@ -411,8 +429,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       }
 
       const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
-        params: searchParams
+        params: searchParams,
+        signal: request.signal
       });
+      if (!request.isLatest()) return;
       if (response.data && response.data.success) {
         // Handle different response structure based on level
         let apiSchools, totalSubmittedSchools, totalpendingSchools, totalEligibleSchools, pagination, maxScore, testSubject;
@@ -508,31 +528,33 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         setError("Failed to load data");
       }
     } catch (error) {
+      if (isCancelledRequest(error) || !request.isLatest()) return;
       // Error handling is implemented via setError state
-      setError(error.response?.data?.message || "An error occurred while fetching data");
+      setError(getErrorMessage(error, "Could not load the report. Please try again."));
     } finally {
-      setLoading(false);
-      setIsSearchLoading(false);
+      if (request.isLatest()) {
+        setLoading(false);
+        setIsSearchLoading(false);
+      }
     }
   };
 
   // Handle search functionality with debouncing
   const debouncedSearchQuery = useDebounce(searchQuery, 500); // Debounce search for 500ms
-  
-  // Reset page when filters change (search, status, or level)
+
+  // One request per change: a search, status or level change goes back to page 1 first (and
+  // loads there); a page or rows-per-page change loads that page
+  const filterKey = JSON.stringify([currentTestId, debouncedSearchQuery.trim(), statusFilter, level]);
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearchQuery, statusFilter, level]);
-  
-  useEffect(() => {
-    if (searchQuery && debouncedSearchQuery !== searchQuery) {
+    const filtersChanged = lastFilterKey.current !== filterKey;
+    lastFilterKey.current = filterKey;
+    if (filtersChanged && currentPage !== 1) {
+      setCurrentPage(1);
       return;
     }
-
-    const effectiveSearchQuery = searchQuery ? debouncedSearchQuery : "";
-    
-    fetchData( currentPage, pageSize, level,  effectiveSearchQuery,  statusFilter  );
-  }, [ currentTestId,currentPage, pageSize, level, debouncedSearchQuery,  statusFilter, searchQuery  ]);
+    fetchData(currentPage, pageSize, level, debouncedSearchQuery.trim(), statusFilter);
+  }, [filterKey, currentPage, pageSize]);
 
   // No frontend filtering needed - all filtering is now done on the server
   const filteredSchools = useMemo(() => {
@@ -555,16 +577,20 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       } else {
         // For "all", fetch all data from API
         try {
-          // Build search parameters for download
+          // Every row with the same filters as the table (download mode is not capped by page size)
           const downloadParams = {
-            page: 1,
-            pageSize: totalSchools, // Fetch all records
+            mode: "download",
             level: level // Include level parameter
           };
 
           // Include search query if present
-          if (searchQuery.trim()) {
-            downloadParams.query = searchQuery.trim();
+          if (debouncedSearchQuery.trim()) {
+            downloadParams.query = debouncedSearchQuery.trim();
+          }
+
+          // Same status filter as the table (school level only)
+          if (level === "school" && statusFilter) {
+            downloadParams.status = statusFilter;
           }
 
           const response = await apiInstance.get(`/schools/results/submitted/${currentTestId}`, {
@@ -596,6 +622,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                 id: school.id || `${level}-${name}`,
                 name: toTitleCase(name) || "-",
                 status: level === "school" ? (school.status === "submitted" ? "Submitted" : "Pending") : "N/A",
+                ...schoolCountsOf(school),
                 blockName: school.blockName || "-",
                 clusterName: school.clusterName || "-",
                 districtName: school.districtName || school.district || "-",
@@ -733,7 +760,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           }
         } catch (error) {
           // Error handling is implemented via setError state
-          toast.error("Failed to fetch all records. Using current page data.");
+          toast.error("Could not load all records, so only this page will be downloaded.", { autoClose: 8000 });
           dataToDownload = tableData;
         }
       }
@@ -744,7 +771,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         handleDownloadPDF(dataToDownload);
       }
     } catch (error) {
-      toast.error("An error occurred while generating the report");
+      showApiError(error, "Could not create the report file. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -792,6 +819,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     // Add Cluster column only for school level
     if (level === "school") {
       baseHeaders.push("Cluster");
+    }
+
+    // Submission status in numbers for block, cluster and district rows
+    if (level !== "school") {
+      baseHeaders.push("Total Schools", "Submitted", "Pending");
     }
 
     let headers = [];
@@ -844,6 +876,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       // Add Cluster only for school level
       if (level === "school") {
         baseRowData.push(row.clusterName || "-");
+      }
+
+      if (level !== "school") {
+        baseRowData.push(row.totalSchools ?? "-", row.submittedSchools ?? "-", row.pendingSchools ?? "-");
       }
 
       let rowData = [];
@@ -902,7 +938,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
   };
 
   const handleDownloadPDF = (data) => {
-    const printWindow = window.open("", "_blank");
+    const printWindow = openPrintWindow();
     const currentDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -934,6 +970,15 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     // Add Cluster only for school level
     if (level === "school") {
       baseHeaders.push({ key: "clusterName", label: "Cluster", align: "center" });
+    }
+
+    // Submission status in numbers for block, cluster and district rows
+    if (level !== "school") {
+      baseHeaders.push(
+        { key: "totalSchools", label: "Total Schools", align: "center" },
+        { key: "submittedSchools", label: "Submitted", align: "center" },
+        { key: "pendingSchools", label: "Pending", align: "center" },
+      );
     }
 
     let tableHeaders = [];
@@ -1154,6 +1199,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       id: school.id,
       name: toTitleCase(school.name || school.schoolName) || "-",
       status: level === "school" ? (school.submitted ? "Submitted" : "Pending") : "N/A",
+      ...schoolCountsOf(school),
       blockName: school.blockName || "-",
       clusterName: school.clusterName || "-",
       districtName: school.districtName || school.district || "-",
@@ -1392,8 +1438,25 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         }),
       },
     }] : []),
+    // Submission status in numbers, for block, cluster and district rows
+    ...(level !== "school" ? [
+      ["totalSchools", "Total Schools"],
+      ["submittedSchools", "Submitted"],
+      ["pendingSchools", "Pending"],
+    ].map(([name, label]) => ({
+      name,
+      label,
+      options: {
+        filter: false,
+        sort: true,
+        sortThirdClickReset: true,
+        setCellProps: () => ({
+          className: "center-align-cell",
+        }),
+      },
+    })) : []),
     // Conditional grade columns for remedial tests
-    ...(isRemedialTest 
+    ...(isRemedialTest
       ? getGradeLevelsForSubject(testSubject || testNameVal).map(level => ({
           name: level,
           label: level, // Already in proper title case from the updated GRADE_LEVELS
@@ -2107,13 +2170,6 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
           reportLevel={level}
         />
         {isLoading && !loading && <SpinnerPageOverlay isLoading={isLoading} />}
-        <ToastContainer
-          style={{ zIndex: 99999999 }}
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          closeOnClick
-        />
       </div>
     </ThemeProvider>
   );
