@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import badge from "../../assets/pdld-badge.svg";
 import {
 	BORDER, DEVANAGARI_FONT, GRADE, GRADE_BANDS, HEADING_FONT, INK, LEVEL_GLOSS, LEVEL_LABEL, LEVEL_RAMP, LINK, MUTED,
@@ -362,13 +362,73 @@ function LevelBar({ stats, levels, label }) {
 	);
 }
 
+// The layout the client asked for: one group of bars per test (Baseline, Midline, Endline) and one
+// bar per level, with the number of children above each bar. Highest level first, as in their example.
+function LevelChart({ stages, levels, subject }) {
+	const ramp = LEVEL_RAMP[levels.length] || LEVEL_RAMP[5];
+	const order = levels.map((l, i) => ({ l, i })).reverse();
+	const drawn = stages.filter((st) => st.stats && !st.stats.hidden);
+	const peak = Math.max(1, ...drawn.flatMap((st) => levels.map((l) => st.stats.counts[l] || 0)));
+	const mag = 10 ** Math.floor(Math.log10(peak));
+	const top = Math.ceil(peak / mag) * mag;
+	const W = 640, H = 310, L = 54, R = 10, T = 26, B = 52;
+	const plotW = W - L - R, plotH = H - T - B;
+	const groupW = plotW / stages.length;
+	const barW = Math.min(42, (groupW * 0.86) / levels.length);
+	const y = (n) => T + plotH - (n / top) * plotH;
+	const ticks = [0, 1, 2, 3, 4].map((k) => (top / 4) * k);
+	const gloss = (l) => LEVEL_GLOSS[l] || levelText(l);
+	const summary = drawn.map((st) => `${st.label}: ${order.map(({ l }) => `${gloss(l)} ${st.stats.counts[l] || 0}`).join(", ")}`).join(". ");
+	return (
+		<svg role="img" aria-label={`${subject}, children at each level. ${summary}`} viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+			{ticks.map((t) => (
+				<g key={t}>
+					<line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke="#EAEDED" />
+					<text x={L - 8} y={y(t) + 4} textAnchor="end" fontSize="12" fill={MUTED}>{fmt(Math.round(t))}</text>
+				</g>
+			))}
+			{stages.map((st, g) => {
+				const mid = L + g * groupW + groupW / 2;
+				const heading = <text x={mid} y={H - 26} textAnchor="middle" fontSize="16" fontWeight="800" fill={BLUE_DARK}>{st.label}</text>;
+				if (!st.stats || st.stats.hidden) {
+					return (
+						<g key={st.tag}>
+							<text x={mid} y={T + plotH / 2} textAnchor="middle" fontSize="13" fill={MUTED}>{st.stats?.hidden ? "Fewer than 10 children" : "No marks"}</text>
+							{heading}
+						</g>
+					);
+				}
+				const x0 = mid - (barW * levels.length) / 2;
+				return (
+					<g key={st.tag}>
+						{order.map(({ l, i }, k) => {
+							const n = st.stats.counts[l] || 0;
+							const x = x0 + k * barW;
+							return (
+								<g key={l}>
+									<title>{`${st.label} · ${gloss(l)}: ${fmt(n)} children (${st.stats.shares[l]}%)`}</title>
+									<rect data-testid="level-bar" x={x + 1} y={y(n)} width={barW - 2} height={Math.max(plotH * (n / top), 0)} fill={ramp[i]} stroke="#9AA7A7" strokeWidth={i === 0 ? 1 : 0} rx="2" />
+									<text x={x + barW / 2} y={y(n) - 5} textAnchor="middle" fontSize="12" fontWeight="700" fill={INK}>{fmt(n)}</text>
+								</g>
+							);
+						})}
+						{heading}
+						<text x={mid} y={H - 8} textAnchor="middle" fontSize="12" fill={MUTED}>{fmt(st.stats.present)} children</text>
+					</g>
+				);
+			})}
+			<line x1={L} x2={W - R} y1={y(0)} y2={y(0)} stroke="#9AA7A7" />
+		</svg>
+	);
+}
+
 function FlnView({ data, audience, onDrill, onDownload }) {
 	if (!data.from) return <Empty>No reading and maths level tests have marks for this selection yet.</Empty>;
 	const both = data.from !== data.to;
 	const unitLevel = data.compareBy;
 	return (
 		<>
-			<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 20, marginBottom: 20 }}>
+			<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 520px), 1fr))", gap: 20, marginBottom: 20 }}>
 				{data.subjects.map((s) => {
 					const ramp = LEVEL_RAMP[s.levels.length] || LEVEL_RAMP[5];
 					const a = s.from && !s.from.hidden ? s.from : null;
@@ -385,10 +445,14 @@ function FlnView({ data, audience, onDrill, onDownload }) {
 									<GradeBadge grade={b?.grade} size={58} />
 								</div>
 							</div>
-							{both && <LevelBar stats={s.from} levels={s.levels} label={data.from} />}
-							<LevelBar stats={s.to} levels={s.levels} label={data.to} />
+							{s.stages?.length ? <LevelChart stages={s.stages} levels={s.levels} subject={s.subject} /> : (
+								<>
+									{both && <LevelBar stats={s.from} levels={s.levels} label={data.from} />}
+									<LevelBar stats={s.to} levels={s.levels} label={data.to} />
+								</>
+							)}
 							<ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 6, fontSize: 14 }}>
-								{s.levels.map((l, i) => (
+								{s.levels.map((l, i) => ({ l, i })).reverse().map(({ l, i }) => (
 									<li key={l} style={{ display: "flex", gap: 8, alignItems: "center" }}>
 										<span style={{ flex: "0 0 auto", width: 12, height: 12, borderRadius: 2, background: ramp[i], border: "1px solid #C4CDCD" }} />
 										<span>
@@ -491,6 +555,11 @@ function Filters({ data, params, set, audience, schoolMode }) {
 	const allowed = !level ? [] : level === "district" ? ["block", "cluster", ...(audience === "staff" ? ["school"] : [])]
 		: level === "block" ? ["cluster", ...(audience === "staff" ? ["school"] : [])] : [];
 	const disabled = !data;
+	// Every test that has marks, from any year (older API: just this year's tests)
+	const testChoices = (o.tests && o.tests.length) ? o.tests : (data?.tags || []).map((t) => ({ year: data.year, tag: t.tag, label: t.label, date: t.date }));
+	const testKey = (t) => `${t.year}|${t.tag}`;
+	const currentTest = `${data?.year}|${data?.test}`;
+	const testText = (t) => `${t.label} · ${t.year}${t.date ? ` (${new Date(t.date).toLocaleString("en-IN", { month: "short", year: "numeric" })})` : ""}`;
 	const blockLocked = audience === "staff" && (o.blocks || []).length === 1;
 	return (
 		<section aria-label="Filters" className="lp-noprint" style={{ ...card, padding: 16, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 10 }}>
@@ -521,30 +590,37 @@ function Filters({ data, params, set, audience, schoolMode }) {
 					)}
 				</>
 			)}
-			<label style={labelStyle}>Year
-				<select style={{ ...selectStyle, minWidth: 110 }} disabled={disabled} value={data?.year || ""} onChange={(e) => set({ year: e.target.value, test: "", from: "", to: "" })}>
-					{(o.years || []).map((y) => <option key={y} value={y}>{y}</option>)}
-				</select>
-			</label>
+			{fln && (
+				<label style={labelStyle}>Year
+					<select style={{ ...selectStyle, minWidth: 110 }} disabled={disabled} value={data?.year || ""} onChange={(e) => set({ year: e.target.value, test: "", from: "", to: "" })}>
+						{(o.years || []).map((y) => <option key={y} value={y}>{y}</option>)}
+					</select>
+				</label>
+			)}
 			{!fln ? (
 				<label style={labelStyle}>Test
-					<select style={selectStyle} disabled={disabled || !(data?.tags || []).length} value={data?.test || ""} onChange={(e) => set({ test: e.target.value })}>
-						{!(data?.tags || []).length && <option value="">No marks yet</option>}
-						{(data?.tags || []).map((t) => <option key={t.tag} value={t.tag}>{t.label}</option>)}
+					<select style={{ ...selectStyle, minWidth: 250 }} disabled={disabled || !testChoices.length} value={testChoices.some((t) => testKey(t) === currentTest) ? currentTest : ""} onChange={(e) => { const [year, test] = e.target.value.split("|"); set({ year, test, from: "", to: "" }); }}>
+						{!testChoices.length && <option value="">No marks yet</option>}
+						{testChoices.map((t) => <option key={testKey(t)} value={testKey(t)}>{testText(t)}</option>)}
 					</select>
 				</label>
 			) : (
 				<>
-					<label style={labelStyle}>From
+					<label style={labelStyle}>From test
 						<select style={selectStyle} disabled={disabled || !(data?.tags || []).length} value={data?.from || ""} onChange={(e) => set({ from: e.target.value })}>
 							{(data?.tags || []).map((t) => <option key={t.tag} value={t.tag}>{t.label}</option>)}
 						</select>
 					</label>
-					<label style={labelStyle}>To
+					<label style={labelStyle}>To test
 						<select style={selectStyle} disabled={disabled || !(data?.tags || []).length} value={data?.to || ""} onChange={(e) => set({ to: e.target.value })}>
 							{(data?.tags || []).map((t) => <option key={t.tag} value={t.tag}>{t.label}</option>)}
 						</select>
 					</label>
+					{(data?.tags || []).length === 1 && (
+						<div role="note" data-testid="one-test-note" style={{ flexBasis: "100%", fontSize: 14, color: MUTED }}>
+							Only {data.tags[0].label} has been held in {data.year}. Choose another year to compare Baseline, Midline and Endline.
+						</div>
+					)}
 				</>
 			)}
 			<label style={labelStyle}>Classes
@@ -737,7 +813,17 @@ export default function ReportView({ audience = "public", schoolMode = false, on
 						<button key={k} type="button" role="tab" aria-selected={view === k} onClick={() => set({ view: k === "tests" ? "" : k, test: "", from: "", to: "" })} style={{ padding: "12px 18px", font: "inherit", fontSize: 16, fontWeight: view === k ? 800 : 500, color: view === k ? INK : MUTED, background: "none", border: "none", borderBottom: `3px solid ${view === k ? INK : "transparent"}`, marginBottom: -1, cursor: "pointer" }}>{l}</button>
 					))}
 				</div>
-				{staff && <div style={{ paddingBottom: 8 }}><DownloadMenu data={data} schoolMode={schoolMode} onDone={notify} /></div>}
+				{staff ? (
+					<div style={{ paddingBottom: 8 }}><DownloadMenu data={data} schoolMode={schoolMode} onDone={notify} /></div>
+				) : (
+					// Downloads stay behind the login (school names and UDISE codes are in them); this leads to the dashboard report and back
+					<div className="lp-noprint" style={{ paddingBottom: 8 }}>
+						<Link to="/reports/learning-progress" data-testid="public-download" title="Downloads are for signed-in officers and schools" style={{ height: 48, display: "inline-flex", alignItems: "center", gap: 10, padding: "0 20px", background: YELLOW, color: INK, borderRadius: 12, fontWeight: 800, fontSize: 16, textDecoration: "none" }}>
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 4v11" /><path d="M7 10l5 5 5-5" /><path d="M5 20h14" /></svg>
+							Download (sign in)
+						</Link>
+					</div>
+				)}
 			</div>
 
 			{toast && (

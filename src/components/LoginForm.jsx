@@ -1,9 +1,8 @@
 import { useState, useContext, useEffect } from "react";
 import { TextField, Paper, Typography, Box } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../App"; // Import the AuthContext
-import apiInstance, { SESSION_EXPIRED_KEY, RETURN_TO_KEY } from "../../api"; // Import your API instance
+import apiInstance, { SESSION_EXPIRED_KEY } from "../../api"; // Import your API instance
 import { getErrorMessage } from "../utils/apiError";
 import { Eye, EyeOff } from "lucide-react";
 import ButtonCustom from "./ButtonCustom";
@@ -71,16 +70,7 @@ function loginErrorMessage(error, wrongDetails) {
 	return getErrorMessage(error, "Could not sign in. Please try again.");
 }
 
-// The page they were on when the session expired, if it belongs to this kind of login
-function takeReturnPath(isSchool) {
-	const path = sessionStorage.getItem(RETURN_TO_KEY);
-	sessionStorage.removeItem(RETURN_TO_KEY);
-	if (!path || !path.startsWith("/") || path.startsWith("//") || path.startsWith("/login")) return null;
-	return isSchool === path.startsWith("/my-school") ? path : null;
-}
-
 export default function LoginForm({ onLogin }) {
-	const navigate = useNavigate();
 	const { login } = useContext(AuthContext);
 	const [showPassword, setShowPassword] = useState(false);
 	// "officer": username login; "school": a headmaster signs in with the school's UDISE code
@@ -153,8 +143,8 @@ export default function LoginForm({ onLogin }) {
 				} catch {
 					// analytics must not block sign-in
 				}
+				// The /login route sends them on: back to the page they were heading to, else their home
 				login(token, userData);
-				navigate(takeReturnPath(true) || "/my-school");
 			} catch (error) {
 				setErrors({ general: loginErrorMessage(error, "Wrong UDISE code or password. Please try again.") });
 			} finally {
@@ -221,8 +211,6 @@ export default function LoginForm({ onLogin }) {
 				// Pass the token to the login function from AuthContext
 				login(token, userData);
 
-				// Back to the page they were on when the session expired, otherwise the tests list
-				navigate(takeReturnPath(false) || "/allTest");
 			} else {
 				// Handle case where response is successful but doesn't indicate success
 				setErrors({ general: "Could not sign in. Please try again." });

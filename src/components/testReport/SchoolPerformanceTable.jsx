@@ -389,6 +389,17 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
 
   const startRequest = useLatestRequest();
 
+  // Block, cluster and district rows count schools: how many are due, how many submitted, how many are pending
+  const schoolCountsOf = (row) => {
+    if (level === "school") return {};
+    const total = Number(row.totalSchools);
+    const submitted = Number(row.submittedSchools);
+    if (row.totalSchools == null || row.submittedSchools == null || !Number.isFinite(total) || !Number.isFinite(submitted)) {
+      return { totalSchools: "-", submittedSchools: "-", pendingSchools: "-" };
+    }
+    return { totalSchools: total, submittedSchools: submitted, pendingSchools: Math.max(total - submitted, 0) };
+  };
+
   const fetchData = async (page = 1, size = pageSize, selectedLevel = level, searchValue = searchQuery.trim(), selectedStatus = statusFilter) => {
     const request = startRequest();
     setError(null);
@@ -611,6 +622,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
                 id: school.id || `${level}-${name}`,
                 name: toTitleCase(name) || "-",
                 status: level === "school" ? (school.status === "submitted" ? "Submitted" : "Pending") : "N/A",
+                ...schoolCountsOf(school),
                 blockName: school.blockName || "-",
                 clusterName: school.clusterName || "-",
                 districtName: school.districtName || school.district || "-",
@@ -809,6 +821,11 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       baseHeaders.push("Cluster");
     }
 
+    // Submission status in numbers for block, cluster and district rows
+    if (level !== "school") {
+      baseHeaders.push("Total Schools", "Submitted", "Pending");
+    }
+
     let headers = [];
     if (isRemedialTest) {
       const gradeLevels = getGradeLevelsForSubject(testSubject || testNameVal);
@@ -859,6 +876,10 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       // Add Cluster only for school level
       if (level === "school") {
         baseRowData.push(row.clusterName || "-");
+      }
+
+      if (level !== "school") {
+        baseRowData.push(row.totalSchools ?? "-", row.submittedSchools ?? "-", row.pendingSchools ?? "-");
       }
 
       let rowData = [];
@@ -949,6 +970,15 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
     // Add Cluster only for school level
     if (level === "school") {
       baseHeaders.push({ key: "clusterName", label: "Cluster", align: "center" });
+    }
+
+    // Submission status in numbers for block, cluster and district rows
+    if (level !== "school") {
+      baseHeaders.push(
+        { key: "totalSchools", label: "Total Schools", align: "center" },
+        { key: "submittedSchools", label: "Submitted", align: "center" },
+        { key: "pendingSchools", label: "Pending", align: "center" },
+      );
     }
 
     let tableHeaders = [];
@@ -1169,6 +1199,7 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
       id: school.id,
       name: toTitleCase(school.name || school.schoolName) || "-",
       status: level === "school" ? (school.submitted ? "Submitted" : "Pending") : "N/A",
+      ...schoolCountsOf(school),
       blockName: school.blockName || "-",
       clusterName: school.clusterName || "-",
       districtName: school.districtName || school.district || "-",
@@ -1407,8 +1438,25 @@ const SchoolPerformanceTable = ({ onSchoolSelect, onSendReminder }) => {
         }),
       },
     }] : []),
+    // Submission status in numbers, for block, cluster and district rows
+    ...(level !== "school" ? [
+      ["totalSchools", "Total Schools"],
+      ["submittedSchools", "Submitted"],
+      ["pendingSchools", "Pending"],
+    ].map(([name, label]) => ({
+      name,
+      label,
+      options: {
+        filter: false,
+        sort: true,
+        sortThirdClickReset: true,
+        setCellProps: () => ({
+          className: "center-align-cell",
+        }),
+      },
+    })) : []),
     // Conditional grade columns for remedial tests
-    ...(isRemedialTest 
+    ...(isRemedialTest
       ? getGradeLevelsForSubject(testSubject || testNameVal).map(level => ({
           name: level,
           label: level, // Already in proper title case from the updated GRADE_LEVELS

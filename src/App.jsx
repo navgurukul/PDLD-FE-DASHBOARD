@@ -18,6 +18,19 @@ import AddStudent from "./components/student/AddStudent";
 import StudentReportPage from "./components/student/StudentReportPage";
 import { RouteErrorBoundary } from "./components/ErrorBoundary";
 import { RETURN_TO_KEY } from "../api";
+import PropTypes from "prop-types";
+import { peekReturnPath, clearReturnPath } from "./utils/returnPath";
+
+// Where a signed-in visitor on /login goes: back to the page they were heading to, else home. This
+// is the only place that decides it, so the login form and this redirect cannot disagree.
+function AfterLogin({ isSchool, home }) {
+	const [target] = useState(() => peekReturnPath(isSchool) || home);
+	useEffect(() => {
+		clearReturnPath();
+	}, []);
+	return <Navigate to={target} replace />;
+}
+AfterLogin.propTypes = { isSchool: PropTypes.bool.isRequired, home: PropTypes.string.isRequired };
 import LegalTerms from "./pages/LegalTerm";
 import EnrollmentReports from "./pages/EnrollmentReports";
 import SchoolPerformanceReports from "./pages/SchoolPerformanceReports";
@@ -118,7 +131,7 @@ function App() {
 					{/* Public route for login */}
 					<Route
 						path="/login"
-						element={isAuthenticated ? <Navigate to={homeAfterLogin} /> : <LoginForm onLogin={login} />}
+						element={isAuthenticated ? <AfterLogin isSchool={isSchool} home={homeAfterLogin} /> : <LoginForm onLogin={login} />}
 					/>
 					{/* Public website: landing page and the Learning Progress report, no login */}
 					<Route path="/" element={<PublicHome />} />
