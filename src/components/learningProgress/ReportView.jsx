@@ -13,7 +13,7 @@ import { downloadCsv, downloadExcel, fileBase, pendingSheet, reportSheets, unitS
 // downloads; schoolMode pins it to a headmaster's own school). Filters live in the URL so a view
 // can be shared as a link.
 
-const PARAMS = ["view", "year", "test", "from", "to", "block", "cluster", "school", "classes", "subject", "compareBy"];
+const PARAMS = ["view", "year", "test", "from", "to", "fromDate", "toDate", "block", "cluster", "school", "classes", "subject", "compareBy"];
 const CLASS_OPTIONS = ["1-8", "1-5", "6-8", "9-12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 
 const card = { background: "#ffffff", border: `1px solid ${BORDER}`, borderRadius: 18, padding: 20, boxSizing: "border-box" };
@@ -389,7 +389,7 @@ function LevelChart({ stages, levels, subject }) {
 			))}
 			{stages.map((st, g) => {
 				const mid = L + g * groupW + groupW / 2;
-				const heading = <text x={mid} y={H - 26} textAnchor="middle" fontSize="16" fontWeight="800" fill={BLUE_DARK}>{st.label}</text>;
+				const heading = <text x={mid} y={H - 26} textAnchor="middle" fontSize={stages.length > 3 ? 12 : 16} fontWeight="800" fill={BLUE_DARK}>{st.label}</text>;
 				if (!st.stats || st.stats.hidden) {
 					return (
 						<g key={st.tag}>
@@ -423,7 +423,11 @@ function LevelChart({ stages, levels, subject }) {
 }
 
 function FlnView({ data, audience, onDrill, onDownload }) {
-	if (!data.from) return <Empty>No reading and maths level tests have marks for this selection yet.</Empty>;
+	if (!data.from) {
+		return data.range
+			? <Empty>No reading and maths level tests were held between these dates. Change the dates, or clear them to choose tests instead.</Empty>
+			: <Empty>No reading and maths level tests have marks for this selection yet.</Empty>;
+	}
 	const both = data.from !== data.to;
 	const unitLevel = data.compareBy;
 	return (
@@ -557,9 +561,18 @@ function Filters({ data, params, set, audience, schoolMode }) {
 	const disabled = !data;
 	// Every test that has marks, from any year (older API: just this year's tests)
 	const testChoices = (o.tests && o.tests.length) ? o.tests : (data?.tags || []).map((t) => ({ year: data.year, tag: t.tag, label: t.label, date: t.date }));
+	// A date range is active: the tests come from the dates, not from the test boxes
+	const dated = fln && !!(params.fromDate || params.toDate);
+	// Earliest and latest test dates, so the date boxes open on the right months
+	const dateBounds = (() => {
+		const d = (o.tests || []).map((t) => String(t.date).slice(0, 10)).sort();
+		return { min: d[0], max: d[d.length - 1] };
+	})();
+	// The Test list follows the chosen Year
+	const yearTests = testChoices.filter((t) => t.year === data?.year);
 	const testKey = (t) => `${t.year}|${t.tag}`;
 	const currentTest = `${data?.year}|${data?.test}`;
-	const testText = (t) => `${t.label} · ${t.year}${t.date ? ` (${new Date(t.date).toLocaleString("en-IN", { month: "short", year: "numeric" })})` : ""}`;
+	const testText = (t) => `${t.label}${t.date ? ` (${new Date(t.date).toLocaleString("en-IN", { month: "short", year: "numeric" })})` : ""}`;
 	const blockLocked = audience === "staff" && (o.blocks || []).length === 1;
 	return (
 		<section aria-label="Filters" className="lp-noprint" style={{ ...card, padding: 16, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 10 }}>
@@ -590,33 +603,49 @@ function Filters({ data, params, set, audience, schoolMode }) {
 					)}
 				</>
 			)}
-			{fln && (
+			{(
 				<label style={labelStyle}>Year
-					<select style={{ ...selectStyle, minWidth: 110 }} disabled={disabled} value={data?.year || ""} onChange={(e) => set({ year: e.target.value, test: "", from: "", to: "" })}>
+					<select style={{ ...selectStyle, minWidth: 110 }} disabled={disabled || dated} value={data?.year || ""} onChange={(e) => set({ year: e.target.value, test: "", from: "", to: "", fromDate: "", toDate: "" })}>
 						{(o.years || []).map((y) => <option key={y} value={y}>{y}</option>)}
 					</select>
 				</label>
 			)}
 			{!fln ? (
 				<label style={labelStyle}>Test
-					<select style={{ ...selectStyle, minWidth: 250 }} disabled={disabled || !testChoices.length} value={testChoices.some((t) => testKey(t) === currentTest) ? currentTest : ""} onChange={(e) => { const [year, test] = e.target.value.split("|"); set({ year, test, from: "", to: "" }); }}>
-						{!testChoices.length && <option value="">No marks yet</option>}
-						{testChoices.map((t) => <option key={testKey(t)} value={testKey(t)}>{testText(t)}</option>)}
+					<select style={{ ...selectStyle, minWidth: 200 }} disabled={disabled || !yearTests.length} value={yearTests.some((t) => testKey(t) === currentTest) ? currentTest : ""} onChange={(e) => set({ test: e.target.value.split("|")[1], from: "", to: "" })}>
+						{!yearTests.length && <option value="">No marks yet</option>}
+						{yearTests.map((t) => <option key={testKey(t)} value={testKey(t)}>{testText(t)}</option>)}
 					</select>
 				</label>
 			) : (
 				<>
 					<label style={labelStyle}>From test
-						<select style={selectStyle} disabled={disabled || !(data?.tags || []).length} value={data?.from || ""} onChange={(e) => set({ from: e.target.value })}>
+						<select style={selectStyle} disabled={disabled || dated || !(data?.tags || []).length} value={data?.from || ""} onChange={(e) => set({ from: e.target.value })}>
 							{(data?.tags || []).map((t) => <option key={t.tag} value={t.tag}>{t.label}</option>)}
 						</select>
 					</label>
 					<label style={labelStyle}>To test
-						<select style={selectStyle} disabled={disabled || !(data?.tags || []).length} value={data?.to || ""} onChange={(e) => set({ to: e.target.value })}>
+						<select style={selectStyle} disabled={disabled || dated || !(data?.tags || []).length} value={data?.to || ""} onChange={(e) => set({ to: e.target.value })}>
 							{(data?.tags || []).map((t) => <option key={t.tag} value={t.tag}>{t.label}</option>)}
 						</select>
 					</label>
-					{(data?.tags || []).length === 1 && (
+					<label style={labelStyle}>From date
+						<input type="date" data-testid="from-date" style={selectStyle} disabled={disabled} min={dateBounds.min} max={params.toDate || dateBounds.max} value={params.fromDate || ""} onChange={(e) => set({ fromDate: e.target.value, from: "", to: "" })} />
+					</label>
+					<label style={labelStyle}>To date
+						<input type="date" data-testid="to-date" style={selectStyle} disabled={disabled} min={params.fromDate || dateBounds.min} max={dateBounds.max} value={params.toDate || ""} onChange={(e) => set({ toDate: e.target.value, from: "", to: "" })} />
+					</label>
+					{dated && (
+						<button type="button" data-testid="clear-dates" onClick={() => set({ fromDate: "", toDate: "" })} style={{ ...linkButton, height: 44, fontWeight: 700 }}>Clear dates</button>
+					)}
+					{dated && (
+						<div role="note" data-testid="range-note" style={{ flexBasis: "100%", fontSize: 14, color: MUTED }}>
+							{(data?.tags || []).length
+								? `Showing the ${data.tags.length === 1 ? "test" : `${data.tags.length} tests`} held in this date range: ${data.tags.map((t) => t.label).join(", ")}.`
+								: "No reading and maths level tests were held between these dates."}
+						</div>
+					)}
+					{!dated && (data?.tags || []).length === 1 && (
 						<div role="note" data-testid="one-test-note" style={{ flexBasis: "100%", fontSize: 14, color: MUTED }}>
 							Only {data.tags[0].label} has been held in {data.year}. Choose another year to compare Baseline, Midline and Endline.
 						</div>
@@ -810,7 +839,7 @@ export default function ReportView({ audience = "public", schoolMode = false, on
 			<div className="lp-noprint" style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 12, borderBottom: `1px solid ${BORDER}`, marginBottom: 16 }}>
 				<div role="tablist" aria-label="Report" style={{ display: "flex", gap: 4 }}>
 					{[["tests", "Class tests"], ["fln", "Reading and maths levels (FLN)"]].map(([k, l]) => (
-						<button key={k} type="button" role="tab" aria-selected={view === k} onClick={() => set({ view: k === "tests" ? "" : k, test: "", from: "", to: "" })} style={{ padding: "12px 18px", font: "inherit", fontSize: 16, fontWeight: view === k ? 800 : 500, color: view === k ? INK : MUTED, background: "none", border: "none", borderBottom: `3px solid ${view === k ? INK : "transparent"}`, marginBottom: -1, cursor: "pointer" }}>{l}</button>
+						<button key={k} type="button" role="tab" aria-selected={view === k} onClick={() => set({ view: k === "tests" ? "" : k, test: "", from: "", to: "", fromDate: "", toDate: "" })} style={{ padding: "12px 18px", font: "inherit", fontSize: 16, fontWeight: view === k ? 800 : 500, color: view === k ? INK : MUTED, background: "none", border: "none", borderBottom: `3px solid ${view === k ? INK : "transparent"}`, marginBottom: -1, cursor: "pointer" }}>{l}</button>
 					))}
 				</div>
 				{staff ? (
