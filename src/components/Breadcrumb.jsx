@@ -2,8 +2,10 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Breadcrumbs, Typography } from "@mui/material";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import PropTypes from "prop-types";
 
-const Breadcrumb = () => {
+// inHeader: shown in the dashboard header as the page title (smaller, no page margins)
+const Breadcrumb = ({ inHeader = false }) => {
   const location = useLocation();
   if (location.pathname === "/reports") return null;
   const pathnames = location.pathname.split("/").filter((x) => x);
@@ -306,7 +308,15 @@ const Breadcrumb = () => {
     <Breadcrumbs
       separator={<NavigateNextIcon sx={{ width: "24px", height: "24px" }} />}
       aria-label="breadcrumb"
-      sx={{
+      sx={inHeader ? {
+        fontFamily: "'Work Sans', sans-serif",
+        minWidth: 0,
+        "& .MuiBreadcrumbs-ol": { flexWrap: "nowrap" },
+        "& .MuiBreadcrumbs-li": { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+        "& .MuiTypography-root": { fontSize: "15px" },
+        "& .MuiBreadcrumbs-li:last-of-type .MuiTypography-root": { color: "#2F4F4F", fontWeight: 700, fontFamily: "Karla, sans-serif", fontSize: "16px" },
+        "& .MuiBreadcrumbs-separator": { mx: "2px", color: "#6B7878" },
+      } : {
         mb: 1,
         pl: 10,
         mt: 5,
@@ -321,6 +331,8 @@ const Breadcrumb = () => {
     </Breadcrumbs>
   );
 };
+
+Breadcrumb.propTypes = { inHeader: PropTypes.bool };
 
 export default Breadcrumb;
 

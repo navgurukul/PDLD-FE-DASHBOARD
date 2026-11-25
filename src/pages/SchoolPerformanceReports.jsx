@@ -27,7 +27,6 @@ import ButtonCustom from "../components/ButtonCustom";
 import { useTheme } from "@mui/material/styles";
 import DownloadModal from "../components/modal/DownloadModal"; // Import the new modal
 import mixpanel from '../utils/mixpanel';
-import AcademicYearSelect from "../components/AcademicYearSelect";
 import { getGlobalYear, setGlobalYear, useFollowGlobalYear } from "../utils/academicYearStore";
 import {
   toApiAcademicYear,
@@ -1261,9 +1260,6 @@ useEffect(() => {
             <h5 className="text-lg font-bold text-[#2F4F4F] mb-4">School Performance Report</h5>
           </div>
 
-          <Box sx={{ flexShrink: 0 }}>
-            <AcademicYearSelect value={selectedYearStart} onChange={handleYearChange} disabled={isLoading} />
-          </Box>
         </Box>
 
         <div className="flex justify-between items-center mb-4">
