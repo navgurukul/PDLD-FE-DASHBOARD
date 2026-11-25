@@ -13,8 +13,7 @@ import DownloadModal from "../../components/modal/DownloadModal";
 import apiInstance from "../../../api";
 import AcademicOverviewGraph from "../graph/AcademicOverviewGraph";
 import { Tooltip } from "@mui/material";
-import AcademicYearSelect from "../AcademicYearSelect";
-import { getGlobalYear, setGlobalYear, useFollowGlobalYear } from "../../utils/academicYearStore";
+import { getGlobalYear, useFollowGlobalYear } from "../../utils/academicYearStore";
 import { toApiAcademicYear, toDisplayAcademicYear } from "../../utils/academicYear";
 import { showApiError } from "../../utils/apiError";
 import { openPrintWindow } from "../../utils/printWindow";
@@ -944,18 +943,6 @@ const StudentProfileView = () => {
         {/* Show Academic Year and Download Report button based on tab */}
         {student.academic && (
           <div className="flex" style={{ flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-            <Box
-              sx={{
-                marginRight: { xs: 0, md: tabValue === 1 ? "16px" : 0 },
-                marginBottom: { xs: tabValue === 1 ? "8px" : 0, md: 0 },
-              }}
-            >
-              <AcademicYearSelect
-                value={selectedYearStart}
-                onChange={(year) => { setSelectedYearStart(year); setGlobalYear(year); }}
-                disabled={isYearLoading}
-              />
-            </Box>
             {tabValue === 1 && (
               <ButtonCustom text={"Download Report"} onClick={handleDownloadClick} btnWidth={200} />
             )}
