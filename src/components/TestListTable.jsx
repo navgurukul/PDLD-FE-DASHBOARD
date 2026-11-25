@@ -23,14 +23,9 @@ import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import Paper from "@mui/material/Paper";
 import { Search } from "lucide-react";
-import AcademicYearSelect, { ALL_YEARS, CUSTOM_DATES } from "./AcademicYearSelect";
+import { ALL_YEARS, CUSTOM_DATES } from "./AcademicYearSelect";
 import { getGlobalYear, setGlobalYear, useFollowGlobalYear } from "../utils/academicYearStore";
-import {
-  getAcademicYearStart,
-  getAcademicYearDateRange,
-  readStoredAcademicYear,
-  storeAcademicYear,
-} from "../utils/academicYear";
+import { getAcademicYearDateRange, storeAcademicYear } from "../utils/academicYear";
 import { showApiError, getErrorMessage } from "../utils/apiError";
 import LoadError from "./LoadError";
 
@@ -142,7 +137,7 @@ export default function TestListTable() {
   // Academic year shown (start year, ALL_YEARS, or CUSTOM_DATES while a date range is picked);
   // defaults to the current year and is remembered for this browser tab
   const [selectedYear, setSelectedYear] = // "All years" is this page's own choice; otherwise the year chosen in the header
-  useState(() => (readStoredAcademicYear("tests", null) === ALL_YEARS ? ALL_YEARS : getGlobalYear()));
+  useState(getGlobalYear); // the year chosen in the header
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false); // Separate loading state for search
   const [userRole, setUserRole] = useState("");
@@ -452,7 +447,7 @@ export default function TestListTable() {
     selectedSubject.length > 0 ||
     selectedStatus ||
     (startDate && endDate) ||
-    selectedYear !== getAcademicYearStart() ||
+    selectedYear === CUSTOM_DATES ||
     searchQuery;
 
   const [classFocused, setClassFocused] = useState(false);
@@ -717,14 +712,14 @@ export default function TestListTable() {
 
   const clearDateRange = () => {
     setDateRange([null, null]);
-    if (selectedYear === CUSTOM_DATES) handleYearChange(getAcademicYearStart());
+    if (selectedYear === CUSTOM_DATES) handleYearChange(getGlobalYear());
   };
 
   const resetFilters = () => {
     setSelectedClass([]);
     setSelectedSubject([]);
     setSelectedStatus("");
-    handleYearChange(getAcademicYearStart());
+    handleYearChange(getGlobalYear()); // the header keeps its year
     setSearchQuery("");
     setCurrentPage(1);
   };
@@ -1098,9 +1093,6 @@ export default function TestListTable() {
                 }}
               />
             </div>
-            {/* Academic Year */}
-            <AcademicYearSelect value={selectedYear} onChange={handleYearChange} includeAll minWidth={210} />
-
             {/* Date Range Picker */}
             <div className="w-full lg:w-[220px]">
               <div
